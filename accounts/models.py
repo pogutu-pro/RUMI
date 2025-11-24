@@ -1,0 +1,460 @@
+from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.core.validators import RegexValidator, MinLengthValidator, MaxLengthValidator, MinValueValidator, MaxValueValidator
+from django.utils import timezone
+from django.conf import settings
+import uuid
+from decimal import Decimal
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+
+class UserManager(BaseUserManager):
+    """Custom manager for User model with role-based creation"""
+
+    def create_user(self, email, password=None, **extra_fields):
+        """Create and save a regular user"""
+        if not email:
+            raise ValueError('The Email field must be set')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        """Create and save a superuser"""
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('role', 'super_admin')
+        extra_fields.setdefault('is_verified', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self.create_user(email, password, **extra_fields)
+
+
+class User(AbstractBaseUser, PermissionsMixin):
+    """Extended Django User model with role-based authentication"""
+
+    ROLE_CHOICES = [
+        ('student', 'Student'),
+        ('landlord', 'Landlord'),
+        ('caretaker', 'Caretaker'),
+        ('tech_support', 'Tech Support Admin'),
+        ('super_admin', 'Super Admin'),
+    ]
+
+    email = models.EmailField(
+        unique=True,
+        validators=[RegexValidator(
+            regex=r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$',
+            message='Enter a valid email address.'
+        )]
+    )
+    password = models.CharField(max_length=128)
+    first_name = models.CharField(max_length=150)
+    last_name = models.CharField(max_length=150)
+    role = models.CharField(
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default='student'
+    )
+    is_active = models.BooleanField(default=True)
+    is_verified = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)
+    phone_number = models.CharField(
+        max_length=15,
+        blank=True,
+        null=True,
+        validators=[RegexValidator(
+            regex=r'^\+254[0-9]{9}$',
+            message='Phone number must be in format: +254XXXXXXXXX'
+        )]
+    )
+    profile_picture = models.URLField(blank=True, null=True)
+    last_login = models.DateTimeField(blank=True, null=True)
+    date_joined = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = UserManager()
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'role']
+
+    class Meta:
+        db_table = 'accounts_user'
+        indexes = [
+            models.Index(fields=['email'], name='idx_user_email'),
+            models.Index(fields=['role'], name='idx_user_role'),
+            models.Index(fields=['is_active', 'is_verified'], name='idx_user_active_verified'),
+        ]
+
+    def get_full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    def get_short_name(self):
+        return self.first_name
+
+    def __str__(self):
+        return f"{self.email} ({self.get_role_display()})"
+
+
+class StudentProfile(models.Model):
+    """Student-specific profile data and preferences"""
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='student_profile'
+    )
+    university = models.CharField(max_length=255, blank=True, null=True)
+    student_id_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    year_of_study = models.IntegerField(
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(1), MaxValueValidator(6)]
+    )
+    course = models.CharField(max_length=255, blank=True, null=True)
+    lifestyle_preferences = models.JSONField(blank=True, null=True)
+    bio = models.TextField(
+        blank=True,
+        null=True,
+        validators=[MaxLengthValidator(500)]
+    )
+    emergency_contact_name = models.CharField(max_length=200, blank=True, null=True)
+    emergency_contact_phone = models.CharField(
+        max_length=15,
+        blank=True,
+        null=True,
+        validators=[RegexValidator(
+            regex=r'^\+254[0-9]{9}$',
+            message='Emergency contact phone must be in format: +254XXXXXXXXX'
+        )]
+    )
+    emergency_contact_relationship = models.CharField(max_length=50, blank=True, null=True)
+    is_profile_complete = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'accounts_studentprofile'
+        indexes = [
+            models.Index(fields=['user'], name='idx_student_user'),
+            models.Index(fields=['university'], name='idx_student_university'),
+            models.Index(fields=['student_id_number'], name='idx_student_id_number'),
+            models.Index(fields=['is_profile_complete'], name='idx_student_complete'),
+        ]
+
+    def save(self, *args, **kwargs):
+        """Auto-calculate profile completion status"""
+        required_fields = [
+            self.university,
+            self.student_id_number,
+            self.year_of_study,
+            self.user.phone_number,  # From User model
+            self.emergency_contact_name,
+            self.emergency_contact_phone,
+        ]
+        self.is_profile_complete = all(required_fields)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.university}"
+
+
+class LandlordProfile(models.Model):
+    """Landlord/Property Manager profile data"""
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='landlord_profile'
+    )
+    company_name = models.CharField(max_length=255, blank=True, null=True)
+    national_id = models.CharField(
+        max_length=20,
+        unique=True,
+        validators=[MinLengthValidator(5), MaxLengthValidator(20)]
+    )
+    business_address = models.TextField(blank=True, null=True)
+    bank_name = models.CharField(max_length=100)
+    bank_account_number = models.CharField(max_length=20)
+    bank_code = models.CharField(max_length=10)
+    paystack_subaccount_code = models.CharField(max_length=100, unique=True, blank=True, null=True)
+    is_verified = models.BooleanField(default=False)
+    verification_documents = models.JSONField(blank=True, null=True)
+    verified_at = models.DateTimeField(blank=True, null=True)
+    verified_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='verified_landlords'
+    )
+    total_hostels = models.IntegerField(default=0, validators=[MinValueValidator(0)])
+    total_rooms = models.IntegerField(default=0, validators=[MinValueValidator(0)])
+    total_earnings = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        validators=[MinValueValidator(Decimal('0.00'))]
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'accounts_landlordprofile'
+        indexes = [
+            models.Index(fields=['user'], name='idx_landlord_user'),
+            models.Index(fields=['national_id'], name='idx_landlord_national_id'),
+            models.Index(fields=['is_verified'], name='idx_landlord_verified'),
+            models.Index(fields=['paystack_subaccount_code'], name='idx_landlord_paystack'),
+        ]
+
+    def __str__(self):
+        return f"{self.company_name or self.user.get_full_name()} - {self.national_id}"
+
+
+class CaretakerProfile(models.Model):
+    """On-site property manager profile data"""
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='caretaker_profile'
+    )
+    national_id = models.CharField(
+        max_length=20,
+        unique=True,
+        validators=[MinLengthValidator(5), MaxLengthValidator(20)]
+    )
+    hostel = models.OneToOneField(
+        'hostels.Hostel',
+        on_delete=models.CASCADE,
+        related_name='caretaker'
+    )
+    landlord = models.ForeignKey(
+        LandlordProfile,
+        on_delete=models.CASCADE,
+        related_name='caretakers'
+    )
+    employment_start_date = models.DateField()
+    employment_end_date = models.DateField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    permissions = models.JSONField(default=dict)
+    emergency_contact_name = models.CharField(max_length=200)
+    emergency_contact_phone = models.CharField(
+        max_length=15,
+        validators=[RegexValidator(
+            regex=r'^\+254[0-9]{9}$',
+            message='Emergency contact phone must be in format: +254XXXXXXXXX'
+        )]
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='created_caretakers'
+    )
+
+    class Meta:
+        db_table = 'accounts_caretakerprofile'
+        indexes = [
+            models.Index(fields=['user'], name='idx_caretaker_user'),
+            models.Index(fields=['hostel'], name='idx_caretaker_hostel'),
+            models.Index(fields=['landlord'], name='idx_caretaker_landlord'),
+            models.Index(fields=['is_active', 'hostel'], name='idx_caretaker_active'),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(employment_end_date__isnull=True) | models.Q(employment_end_date__gte=models.F('employment_start_date')),
+                name='check_employment_dates'
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.hostel.name}"
+
+
+class OTPVerification(models.Model):
+    """Temporary storage for email/phone verification codes"""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    otp_code = models.CharField(
+        max_length=6,
+        validators=[RegexValidator(regex=r'^[0-9]{6}$', message='OTP must be 6 digits')]
+    )
+    verification_type = models.CharField(
+        max_length=20,
+        choices=[('email', 'Email'), ('phone', 'Phone')],
+        default='email'
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    used_at = models.DateTimeField(blank=True, null=True)
+    attempts = models.IntegerField(default=0)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'accounts_otpverification'
+        indexes = [
+            models.Index(fields=['user', 'verification_type'], name='idx_otp_user_type'),
+            models.Index(fields=['expires_at'], name='idx_otp_expiry'),
+            models.Index(fields=['user', 'is_used', 'expires_at'], name='idx_otp_active'),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(expires_at__gt=models.F('created_at')),
+                name='check_otp_expiry'
+            ),
+            models.CheckConstraint(
+                check=models.Q(attempts__gte=0) & models.Q(attempts__lte=5),
+                name='check_otp_attempts'
+            ),
+        ]
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def __str__(self):
+        return f"OTP for {self.user.email} ({self.verification_type})"
+
+
+class PasswordResetToken(models.Model):
+    """Secure password reset token storage"""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    token = models.UUIDField(default=uuid.uuid4, unique=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    used_at = models.DateTimeField(blank=True, null=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'accounts_passwordresettoken'
+        indexes = [
+            models.Index(fields=['token'], name='idx_reset_token'),
+            models.Index(fields=['user'], name='idx_reset_user'),
+            models.Index(fields=['expires_at'], name='idx_reset_expiry'),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(expires_at__gt=models.F('created_at')),
+                name='check_reset_expiry'
+            ),
+        ]
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def __str__(self):
+        return f"Reset token for {self.user.email}"
+
+
+class UserActivityLog(models.Model):
+    """Audit trail for user actions"""
+
+    ACTION_CHOICES = [
+        ('login', 'Login'),
+        ('logout', 'Logout'),
+        ('register', 'Register'),
+        ('password_reset', 'Password Reset'),
+        ('profile_update', 'Profile Update'),
+        ('permission_change', 'Permission Change'),
+        ('verification', 'Verification'),
+        ('failed_login', 'Failed Login'),
+        ('account_deactivation', 'Account Deactivation'),
+        ('account_reactivation', 'Account Reactivation'),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='activity_logs'
+    )
+    action_type = models.CharField(max_length=50, choices=ACTION_CHOICES)
+    action_description = models.TextField(blank=True, null=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+    user_agent = models.CharField(max_length=255, blank=True, null=True)
+    metadata = models.JSONField(blank=True, null=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'accounts_useractivitylog'
+        indexes = [
+            models.Index(fields=['user'], name='idx_activity_user'),
+            models.Index(fields=['action_type'], name='idx_activity_type'),
+            models.Index(fields=['created_at'], name='idx_activity_created'),
+        ]
+
+    def __str__(self):
+        return f"{self.user.email if self.user else 'Anonymous'} - {self.action_type} at {self.created_at}"
+
+
+# Import subscription models to register them with Django
+try:
+    from .subscription_models import (
+        SubscriptionPlan, LandlordSubscription,
+        SubscriptionPayment, FeatureAccess
+    )
+except ImportError:
+    pass  # Models will be imported after migration
+except Exception:
+    pass
+
+
+@receiver(post_save, sender=LandlordProfile)
+def create_landlord_subscription_and_features(sender, instance, created, **kwargs):
+    """
+    Automatically create subscription and feature access when landlord profile is created
+    """
+    if created:
+        # Get or create trial plan
+        try:
+            trial_plan = SubscriptionPlan.objects.get(slug='free-trial')
+        except SubscriptionPlan.DoesNotExist:
+            # Create default trial plan if it doesn't exist
+            trial_plan = SubscriptionPlan.objects.create(
+                name='Free Trial',
+                slug='free-trial',
+                plan_type='trial',
+                billing_type='fixed',
+                fixed_price=Decimal('0.00'),
+                trial_duration_days=30,
+                description='1 month free trial with full access to all features',
+                features={
+                    'all_features': True,
+                    'unlimited_access': True
+                }
+            )
+        
+        # Calculate trial dates
+        trial_start = timezone.now().date()
+        trial_end = trial_start + timezone.timedelta(days=30)
+        
+        # Create subscription with trial
+        subscription = LandlordSubscription.objects.create(
+            landlord=instance,
+            plan=trial_plan,
+            status='trial',
+            current_period_start=trial_start,
+            current_period_end=trial_end,
+            next_billing_date=trial_end + timezone.timedelta(days=1),
+            trial_start=trial_start,
+            trial_end=trial_end,
+            is_trial_used=True
+        )
+        
+        # Create feature access (trial gets all features)
+        feature_access = FeatureAccess.objects.create(landlord=instance)
+        feature_access.sync_with_subscription()

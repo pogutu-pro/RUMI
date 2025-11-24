@@ -1,0 +1,38 @@
+# Environment variables
+.env
+
+
+# Database
+*.sqlite3
+db.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Process files
+celery.pid
+
+# Reports and sensitive docs
+CTO_EXECUTIVE_REPORT.md
+FINAL_REVENUE_MODEL.md
+UPDATED_PRICING.md
+PLATFORM_AUDIT_REPORT.md
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build directories
+dist/
+build/
+node_modules/
+
+# Frontend specific (already in frontend/.gitignore)
+# Keep frontend/.env excluded

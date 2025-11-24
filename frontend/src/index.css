@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+@layer components {
+  /* Primary Button - Navy blue with gold accent on hover */
+  .btn-primary {
+    @apply bg-primary-800 hover:bg-primary-900 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-secondary-600 focus:ring-offset-2 shadow-lg hover:shadow-xl;
+  }
+
+  /* Secondary Button - Gold with navy text */
+  .btn-secondary {
+    @apply bg-secondary-600 hover:bg-secondary-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2 shadow-lg hover:shadow-xl;
+  }
+
+  /* Outline Button - Navy border */
+  .btn-outline {
+    @apply bg-white border-2 border-primary-800 text-primary-800 hover:bg-primary-50 font-semibold py-3 px-6 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2;
+  }
+
+  /* Accent Button - Gold gradient */
+  .btn-accent {
+    @apply bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2 shadow-lg hover:shadow-xl;
+  }
+
+  /* Card component */
+  .card {
+    @apply bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden transition-all duration-200 hover:shadow-xl hover:border-secondary-200;
+  }
+
+  /* Input fields with brand color focus */
+  .input-field {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary-500 focus:border-secondary-500 transition-colors duration-200 bg-white;
+  }
+
+  .input-field:focus {
+    @apply border-secondary-600 ring-2 ring-secondary-200;
+  }
+
+  /* Gradient backgrounds using brand colors */
+  .gradient-bg {
+    @apply bg-gradient-to-br from-primary-50 via-white to-secondary-50;
+  }
+
+  /* Hero gradient - Navy to Gold */
+  .hero-gradient {
+    @apply bg-gradient-to-r from-primary-900 via-primary-800 to-primary-700;
+  }
+
+  /* Brand gradient - Navy and Gold */
+  .brand-gradient {
+    @apply bg-gradient-to-br from-primary-800 via-primary-700 to-secondary-600;
+  }
+
+  /* Text gradient for headings */
+  .text-brand-gradient {
+    @apply bg-gradient-to-r from-primary-800 via-secondary-600 to-secondary-500 bg-clip-text text-transparent;
+  }
+
+  /* Badge styles */
+  .badge-primary {
+    @apply bg-primary-800 text-white px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-secondary {
+    @apply bg-secondary-600 text-white px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-outline {
+    @apply bg-white border-2 border-primary-800 text-primary-800 px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  /* Link styles */
+  .link-primary {
+    @apply text-primary-800 hover:text-secondary-600 transition-colors duration-200 font-medium;
+  }
+
+  .link-secondary {
+    @apply text-secondary-600 hover:text-secondary-700 transition-colors duration-200 font-medium;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Animation delays */
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2000ms;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4000ms;
+  }
+
+  /* Brand color utilities */
+  .bg-brand-navy {
+    background-color: #1D2B44;
+  }
+
+  .bg-brand-gold {
+    background-color: #D4AC54;
+  }
+
+  .bg-brand-dark {
+    background-color: #0B0B0C;
+  }
+
+  .text-brand-navy {
+    color: #1D2B44;
+  }
+
+  .text-brand-gold {
+    color: #D4AC54;
+  }
+
+  .text-brand-dark {
+    color: #0B0B0C;
+  }
+
+  /* Border color utilities */
+  .border-brand-navy {
+    border-color: #1D2B44;
+  }
+
+  .border-brand-gold {
+    border-color: #D4AC54;
+  }
+}
+
+/* Custom scrollbar with brand colors */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1D2B44;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #D4AC54;
+}
+
+/* Selection color with brand colors */
+::selection {
+  background-color: #D4AC54;
+  color: white;
+}
+
+::-moz-selection {
+  background-color: #D4AC54;
+  color: white;
+}
