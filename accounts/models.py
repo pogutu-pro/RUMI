@@ -401,6 +401,76 @@ class UserActivityLog(models.Model):
         return f"{self.user.email if self.user else 'Anonymous'} - {self.action_type} at {self.created_at}"
 
 
+class Conversation(models.Model):
+    """Chat conversation between two users"""
+
+    participants = models.ManyToManyField(
+        User,
+        related_name='conversations',
+        help_text='Users participating in this conversation'
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'accounts_conversation'
+        ordering = ['-updated_at']
+        indexes = [
+            models.Index(fields=['updated_at'], name='idx_conversation_updated'),
+            models.Index(fields=['is_active'], name='idx_conversation_active'),
+        ]
+
+    def __str__(self):
+        participants_names = [user.get_full_name() for user in self.participants.all()]
+        return f"Chat between {', '.join(participants_names)}"
+
+    def get_other_participant(self, user):
+        """Get the other participant in a two-person conversation"""
+        return self.participants.exclude(id=user.id).first()
+
+
+class Message(models.Model):
+    """Individual message in a conversation"""
+
+    conversation = models.ForeignKey(
+        Conversation,
+        on_delete=models.CASCADE,
+        related_name='messages'
+    )
+    sender = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='sent_messages'
+    )
+    content = models.TextField(
+        validators=[MaxLengthValidator(1000)],
+        help_text='Message content (max 1000 characters)'
+    )
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'accounts_message'
+        ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['conversation', 'created_at'], name='idx_message_conversation_time'),
+            models.Index(fields=['sender'], name='idx_message_sender'),
+            models.Index(fields=['is_read'], name='idx_message_read'),
+        ]
+
+    def __str__(self):
+        return f"Message from {self.sender.get_full_name()} at {self.created_at}"
+
+    def mark_as_read(self):
+        """Mark message as read and set read timestamp"""
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save(update_fields=['is_read', 'read_at'])
+
+
 # Import subscription models to register them with Django
 try:
     from .subscription_models import (

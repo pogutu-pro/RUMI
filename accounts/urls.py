@@ -41,4 +41,9 @@ urlpatterns = [
 
     path('landlords/verification/', views.LandlordVerificationListView.as_view(), name='landlord_verification_list'),
     path('landlords/<int:landlord_id>/verify/<str:action>/', views.LandlordVerificationView.as_view(), name='landlord_verification'),
+
+    # Chat endpoints
+    path('chat/conversations/', views.ConversationListView.as_view(), name='conversation_list'),
+    path('chat/conversations/<int:conversation_id>/messages/', views.ConversationMessagesView.as_view(), name='conversation_messages'),
+    path('chat/send/', views.SendMessageView.as_view(), name='send_message'),
 ]
