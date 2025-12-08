@@ -53,7 +53,6 @@ INSTALLED_APPS = [
     'accounts',
     'hostels',
     'home',
-    'marketplace',
     'payments',
     'notifications'
 ]

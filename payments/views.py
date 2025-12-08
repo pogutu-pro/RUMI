@@ -1,946 +1,973 @@
+import hashlib
+import hmac
 import json
 import uuid
 from decimal import Decimal
 from django.conf import settings
-from django.core.cache import cache
-from django.core.exceptions import ValidationError
-from django.db import transaction
-from django.db.models import Sum
-from django.http import HttpResponse
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework import status, permissions
-from rest_framework.decorators import api_view, permission_classes, action
+from django.db import transaction
+from django.shortcuts import get_object_or_404
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncMonth
+from rest_framework import status, permissions, generics
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
+from accounts.models import StudentProfile, LandlordProfile, User
+from accounts.permissions import IsStudent, IsLandlord, IsAdminOrSuperAdmin, IsVerifiedLandlord
+from hostels.models import Booking
+
 from .models import (
-    Transaction, SavedPaymentMethod, RecurringPayment,
-    LateFeeCharge, TaxReport, PaystackSubaccount, Payout,
-    RefundRequest, RevenueAnalytics
+    Transaction, SavedPaymentMethod, RecurringPayment, LateFeeCharge,
+    TaxReport, PaystackSubaccount, Payout, RefundRequest, RevenueAnalytics
 )
+from .serializers import (
+    TransactionSerializer, SavedPaymentMethodSerializer, RecurringPaymentSerializer,
+    LateFeeChargeSerializer, TaxReportSerializer, PaystackSubaccountSerializer,
+    PayoutSerializer, RefundRequestSerializer, RevenueAnalyticsSerializer
+)
+from .tasks import charge_saved_payment_method
 
 
 class PaymentInitializeView(APIView):
-    """Initialize payment for a booking"""
-
+    """
+    Initialize payment and get Paystack payment link
+    """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        """Initialize payment"""
-        # Validate user is student
-        if request.user.role != 'student':
-            return Response({
-                'error': 'Only students can make payments'
-            }, status=status.HTTP_403_FORBIDDEN)
-
-        # Validate required fields
         booking_id = request.data.get('booking_id')
-        payment_plan = request.data.get('payment_plan', 'monthly')
-        save_payment_method = request.data.get('save_payment_method', False)
+        payment_type = request.data.get('payment_type', 'initial')  # initial or late_fee
 
         if not booking_id:
             return Response({
-                'error': 'booking_id is required'
+                'error': 'Booking ID is required'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Validate payment plan
-        if payment_plan not in ['monthly']:
+        # Get booking
+        from hostels.models import Booking
+        try:
+            booking = Booking.objects.select_related(
+                'student__user', 'room__hostel__landlord'
+            ).get(id=booking_id)
+        except Booking.DoesNotExist:
             return Response({
-                'error': 'Invalid payment plan'
+                'error': 'Booking not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Check permissions
+        if request.user.role == 'student':
+            if booking.student.user != request.user:
+                return Response({
+                    'error': 'You can only initiate payments for your own bookings'
+                }, status=status.HTTP_403_FORBIDDEN)
+        elif not request.user.role in ['tech_support', 'super_admin']:
+            return Response({
+                'error': 'Unauthorized to initiate this payment'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        # Check if payment already exists
+        if hasattr(booking, 'payment_transaction') and booking.payment_transaction.status == 'success':
+            return Response({
+                'error': 'Payment has already been completed for this booking'
             }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Get booking and validate ownership
-            from hostels.models import Booking
-            booking = Booking.objects.select_related('student__user', 'room__hostel__landlord').get(
-                id=booking_id,
-                student__user=request.user
-            )
-
-            # Check booking status
-            if booking.status != 'pending':
-                return Response({
-                    'error': 'Booking is not in pending status'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            # Check if payment already exists
-            if hasattr(booking, 'payment_transaction') and booking.payment_transaction.status == 'success':
-                return Response({
-                    'error': 'Payment already completed for this booking'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            # NEW: Student pays 2% service fee, landlord gets full rent
-            base_rent = booking.room.base_price
-            student_service_fee = base_rent * Decimal('0.02')  # 2% service fee
-            total_charged_amount = base_rent + student_service_fee  # Rent + 2%
-            
-            # Landlord receives full rent (no commission deducted)
-            landlord_commission = Decimal('0.00')  # NO landlord commission!
-            landlord_payout_amount = base_rent  # FULL rent amount
-            
-            # Platform revenue (from 2% service fee)
-            # Paystack takes ~1.5%, platform keeps ~0.5%
-            gross_platform_revenue = student_service_fee
-
-            # Generate transaction reference
-            transaction_reference = f"RUMI-TXN-{timezone.now().year}-{uuid.uuid4().hex[:6].upper()}"
-
             with transaction.atomic():
+                # Calculate amounts
+                if payment_type == 'late_fee':
+                    # Handle late fee payment
+                    late_fee_id = request.data.get('late_fee_id')
+                    try:
+                        late_fee = LateFeeCharge.objects.get(
+                            id=late_fee_id,
+                            booking=booking,
+                            status='pending'
+                        )
+                    except LateFeeCharge.DoesNotExist:
+                        return Response({
+                            'error': 'Late fee not found or already paid'
+                        }, status=status.HTTP_404_NOT_FOUND)
+
+                    amount = late_fee.late_fee_amount
+                    transaction_type = 'late_fee'
+                else:
+                    # Regular booking payment
+                    amount = booking.total_amount - booking.amount_paid
+                    transaction_type = 'initial'
+
                 # Create transaction record
-                txn = Transaction.objects.create(
-                    booking_id=booking_id,
-                    student_id=booking.student.id,
-                    landlord_id=booking.room.hostel.landlord.id,
-                    transaction_reference=transaction_reference,
-                    transaction_type='initial',
-                    payment_plan=payment_plan,
-                    base_rent=base_rent,
-                    student_service_fee=student_service_fee,
-                    total_charged_amount=total_charged_amount,
-                    landlord_commission=landlord_commission,
-                    landlord_payout_amount=landlord_payout_amount,
-                    gross_platform_revenue=gross_platform_revenue,
-                    status='pending',
-                    metadata={
-                        'save_payment_method': save_payment_method,
-                        'booking_reference': booking.booking_reference
-                    }
+                transaction_ref = f"RUMI-{transaction_type.upper()}-{booking.id}-{uuid.uuid4().hex[:8]}"
+
+                transaction_obj = Transaction.objects.create(
+                    booking=booking,
+                    student=booking.student,
+                    landlord=booking.room.hostel.landlord,
+                    transaction_reference=transaction_ref,
+                    transaction_type=transaction_type,
+                    payment_plan='monthly',
+                    base_rent=booking.monthly_rent if transaction_type == 'initial' else amount,
+                    student_service_fee=booking.monthly_rent * Decimal('0.02') if transaction_type == 'initial' else Decimal('0.00'),
+                    total_charged_amount=amount,
+                    landlord_payout_amount=booking.monthly_rent if transaction_type == 'initial' else Decimal('0.00'),
+                    gross_platform_revenue=booking.monthly_rent * Decimal('0.02') if transaction_type == 'initial' else Decimal('0.00'),
+                    status='pending'
                 )
 
-                # Initialize payment with Paystack
-                payment_link = self._initialize_paystack_payment(txn, booking)
-
-                if not payment_link:
-                    txn.status = 'failed'
-                    txn.save()
-                    return Response({
-                        'error': 'Failed to initialize payment'
-                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-                # Cache payment data
-                cache_key = f"payment_link:{txn.id}"
-                cache.set(cache_key, {
-                    'payment_link': payment_link,
-                    'expires_at': timezone.now() + timezone.timedelta(minutes=30)
-                }, timeout=1800)
+                # Initialize Paystack payment
+                paystack_data = self._initialize_paystack_payment(transaction_obj, request.user)
 
                 return Response({
-                    'transaction_id': txn.id,
-                    'transaction_reference': transaction_reference,
-                    'payment_link': payment_link,
-                    'breakdown': {
-                        'base_rent': float(base_rent),
-                        'service_fee': float(student_service_fee),
-                        'service_fee_percentage': '2%',
-                        'total_payable': float(total_charged_amount),
-                        'landlord_receives': float(landlord_payout_amount),
-                        'landlord_commission': 0.00,
-                        'landlord_commission_percentage': '0%',
-                        'note': '2% service fee covers payment processing. Landlord receives full rent.'
-                    },
-                    'expires_at': (timezone.now() + timezone.timedelta(minutes=30)).isoformat(),
-                    'currency': 'KES'
-                }, status=status.HTTP_201_CREATED)
+                    'transaction_id': transaction_obj.id,
+                    'transaction_reference': transaction_ref,
+                    'amount': float(amount),
+                    'paystack_checkout_url': paystack_data['checkout_url'],
+                    'expires_at': paystack_data['expires_at']
+                }, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({
-                'error': 'Failed to initialize payment',
+                'error': 'Payment initialization failed',
                 'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def _initialize_paystack_payment(self, transaction, booking):
-        """Initialize payment with Paystack"""
-        try:
-            # Mock Paystack integration for now
-            # In production, this would call Paystack API
-            payment_link = f"https://paystack.com/pay/{transaction.transaction_reference.lower()}"
+    def _initialize_paystack_payment(self, transaction, user):
+        """
+        Initialize payment with Paystack API
+        """
+        import requests
 
-            # Update transaction with Paystack reference
-            transaction.paystack_reference = f"paystack_{transaction.transaction_reference}"
-            transaction.save()
+        paystack_secret = getattr(settings, 'PAYSTACK_SECRET_KEY', '')
+        paystack_url = 'https://api.paystack.co/transaction/initialize'
 
-            return payment_link
-        except Exception as e:
-            print(f"Paystack initialization failed: {e}")
-            return None
+        headers = {
+            'Authorization': f'Bearer {paystack_secret}',
+            'Content-Type': 'application/json'
+        }
 
+        data = {
+            'email': user.email,
+            'amount': int(transaction.total_charged_amount * 100),  # Convert to kobo
+            'reference': transaction.transaction_reference,
+            'callback_url': f"{getattr(settings, 'FRONTEND_URL', 'https://rumi.co.ke')}/payment/callback",
+            'metadata': {
+                'transaction_id': transaction.id,
+                'booking_id': transaction.booking.id,
+                'user_id': user.id
+            }
+        }
 
-class RecurringPaymentEnableView(APIView):
-    """Enable recurring payments for a booking"""
+        response = requests.post(paystack_url, json=data, headers=headers)
 
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request):
-        """Enable recurring payments"""
-        if request.user.role != 'student':
-            return Response({
-                'error': 'Only students can enable recurring payments'
-            }, status=status.HTTP_403_FORBIDDEN)
-
-        booking_id = request.data.get('booking_id')
-        saved_payment_method_id = request.data.get('saved_payment_method_id')
-
-        if not booking_id or not saved_payment_method_id:
-            return Response({
-                'error': 'booking_id and saved_payment_method_id are required'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            from hostels.models import Booking
-            booking = Booking.objects.get(id=booking_id, student__user=request.user)
-
-            # Check if booking is confirmed
-            if booking.status != 'confirmed':
-                return Response({
-                    'error': 'Booking must be confirmed first'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            # Check if first payment was successful
-            first_payment = Transaction.objects.filter(
-                booking=booking,
-                transaction_type='initial',
-                status='success'
-            ).exists()
-
-            if not first_payment:
-                return Response({
-                    'error': 'Complete first payment before enabling auto-debit'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            # Get saved payment method
-            payment_method = SavedPaymentMethod.objects.get(
-                id=saved_payment_method_id,
-                student__user=request.user,
-                is_active=True
-            )
-
-            # Calculate next payment date
-            rent_amount = booking.room.base_price
-            next_payment_date = (timezone.now() + timezone.timedelta(days=30)).date()
-
-            # Create recurring payment
-            recurring = RecurringPayment.objects.create(
-                booking=booking,
-                student=booking.student,
-                saved_payment_method=payment_method,
-                rent_amount=rent_amount,
-                next_payment_date=next_payment_date,
-                is_active=True
-            )
-
-            # Update booking
-            booking.auto_renewal = True
-            booking.save()
-
-            return Response({
-                'message': 'Recurring payments enabled successfully',
-                'recurring_payment_id': recurring.id,
-                'booking_id': booking.id,
-                'rent_amount': float(rent_amount),
-                'next_payment_date': next_payment_date.isoformat(),
-                'grace_period_days': 7,
-                'late_fee_amount': 200.00,
-                'payment_method': {
-                    'type': payment_method.payment_type,
-                    'last_four': payment_method.last_four,
-                    'phone_number': payment_method.phone_number
-                }
-            }, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response({
-                'error': 'Failed to enable recurring payments',
-                'details': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if response.status_code == 200:
+            result = response.json()
+            return {
+                'checkout_url': result['data']['authorization_url'],
+                'reference': result['data']['reference'],
+                'expires_at': timezone.now() + timezone.timedelta(hours=1)
+            }
+        else:
+            raise Exception(f"Paystack initialization failed: {response.text}")
 
 
-class RecurringPaymentPauseView(APIView):
-    """Pause recurring payments"""
-
-    permission_classes = [permissions.IsAuthenticated]
-
-    def put(self, request, recurring_id):
-        """Pause recurring payment"""
-        try:
-            recurring = RecurringPayment.objects.get(
-                id=recurring_id,
-                student__user=request.user
-            )
-
-            recurring.is_active = False
-            recurring.paused_at = timezone.now()
-            recurring.save()
-
-            return Response({
-                'message': 'Recurring payments paused',
-                'recurring_payment_id': recurring.id,
-                'paused_at': recurring.paused_at.isoformat(),
-                'note': 'You will need to pay rent manually. Resume anytime.'
-            }, status=status.HTTP_200_OK)
-
-        except RecurringPayment.DoesNotExist:
-            return Response({
-                'error': 'Recurring payment not found'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-
-class RecurringPaymentResumeView(APIView):
-    """Resume recurring payments"""
-
-    permission_classes = [permissions.IsAuthenticated]
-
-    def put(self, request, recurring_id):
-        """Resume recurring payment"""
-        try:
-            recurring = RecurringPayment.objects.get(
-                id=recurring_id,
-                student__user=request.user
-            )
-
-            recurring.is_active = True
-            recurring.paused_at = None
-            recurring.save()
-
-            return Response({
-                'message': 'Recurring payments resumed',
-                'recurring_payment_id': recurring.id,
-                'next_payment_date': recurring.next_payment_date.isoformat()
-            }, status=status.HTTP_200_OK)
-
-        except RecurringPayment.DoesNotExist:
-            return Response({
-                'error': 'Recurring payment not found'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-
-class RecurringPaymentCancelView(APIView):
-    """Cancel recurring payments"""
-
-    permission_classes = [permissions.IsAuthenticated]
-
-    def delete(self, request, recurring_id):
-        """Cancel recurring payment"""
-        try:
-            recurring = RecurringPayment.objects.get(
-                id=recurring_id,
-                student__user=request.user
-            )
-
-            recurring.is_active = False
-            recurring.cancelled_at = timezone.now()
-            recurring.save()
-
-            # Update booking
-            recurring.booking.auto_renewal = False
-            recurring.booking.save()
-
-            return Response({
-                'message': 'Recurring payments cancelled',
-                'recurring_payment_id': recurring.id,
-                'cancelled_at': recurring.cancelled_at.isoformat()
-            }, status=status.HTTP_200_OK)
-
-        except RecurringPayment.DoesNotExist:
-            return Response({
-                'error': 'Recurring payment not found'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-
-class LateFeesView(APIView):
-    """View outstanding late fees"""
-
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, booking_id):
-        """Get late fees for booking"""
-        try:
-            from hostels.models import Booking
-            booking = Booking.objects.get(id=booking_id, student__user=request.user)
-
-            late_fees = LateFeeCharge.objects.filter(
-                booking=booking
-            ).order_by('-charged_at')
-
-            late_fees_data = []
-            for fee in late_fees:
-                late_fees_data.append({
-                    'late_fee_id': fee.id,
-                    'late_fee_amount': float(fee.late_fee_amount),
-                    'original_due_date': fee.due_date.isoformat(),
-                    'grace_period_end': fee.grace_period_end.isoformat(),
-                    'charged_at': fee.charged_at.isoformat(),
-                    'status': fee.status,
-                    'days_overdue': (timezone.now().date() - fee.grace_period_end).days
-                })
-
-            total_late_fees = sum(fee.late_fee_amount for fee in late_fees if fee.status == 'pending')
-
-            return Response({
-                'booking_id': booking_id,
-                'total_late_fees': float(total_late_fees),
-                'late_fees': late_fees_data
-            }, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response({
-                'error': 'Failed to retrieve late fees',
-                'details': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-class LateFeePayView(APIView):
-    """Pay outstanding late fee"""
-
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, late_fee_id):
-        """Pay late fee"""
-        try:
-            late_fee = LateFeeCharge.objects.get(
-                id=late_fee_id,
-                student__user=request.user,
-                status='pending'
-            )
-
-            # Service fee on late fees (2%)
-            late_fee_amount = late_fee.late_fee_amount
-            service_fee = late_fee_amount * Decimal('0.02')  # 2%
-            total_payable = late_fee_amount + service_fee
-
-            # Create transaction
-            transaction_reference = f"RUMI-LATE-{timezone.now().year}-{uuid.uuid4().hex[:6].upper()}"
-
-            txn = Transaction.objects.create(
-                booking=late_fee.booking,
-                student=late_fee.student,
-                landlord=late_fee.booking.room.hostel.landlord,
-                transaction_reference=transaction_reference,
-                transaction_type='late_fee',
-                payment_plan='monthly',
-                base_rent=late_fee_amount,
-                student_service_fee=service_fee,
-                total_charged_amount=total_payable,
-                landlord_commission=Decimal('0.00'),
-                landlord_payout_amount=late_fee_amount,
-                gross_platform_revenue=service_fee,
-                status='pending',
-                metadata={
-                    'late_fee_id': late_fee_id,
-                    'original_due_date': late_fee.due_date.isoformat()
-                }
-            )
-
-            # Initialize payment
-            payment_link = f"https://paystack.com/pay/{transaction_reference.lower()}"
-            txn.paystack_reference = f"paystack_{transaction_reference}"
-            txn.save()
-
-            return Response({
-                'transaction_id': txn.id,
-                'payment_link': payment_link,
-                'breakdown': {
-                    'late_fee': float(late_fee_amount),
-                    'service_fee': float(service_fee),
-                    'total_payable': float(total_payable)
-                }
-            }, status=status.HTTP_201_CREATED)
-
-        except LateFeeCharge.DoesNotExist:
-            return Response({
-                'error': 'Late fee not found or already paid'
-            }, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({
-                'error': 'Failed to initialize late fee payment',
-                'details': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-class SavedPaymentMethodsView(APIView):
-    """Manage saved payment methods"""
-
-    permission_classes = [permissions.IsAuthenticated]
+class StudentTransactionListView(APIView):
+    """
+    List student's payment transactions
+    """
+    permission_classes = [IsStudent]
 
     def get(self, request):
-        """List saved payment methods"""
-        if request.user.role != 'student':
-            return Response({
-                'error': 'Only students can have saved payment methods'
-            }, status=status.HTTP_403_FORBIDDEN)
+        student = request.user.student_profile
 
-        payment_methods = SavedPaymentMethod.objects.filter(
-            student__user=request.user,
-            is_active=True
-        ).order_by('-last_used_at')
+        # Filters
+        status_filter = request.query_params.get('status')
+        transaction_type = request.query_params.get('type')
+        limit = int(request.query_params.get('limit', 20))
+        offset = int(request.query_params.get('offset', 0))
 
-        methods_data = []
-        for method in payment_methods:
-            methods_data.append({
-                'payment_method_id': method.id,
-                'payment_type': method.payment_type,
-                'phone_number': method.phone_number,
-                'last_four': method.last_four,
-                'bank': method.bank,
-                'is_default': method.is_default,
-                'last_used_at': method.last_used_at.isoformat() if method.last_used_at else None
-            })
+        queryset = Transaction.objects.filter(student=student)
+
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        if transaction_type:
+            queryset = queryset.filter(transaction_type=transaction_type)
+
+        total_transactions = queryset.count()
+        transactions = queryset.order_by('-initiated_at')[offset:offset + limit]
+
+        serializer = TransactionSerializer(transactions, many=True)
 
         return Response({
-            'payment_methods': methods_data
+            'total_transactions': total_transactions,
+            'transactions': serializer.data
         }, status=status.HTTP_200_OK)
 
 
-class SavedPaymentMethodSetDefaultView(APIView):
-    """Set payment method as default"""
+class StudentTransactionDetailView(APIView):
+    """
+    Get student's transaction details
+    """
+    permission_classes = [IsStudent]
 
-    permission_classes = [permissions.IsAuthenticated]
+    def get(self, request, transaction_id):
+        student = request.user.student_profile
 
-    def put(self, request, method_id):
-        """Set as default"""
         try:
-            # Remove current default
-            SavedPaymentMethod.objects.filter(
-                student__user=request.user,
-                is_default=True
-            ).update(is_default=False)
-
-            # Set new default
-            method = SavedPaymentMethod.objects.get(
-                id=method_id,
-                student__user=request.user,
-                is_active=True
-            )
-            method.is_default = True
-            method.save()
-
+            transaction = Transaction.objects.select_related(
+                'booking__room__hostel', 'student__user', 'landlord__user'
+            ).get(id=transaction_id, student=student)
+        except Transaction.DoesNotExist:
             return Response({
-                'message': 'Payment method set as default',
-                'payment_method_id': method.id
-            }, status=status.HTTP_200_OK)
-
-        except SavedPaymentMethod.DoesNotExist:
-            return Response({
-                'error': 'Payment method not found'
+                'error': 'Transaction not found'
             }, status=status.HTTP_404_NOT_FOUND)
 
+        serializer = TransactionSerializer(transaction)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-class SavedPaymentMethodDeleteView(APIView):
-    """Remove saved payment method"""
 
-    permission_classes = [permissions.IsAuthenticated]
+class LandlordTransactionListView(APIView):
+    """
+    List landlord's payment transactions (payouts received)
+    """
+    permission_classes = [IsLandlord]
 
-    def delete(self, request, method_id):
-        """Remove payment method"""
+    def get(self, request):
+        landlord = request.user.landlord_profile
+
+        # Filters
+        status_filter = request.query_params.get('status')
+        limit = int(request.query_params.get('limit', 20))
+        offset = int(request.query_params.get('offset', 0))
+
+        queryset = Transaction.objects.filter(landlord=landlord, status='success')
+
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        total_transactions = queryset.count()
+        transactions = queryset.order_by('-paid_at')[offset:offset + limit]
+
+        # Add payout information
+        data = []
+        for transaction in transactions:
+            serializer = TransactionSerializer(transaction)
+            transaction_data = serializer.data
+
+            # Get payout details
+            try:
+                payout = transaction.payout
+                transaction_data['payout'] = PayoutSerializer(payout).data
+            except Payout.DoesNotExist:
+                transaction_data['payout'] = None
+
+            data.append(transaction_data)
+
+        return Response({
+            'total_transactions': total_transactions,
+            'transactions': data
+        }, status=status.HTTP_200_OK)
+
+
+class LandlordPayoutListView(APIView):
+    """
+    List landlord's payouts
+    """
+    permission_classes = [IsLandlord]
+
+    def get(self, request):
+        landlord = request.user.landlord_profile
+
+        # Filters
+        status_filter = request.query_params.get('status')
+        limit = int(request.query_params.get('limit', 20))
+        offset = int(request.query_params.get('offset', 0))
+
+        queryset = Payout.objects.filter(landlord=landlord)
+
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        total_payouts = queryset.count()
+        payouts = queryset.order_by('-initiated_at')[offset:offset + limit]
+
+        serializer = PayoutSerializer(payouts, many=True)
+
+        return Response({
+            'total_payouts': total_payouts,
+            'payouts': serializer.data
+        }, status=status.HTTP_200_OK)
+
+
+class AdminTransactionListView(APIView):
+    """
+    Admin view of all transactions
+    """
+    permission_classes = [IsAdminOrSuperAdmin]
+
+    def get(self, request):
+        # Filters
+        status_filter = request.query_params.get('status')
+        transaction_type = request.query_params.get('type')
+        landlord_id = request.query_params.get('landlord_id')
+        student_id = request.query_params.get('student_id')
+        limit = int(request.query_params.get('limit', 50))
+        offset = int(request.query_params.get('offset', 0))
+
+        queryset = Transaction.objects.select_related(
+            'booking__room__hostel', 'student__user', 'landlord__user'
+        ).all()
+
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        if transaction_type:
+            queryset = queryset.filter(transaction_type=transaction_type)
+        if landlord_id:
+            queryset = queryset.filter(landlord_id=landlord_id)
+        if student_id:
+            queryset = queryset.filter(student_id=student_id)
+
+        total_transactions = queryset.count()
+        transactions = queryset.order_by('-initiated_at')[offset:offset + limit]
+
+        serializer = TransactionSerializer(transactions, many=True)
+
+        return Response({
+            'total_transactions': total_transactions,
+            'transactions': serializer.data
+        }, status=status.HTTP_200_OK)
+
+
+class RefundRequestCreateView(APIView):
+    """
+    Create refund request (Student only)
+    """
+    permission_classes = [IsStudent]
+
+    def post(self, request):
+        transaction_id = request.data.get('transaction_id')
+        reason = request.data.get('reason')
+        additional_notes = request.data.get('additional_notes', '')
+
+        if not transaction_id or not reason:
+            return Response({
+                'error': 'Transaction ID and reason are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if reason not in ['early_cancellation', 'room_unavailable', 'platform_error']:
+            return Response({
+                'error': 'Invalid refund reason'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        student = request.user.student_profile
+
         try:
-            method = SavedPaymentMethod.objects.get(
-                id=method_id,
-                student__user=request.user,
-                is_active=True
+            transaction = Transaction.objects.select_related('booking').get(
+                id=transaction_id,
+                student=student,
+                status='success'
             )
-
-            # Check if it's used in active recurring payments
-            active_recurring = RecurringPayment.objects.filter(
-                saved_payment_method=method,
-                is_active=True
-            ).exists()
-
-            if active_recurring:
-                return Response({
-                    'error': 'Cannot remove payment method used in active recurring payments'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            method.is_active = False
-            method.save()
-
+        except Transaction.DoesNotExist:
             return Response({
-                'message': 'Payment method removed',
-                'payment_method_id': method.id
-            }, status=status.HTTP_200_OK)
-
-        except SavedPaymentMethod.DoesNotExist:
-            return Response({
-                'error': 'Payment method not found'
+                'error': 'Transaction not found or not eligible for refund'
             }, status=status.HTTP_404_NOT_FOUND)
 
+        # Check if refund already requested
+        if hasattr(transaction, 'refund_request'):
+            return Response({
+                'error': 'Refund has already been requested for this transaction'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-@csrf_exempt
+        # Calculate refund amount based on reason and time
+        refund_percentage = self._calculate_refund_percentage(transaction, reason)
+        refund_amount = transaction.total_charged_amount * refund_percentage
+
+        try:
+            with transaction.atomic():
+                refund_request = RefundRequest.objects.create(
+                    transaction=transaction,
+                    booking=transaction.booking,
+                    student=student,
+                    original_amount_paid=transaction.total_charged_amount,
+                    refund_amount=refund_amount,
+                    refund_percentage=refund_percentage * 100,
+                    refund_reason=reason,
+                    status='pending'
+                )
+
+                # Notify admins (async)
+                from notifications.tasks import send_notification
+                send_notification.delay(
+                    recipient_id=1,  # Admin notification
+                    notification_type='refund_request_submitted',
+                    channel='email',
+                    context={
+                        'student_name': request.user.get_full_name(),
+                        'transaction_reference': transaction.transaction_reference,
+                        'refund_amount': float(refund_amount),
+                        'reason': reason
+                    }
+                )
+
+                serializer = RefundRequestSerializer(refund_request)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({
+                'error': 'Refund request creation failed',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _calculate_refund_percentage(self, transaction, reason):
+        """
+        Calculate refund percentage based on reason and time elapsed
+        """
+        days_since_payment = (timezone.now().date() - transaction.paid_at.date()).days
+
+        if reason == 'platform_error':
+            return Decimal('1.0')  # 100% refund
+        elif reason == 'room_unavailable':
+            return Decimal('1.0')  # 100% refund
+        elif reason == 'early_cancellation':
+            if days_since_payment <= 7:
+                return Decimal('0.9')  # 90% refund
+            elif days_since_payment <= 30:
+                return Decimal('0.7')  # 70% refund
+            else:
+                return Decimal('0.5')  # 50% refund
+        else:
+            return Decimal('0.0')
+
+
+class RefundRequestListView(APIView):
+    """
+    List refund requests (Student view or Admin view)
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role == 'student':
+            # Student view - their own requests
+            student = request.user.student_profile
+            queryset = RefundRequest.objects.filter(student=student)
+        elif request.user.role in ['tech_support', 'super_admin']:
+            # Admin view - all requests
+            status_filter = request.query_params.get('status')
+            queryset = RefundRequest.objects.all()
+            if status_filter:
+                queryset = queryset.filter(status=status_filter)
+        else:
+            return Response({
+                'error': 'Unauthorized'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        limit = int(request.query_params.get('limit', 20))
+        offset = int(request.query_params.get('offset', 0))
+
+        total_requests = queryset.count()
+        requests = queryset.select_related(
+            'transaction', 'booking', 'student__user'
+        ).order_by('-requested_at')[offset:offset + limit]
+
+        serializer = RefundRequestSerializer(requests, many=True)
+
+        return Response({
+            'total_requests': total_requests,
+            'refund_requests': serializer.data
+        }, status=status.HTTP_200_OK)
+
+
+class RefundRequestProcessView(APIView):
+    """
+    Process refund request (Admin only)
+    """
+    permission_classes = [IsAdminOrSuperAdmin]
+
+    def post(self, request, refund_id):
+        action = request.data.get('action')  # 'approve' or 'reject'
+        admin_notes = request.data.get('admin_notes', '')
+
+        if action not in ['approve', 'reject']:
+            return Response({
+                'error': 'Action must be approve or reject'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            refund_request = RefundRequest.objects.select_related(
+                'transaction', 'student__user'
+            ).get(id=refund_id)
+        except RefundRequest.DoesNotExist:
+            return Response({
+                'error': 'Refund request not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        if refund_request.status != 'pending':
+            return Response({
+                'error': 'Refund request has already been processed'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            with transaction.atomic():
+                if action == 'approve':
+                    refund_request.status = 'approved'
+                    refund_request.approved_at = timezone.now()
+                    refund_request.save()
+
+                    # Process refund (mock for now)
+                    self._process_refund(refund_request)
+
+                    refund_request.status = 'completed'
+                    refund_request.processed_at = timezone.now()
+                    refund_request.completed_at = timezone.now()
+                    refund_request.save()
+
+                else:  # reject
+                    refund_request.status = 'rejected'
+                    refund_request.save()
+
+                # Notify student
+                from notifications.tasks import send_notification
+                send_notification.delay(
+                    recipient_id=refund_request.student.user.id,
+                    notification_type='refund_request_processed',
+                    channel='email',
+                    context={
+                        'student_name': refund_request.student.user.first_name,
+                        'refund_amount': float(refund_request.refund_amount),
+                        'action': action,
+                        'admin_notes': admin_notes
+                    }
+                )
+
+                serializer = RefundRequestSerializer(refund_request)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                'error': 'Refund processing failed',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _process_refund(self, refund_request):
+        """
+        Process actual refund via Paystack
+        """
+        # Mock refund processing - in production, call Paystack refund API
+        import time
+        time.sleep(1)  # Simulate processing time
+
+
 @api_view(['POST'])
+@permission_classes([permissions.AllowAny])
 def paystack_webhook(request):
-    """Handle Paystack webhook events"""
-    # Verify Paystack signature
+    """
+    Handle Paystack webhook callbacks
+    """
+    # Get the secret key
+    paystack_secret = getattr(settings, 'PAYSTACK_SECRET_KEY', '').encode()
+
+    # Get the signature from headers
     signature = request.headers.get('x-paystack-signature')
-    if not verify_paystack_signature(request.body, signature):
+
+    if not signature:
+        return Response({'error': 'Missing signature'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Get raw body
+    body = request.body
+
+    # Verify signature
+    computed_signature = hmac.new(paystack_secret, body, hashlib.sha512).hexdigest()
+
+    if not hmac.compare_digest(computed_signature, signature):
         return Response({'error': 'Invalid signature'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        payload = json.loads(request.body)
+        payload = json.loads(body)
+        event = payload.get('event')
 
-        if payload['event'] == 'charge.success':
-            reference = payload['data']['reference']
+        # Handle different event types
+        if event == 'charge.success':
+            return _handle_charge_success(payload['data'])
+        elif event == 'charge.failure':
+            return _handle_charge_failure(payload['data'])
+        else:
+            # Log unhandled events
+            print(f"Unhandled webhook event: {event}")
+            return Response({'status': 'ignored'}, status=status.HTTP_200_OK)
 
-            # Find transaction
-            try:
-                txn = Transaction.objects.select_for_update().get(
-                    transaction_reference=reference
-                )
-            except Transaction.DoesNotExist:
-                return Response({'error': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)
-
-            if txn.status == 'success':
-                return Response({'message': 'Already processed'}, status=status.HTTP_200_OK)
-
-            # Update transaction
-            gateway_fee = Decimal(payload['data']['fees']) / 100
-            net_platform_revenue = txn.gross_platform_revenue - gateway_fee
-            withholding_tax = txn.base_rent * Decimal('0.10')
-
-            txn.status = 'success'
-            txn.paystack_reference = payload['data']['reference']
-            txn.paid_at = payload['data']['paid_at']
-            txn.payment_method = payload['data']['channel']
-            txn.gateway_fee = gateway_fee
-            txn.net_platform_revenue = net_platform_revenue
-            txn.withholding_tax = withholding_tax
-            txn.save()
-
-            # Save payment method if requested
-            if payload['data']['metadata'].get('save_payment_method'):
-                save_payment_method_from_webhook(txn.student_id, payload['data']['authorization'])
-
-            # Handle transaction type
-            transaction_type = payload['data']['metadata'].get('transaction_type', 'initial')
-
-            if transaction_type == 'initial':
-                confirm_booking_payment(txn.booking_id, reference)
-            elif transaction_type == 'recurring':
-                update_recurring_payment_from_webhook(payload['data']['metadata'].get('recurring_payment_id'))
-            elif transaction_type == 'late_fee':
-                mark_late_fee_paid_from_webhook(payload['data']['metadata'].get('late_fee_id'))
-
-            # Create payout
-            create_landlord_payout(txn)
-
-            # Send notifications
-            send_payment_success_notifications(txn, transaction_type)
-
-            return Response({'status': 'success'}, status=status.HTTP_200_OK)
-
+    except json.JSONDecodeError:
+        return Response({'error': 'Invalid JSON'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         print(f"Webhook processing error: {e}")
         return Response({'error': 'Processing failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-def verify_paystack_signature(request_body, signature):
-    """Verify Paystack webhook signature"""
-    # Mock verification for now
-    return True
+def _handle_charge_success(data):
+    """
+    Handle successful payment webhook
+    """
+    reference = data.get('reference')
 
+    if not reference:
+        return Response({'error': 'Missing reference'}, status=status.HTTP_400_BAD_REQUEST)
 
-def save_payment_method_from_webhook(student_id, authorization):
-    """Save payment method from webhook data"""
     try:
-        SavedPaymentMethod.objects.create(
-            student_id=student_id,
-            paystack_authorization_code=authorization['authorization_code'],
-            payment_type=authorization['channel'],
-            last_four=authorization.get('last4'),
-            phone_number=authorization.get('mobile_number'),
-            bank=authorization.get('bank'),
-            expiry_month=authorization.get('exp_month'),
-            expiry_year=authorization.get('exp_year')
-        )
-    except Exception as e:
-        print(f"Failed to save payment method: {e}")
+        transaction = Transaction.objects.select_related(
+            'booking', 'student', 'landlord'
+        ).get(transaction_reference=reference)
 
+        if transaction.status == 'success':
+            return Response({'status': 'already_processed'}, status=status.HTTP_200_OK)
 
-def confirm_booking_payment(booking_id, transaction_reference):
-    """Confirm booking after successful payment"""
-    try:
-        from hostels.models import Booking
-        booking = Booking.objects.get(id=booking_id)
-        booking.status = 'confirmed'
-        booking.confirmed_at = timezone.now()
-        booking.save()
+        with transaction.atomic():
+            # Update transaction
+            transaction.status = 'success'
+            transaction.paystack_reference = data.get('id')
+            transaction.paid_at = timezone.now()
+            transaction.gateway_fee = Decimal(str(data.get('fees', 0))) / 100  # Convert from kobo to KES
+            transaction.net_platform_revenue = transaction.gross_platform_revenue - transaction.gateway_fee
+            transaction.metadata = data
+            transaction.save()
 
-        # Send confirmation notification
-        from notifications.tasks import send_notification
-        send_notification.delay(
-            recipient_id=booking.student.user_id,
-            notification_type='booking_confirmed',
-            channel='email',
-            context={
-                'student_name': booking.student.user.first_name,
-                'hostel_name': booking.room.hostel.name,
-                'room_number': booking.room.room_number,
-                'booking_reference': booking.booking_reference,
-                'move_in_date': booking.check_in_date.strftime('%B %d, %Y')
-            }
-        )
-    except Exception as e:
-        print(f"Failed to confirm booking: {e}")
+            # Update booking status
+            booking = transaction.booking
+            booking.status = 'confirmed'
+            booking.amount_paid += transaction.total_charged_amount
+            booking.save()
 
+            # Create payout record for landlord
+            if transaction.transaction_type == 'initial':
+                Payout.objects.create(
+                    transaction=transaction,
+                    landlord=transaction.landlord,
+                    subaccount=transaction.landlord.paystack_subaccount if hasattr(transaction.landlord, 'paystack_subaccount') else None,
+                    payout_reference=f"PAYOUT-{transaction.id}-{uuid.uuid4().hex[:8]}",
+                    gross_amount=transaction.landlord_payout_amount,
+                    commission_deducted=Decimal('0.00'),  # No commission in new model
+                    net_payout_amount=transaction.landlord_payout_amount,
+                    status='pending'
+                )
 
-def update_recurring_payment_from_webhook(recurring_payment_id):
-    """Update recurring payment after successful charge"""
-    try:
-        recurring = RecurringPayment.objects.get(id=recurring_payment_id)
-        recurring.last_payment_at = timezone.now()
-        recurring.next_payment_date = (timezone.now() + timezone.timedelta(days=30)).date()
-        recurring.consecutive_failures = 0
-        recurring.save()
-    except Exception as e:
-        print(f"Failed to update recurring payment: {e}")
+            # Create recurring payment if initial payment
+            if transaction.transaction_type == 'initial':
+                # Check if saved payment method exists
+                try:
+                    saved_method = SavedPaymentMethod.objects.get(
+                        student=transaction.student,
+                        is_default=True
+                    )
+                    RecurringPayment.objects.create(
+                        booking=booking,
+                        student=transaction.student,
+                        saved_payment_method=saved_method,
+                        rent_amount=booking.monthly_rent,
+                        next_payment_date=booking.move_in_date + timezone.timedelta(days=30) if booking.move_in_date else timezone.now().date() + timezone.timedelta(days=30)
+                    )
+                except SavedPaymentMethod.DoesNotExist:
+                    pass  # No recurring payment setup
 
-
-def mark_late_fee_paid_from_webhook(late_fee_id):
-    """Mark late fee as paid"""
-    try:
-        late_fee = LateFeeCharge.objects.get(id=late_fee_id)
-        late_fee.status = 'paid'
-        late_fee.paid_at = timezone.now()
-        late_fee.save()
-    except Exception as e:
-        print(f"Failed to mark late fee paid: {e}")
-
-
-def create_landlord_payout(transaction):
-    """Create payout record for landlord"""
-    try:
-        # Get or create subaccount
-        subaccount, created = PaystackSubaccount.objects.get_or_create(
-            landlord=transaction.landlord,
-            defaults={
-                'subaccount_code': f"sub_{transaction.landlord.id}",
-                'business_name': transaction.landlord.company_name or transaction.landlord.user.get_full_name(),
-                'settlement_bank': transaction.landlord.bank_name,
-                'account_number': transaction.landlord.bank_account_number
-            }
-        )
-
-        Payout.objects.create(
-            transaction=transaction,
-            landlord=transaction.landlord,
-            subaccount=subaccount,
-            payout_reference=f"PAYOUT-{transaction.id}",
-            gross_amount=transaction.base_rent,
-            commission_deducted=transaction.landlord_commission,
-            withholding_tax_deducted=transaction.withholding_tax,
-            net_payout_amount=transaction.landlord_payout_amount,
-            status='pending'
-        )
-    except Exception as e:
-        print(f"Failed to create payout: {e}")
-
-
-def send_payment_success_notifications(transaction, transaction_type):
-    """Send payment success notifications"""
-    from notifications.tasks import send_notification
-
-    context = {
-        'amount': float(transaction.total_charged_amount),
-        'transaction_ref': transaction.transaction_reference
-    }
-
-    send_notification.delay(
-        recipient_id=transaction.student_id,
-        notification_type='payment_receipt',
-        channel='email',
-        context=context
-    )
-
-
-class TaxReportsView(APIView):
-    """View tax reports"""
-
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        """List tax reports"""
-        if request.user.role not in ['landlord']:
-            return Response({
-                'error': 'Only landlords can view tax reports'
-            }, status=status.HTTP_403_FORBIDDEN)
-
-        try:
-            landlord_profile = request.user.landlord_profile
-        except Exception:
-            return Response({
-                'error': 'Landlord profile not found'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-        reports = TaxReport.objects.filter(
-            landlord=landlord_profile
-        ).order_by('-report_month')
-
-        reports_data = []
-        for report in reports:
-            reports_data.append({
-                'report_id': report.id,
-                'report_month': report.report_month.strftime('%Y-%m'),
-                'total_rent_received': float(report.total_rent_received),
-                'total_withholding_tax': float(report.total_withholding_tax),
-                'transaction_count': report.transaction_count,
-                'report_file_url': report.report_file_url,
-                'generated_at': report.generated_at.isoformat()
-            })
-
-        return Response({
-            'total_reports': len(reports_data),
-            'reports': reports_data
-        }, status=status.HTTP_200_OK)
-
-
-class TaxReportDownloadView(APIView):
-    """Download tax report PDF"""
-
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, report_id):
-        """Download PDF"""
-        try:
-            report = TaxReport.objects.get(
-                id=report_id,
-                landlord__user=request.user
+            # Send success notifications
+            from notifications.tasks import send_notification
+            send_notification.delay(
+                recipient_id=transaction.student.user.id,
+                notification_type='payment_success',
+                channel='email',
+                context={
+                    'student_name': transaction.student.user.first_name,
+                    'amount': float(transaction.total_charged_amount),
+                    'transaction_reference': transaction.transaction_reference
+                }
             )
 
-            if not report.report_file_url:
-                return Response({
-                    'error': 'Report file not available'
-                }, status=status.HTTP_404_NOT_FOUND)
+            # Notify landlord
+            send_notification.delay(
+                recipient_id=transaction.landlord.user.id,
+                notification_type='payment_received',
+                channel='email',
+                context={
+                    'landlord_name': transaction.landlord.business_name or transaction.landlord.user.first_name,
+                    'amount': float(transaction.landlord_payout_amount),
+                    'student_name': transaction.student.user.first_name
+                }
+            )
 
-            # Mock PDF response
-            response = HttpResponse(content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="tax_report_{report.report_month.strftime("%Y_%m")}.pdf"'
-            response.write(b"Mock PDF content")  # In production, fetch from S3/Cloudinary
+        return Response({'status': 'success'}, status=status.HTTP_200_OK)
 
-            return response
-
-        except TaxReport.DoesNotExist:
-            return Response({
-                'error': 'Tax report not found'
-            }, status=status.HTTP_404_NOT_FOUND)
+    except Transaction.DoesNotExist:
+        return Response({'error': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
-class RevenueAnalyticsView(APIView):
-    """Revenue analytics dashboard"""
+def _handle_charge_failure(data):
+    """
+    Handle failed payment webhook
+    """
+    reference = data.get('reference')
 
-    permission_classes = [permissions.IsAuthenticated]
+    if not reference:
+        return Response({'error': 'Missing reference'}, status=status.HTTP_400_BAD_REQUEST)
 
-    def get(self, request):
-        """Get revenue analytics"""
-        if request.user.role not in ['tech_support', 'super_admin']:
-            return Response({
-                'error': 'Admin access required'
-            }, status=status.HTTP_403_FORBIDDEN)
+    try:
+        transaction = Transaction.objects.get(transaction_reference=reference)
 
-        period = request.query_params.get('period', 'monthly')
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
+        if transaction.status == 'failed':
+            return Response({'status': 'already_processed'}, status=status.HTTP_200_OK)
 
-        # Get analytics data
-        queryset = RevenueAnalytics.objects.filter(period_type=period)
+        # Update transaction
+        transaction.status = 'failed'
+        transaction.failed_at = timezone.now()
+        transaction.metadata = data
+        transaction.save()
 
-        if start_date:
-            queryset = queryset.filter(date__gte=start_date)
-        if end_date:
-            queryset = queryset.filter(date__lte=end_date)
-
-        queryset = queryset.order_by('-date')[:30]  # Last 30 periods
-
-        summary = queryset.aggregate(
-            total_transactions=Sum('total_transactions'),
-            total_volume=Sum('total_volume'),
-            gross_revenue=Sum('gross_platform_revenue'),
-            gateway_fees=Sum('gateway_fees_paid'),
-            net_revenue=Sum('net_platform_revenue'),
-            late_fees=Sum('late_fees_collected'),
-            withholding_tax=Sum('total_withholding_tax')
+        # Send failure notification
+        from notifications.tasks import send_notification
+        send_notification.delay(
+            recipient_id=transaction.student.user.id,
+            notification_type='payment_failed',
+            channel='email',
+            context={
+                'student_name': transaction.student.user.first_name,
+                'amount': float(transaction.total_charged_amount),
+                'failure_reason': data.get('message', 'Unknown error')
+            }
         )
 
-        trends = []
-        for analytic in queryset:
-            trends.append({
-                'date': analytic.date.isoformat(),
-                'transactions': analytic.total_transactions,
-                'volume': float(analytic.total_volume),
-                'net_revenue': float(analytic.net_platform_revenue)
-            })
+        return Response({'status': 'failure_handled'}, status=status.HTTP_200_OK)
 
-        return Response({
-            'summary': {
-                'total_transactions': summary['total_transactions'] or 0,
-                'total_volume': float(summary['total_volume'] or 0),
-                'gross_platform_revenue': float(summary['gross_revenue'] or 0),
-                'gateway_fees_paid': float(summary['gateway_fees'] or 0),
-                'net_platform_revenue': float(summary['net_revenue'] or 0),
-                'profit_margin': (
-                    (summary['net_revenue'] or 0) / (summary['gross_revenue'] or 1) * 100
-                    if summary['gross_revenue'] else 0
-                )
-            },
-            'trends': trends,
-            'late_fees': {
-                'total_collected': float(summary['late_fees'] or 0)
-            },
-            'tax': {
-                'total_withholding_tax': float(summary['withholding_tax'] or 0)
-            }
-        }, status=status.HTTP_200_OK)
+    except Transaction.DoesNotExist:
+        return Response({'error': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class PaymentReceiptView(APIView):
-    """Get payment receipt details"""
-
+    """
+    Get payment receipt for a transaction
+    """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, transaction_id):
-        """Get receipt for a transaction"""
         try:
             transaction = Transaction.objects.select_related(
-                'student__user', 'booking__room__hostel', 'landlord__user'
-            ).get(
-                id=transaction_id,
-                student__user=request.user,
-                status='success'
-            )
+                'booking__room__hostel', 'student__user', 'landlord__user'
+            ).get(id=transaction_id)
         except Transaction.DoesNotExist:
             return Response({
-                'error': 'Receipt not found or access denied'
+                'error': 'Transaction not found'
             }, status=status.HTTP_404_NOT_FOUND)
 
+        # Check permissions
+        if request.user.role == 'student':
+            if transaction.student.user != request.user:
+                return Response({
+                    'error': 'You can only view your own receipts'
+                }, status=status.HTTP_403_FORBIDDEN)
+        elif not request.user.role in ['tech_support', 'super_admin']:
+            if transaction.landlord.user != request.user:
+                return Response({
+                    'error': 'Unauthorized to view this receipt'
+                }, status=status.HTTP_403_FORBIDDEN)
+
+        # Generate receipt data
         receipt_data = {
-            'receipt_id': f"RCPT-{transaction.id}",
             'transaction_reference': transaction.transaction_reference,
-            'payment_date': transaction.paid_at.isoformat() if transaction.paid_at else None,
+            'paystack_reference': transaction.paystack_reference,
             'student': {
                 'name': transaction.student.user.get_full_name(),
                 'email': transaction.student.user.email
             },
-            'hostel': {
-                'name': transaction.booking.room.hostel.name,
-                'address': transaction.booking.room.hostel.address,
-                'room_number': transaction.booking.room.room_number
-            },
             'landlord': {
-                'name': transaction.landlord.company_name or transaction.landlord.user.get_full_name()
+                'name': transaction.landlord.business_name or transaction.landlord.user.get_full_name(),
+                'email': transaction.landlord.user.email
+            },
+            'booking': {
+                'reference': transaction.booking.booking_reference,
+                'hostel': transaction.booking.room.hostel.name,
+                'room': transaction.booking.room.room_number,
+                'check_in_date': transaction.booking.check_in_date,
+                'check_out_date': transaction.booking.check_out_date
             },
             'payment_details': {
+                'type': transaction.transaction_type,
                 'base_rent': float(transaction.base_rent),
                 'service_fee': float(transaction.student_service_fee),
-                'total_paid': float(transaction.total_charged_amount),
-                'payment_method': transaction.payment_method or 'M-Pesa',
-                'transaction_type': transaction.transaction_type
+                'total_charged': float(transaction.total_charged_amount),
+                'landlord_payout': float(transaction.landlord_payout_amount),
+                'status': transaction.status,
+                'paid_at': transaction.paid_at.isoformat() if transaction.paid_at else None
             },
-            'breakdown': {
-                'rent_amount': float(transaction.base_rent),
-                'platform_fee': float(transaction.student_service_fee),
-                'landlord_receives': float(transaction.landlord_payout_amount),
-                'platform_revenue': float(transaction.net_platform_revenue)
-            },
-            'status': 'Paid',
-            'generated_at': timezone.now().isoformat()
+            'platform_fees': {
+                'service_fee': float(transaction.gross_platform_revenue),
+                'gateway_fee': float(transaction.gateway_fee) if transaction.gateway_fee else 0,
+                'net_revenue': float(transaction.net_platform_revenue) if transaction.net_platform_revenue else 0
+            }
         }
 
         return Response(receipt_data, status=status.HTTP_200_OK)
+
+
+class SavedPaymentMethodsView(APIView):
+    """
+    Manage saved payment methods (Student only)
+    """
+    permission_classes = [IsStudent]
+
+    def get(self, request):
+        """List student's saved payment methods"""
+        student = request.user.student_profile
+        payment_methods = SavedPaymentMethod.objects.filter(student=student).order_by('-created_at')
+        serializer = SavedPaymentMethodSerializer(payment_methods, many=True)
+        return Response({'payment_methods': serializer.data})
+
+    def post(self, request):
+        """Add new payment method"""
+        student = request.user.student_profile
+
+        # Paystack integration to tokenize card
+        paystack_secret = getattr(settings, 'PAYSTACK_SECRET_KEY', '')
+        paystack_url = 'https://api.paystack.co/charge/authorize'
+
+        headers = {
+            'Authorization': f'Bearer {paystack_secret}',
+            'Content-Type': 'application/json'
+        }
+
+        data = {
+            'email': request.user.email,
+            'amount': 5000,  # Small amount for tokenization (KES 50)
+            'authorization_code': request.data.get('authorization_code')
+        }
+
+        # For now, return success (implement full Paystack integration as needed)
+        try:
+            saved_method = SavedPaymentMethod.objects.create(
+                student=student,
+                authorization_code=request.data.get('authorization_code'),
+                card_type=request.data.get('card_type', 'visa'),
+                last_four=request.data.get('last_four'),
+                expiry_month=request.data.get('expiry_month'),
+                expiry_year=request.data.get('expiry_year'),
+                is_default=not SavedPaymentMethod.objects.filter(student=student).exists()  # First method is default
+            )
+            serializer = SavedPaymentMethodSerializer(saved_method)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RecurringPaymentEnableView(APIView):
+    """
+    Enable recurring payments for a booking (Student only)
+    """
+    permission_classes = [IsStudent]
+
+    def post(self, request):
+        booking_id = request.data.get('booking_id')
+        payment_method_id = request.data.get('payment_method_id')
+
+        if not booking_id or not payment_method_id:
+            return Response({
+                'error': 'Booking ID and payment method ID are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        student = request.user.student_profile
+
+        try:
+            booking = Booking.objects.get(id=booking_id, student=student)
+            payment_method = SavedPaymentMethod.objects.get(id=payment_method_id, student=student)
+        except (Booking.DoesNotExist, SavedPaymentMethod.DoesNotExist):
+            return Response({'error': 'Invalid booking or payment method'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if recurring payment already exists
+        if hasattr(booking, 'recurring_payment'):
+            return Response({'error': 'Recurring payment already exists for this booking'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create recurring payment
+        recurring_payment = RecurringPayment.objects.create(
+            booking=booking,
+            student=student,
+            saved_payment_method=payment_method,
+            rent_amount=booking.monthly_rent,
+            next_payment_date=booking.move_in_date + timezone.timedelta(days=30) if booking.move_in_date else timezone.now().date() + timezone.timedelta(days=30),
+            status='active'
+        )
+
+        serializer = RecurringPaymentSerializer(recurring_payment)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class RevenueAnalyticsView(APIView):
+    """
+    Platform revenue analytics (Admin only)
+    """
+    permission_classes = [IsAdminOrSuperAdmin]
+
+    def get(self, request):
+        # Get date range
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        if not start_date or not end_date:
+            # Default to current month
+            today = timezone.now().date()
+            start_date = today.replace(day=1)
+            end_date = today
+
+        # Aggregate revenue data
+        revenue_data = Transaction.objects.filter(
+            paid_at__date__range=[start_date, end_date],
+            status='success'
+        ).aggregate(
+            total_revenue=Sum('gross_platform_revenue'),
+            total_transactions=Count('id'),
+            total_volume=Sum('total_charged_amount'),
+            gateway_fees=Sum('gateway_fee')
+        )
+
+        # Monthly breakdown
+        monthly_data = Transaction.objects.filter(
+            paid_at__date__range=[start_date, end_date],
+            status='success'
+        ).annotate(
+            month=TruncMonth('paid_at')
+        ).values('month').annotate(
+            revenue=Sum('gross_platform_revenue'),
+            transactions=Count('id'),
+            volume=Sum('total_charged_amount')
+        ).order_by('month')
+
+        return Response({
+            'period': {
+                'start_date': start_date,
+                'end_date': end_date
+            },
+            'summary': {
+                'total_revenue': float(revenue_data['total_revenue'] or 0),
+                'total_transactions': revenue_data['total_transactions'] or 0,
+                'total_volume': float(revenue_data['total_volume'] or 0),
+                'gateway_fees': float(revenue_data['gateway_fees'] or 0),
+                'net_revenue': float((revenue_data['total_revenue'] or 0) - (revenue_data['gateway_fees'] or 0))
+            },
+            'monthly_breakdown': list(monthly_data)
+        })
+
+
+class TaxReportsView(APIView):
+    """
+    View tax reports (Landlord only)
+    """
+    permission_classes = [IsLandlord]
+
+    def get(self, request):
+        landlord = request.user.landlord_profile
+
+        # Get current year reports
+        current_year = timezone.now().year
+        tax_reports = TaxReport.objects.filter(
+            landlord=landlord,
+            tax_year=current_year
+        ).order_by('-tax_month')
+
+        serializer = TaxReportSerializer(tax_reports, many=True)
+        return Response({
+            'tax_year': current_year,
+            'reports': serializer.data
+        })

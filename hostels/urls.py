@@ -25,7 +25,7 @@ urlpatterns = [
     path('search/', views.HostelSearchView.as_view(), name='hostel_search'),
     # Roommate matching
     path('<int:room_id>/roommates/', views.RoommateMatchingView.as_view(), name='roommate_matching'),
-    path('search/', views.RoomSearchView.as_view(), name='room_search'),
+    path('room-search/', views.RoomSearchView.as_view(), name='room_search'),
     path('<int:room_id>/reserve/', views.RoomReserveView.as_view(), name='room_reserve'),
     path('<int:room_id>/book/', views.RoomBookView.as_view(), name='room_book'),
 ]

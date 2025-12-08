@@ -639,3 +639,61 @@ class RoomInventory(models.Model):
 
     def __str__(self):
         return f"{self.check_type.title()} inventory for {self.booking.student.user.get_full_name()}"
+
+
+class VisitorCheckIn(models.Model):
+    """Visitor check-in/check-out records for hostels"""
+
+    hostel = models.ForeignKey(
+        Hostel,
+        on_delete=models.CASCADE,
+        related_name='visitor_records'
+    )
+    room = models.ForeignKey(
+        Room,
+        on_delete=models.CASCADE,
+        related_name='visitor_records'
+    )
+    visitor_id_number = models.CharField(max_length=50, help_text="Admission/ID number")
+    visitor_name = models.CharField(max_length=255, help_text="Full name of visitor")
+    check_in_time = models.DateTimeField(default=timezone.now)
+    check_out_time = models.DateTimeField(blank=True, null=True)
+    person_visited_name = models.CharField(max_length=255, help_text="Name of the person being visited")
+    checked_in_by = models.ForeignKey(
+        'accounts.CaretakerProfile',
+        on_delete=models.CASCADE,
+        related_name='checked_in_visitors'
+    )
+    checked_out_by = models.ForeignKey(
+        'accounts.CaretakerProfile',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='checked_out_visitors'
+    )
+    notes = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True, help_text="True if visitor is still checked in")
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'hostels_visitorcheckin'
+        indexes = [
+            models.Index(fields=['hostel'], name='idx_visitor_hostel'),
+            models.Index(fields=['room'], name='idx_visitor_room'),
+            models.Index(fields=['check_in_time'], name='idx_visitor_checkin_time'),
+            models.Index(fields=['check_out_time'], name='idx_visitor_checkout_time'),
+            models.Index(fields=['is_active'], name='idx_visitor_active'),
+        ]
+        ordering = ['-check_in_time']
+
+    @property
+    def visit_duration(self):
+        """Calculate visit duration in minutes"""
+        if self.check_out_time and self.check_in_time:
+            duration = self.check_out_time - self.check_in_time
+            return int(duration.total_seconds() / 60)
+        return None
+
+    def __str__(self):
+        return f"Visitor: {self.visitor_name} at {self.room} ({self.check_in_time.date()})"

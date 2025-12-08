@@ -4,12 +4,15 @@ Usage: python manage.py seed_sample_data
 """
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from accounts.models import StudentProfile, LandlordProfile
-from hostels.models import Hostel, Room, Amenity, HostelAmenity
-from marketplace.models import Category, Product, ProductImage
-from home.models import FAQ, TeamMember, Statistics
+from django.utils import timezone
+from accounts.models import StudentProfile, LandlordProfile, OTPVerification, PasswordResetToken, UserActivityLog
+from hostels.models import Hostel, Room, Amenity, HostelAmenity, Booking
+from home.models import FAQ, TeamMember, Statistics, BlogPost, Testimonial, Page, ContactInquiry, Newsletter
+from payments.models import Transaction
+from notifications.models import Notification, NotificationPreference, EmailTemplate, SMSTemplate
 from decimal import Decimal
 import random
+import uuid
 
 User = get_user_model()
 
@@ -23,11 +26,10 @@ class Command(BaseCommand):
         # Create sample data in order
         self.create_amenities()
         self.create_hostels_and_rooms()
-        self.create_marketplace_categories()
-        self.create_marketplace_products()
         self.create_faqs()
         self.create_team_members()
         self.create_statistics()
+        self.create_additional_sample_data()
 
         self.stdout.write(self.style.SUCCESS('✓ Sample data seeding complete!'))
 
@@ -163,105 +165,57 @@ class Command(BaseCommand):
                 }
             )
 
-    def create_marketplace_categories(self):
-        """Create marketplace product categories"""
-        categories_data = [
-            ('Electronics', 'electronics', 'Phones, laptops, and gadgets'),
-            ('Furniture', 'furniture', 'Desks, chairs, and home items'),
-            ('Books', 'books', 'Textbooks and study materials'),
-            ('Clothing', 'clothing', 'Clothes and accessories'),
-            ('Sports', 'sports', 'Sports equipment and gear'),
-        ]
-
-        for name, slug, description in categories_data:
-            Category.objects.get_or_create(
-                slug=slug,
-                defaults={
-                    'name': name,
-                    'description': description,
-                    'is_active': True
-                }
-            )
-
-        self.stdout.write(self.style.SUCCESS('✓ Created marketplace categories'))
-
-    def create_marketplace_products(self):
-        """Create sample marketplace products"""
+    def create_additional_sample_data(self):
+        """Create additional sample data for comprehensive testing"""
         try:
-            student = StudentProfile.objects.get(user__email='student@test.com')
-        except StudentProfile.DoesNotExist:
-            self.stdout.write(self.style.WARNING('Student not found, skipping product creation'))
-            return
+            self.create_otp_tokens()
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'Skipping OTP tokens: {e}'))
 
         try:
-            electronics_cat = Category.objects.get(slug='electronics')
-            furniture_cat = Category.objects.get(slug='furniture')
-            books_cat = Category.objects.get(slug='books')
-        except Category.DoesNotExist:
-            self.stdout.write(self.style.WARNING('Categories not found, skipping product creation'))
-            return
+            self.create_password_reset_tokens()
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'Skipping password reset tokens: {e}'))
 
-        products_data = [
-            {
-                'title': 'iPhone 12 Pro',
-                'description': 'Barely used iPhone 12 Pro in excellent condition. Comes with original box and accessories.',
-                'price': Decimal('45000.00'),
-                'category': electronics_cat,
-                'condition': 'like_new',
-                'location': 'Westlands, Nairobi'
-            },
-            {
-                'title': 'Study Desk',
-                'description': 'Solid wooden study desk perfect for student accommodation. Good condition.',
-                'price': Decimal('3500.00'),
-                'category': furniture_cat,
-                'condition': 'good',
-                'location': 'Kilimani, Nairobi'
-            },
-            {
-                'title': 'Calculus Textbook',
-                'description': 'Advanced Calculus textbook for engineering students. Like new condition.',
-                'price': Decimal('1200.00'),
-                'category': books_cat,
-                'condition': 'like_new',
-                'location': 'University of Nairobi'
-            },
-            {
-                'title': 'MacBook Air M1',
-                'description': 'Apple MacBook Air with M1 chip. Perfect for programming and design work.',
-                'price': Decimal('85000.00'),
-                'category': electronics_cat,
-                'condition': 'good',
-                'location': 'Karen, Nairobi'
-            }
-        ]
+        try:
+            self.create_user_activity_logs()
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'Skipping activity logs: {e}'))
 
-        for product_data in products_data:
-            product, created = Product.objects.get_or_create(
-                title=product_data['title'],
-                seller=student,
-                defaults={
-                    **product_data,
-                    'slug': product_data['title'].lower().replace(' ', '-'),
-                    'status': 'active',
-                    'is_negotiable': True,
-                    'contact_method': 'in_app'
-                }
-            )
+        try:
+            self.create_email_templates()
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'Skipping email templates: {e}'))
 
-            if created:
-                # Create sample product image
-                ProductImage.objects.get_or_create(
-                    product=product,
-                    image_url='https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400',
-                    defaults={
-                        'caption': f'Image for {product.title}',
-                        'is_primary': True,
-                        'sort_order': 1
-                    }
-                )
+        try:
+            self.create_sms_templates()
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'Skipping SMS templates: {e}'))
 
-                self.stdout.write(self.style.SUCCESS(f'✓ Created product: {product.title}'))
+        try:
+            self.create_sample_pages()
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'Skipping pages: {e}'))
+
+        try:
+            self.create_contact_inquiries()
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'Skipping contact inquiries: {e}'))
+
+        try:
+            self.create_newsletter_subscriptions()
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'Skipping newsletter subscriptions: {e}'))
+
+        # Comment out problematic seeding for now
+        # self.create_bookings()
+        # self.create_transactions()
+        # self.create_notifications()
+        # self.create_notification_preferences()
+        # self.create_blog_posts()
+        # self.create_testimonials()
+
+        self.stdout.write(self.style.SUCCESS('✓ Created additional sample data (basic)'))
 
     def create_faqs(self):
         """Create sample FAQs"""
@@ -329,6 +283,394 @@ class Command(BaseCommand):
             )
 
         self.stdout.write(self.style.SUCCESS('✓ Created team members'))
+
+    def create_otp_tokens(self):
+        """Create sample OTP verification tokens"""
+        try:
+            student = User.objects.get(email='student@test.com')
+        except User.DoesNotExist:
+            self.stdout.write(self.style.WARNING('Student not found, skipping OTP creation'))
+            return
+
+        OTPVerification.objects.get_or_create(
+            user=student,
+            defaults={
+                'otp_code': '123456',
+                'verification_type': 'email',
+                'expires_at': timezone.now() + timezone.timedelta(minutes=10),
+                'is_used': False,
+                'attempts': 0
+            }
+        )
+        self.stdout.write(self.style.SUCCESS('✓ Created OTP tokens'))
+
+    def create_password_reset_tokens(self):
+        """Create sample password reset tokens"""
+        try:
+            student = User.objects.get(email='student@test.com')
+        except User.DoesNotExist:
+            self.stdout.write(self.style.WARNING('Student not found, skipping password reset token creation'))
+            return
+
+        PasswordResetToken.objects.get_or_create(
+            user=student,
+            defaults={
+                'token': str(uuid.uuid4()),
+                'expires_at': timezone.now() + timezone.timedelta(hours=24),
+                'is_used': False
+            }
+        )
+        self.stdout.write(self.style.SUCCESS('✓ Created password reset tokens'))
+
+    def create_user_activity_logs(self):
+        """Create sample user activity logs"""
+        try:
+            student = User.objects.get(email='student@test.com')
+        except User.DoesNotExist:
+            self.stdout.write(self.style.WARNING('Student not found, skipping activity log creation'))
+            return
+
+        activities = [
+            ('login', 'User logged in successfully'),
+            ('profile_update', 'Profile information updated'),
+            ('password_change', 'Password changed successfully'),
+        ]
+
+        for activity_type, description in activities:
+            UserActivityLog.objects.create(
+                user=student,
+                action_type=activity_type,
+                action_description=description,
+                ip_address='127.0.0.1',
+                user_agent='Test Browser',
+                metadata={'test': True}
+            )
+        self.stdout.write(self.style.SUCCESS('✓ Created user activity logs'))
+
+    def create_bookings(self):
+        """Create sample room bookings"""
+        try:
+            student = StudentProfile.objects.get(user__email='student@test.com')
+            room = Room.objects.filter(status='available').first()
+        except (StudentProfile.DoesNotExist, Room.DoesNotExist):
+            self.stdout.write(self.style.WARNING('Student or room not found, skipping booking creation'))
+            return
+
+        if room:
+            Booking.objects.get_or_create(
+                student=student,
+                room=room,
+                defaults={
+                    'check_in_date': timezone.now().date() + timezone.timedelta(days=7),
+                    'check_out_date': timezone.now().date() + timezone.timedelta(days=370),
+                    'total_amount': room.base_price * 12,  # 12 months
+                    'status': 'confirmed',
+                    'payment_status': 'paid',
+                    'special_requests': 'Near window preferred'
+                }
+            )
+            self.stdout.write(self.style.SUCCESS('✓ Created room bookings'))
+
+    def create_transactions(self):
+        """Create sample payment transactions"""
+        try:
+            student = StudentProfile.objects.get(user__email='student@test.com')
+            booking = Booking.objects.filter(student=student).first()
+        except (StudentProfile.DoesNotExist, Booking.DoesNotExist):
+            self.stdout.write(self.style.WARNING('Student or booking not found, skipping transaction creation'))
+            return
+
+        if booking:
+            Transaction.objects.get_or_create(
+                reference=f"TXN-{uuid.uuid4().hex[:8].upper()}",
+                defaults={
+                    'student': student,
+                    'booking': booking,
+                    'amount': booking.total_amount,
+                    'status': 'success',
+                    'payment_method': 'mpesa',
+                    'transaction_type': 'booking_payment',
+                    'description': f'Room booking payment for {booking.room.room_number}',
+                    'metadata': {'test_transaction': True}
+                }
+            )
+            self.stdout.write(self.style.SUCCESS('✓ Created payment transactions'))
+
+    def create_notifications(self):
+        """Create sample notifications"""
+        try:
+            student = User.objects.get(email='student@test.com')
+        except User.DoesNotExist:
+            self.stdout.write(self.style.WARNING('Student not found, skipping notification creation'))
+            return
+
+        notifications = [
+            ('welcome', 'Welcome to RUMI Platform!', 'Thank you for joining our platform.'),
+            ('booking_confirmed', 'Booking Confirmed', 'Your room booking has been confirmed.'),
+            ('payment_received', 'Payment Received', 'We have received your payment successfully.'),
+        ]
+
+        for notification_type, title, message in notifications:
+            Notification.objects.get_or_create(
+                recipient=student,
+                notification_type=notification_type,
+                defaults={
+                    'title': title,
+                    'message': message,
+                    'is_read': False,
+                    'metadata': {'test': True}
+                }
+            )
+        self.stdout.write(self.style.SUCCESS('✓ Created notifications'))
+
+    def create_notification_preferences(self):
+        """Create sample notification preferences"""
+        try:
+            student = User.objects.get(email='student@test.com')
+        except User.DoesNotExist:
+            self.stdout.write(self.style.WARNING('Student not found, skipping notification preferences creation'))
+            return
+
+        NotificationPreference.objects.get_or_create(
+            user=student,
+            defaults={
+                'email_notifications': True,
+                'sms_notifications': False,
+                'push_notifications': True,
+                'booking_updates': True,
+                'payment_reminders': True,
+                'maintenance_alerts': True,
+                'marketing_emails': False
+            }
+        )
+        self.stdout.write(self.style.SUCCESS('✓ Created notification preferences'))
+
+    def create_blog_posts(self):
+        """Create sample blog posts"""
+        blog_posts = [
+            {
+                'title': 'Top 5 Tips for Student Life',
+                'slug': 'top-5-tips-student-life',
+                'content': 'Here are some essential tips for making the most of your student life...',
+                'excerpt': 'Essential tips for student success',
+                'author': 'RUMI Team',
+                'is_published': True,
+                'featured_image': 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800',
+                'tags': ['student-life', 'tips', 'advice'],
+                'seo_title': 'Top 5 Tips for Student Life | RUMI Platform',
+                'seo_description': 'Discover essential tips for student success and make the most of your university experience.'
+            },
+            {
+                'title': 'How to Choose the Right Hostel',
+                'slug': 'how-to-choose-right-hostel',
+                'content': 'Choosing the right accommodation is crucial for your academic success...',
+                'excerpt': 'Guide to selecting the perfect hostel',
+                'author': 'RUMI Team',
+                'is_published': True,
+                'featured_image': 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800',
+                'tags': ['hostels', 'accommodation', 'guide'],
+                'seo_title': 'How to Choose the Right Hostel | RUMI Platform',
+                'seo_description': 'Learn how to select the perfect hostel for your student accommodation needs.'
+            }
+        ]
+
+        for post_data in blog_posts:
+            BlogPost.objects.get_or_create(
+                slug=post_data['slug'],
+                defaults=post_data
+            )
+        self.stdout.write(self.style.SUCCESS('✓ Created blog posts'))
+
+    def create_testimonials(self):
+        """Create sample testimonials"""
+        testimonials = [
+            {
+                'name': 'John Mwangi',
+                'university': 'University of Nairobi',
+                'course': 'Computer Science',
+                'content': 'RUMI Platform made finding accommodation so easy! The verification process gave me peace of mind.',
+                'rating': 5,
+                'is_featured': True,
+                'image_url': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150'
+            },
+            {
+                'name': 'Grace Wanjiku',
+                'university': 'Kenyatta University',
+                'course': 'Business Administration',
+                'content': 'Excellent platform with great support. The hostel I found through RUMI exceeded my expectations.',
+                'rating': 5,
+                'is_featured': True,
+                'image_url': 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150'
+            }
+        ]
+
+        for testimonial_data in testimonials:
+            Testimonial.objects.get_or_create(
+                name=testimonial_data['name'],
+                defaults=testimonial_data
+            )
+        self.stdout.write(self.style.SUCCESS('✓ Created testimonials'))
+
+    def create_email_templates(self):
+        """Create sample email templates"""
+        email_templates = [
+            {
+                'name': 'welcome_email',
+                'subject': 'Welcome to RUMI Platform - Your Account is Ready!',
+                'html_content': '''
+                <h1>Welcome to RUMI Platform!</h1>
+                <p>Dear {{full_name}},</p>
+                <p>Your account has been successfully created. You can now:</p>
+                <ul>
+                    <li>Browse available hostels</li>
+                    <li>Book accommodation</li>
+                    <li>Access your dashboard</li>
+                </ul>
+                <p>Best regards,<br>The RUMI Team</p>
+                ''',
+                'variables': {'full_name': 'User full name'}
+            },
+            {
+                'name': 'password_reset',
+                'subject': 'Reset Your RUMI Platform Password',
+                'html_content': '''
+                <h1>Password Reset Request</h1>
+                <p>Dear User,</p>
+                <p>You requested a password reset. Click the link below to reset your password:</p>
+                <p><a href="{{reset_link}}">Reset Password</a></p>
+                <p>This link will expire in 24 hours.</p>
+                <p>If you didn't request this, please ignore this email.</p>
+                ''',
+                'variables': {'reset_link': 'Password reset URL'}
+            }
+        ]
+
+        for template_data in email_templates:
+            EmailTemplate.objects.get_or_create(
+                name=template_data['name'],
+                defaults=template_data
+            )
+        self.stdout.write(self.style.SUCCESS('✓ Created email templates'))
+
+    def create_sms_templates(self):
+        """Create sample SMS templates"""
+        sms_templates = [
+            {
+                'name': 'booking_confirmation',
+                'message': 'Hi {{first_name}}, your booking for {{hostel_name}} is confirmed. Check-in: {{check_in_date}}. Welcome to RUMI!',
+                'variables': {'first_name': 'User first name', 'hostel_name': 'Hostel name', 'check_in_date': 'Check-in date'}
+            },
+            {
+                'name': 'payment_reminder',
+                'message': 'Hi {{first_name}}, your rent payment of KES {{amount}} is due on {{due_date}}. Pay now to avoid late fees.',
+                'variables': {'first_name': 'User first name', 'amount': 'Payment amount', 'due_date': 'Due date'}
+            }
+        ]
+
+        for template_data in sms_templates:
+            SMSTemplate.objects.get_or_create(
+                name=template_data['name'],
+                defaults=template_data
+            )
+        self.stdout.write(self.style.SUCCESS('✓ Created SMS templates'))
+
+    def create_sample_pages(self):
+        """Create sample CMS pages"""
+        pages = [
+            {
+                'title': 'About Us',
+                'slug': 'about',
+                'meta_title': 'About RUMI Platform - Connecting Students with Quality Housing',
+                'meta_description': 'Learn about RUMI Platform, our mission to provide safe, affordable accommodation for university students across Kenya.',
+                'content': '''
+                <h1>About RUMI Platform</h1>
+                <p>RUMI Platform is Kenya's leading student accommodation platform, connecting students with verified hostels and landlords.</p>
+                <p>Our mission is to make finding quality housing simple, safe, and affordable for all university students.</p>
+                ''',
+                'is_published': True,
+                'template_name': 'about'
+            },
+            {
+                'title': 'Contact Us',
+                'slug': 'contact',
+                'meta_title': 'Contact RUMI Platform - Get in Touch',
+                'meta_description': 'Have questions? Contact our support team. We\'re here to help with your accommodation needs.',
+                'content': '''
+                <h1>Contact Us</h1>
+                <p>Get in touch with our team for support, partnerships, or general inquiries.</p>
+                <p>Email: support@rumi.co.ke</p>
+                <p>Phone: +254 712 345 678</p>
+                ''',
+                'is_published': True,
+                'template_name': 'contact'
+            }
+        ]
+
+        for page_data in pages:
+            Page.objects.get_or_create(
+                slug=page_data['slug'],
+                defaults=page_data
+            )
+        self.stdout.write(self.style.SUCCESS('✓ Created sample pages'))
+
+    def create_contact_inquiries(self):
+        """Create sample contact inquiries"""
+        inquiries = [
+            {
+                'full_name': 'John Student',
+                'email': 'john.student@email.com',
+                'subject': 'Question about hostel booking',
+                'message': 'Hi, I would like to know more about the booking process and payment options.',
+                'inquiry_type': 'student_support',
+                'status': 'pending'
+            },
+            {
+                'full_name': 'Mary Landlord',
+                'email': 'mary.landlord@email.com',
+                'subject': 'Partnership inquiry',
+                'message': 'I own several hostels and would like to partner with your platform.',
+                'inquiry_type': 'partnership',
+                'status': 'in_progress'
+            }
+        ]
+
+        for inquiry_data in inquiries:
+            ContactInquiry.objects.get_or_create(
+                email=inquiry_data['email'],
+                subject=inquiry_data['subject'],
+                defaults=inquiry_data
+            )
+        self.stdout.write(self.style.SUCCESS('✓ Created contact inquiries'))
+
+    def create_newsletter_subscriptions(self):
+        """Create sample newsletter subscriptions"""
+        subscriptions = [
+            {
+                'email': 'student1@university.edu',
+                'full_name': 'Alice Johnson',
+                'subscription_type': 'students',
+                'is_verified': True
+            },
+            {
+                'email': 'landlord1@email.com',
+                'full_name': 'Bob Smith',
+                'subscription_type': 'landlords',
+                'is_verified': True
+            },
+            {
+                'email': 'general.user@email.com',
+                'full_name': 'Carol Davis',
+                'subscription_type': 'general',
+                'is_verified': False
+            }
+        ]
+
+        for sub_data in subscriptions:
+            Newsletter.objects.get_or_create(
+                email=sub_data['email'],
+                defaults=sub_data
+            )
+        self.stdout.write(self.style.SUCCESS('✓ Created newsletter subscriptions'))
 
     def create_statistics(self):
         """Create platform statistics"""
