@@ -1,4 +1,4 @@
-#!/home/joseph-ogutu/Desktop/RUMI_PLATFORM/venv/bin/python3
+#!/home/ogutu/Pictures/RUMI/Backend/venv/bin/python3
 
 import sys
 import json

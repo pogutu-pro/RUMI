@@ -120,17 +120,6 @@ celery -A rumi beat -l info
 
 ## Frontend Setup
 
-### 1. Install Dependencies
-
-```bash
-cd frontend
-
-# Install packages
-npm install
-
-# Install new dependencies
-npm install jwt-decode react-icons lucide-react
-```
 
 ### 2. Environment Configuration
 
@@ -146,30 +135,6 @@ VITE_GOOGLE_REDIRECT_URI=http://localhost:3000/auth/google/callback
 
 # Paystack
 VITE_PAYSTACK_PUBLIC_KEY=pk_test_xxx
-```
-
-### 3. Add Images
-
-Place your custom images in `frontend/public/images/`:
-
-**Required Images:**
-- `carousel-1.jpg` - Homepage carousel image 1
-- `carousel-2.jpg` - Homepage carousel image 2  
-- `carousel-3.jpg` - Homepage carousel image 3
-- `login-bg.jpg` - Login page background
-- `register-bg.jpg` - Register page background
-- `student-hero.jpg` - Student section image
-- `landlord-hero.jpg` - Landlord section image
-
-**Recommended Dimensions:**
-- Carousel: 1920x800px
-- Backgrounds: 1200x1600px (vertical)
-- Hero images: 800x600px
-
-### 4. Start Frontend Server
-
-```bash
-npm run dev
 ```
 
 Visit: http://localhost:3000
