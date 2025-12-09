@@ -38,5 +38,9 @@ dist/
 build/
 node_modules/
 
-# Frontend specific (already in frontend/.gitignore)
-# Keep frontend/.env excluded
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.class
+*.pyc
