@@ -108,7 +108,7 @@ Get current landlord's subscription details and feature access.
       "billing_display": "FREE"
     },
     "status": "trial",
-    "status_display": "🎁 Free Trial",
+    "status_display": "Free Trial",
     "current_period_start": "2025-11-01",
     "current_period_end": "2025-12-01",
     "next_billing_date": "2025-12-02",

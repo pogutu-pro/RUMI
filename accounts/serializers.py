@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.utils import timezone
-from .models import User, StudentProfile, LandlordProfile, CaretakerProfile, UserActivityLog
+from .models import User, StudentProfile, LandlordProfile, CaretakerProfile, UserActivityLog, Conversation, Message
 from .utils import validate_password_strength
 
 
@@ -189,3 +189,76 @@ class LandlordVerificationSerializer(serializers.Serializer):
 
     verification_status = serializers.ChoiceField(choices=['approved', 'rejected'])
     admin_notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    """Serializer for chat messages"""
+
+    sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
+    sender_profile_picture = serializers.URLField(source='sender.profile_picture', read_only=True)
+
+    class Meta:
+        model = Message
+        fields = [
+            'id', 'conversation', 'sender', 'sender_name', 'sender_profile_picture',
+            'content', 'is_read', 'read_at', 'created_at'
+        ]
+        read_only_fields = ['id', 'sender', 'sender_name', 'sender_profile_picture', 'is_read', 'read_at', 'created_at']
+
+
+class ConversationSerializer(serializers.ModelSerializer):
+    """Serializer for chat conversations"""
+
+    participants = UserProfileSerializer(many=True, read_only=True)
+    other_participant = serializers.SerializerMethodField()
+    last_message = serializers.SerializerMethodField()
+    unread_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Conversation
+        fields = [
+            'id', 'participants', 'other_participant', 'last_message',
+            'unread_count', 'created_at', 'updated_at', 'is_active'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_other_participant(self, obj):
+        """Get the other participant in the conversation"""
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            other_user = obj.get_other_participant(request.user)
+            if other_user:
+                return UserProfileSerializer(other_user).data
+        return None
+
+    def get_last_message(self, obj):
+        """Get the last message in the conversation"""
+        last_message = obj.messages.order_by('-created_at').first()
+        if last_message:
+            return MessageSerializer(last_message).data
+        return None
+
+    def get_unread_count(self, obj):
+        """Get count of unread messages for the current user"""
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            return obj.messages.filter(sender__id=request.user.id, is_read=False).count()
+        return 0
+
+
+class SendMessageSerializer(serializers.Serializer):
+    """Serializer for sending messages"""
+
+    recipient_id = serializers.IntegerField()
+    content = serializers.CharField(max_length=1000)
+
+    def validate_recipient_id(self, value):
+        """Validate that recipient exists and is not the sender"""
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.id == value:
+            raise serializers.ValidationError("You cannot send messages to yourself")
+        try:
+            User.objects.get(id=value)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Recipient does not exist")
+        return value

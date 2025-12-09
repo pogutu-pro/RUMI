@@ -21,13 +21,15 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from .models import (
     User, StudentProfile, LandlordProfile, CaretakerProfile,
-    OTPVerification, PasswordResetToken, UserActivityLog
+    OTPVerification, PasswordResetToken, UserActivityLog,
+    Conversation, Message
 )
 from .serializers import (
     UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer,
     CaretakerCreateSerializer, CaretakerUpdateSerializer, UserActivityLogSerializer,
     LandlordVerificationSerializer, PasswordResetRequestSerializer,
-    PasswordResetConfirmSerializer, OTPVerificationSerializer
+    PasswordResetConfirmSerializer, OTPVerificationSerializer,
+    ConversationSerializer, MessageSerializer, SendMessageSerializer
 )
 from .permissions import (
     IsStudent, IsLandlord, IsCaretaker, IsTechSupportAdmin, IsSuperAdmin,
@@ -1556,3 +1558,178 @@ class LandlordDashboardView(APIView):
                 {'action': 'contact_support', 'label': 'Contact Support', 'available': True}
             ]
         }, status=status.HTTP_200_OK)
+
+
+class ConversationListView(APIView):
+    """List user's chat conversations"""
+
+    def get(self, request):
+        """Get all conversations for the authenticated user"""
+        conversations = Conversation.objects.filter(
+            participants=request.user,
+            is_active=True
+        ).prefetch_related('participants', 'messages').order_by('-updated_at')
+
+        serializer = ConversationSerializer(conversations, many=True, context={'request': request})
+        return Response({
+            'conversations': serializer.data,
+            'total': len(serializer.data)
+        }, status=status.HTTP_200_OK)
+
+
+class ConversationMessagesView(APIView):
+    """Get messages for a specific conversation"""
+
+    def get(self, request, conversation_id):
+        """Get messages for a conversation"""
+        try:
+            conversation = Conversation.objects.get(
+                id=conversation_id,
+                participants=request.user,
+                is_active=True
+            )
+        except Conversation.DoesNotExist:
+            return Response({
+                'error': 'Conversation not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Mark messages as read for current user
+        Message.objects.filter(
+            conversation=conversation
+        ).exclude(
+            sender=request.user  # Messages sent by others
+        ).filter(
+            is_read=False
+        ).update(is_read=True, read_at=timezone.now())
+
+        # Update conversation timestamp
+        conversation.updated_at = timezone.now()
+        conversation.save(update_fields=['updated_at'])
+
+        messages = conversation.messages.all().order_by('created_at')
+        serializer = MessageSerializer(messages, many=True)
+
+        return Response({
+            'conversation_id': conversation.id,
+            'messages': serializer.data,
+            'total': messages.count()
+        }, status=status.HTTP_200_OK)
+
+    def post(self, request, conversation_id):
+        """Send a message to a conversation"""
+        try:
+            conversation = Conversation.objects.get(
+                id=conversation_id,
+                participants=request.user,
+                is_active=True
+            )
+        except Conversation.DoesNotExist:
+            return Response({
+                'error': 'Conversation not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = SendMessageSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                'error': 'Validation failed',
+                'details': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create the message
+        message = Message.objects.create(
+            conversation=conversation,
+            sender=request.user,
+            content=serializer.validated_data['content']
+        )
+
+        # Update conversation timestamp
+        conversation.updated_at = timezone.now()
+        conversation.save(update_fields=['updated_at'])
+
+        # Return the created message
+        message_serializer = MessageSerializer(message)
+
+        # Log activity
+        UserActivityLog.objects.create(
+            user=request.user,
+            action_type='message_sent',
+            action_description=f"Sent message in conversation {conversation.id}",
+            metadata={'conversation_id': conversation.id, 'message_id': message.id},
+            ip_address=get_client_ip(request)
+        )
+
+        return Response({
+            'message': 'Message sent successfully',
+            'message_data': message_serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+
+class SendMessageView(APIView):
+    """Send a message to start a new conversation or continue existing"""
+
+    def post(self, request):
+        """Send message to recipient (creates conversation if doesn't exist)"""
+        serializer = SendMessageSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                'error': 'Validation failed',
+                'details': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        recipient_id = serializer.validated_data['recipient_id']
+        content = serializer.validated_data['content']
+
+        try:
+            recipient = User.objects.get(id=recipient_id)
+        except User.DoesNotExist:
+            return Response({
+                'error': 'Recipient not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if conversation already exists between these users
+        conversation = Conversation.objects.filter(
+            participants=request.user
+        ).filter(
+            participants=recipient
+        ).filter(
+            is_active=True
+        ).first()
+
+        # Create conversation if it doesn't exist
+        if not conversation:
+            conversation = Conversation.objects.create()
+            conversation.participants.add(request.user, recipient)
+
+        # Create the message
+        message = Message.objects.create(
+            conversation=conversation,
+            sender=request.user,
+            content=content
+        )
+
+        # Update conversation timestamp
+        conversation.updated_at = timezone.now()
+        conversation.save(update_fields=['updated_at'])
+
+        # Return conversation and message data
+        conversation_serializer = ConversationSerializer(conversation, context={'request': request})
+        message_serializer = MessageSerializer(message)
+
+        # Log activity
+        UserActivityLog.objects.create(
+            user=request.user,
+            action_type='message_sent',
+            action_description=f"Sent message to {recipient.get_full_name()}",
+            metadata={
+                'recipient_id': recipient.id,
+                'conversation_id': conversation.id,
+                'message_id': message.id
+            },
+            ip_address=get_client_ip(request)
+        )
+
+        return Response({
+            'message': 'Message sent successfully',
+            'conversation': conversation_serializer.data,
+            'message_data': message_serializer.data
+        }, status=status.HTTP_201_CREATED)
