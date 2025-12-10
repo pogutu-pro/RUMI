@@ -22,11 +22,11 @@ class Command(BaseCommand):
         # Create test users for each role
         users_created = self.create_users()
         
-        # Create supporting data (hostels, etc.)
-        self.create_supporting_data()
-        
         # Create profiles for users
         profiles_created = self.create_profiles()
+        
+        # Create supporting data (hostels, etc.)
+        self.create_supporting_data()
         
         # Summary
         self.stdout.write(

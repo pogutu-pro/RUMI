@@ -27,14 +27,29 @@ class Hostel(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
     address = models.TextField()
+    city = models.CharField(max_length=100, default='Nairobi')
+    university = models.CharField(max_length=255, blank=True, null=True)
+    distance_from_university = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     latitude = models.DecimalField(max_digits=10, decimal_places=8, blank=True, null=True)
     longitude = models.DecimalField(max_digits=11, decimal_places=8, blank=True, null=True)
+    
+    GENDER_POLICY_CHOICES = [
+        ('male_only', 'Male Only'),
+        ('female_only', 'Female Only'),
+        ('mixed', 'Mixed'),
+    ]
+    gender_policy = models.CharField(max_length=20, choices=GENDER_POLICY_CHOICES, default='mixed')
+    
     hostel_type = models.CharField(max_length=20, choices=HOSTEL_TYPE_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     total_rooms = models.IntegerField(default=0)
     available_rooms = models.IntegerField(default=0)
     base_price = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default='KES')
+    
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
+    review_count = models.IntegerField(default=0)
+    
     is_verified = models.BooleanField(default=False)
     verified_at = models.DateTimeField(blank=True, null=True)
     verified_by = models.ForeignKey(
