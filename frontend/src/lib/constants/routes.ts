@@ -312,7 +312,10 @@ export function getDashboardRoute(
     case 'caretaker':
       return CARETAKER_ROUTES.DASHBOARD;
     case UserRole.SUPER_ADMIN:
+      return ADMIN_ROUTES.DASHBOARD;
     case UserRole.TECH_SUPPORT_ADMIN:
+    case 'tech_support':
+      return '/tech-support/dashboard';
     case 'admin':
       return ADMIN_ROUTES.DASHBOARD;
     default:

@@ -4,7 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { 
   Search, 
   Filter, 
-  ShieldCheck
+  ShieldCheck,
+  Users,
+  UserCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,13 +18,25 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { useTechSupportStore } from '@/stores/tech-support.store';
 import { UserTable } from '@/components/tech-support/user-table';
+import { Badge } from '@/components/ui/badge';
 
-export default function UserManagementPage() {
+interface UserManagementPageProps {
+  defaultTab?: string;
+}
+
+export default function UserManagementPage({ defaultTab = "directory" }: UserManagementPageProps) {
   const { users, isLoadingUsers, fetchUsers } = useTechSupportStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState(defaultTab === 'verification' ? 'verification' : 'directory');
 
   useEffect(() => {
     fetchUsers();
@@ -35,7 +49,14 @@ export default function UserManagementPage() {
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.phone_number.includes(searchTerm);
     
+    // In verification tab, maybe filter by !user.isVerified?
+    // For now, keep role filter
     const matchesRole = roleFilter === "all" || user.role.toLowerCase() === roleFilter;
+
+    if (activeTab === 'verification') {
+        // Simulate verification queue
+        return matchesSearch && !user.is_verified;
+    }
 
     return matchesSearch && matchesRole;
   });
@@ -53,67 +74,114 @@ export default function UserManagementPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">User Management</h1>
-          <p className="text-slate-500 dark:text-slate-400">
-            Search, verify, and manage user accounts.
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            User Management
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Search, verify identity, and manage access for all users.
           </p>
         </div>
         <div className="flex items-center gap-2">
-           <Button variant="outline">
+           <Button variant="outline" className="hidden md:flex">
              <Filter className="mr-2 h-4 w-4" />
-             Advanced Filters
+             More Filters
            </Button>
-           <Button>
-             <ShieldCheck className="mr-2 h-4 w-4" />
+           <Button variant="secondary" className="bg-background border border-input shadow-sm hover:bg-accent/50">
+             <ShieldCheck className="mr-2 h-4 w-4 text-indigo-500" />
              Verification Queue
            </Button>
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Users Directory</CardTitle>
-          <CardDescription>
-            Manage student and landlord accounts.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Filters */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
-              <Input 
-                placeholder="Search by name, email, or phone..." 
-                className="pl-9"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by Role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="student">Students</SelectItem>
-                <SelectItem value="landlord">Landlords</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
+            <TabsTrigger value="directory" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                User Directory
+            </TabsTrigger>
+            <TabsTrigger value="verification" className="flex items-center gap-2">
+                <UserCheck className="h-4 w-4" />
+                Verification Queue
+            </TabsTrigger>
+        </TabsList>
 
-          {/* Table */}
-          <UserTable 
-            users={filteredUsers} 
-            isLoading={isLoadingUsers} 
-            onVerify={handleVerify}
-            onToggleLock={handleToggleLock}
-            onViewProfile={handleViewProfile}
-          />
-        </CardContent>
-      </Card>
+        <TabsContent value="directory" className="space-y-4">
+            <Card className="border-border/50 shadow-sm">
+                <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                    <div>
+                    <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5 text-primary" />
+                        Users Directory
+                    </CardTitle>
+                    <CardDescription>
+                        Overview of students, landlords, and caretakers.
+                    </CardDescription>
+                    </div>
+                    <Badge variant="outline" className="hidden md:flex bg-muted/50">
+                    {filteredUsers.length} Total Users
+                    </Badge>
+                </div>
+                </CardHeader>
+                <CardContent>
+                {/* Filters */}
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                    <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search by name, email, or phone..." 
+                        className="pl-9 bg-background/50 border-input/60 focus-visible:ring-primary/20"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    </div>
+                    <Select value={roleFilter} onValueChange={setRoleFilter}>
+                    <SelectTrigger className="w-[180px] bg-background/50 border-input/60">
+                        <SelectValue placeholder="Filter by Role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Roles</SelectItem>
+                        <SelectItem value="student">Students</SelectItem>
+                        <SelectItem value="landlord">Landlords</SelectItem>
+                        <SelectItem value="caretaker">Caretakers</SelectItem>
+                    </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Table */}
+                <UserTable 
+                    users={filteredUsers} 
+                    isLoading={isLoadingUsers} 
+                    onVerify={handleVerify}
+                    onToggleLock={handleToggleLock}
+                    onViewProfile={handleViewProfile}
+                />
+                </CardContent>
+            </Card>
+        </TabsContent>
+
+        <TabsContent value="verification" className="space-y-4">
+            <Card className="border-border/50 shadow-sm">
+                <CardHeader className="pb-3">
+                    <CardTitle>Verification Queue</CardTitle>
+                    <CardDescription>Users pending identity verification.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <UserTable 
+                        users={filteredUsers} 
+                        isLoading={isLoadingUsers} 
+                        onVerify={handleVerify}
+                        onToggleLock={handleToggleLock}
+                        onViewProfile={handleViewProfile}
+                    />
+                </CardContent>
+            </Card>
+        </TabsContent>
+
+      </Tabs>
     </div>
   );
 }

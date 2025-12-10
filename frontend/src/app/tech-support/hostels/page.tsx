@@ -5,7 +5,9 @@ import {
   Search, 
   CheckCircle2,
   Building2,
-  AlertTriangle
+  AlertTriangle,
+  MapPin,
+  Filter
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,10 +15,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTechSupportStore } from '@/stores/tech-support.store';
 import { HostelTable } from '@/components/tech-support/hostel-table';
+import { Badge } from '@/components/ui/badge';
 
-export default function HostelSupportPage() {
+interface HostelSupportPageProps {
+  defaultStatus?: string;
+}
+
+export default function HostelSupportPage({ defaultStatus = "all" }: HostelSupportPageProps) {
   const { hostels, isLoadingHostels, fetchHostels } = useTechSupportStore();
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState(defaultStatus);
 
   useEffect(() => {
     fetchHostels();
@@ -45,43 +53,53 @@ export default function HostelSupportPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Hostel Support</h1>
-          <p className="text-slate-500 dark:text-slate-400">
-            Verify listings, manage visibility, and handle reports.
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Hostel Support
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Verify listings, manage compliance, and handle safety reports.
           </p>
         </div>
-        <Button>
-          <CheckCircle2 className="mr-2 h-4 w-4" />
+        <Button variant="secondary" className="bg-background border border-input shadow-sm hover:bg-accent/50">
+          <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-500" />
           Review Pending (3)
         </Button>
       </div>
 
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList>
+      <Tabs defaultValue={defaultStatus} value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
           <TabsTrigger value="all">All Hostels</TabsTrigger>
-          <TabsTrigger value="pending">Pending Approval</TabsTrigger>
-          <TabsTrigger value="flagged">Flagged / Reported</TabsTrigger>
+          <TabsTrigger value="pending">Pending</TabsTrigger>
+          <TabsTrigger value="flagged">Flagged</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="all" className="mt-6">
-          <Card>
+        <TabsContent value="all" className="mt-6 space-y-6">
+          <Card className="border-border/50 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle>Hostel Listings</CardTitle>
-              <CardDescription>
-                Overview of all hostels on the platform.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                   <CardTitle>Hostel Listings</CardTitle>
+                   <CardDescription>
+                     Comprehensive list of all hostels on the platform.
+                   </CardDescription>
+                </div>
+                 <Button variant="outline" size="sm" className="hidden md:flex">
+                  <Filter className="mr-2 h-3.5 w-3.5" />
+                  Filter Location
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {/* Search */}
               <div className="flex items-center gap-4 mb-6">
                 <div className="relative flex-1 max-w-sm">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input 
                     placeholder="Search hostel, landlord, or location..." 
-                    className="pl-9"
+                    className="pl-9 bg-background/50 border-input/60 focus-visible:ring-primary/20"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -102,18 +120,22 @@ export default function HostelSupportPage() {
         </TabsContent>
 
         <TabsContent value="pending">
-          <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-lg border border-dashed">
-            <Building2 className="h-12 w-12 mx-auto mb-3 opacity-20" />
-            <h3 className="text-lg font-medium text-slate-900">No Pending Approvals</h3>
-            <p>All hostel listings have been reviewed.</p>
+          <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground bg-muted/10 rounded-lg border-2 border-dashed border-muted/50 hover:bg-muted/20 transition-colors">
+            <div className="h-16 w-16 rounded-full bg-blue-500/10 flex items-center justify-center mb-4">
+               <Building2 className="h-8 w-8 text-blue-500/50" />
+            </div>
+            <h3 className="text-lg font-medium text-foreground">No Pending Approvals</h3>
+            <p className="max-w-sm mt-2">All submitted hostel listings have been reviewed and processed.</p>
           </div>
         </TabsContent>
 
         <TabsContent value="flagged">
-           <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-lg border border-dashed">
-            <AlertTriangle className="h-12 w-12 mx-auto mb-3 opacity-20" />
-            <h3 className="text-lg font-medium text-slate-900">No Flagged Hostels</h3>
-            <p>There are no active investigations.</p>
+           <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground bg-muted/10 rounded-lg border-2 border-dashed border-muted/50 hover:bg-muted/20 transition-colors">
+            <div className="h-16 w-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
+               <AlertTriangle className="h-8 w-8 text-red-500/50" />
+            </div>
+            <h3 className="text-lg font-medium text-foreground">No Flagged Hostels</h3>
+            <p className="max-w-sm mt-2">There are no active safety investigations or flagged properties at the moment.</p>
           </div>
         </TabsContent>
       </Tabs>

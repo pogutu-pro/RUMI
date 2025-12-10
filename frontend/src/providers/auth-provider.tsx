@@ -36,7 +36,8 @@ const ROLE_REDIRECTS: Record<string, string> = {
   [ROLES.LANDLORD]: '/landlord/dashboard',
   [ROLES.CARETAKER]: '/caretaker/dashboard',
   [ROLES.SUPER_ADMIN]: '/admin/dashboard',
-  [ROLES.TECH_SUPPORT_ADMIN]: '/admin/dashboard',
+  [ROLES.TECH_SUPPORT_ADMIN]: '/tech-support/dashboard',
+  'tech_support': '/tech-support/dashboard',
 };
 
 const AUTH_ROUTES = [

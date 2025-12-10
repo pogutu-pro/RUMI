@@ -7,7 +7,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,7 +22,6 @@ import {
   EyeOff,
   Globe,
   Mail,
-  MessageSquare,
   Smartphone,
   CheckCircle2,
   User,
@@ -162,7 +161,9 @@ export default function TechSupportSettingsPage() {
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+          Settings
+        </h1>
         <p className="text-muted-foreground mt-1">
           Manage your account settings and preferences
         </p>
@@ -190,7 +191,7 @@ export default function TechSupportSettingsPage() {
 
         {/* Profile Tab */}
         <TabsContent value="profile" className="space-y-6">
-          <Card>
+          <Card className="border-border/50 shadow-sm">
             <CardHeader>
               <CardTitle>Personal Information</CardTitle>
               <CardDescription>Update your personal details</CardDescription>
@@ -199,16 +200,16 @@ export default function TechSupportSettingsPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <FormLabel>First Name</FormLabel>
-                  <Input defaultValue={user?.firstName} />
+                  <Input defaultValue={user?.firstName} className="bg-background/50" />
                 </div>
                 <div className="space-y-2">
                   <FormLabel>Last Name</FormLabel>
-                  <Input defaultValue={user?.lastName} />
+                  <Input defaultValue={user?.lastName} className="bg-background/50" />
                 </div>
               </div>
               <div className="space-y-2">
                 <FormLabel>Email Address</FormLabel>
-                <Input defaultValue={user?.email} disabled />
+                <Input defaultValue={user?.email} disabled className="bg-muted/30" />
                 <p className="text-xs text-muted-foreground">
                   Contact support to change your email address
                 </p>
@@ -216,7 +217,7 @@ export default function TechSupportSettingsPage() {
               <div className="space-y-2">
                 <FormLabel>Role</FormLabel>
                 <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
-                  <LifeBuoy className="h-4 w-4 text-indigo-600" />
+                  <LifeBuoy className="h-4 w-4 text-indigo-500" />
                   <span className="text-sm font-medium">Tech Support Agent</span>
                 </div>
               </div>
@@ -230,10 +231,10 @@ export default function TechSupportSettingsPage() {
         {/* Security Tab */}
         <TabsContent value="security" className="space-y-6">
           {/* Change Password */}
-          <Card>
+          <Card className="border-border/50 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5" />
+                <Lock className="h-5 w-5 text-primary" />
                 Change Password
               </CardTitle>
               <CardDescription>Update your password to keep your account secure</CardDescription>
@@ -252,6 +253,7 @@ export default function TechSupportSettingsPage() {
                             <Input 
                               type={showCurrentPassword ? 'text' : 'password'} 
                               placeholder="Enter current password"
+                              className="bg-background/50"
                               {...field} 
                             />
                             <Button
@@ -283,6 +285,7 @@ export default function TechSupportSettingsPage() {
                             <Input 
                               type={showNewPassword ? 'text' : 'password'} 
                               placeholder="Enter new password"
+                              className="bg-background/50"
                               {...field} 
                             />
                             <Button
@@ -317,6 +320,7 @@ export default function TechSupportSettingsPage() {
                             <Input 
                               type={showConfirmPassword ? 'text' : 'password'} 
                               placeholder="Confirm new password"
+                              className="bg-background/50"
                               {...field} 
                             />
                             <Button
@@ -334,6 +338,7 @@ export default function TechSupportSettingsPage() {
                             </Button>
                           </div>
                         </FormControl>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -346,10 +351,10 @@ export default function TechSupportSettingsPage() {
           </Card>
 
           {/* Two-Factor Authentication */}
-          <Card>
+          <Card className="border-border/50 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
+                <Shield className="h-5 w-5 text-primary" />
                 Two-Factor Authentication
               </CardTitle>
               <CardDescription>Add an extra layer of security to your account</CardDescription>
@@ -370,14 +375,14 @@ export default function TechSupportSettingsPage() {
               {twoFactorEnabled && (
                 <>
                   <Separator />
-                  <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-900/50">
+                  <div className="p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
                     <div className="flex gap-2 items-start">
-                      <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-500 shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-sm font-medium text-emerald-900 dark:text-emerald-500">
+                        <p className="text-sm font-medium text-emerald-900 dark:text-emerald-400">
                           2FA is Active
                         </p>
-                        <p className="text-xs text-emerald-800 dark:text-emerald-600 mt-1">
+                        <p className="text-xs text-emerald-800 dark:text-emerald-500 mt-1">
                           Your account is protected with two-factor authentication
                         </p>
                       </div>
@@ -392,10 +397,10 @@ export default function TechSupportSettingsPage() {
         {/* Notifications Tab */}
         <TabsContent value="notifications" className="space-y-6">
           {/* Email Notifications */}
-          <Card>
+          <Card className="border-border/50 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
+                <Mail className="h-5 w-5 text-primary" />
                 Email Notifications
               </CardTitle>
               <CardDescription>Manage which emails you receive</CardDescription>
@@ -449,10 +454,10 @@ export default function TechSupportSettingsPage() {
           </Card>
 
           {/* Push Notifications */}
-          <Card>
+          <Card className="border-border/50 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Smartphone className="h-5 w-5" />
+                <Smartphone className="h-5 w-5 text-primary" />
                 Push Notifications
               </CardTitle>
               <CardDescription>Real-time browser notifications</CardDescription>
@@ -499,10 +504,10 @@ export default function TechSupportSettingsPage() {
 
         {/* Platform Tab */}
         <TabsContent value="platform" className="space-y-6">
-          <Card>
+          <Card className="border-border/50 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5" />
+                <Globe className="h-5 w-5 text-primary" />
                 Platform Preferences
               </CardTitle>
               <CardDescription>Customize your workspace</CardDescription>
@@ -514,7 +519,7 @@ export default function TechSupportSettingsPage() {
                   value={preferences.language}
                   onValueChange={(value) => setPreferences({ ...preferences, language: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-background/50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -530,7 +535,7 @@ export default function TechSupportSettingsPage() {
                   value={preferences.timezone}
                   onValueChange={(value) => setPreferences({ ...preferences, timezone: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-background/50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

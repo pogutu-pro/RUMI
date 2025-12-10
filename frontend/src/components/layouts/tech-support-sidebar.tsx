@@ -175,7 +175,7 @@ export function TechSupportSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps
                     <Button
                       variant="ghost"
                       className={cn(
-                        "w-full justify-between font-bold text-slate-900 dark:text-slate-400 hover:bg-muted hover:text-foreground transition-all duration-200",
+                        "w-full justify-between font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200",
                         isActive && "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
                       )}
                     >
@@ -200,7 +200,7 @@ export function TechSupportSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps
                           "flex items-center gap-2 px-4 py-2 text-base transition-colors duration-200 border-l-2 -ml-[2px]",
                           pathname === subItem.href || pathname.startsWith(subItem.href + '/')
                             ? "border-primary text-primary font-bold bg-primary/10"
-                            : "border-transparent text-slate-900 dark:text-slate-400 font-bold hover:text-foreground hover:bg-muted"
+                            : "border-transparent text-muted-foreground font-bold hover:text-foreground hover:bg-muted"
                         )}
                       >
                         {subItem.icon && <subItem.icon className="h-3.5 w-3.5 opacity-70" />}
@@ -244,7 +244,7 @@ export function TechSupportSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps
                 asChild
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start font-bold text-slate-900 dark:text-slate-400 hover:bg-muted hover:text-foreground transition-all duration-200",
+                  "w-full justify-start font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200",
                   isActive && "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
                 )}
               >

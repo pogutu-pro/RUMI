@@ -79,8 +79,13 @@ const navItems: NavItem[] = [
     title: 'My Hostel',
     icon: Building2,
     items: [
-      { title: 'Current Booking', href: '/student/bookings/active', icon: CalendarCheck },
+      {
+        title: 'Current Booking',
+        href: '/student/bookings/active',
+        icon: CalendarCheck,
+      },
       { title: 'My Roommates', href: '/student/roommates', icon: Users },
+      { title: 'Transfers', href: '/student/transfers', icon: ArrowRightLeft },
       { title: 'Check-In/Out', href: '/student/check-in', icon: UserCheck },
     ],
   },
@@ -90,7 +95,11 @@ const navItems: NavItem[] = [
     items: [
       { title: 'Browse Hostels', href: '/student/hostels', icon: Building2 },
       { title: 'Favorites', href: '/student/hostels/favorites', icon: Star },
-      { title: 'Compare', href: '/student/hostels/compare', icon: ArrowRightLeft },
+      {
+        title: 'Compare',
+        href: '/student/hostels/compare',
+        icon: ArrowRightLeft,
+      },
     ],
   },
   {
@@ -98,7 +107,11 @@ const navItems: NavItem[] = [
     icon: CreditCard,
     items: [
       { title: 'Overview', href: '/student/payments', icon: BarChart },
-      { title: 'Payment Methods', href: '/student/payments/methods', icon: CreditCard },
+      {
+        title: 'Payment Methods',
+        href: '/student/payments/methods',
+        icon: CreditCard,
+      },
       { title: 'History', href: '/student/payments/receipts', icon: FileText },
     ],
   },
@@ -112,7 +125,11 @@ const navItems: NavItem[] = [
     icon: Shield,
     items: [
       { title: 'Overview', href: '/student/security', icon: Shield },
-      { title: 'Visitor Invitations', href: '/student/security/visitor-invitations', icon: UserPlus },
+      {
+        title: 'Visitor Invitations',
+        href: '/student/security/visitor-invitations',
+        icon: UserPlus,
+      },
     ],
   },
   {
@@ -127,13 +144,12 @@ const navItems: NavItem[] = [
       { title: 'Bookings', href: '/student/bookings', icon: CalendarCheck },
       { title: 'Notifications', href: '/student/notifications', icon: Bell },
       { title: 'Reviews', href: '/student/reviews', icon: Star },
-      { title: 'Transfers', href: '/student/transfers', icon: ArrowRightLeft },
+
       { title: 'Support', href: '/student/support', icon: LifeBuoy },
       { title: 'Settings', href: '/student/settings', icon: Settings },
     ],
   },
 ];
-
 
 export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
   const pathname = usePathname();
@@ -148,7 +164,7 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
     const activeGroup = navItems.find(
       (item) =>
         item.items &&
-        item.items.some((subItem) => pathname.startsWith(subItem.href))
+        item.items.some((subItem) => pathname.startsWith(subItem.href)),
     );
     if (activeGroup && !openGroups.includes(activeGroup.title)) {
       setOpenGroups((prev) => [...prev, activeGroup.title]);
@@ -157,30 +173,46 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
 
   const toggleGroup = (title: string) => {
     setOpenGroups((prev) =>
-      prev.includes(title)
-        ? prev.filter((t) => t !== title)
-        : [...prev, title]
+      prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title],
     );
   };
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full py-4 bg-card border-r border-border transition-colors duration-200">
-      <div className={cn("flex items-center h-14 px-6 mb-2", isExpanded ? "justify-between" : "justify-center")}>
+      <div
+        className={cn(
+          'flex items-center h-14 px-6 mb-2',
+          isExpanded ? 'justify-between' : 'justify-center',
+        )}
+      >
         {isExpanded ? (
-          <Link href="/" className="flex items-center gap-2 font-bold text-2xl text-primary">
+          <Link
+            href="/"
+            className="flex items-center gap-2 font-bold text-2xl text-primary"
+          >
             <div className="relative h-8 w-8">
-              <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" />
+              <Image
+                src="/images/logo/logo.svg"
+                alt="RUMI Logo"
+                fill
+                className="object-contain"
+              />
             </div>
             <span>RUMI</span>
           </Link>
         ) : (
-           <Link href="/" className="relative h-8 w-8">
-              <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" />
-           </Link>
+          <Link href="/" className="relative h-8 w-8">
+            <Image
+              src="/images/logo/logo.svg"
+              alt="RUMI Logo"
+              fill
+              className="object-contain"
+            />
+          </Link>
         )}
-        
+
         {!isMobile && isExpanded && (
-           <Button
+          <Button
             variant="ghost"
             size="icon"
             className="h-8 w-8 ml-auto text-muted-foreground hover:text-foreground"
@@ -196,7 +228,9 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
           {navItems.map((item, index) => {
             const isActive = item.href
               ? pathname === item.href || pathname.startsWith(item.href + '/')
-              : item.items?.some((subItem) => pathname.startsWith(subItem.href));
+              : item.items?.some((subItem) =>
+                  pathname.startsWith(subItem.href),
+                );
 
             if (item.items) {
               return isExpanded ? (
@@ -210,8 +244,9 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                     <Button
                       variant="ghost"
                       className={cn(
-                        "w-full justify-between font-bold text-base text-slate-900 dark:text-slate-400 hover:bg-muted hover:text-foreground transition-all duration-200",
-                        isActive && "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+                        'w-full justify-between font-bold text-base text-slate-900 dark:text-slate-400 hover:bg-muted hover:text-foreground transition-all duration-200',
+                        isActive &&
+                          'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary',
                       )}
                     >
                       <div className="flex items-center gap-3">
@@ -220,8 +255,8 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                       </div>
                       <ChevronDown
                         className={cn(
-                          "h-4 w-4 transition-transform duration-200 opacity-50",
-                          openGroups.includes(item.title) ? "rotate-180" : ""
+                          'h-4 w-4 transition-transform duration-200 opacity-50',
+                          openGroups.includes(item.title) ? 'rotate-180' : '',
                         )}
                       />
                     </Button>
@@ -232,10 +267,10 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                         key={subIndex}
                         href={subItem.href}
                         className={cn(
-                          "flex items-center gap-2 px-4 py-2 text-base transition-colors duration-200 border-l-2 -ml-[2px]",
+                          'flex items-center gap-2 px-4 py-2 text-base transition-colors duration-200 border-l-2 -ml-[2px]',
                           pathname === subItem.href
-                            ? "border-primary text-primary font-bold bg-primary/10"
-                            : "border-transparent text-slate-900 dark:text-slate-400 font-bold hover:text-foreground hover:bg-muted"
+                            ? 'border-primary text-primary font-bold bg-primary/10'
+                            : 'border-transparent text-slate-900 dark:text-slate-400 font-bold hover:text-foreground hover:bg-muted',
                         )}
                       >
                         {/* {subItem.icon && <subItem.icon className="h-3.5 w-3.5 opacity-70" />} */}
@@ -252,15 +287,18 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                         variant="ghost"
                         size="icon"
                         className={cn(
-                          "h-10 w-10 mx-auto mb-1 rounded-lg",
-                          isActive && "bg-primary/10 text-primary"
+                          'h-10 w-10 mx-auto mb-1 rounded-lg',
+                          isActive && 'bg-primary/10 text-primary',
                         )}
                       >
                         <item.icon className="h-5 w-5" />
                         <span className="sr-only">{item.title}</span>
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="right" className="flex items-center gap-4">
+                    <TooltipContent
+                      side="right"
+                      className="flex items-center gap-4"
+                    >
                       {item.title}
                     </TooltipContent>
                   </Tooltip>
@@ -274,8 +312,9 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                 asChild
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start font-bold text-base text-slate-900 dark:text-slate-400 hover:bg-muted hover:text-foreground transition-all duration-200",
-                  isActive && "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+                  'w-full justify-start font-bold text-base text-slate-900 dark:text-slate-400 hover:bg-muted hover:text-foreground transition-all duration-200',
+                  isActive &&
+                    'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary',
                 )}
               >
                 <Link href={item.href!}>
@@ -294,8 +333,8 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                       variant="ghost"
                       size="icon"
                       className={cn(
-                        "h-10 w-10 mx-auto mb-1 rounded-lg",
-                        isActive && "bg-primary/10 text-primary"
+                        'h-10 w-10 mx-auto mb-1 rounded-lg',
+                        isActive && 'bg-primary/10 text-primary',
                       )}
                     >
                       <Link href={item.href!}>
@@ -327,8 +366,8 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen transition-all duration-300 ease-in-out shadow-sm",
-        isExpanded ? "w-72" : "w-20"
+        'fixed left-0 top-0 z-40 h-screen transition-all duration-300 ease-in-out shadow-sm',
+        isExpanded ? 'w-72' : 'w-20',
       )}
       onMouseEnter={() => !isOpen && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

@@ -3,6 +3,8 @@
 import React, { useEffect } from 'react';
 import { useTechSupportStore } from '@/stores/tech-support.store';
 import { ChatInterface } from '@/components/tech-support/chat-interface';
+import { MessageSquare, Sparkles } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 export default function MessagesPage() {
   const { messages, isLoadingMessages, fetchMessages } = useTechSupportStore();
@@ -17,19 +19,29 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Messages</h1>
-        <p className="text-slate-500 dark:text-slate-400">
-          Communicate directly with users for support.
+    <div className="space-y-6 h-[calc(100vh-120px)] flex flex-col animate-in fade-in duration-500">
+      <div className="flex flex-col gap-2 shrink-0">
+        <div className="flex items-center gap-2">
+           <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+             Messages
+           </h1>
+           <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-xs font-normal">
+             Beta
+           </Badge>
+        </div>
+        <p className="text-muted-foreground flex items-center gap-2">
+          <MessageSquare className="h-4 w-4" />
+          Direct communication channel with users.
         </p>
       </div>
 
-      <ChatInterface 
-        messages={messages} 
-        isLoading={isLoadingMessages} 
-        onSendMessage={handleSendMessage} 
-      />
+      <div className="flex-1 min-h-0 border rounded-xl shadow-sm bg-background/50 backdrop-blur-sm overflow-hidden flex flex-col">
+        <ChatInterface 
+          messages={messages} 
+          isLoading={isLoadingMessages} 
+          onSendMessage={handleSendMessage} 
+        />
+      </div>
     </div>
   );
 }

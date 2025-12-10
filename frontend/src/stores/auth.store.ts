@@ -17,6 +17,7 @@ export const ROLES = {
   CARETAKER: 'caretaker',
   SUPER_ADMIN: 'super_admin',
   TECH_SUPPORT_ADMIN: 'tech_support_admin',
+  TECH_SUPPORT: 'tech_support',
 } as const;
 
 const AUTH_STORAGE_KEY = 'rumi-auth-storage';

@@ -60,8 +60,10 @@ export function useRegister() {
       
       // Redirect to appropriate dashboard based on role
       const role = response.user?.role;
-      if (role === 'super_admin' || role === 'tech_support_admin') {
+      if (role === 'super_admin') {
         router.push('/admin/dashboard');
+      } else if (role === 'tech_support_admin' || role === 'tech_support') {
+        router.push('/tech-support/dashboard');
       } else if (role === 'landlord') {
         router.push('/landlord/dashboard');
       } else if (role === 'caretaker') {
@@ -105,9 +107,12 @@ export function useLogin() {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       
       // Redirect based on user role
+      // Redirect based on user role
       const role = response.user?.role;
-      if (role === 'super_admin' || role === 'tech_support_admin') {
+      if (role === 'super_admin') {
         router.push('/admin/dashboard');
+      } else if (role === 'tech_support_admin' || role === 'tech_support') {
+        router.push('/tech-support/dashboard');
       } else if (role === 'landlord') {
         router.push('/landlord/dashboard');
       } else if (role === 'caretaker') {
@@ -150,9 +155,12 @@ export function useGoogleLogin() {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       
       // Redirect based on user role
+      // Redirect based on user role
       const role = response.user?.role;
-      if (role === 'super_admin' || role === 'tech_support_admin') {
+      if (role === 'super_admin') {
         router.push('/admin/dashboard');
+      } else if (role === 'tech_support_admin' || role === 'tech_support') {
+        router.push('/tech-support/dashboard');
       } else if (role === 'landlord') {
         router.push('/landlord/dashboard');
       } else if (role === 'caretaker') {
