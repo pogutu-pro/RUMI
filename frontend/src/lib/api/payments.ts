@@ -109,9 +109,8 @@ export const initiatePayment = async (
 
 /**
  * Verify a payment
- * Note: Backend might use webhook, but if there's a verify endpoint:
- * Docs say: GET /receipts/<transaction_id>/ for receipt, but verification usually happens via webhook or status check.
- * We'll keep this if needed or map to status check.
+
+
  */
 export const verifyPayment = async (
   transactionId: string
@@ -186,61 +185,3 @@ export const downloadTaxReport = async (id: string) => {
   return response.data.data;
 };
 
-/**
- * ================================================================================
- * README: Payments API Module (payments.ts)
- * ================================================================================
- *
- * OVERVIEW:
- * ---------
- * Handles all payment-related API calls including payment initiation, verification,
- * recurring payments, payment methods, and financial reporting.
- *
- * BACKEND ENDPOINTS:
- * ------------------
- * | Method | Endpoint                                | Function                  |
- * |--------|----------------------------------------|---------------------------|
- * | GET    | /payments/history/                     | getPayments()             |
- * | GET    | /payments/analytics/revenue/           | getPaymentStats()         |
- * | POST   | /payments/initialize/                  | initiatePayment()         |
- * | GET    | /payments/receipts/{id}/               | verifyPayment()           |
- * | POST   | /payments/recurring/enable/            | enableRecurringPayment()  |
- * | PUT    | /payments/recurring/{id}/pause/        | pauseRecurringPayment()   |
- * | PUT    | /payments/recurring/{id}/resume/       | resumeRecurringPayment()  |
- * | DELETE | /payments/recurring/{id}/cancel/       | cancelRecurringPayment()  |
- * | GET    | /payments/payment-methods/             | getPaymentMethods()       |
- * | PUT    | /payments/payment-methods/{id}/default/| setDefaultPaymentMethod() |
- * | DELETE | /payments/payment-methods/{id}/        | deletePaymentMethod()     |
- * | GET    | /payments/late-fees/{bookingId}/       | getLateFees()             |
- * | POST   | /payments/late-fees/{id}/pay/          | payLateFee()              |
- * | GET    | /payments/tax-reports/                 | getTaxReports()           |
- *
- * PAYMENT METHODS:
- * ----------------
- * - mpesa: M-Pesa mobile money
- * - bank: Bank transfer
- *
- * PAYMENT FLOW:
- * -------------
- * 1. initiatePayment() - Creates payment intent
- * 2. User makes payment via chosen method
- * 3. Backend processes via webhook
- * 4. verifyPayment() - Checks payment status
- *
- * USAGE EXAMPLES:
- * ---------------
- * ```typescript
- * import { initiatePayment, getPaymentStats, getPayments } from './payments';
- *
- * // Initiate M-Pesa payment
- * const { transactionId } = await initiatePayment(bookingId, 'mpesa');
- *
- * // Get payment history
- * const payments = await getPayments({ status: 'completed' });
- *
- * // Get revenue stats
- * const stats = await getPaymentStats();
- * ```
- *
- * ================================================================================
- */

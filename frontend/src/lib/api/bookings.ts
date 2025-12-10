@@ -151,24 +151,3 @@ export const getStudentBookings = async (
   console.warn('getStudentBookings (via /bookings/student/) missing in backend.');
   return [];
 };
-
-/**
- * ================================================================================
- * README: Bookings API Module (bookings.ts)
- * ================================================================================
- *
- * OVERVIEW:
- * ---------
- * Handles all booking-related API calls.
- *
- * UPDATED ENDPOINTS (Mapped to Backend):
- * --------------------------------------
- * | Function                 | Backend Endpoint (Approx)           |
- * |--------------------------|-------------------------------------|
- * | createBooking            | POST /hostels/{roomId}/book/        |
- * | checkStudentProfile      | GET /accounts/profile/              |
- * | getStudentBookings       | GET /bookings/student/              |
- * | checkAvailability        | GET /hostels/{id}/availability/     |
- *
- * ================================================================================
- */

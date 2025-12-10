@@ -154,38 +154,3 @@ export const messagesApi = {
   getUnreadCount,
 };
 
-/**
- * ================================================================================
- * README: Messages API Module (messages.ts)
- * ================================================================================
- *
- * OVERVIEW:
- * ---------
- * In-app messaging system for communication between users (students, landlords,
- * caretakers). Supports text, images, and files.
- *
- * ENDPOINTS:
- * ----------
- * | Method | Endpoint                                    | Function             |
- * |--------|---------------------------------------------|----------------------|
- * | GET    | /api/v1/messages/conversations/            | getConversations()   |
- * | GET    | /api/v1/messages/conversations/{id}/       | getConversation()    |
- * | GET    | /api/v1/messages/conversations/{id}/messages/| getMessages()      |
- * | POST   | /api/v1/messages/conversations/{id}/messages/| sendMessage()      |
- * | POST   | /api/v1/messages/conversations/{id}/read/  | markConversationAsRead()|
- * | POST   | /api/v1/messages/conversations/            | createConversation()|
- * | DELETE | /api/v1/messages/conversations/{id}/       | deleteConversation()|
- * | GET    | /api/v1/messages/unread-count/             | getUnreadCount()    |
- *
- * USAGE:
- * ------
- * ```typescript
- * import { messagesApi } from './messages';
- *
- * const conversations = await messagesApi.getConversations();
- * const messages = await messagesApi.getMessages(conversationId);
- * await messagesApi.sendMessage(conversationId, { content: 'Hello!' });
- * ```
- *
- * ================================================================================
- */

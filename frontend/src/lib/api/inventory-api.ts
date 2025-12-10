@@ -50,32 +50,3 @@ export const verifyCheckIn = async (checkInId: string, verified: boolean, notes?
   if (!response.data.data) throw new Error('Failed to verify check-in');
   return response.data.data;
 };
-
-/**
- * ================================================================================
- * README: Inventory API (inventory-api.ts)
- * ================================================================================
- *
- * OVERVIEW:
- * ---------
- * Simplified inventory API for check-in verification. Similar to inventory.ts
- * but with a simpler interface for basic template and check-in operations.
- *
- * ENDPOINTS:
- * ----------
- * | POST | /hostels/{id}/inventory/         | createInventoryTemplate() |
- * | GET  | /hostels/{id}/inventory/template/| getInventoryTemplate()    |
- * | POST | /hostels/checkin/{id}/start/     | startCheckIn()            |
- * | PUT  | /hostels/checkin/{id}/submit/    | submitCheckIn()           |
- * | PUT  | /hostels/checkin/{id}/verify/    | verifyCheckIn()           |
- *
- * USAGE:
- * ------
- * ```typescript
- * const template = await getInventoryTemplate(hostelId);
- * const checkIn = await startCheckIn(bookingId);
- * await submitCheckIn(checkIn.id, items);
- * ```
- *
- * ================================================================================
- */

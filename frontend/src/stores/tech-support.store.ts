@@ -196,57 +196,5 @@ export const useTechSupportStore = create<TechSupportState>((set) => ({
   clearError: () => set({ error: null }),
 }));
 
-/**
- * ================================================================================
- * README: Tech Support Store (tech-support.store.ts)
- * ================================================================================
- *
- * OVERVIEW:
- * ---------
- * Manages tech support admin dashboard data: users, hostels, transactions,
- * tickets, messages, and logs. Currently uses MOCK DATA.
- *
- * STATE:
- * ------
- * | Field              | Type                    | Purpose                  |
- * |--------------------|-------------------------|--------------------------|
- * | users              | TechSupportUser[]       | Platform users list      |
- * | hostels            | TechSupportHostel[]     | Hostels for review       |
- * | transactions       | TechSupportTransaction[]| Payment transactions     |
- * | tickets            | TechSupportTicket[]     | Support tickets          |
- * | messages           | TechSupportMessage[]    | Admin messages           |
- * | logs               | TechSupportLog[]        | Audit logs               |
- * | isLoading*         | boolean                 | Loading state per entity |
- * | error              | string | null           | Error message            |
- *
- * ACTIONS:
- * --------
- * | Action              | Description                          |
- * |---------------------|--------------------------------------|
- * | fetchUsers()        | Load users (mock data)               |
- * | fetchHostels()      | Load hostels (mock data)             |
- * | fetchTransactions() | Load transactions (mock data)        |
- * | fetchTickets()      | Load support tickets (mock data)     |
- * | fetchMessages()     | Load admin messages (mock data)      |
- * | fetchLogs()         | Load audit logs (mock data)          |
- * | clearError()        | Clear error state                    |
- *
- * MOCK DATA NOTE:
- * ----------------
- * All fetch functions currently return mock data with setTimeout
- * to simulate network latency. Backend API calls are commented out.
- * TODO: Replace mock data with techSupportApi calls.
- *
- * USAGE:
- * ------
- * ```typescript
- * import { useTechSupportStore } from '@/stores/tech-support.store';
- *
- * const { users, fetchUsers, isLoadingUsers, error } = useTechSupportStore();
- *
- * useEffect(() => { fetchUsers(); }, []);
- * ```
- *
- * ================================================================================
- */
+
 

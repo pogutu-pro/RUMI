@@ -40,34 +40,3 @@ export const updateUserStatus = async (id: string, status: User['status']): Prom
 export const deleteUser = async (id: string): Promise<void> => {
   console.log(`Deleted user ${id}`);
 };
-
-/**
- * ================================================================================
- * README: Users API Module (users.ts)
- * ================================================================================
- *
- * OVERVIEW:
- * ---------
- * Basic user management functions. NOTE: Currently uses MOCK DATA.
- * For production user management, see admin.ts.
- *
- * FUNCTIONS:
- * ----------
- * | Function         | Description          |
- * |------------------|----------------------|
- * | getUsers()       | List users (mock)    |
- * | getUserById()    | Get single user      |
- * | updateUserStatus()| Change user status  |
- * | deleteUser()     | Delete user          |
- *
- * USER STATUSES:
- * --------------
- * active, suspended
- *
- * TODO:
- * -----
- * Replace mock data with actual backend API calls
- * Consider consolidating with admin.ts
- *
- * ================================================================================
- */

@@ -81,39 +81,3 @@ export const damageReportsApi = {
   createDamageReport,
 } as const;
 
-/**
- * ================================================================================
- * README: Damage Reports API Module (damage-reports.ts)
- * ================================================================================
- *
- * OVERVIEW:
- * ---------
- * Handles damage report creation and retrieval for check-out inspections.
- * Caretakers create reports; landlords review and approve/reject.
- *
- * BACKEND ENDPOINTS:
- * ------------------
- * | Method | Endpoint              | Function            |
- * |--------|----------------------|---------------------|
- * | GET    | /damage-reports/     | getDamageReports()  |
- * | GET    | /damage-reports/{id}/| getDamageReport()   |
- * | POST   | /damage-reports/     | createDamageReport()|
- *
- * STATUSES:
- * ---------
- * pending → in_review → approved/rejected → billed
- *
- * USAGE:
- * ------
- * ```typescript
- * import { damageReportsApi } from './damage-reports';
- *
- * const reports = await damageReportsApi.getDamageReports({ hostelId: '123' });
- * await damageReportsApi.createDamageReport({
- *   bookingId: '456',
- *   items: [{ inventoryItemId: 'item-1', estimatedCost: 1500 }]
- * });
- * ```
- *
- * ================================================================================
- */
