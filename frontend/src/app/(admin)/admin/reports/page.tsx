@@ -3,114 +3,104 @@
 import { 
   FileText, 
   Download, 
-  Search, 
-  Filter, 
-  MoreHorizontal,
-  Calendar
+  Calendar,
+  Filter,
+  BarChart,
+  PieChart,
+  Table as TableIcon
 } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useExportAnalytics } from "@/hooks/use-analytics";
+import { cn } from "@/lib/utils/cn";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
-// Mock Data
-const REPORTS = [
-  { id: "RPT-001", name: "Monthly Financial Summary", type: "Financial", date: "Feb 1, 2025", size: "2.4 MB" },
-  { id: "RPT-002", name: "User Growth Report", type: "Analytics", date: "Feb 1, 2025", size: "1.1 MB" },
-  { id: "RPT-003", name: "Hostel Occupancy Audit", type: "Operational", date: "Jan 28, 2025", size: "3.5 MB" },
-  { id: "RPT-004", name: "Support Ticket Analysis", type: "Support", date: "Jan 25, 2025", size: "0.8 MB" },
-  { id: "RPT-005", name: "Annual Revenue Report 2024", type: "Financial", date: "Jan 15, 2025", size: "12.6 MB" },
+const REPORT_TYPES = [
+  { id: 'financial', title: 'Financial Report', desc: 'Revenue, payouts, and commission summaries.', icon: BarChart, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10' },
+  { id: 'user_growth', title: 'User Growth', desc: 'New registrations, active users, and churn rate.', icon: PieChart, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10' },
+  { id: 'bookings', title: 'Booking Activity', desc: 'Reservation trends, occupancy, and cancellations.', icon: Calendar, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-500/10' },
+  { id: 'audit', title: 'System Audit', desc: 'Admin actions, login logs, and system alerts.', icon: FileText, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10' },
 ];
 
 export default function Page() {
+    const exportMutation = useExportAnalytics();
+
+    const handleExport = (type: string, format: 'csv' | 'pdf') => {
+        // Mapping type to period or category for the API
+        exportMutation.mutate({ period: '30d', format });
+    };
+
   return (
-    <div className="space-y-8 p-8 bg-background min-h-screen">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Reports</h1>
-          <p className="mt-2 text-muted-foreground">Access and download system reports.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
-            <FileText className="mr-2 h-4 w-4" />
-            Generate New Report
-          </Button>
+          <p className="mt-1 text-muted-foreground">Generate and download detailed system reports.</p>
         </div>
       </div>
 
-      <Card className="border-none shadow-sm">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold text-foreground">Generated Reports</CardTitle>
-            <div className="flex items-center gap-2">
-              <div className="relative w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search reports..."
-                  className="pl-9 bg-background"
-                />
-              </div>
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4 text-slate-500" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead>Report Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Generated Date</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {REPORTS.map((report) => (
-                  <TableRow key={report.id} className="hover:bg-muted/50">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-muted rounded text-muted-foreground">
-                          <FileText className="w-4 h-4" />
+      <div className="grid gap-6 md:grid-cols-2">
+          {REPORT_TYPES.map((report) => (
+               <Card key={report.id} className="border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
+                    <CardHeader className="pb-4">
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className={cn("p-3 rounded-xl", report.bg)}>
+                                    <report.icon className={cn("w-6 h-6", report.color)} />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-lg">{report.title}</CardTitle>
+                                    <CardDescription className="mt-1">{report.desc}</CardDescription>
+                                </div>
+                            </div>
                         </div>
-                        <span className="font-medium text-foreground">{report.name}</span>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex gap-3 mt-2">
+                             <Button variant="outline" className="flex-1 gap-2" onClick={() => handleExport(report.id, 'csv')}>
+                                <TableIcon className="w-4 h-4 text-muted-foreground" />
+                                CSV
+                             </Button>
+                             <Button variant="outline" className="flex-1 gap-2" onClick={() => handleExport(report.id, 'pdf')}>
+                                <FileText className="w-4 h-4 text-muted-foreground" />
+                                PDF
+                             </Button>
+                        </div>
+                    </CardContent>
+               </Card>
+          ))}
+      </div>
+
+      <Card className="border-border/50 shadow-sm mt-8">
+          <CardHeader>
+               <CardTitle className="text-lg font-semibold">Generated Reports History</CardTitle>
+               <CardDescription>Recent exports created by administrators.</CardDescription>
+          </CardHeader>
+          <CardContent>
+              <div className="space-y-4">
+                  {[
+                      { name: 'Financial_Report_Nov_2023.pdf', date: '2 hours ago', type: 'PDF', size: '2.4 MB' },
+                      { name: 'User_Growth_Q3_2023.csv', date: 'Yesterday', type: 'CSV', size: '450 KB' },
+                      { name: 'Bookings_Summary_2023.pdf', date: '3 days ago', type: 'PDF', size: '1.8 MB' },
+                  ].map((file, i) => (
+                      <div key={i} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
+                          <div className="flex items-center gap-4">
+                              <div className="p-2 bg-background rounded border border-border">
+                                  {file.type === 'PDF' ? <FileText className="w-5 h-5 text-red-500" /> : <TableIcon className="w-5 h-5 text-green-600" />}
+                              </div>
+                              <div>
+                                  <p className="font-medium text-foreground">{file.name}</p>
+                                  <p className="text-sm text-muted-foreground">{file.date} • {file.size}</p>
+                              </div>
+                          </div>
+                          <Button variant="ghost" size="icon">
+                              <Download className="w-4 h-4 text-muted-foreground" />
+                          </Button>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-muted text-foreground">
-                        {report.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-slate-600">{report.date}</TableCell>
-                    <TableCell className="text-slate-500 text-sm">{report.size}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50">
-                        <Download className="w-4 h-4 mr-2" /> Download
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
+                  ))}
+              </div>
+          </CardContent>
       </Card>
     </div>
   );

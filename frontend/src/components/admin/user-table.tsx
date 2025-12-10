@@ -18,9 +18,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, User } from "lucide-react";
+import { MoreHorizontal, User, Shield, ShieldAlert, ShieldCheck } from "lucide-react";
 import type { User as UserType } from "@/types/entities.types";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils/cn";
 
 interface UserTableProps {
   users: UserType[];
@@ -31,14 +32,18 @@ interface UserTableProps {
 
 export function UserTable({ users, isLoading, onViewDetails, onSuspendUser }: UserTableProps) {
   if (isLoading) {
-    return <div>Loading users...</div>;
+    return (
+      <div className="w-full h-48 flex items-center justify-center text-muted-foreground">
+        Loading users...
+      </div>
+    );
   }
 
   return (
-    <div className="rounded-md border border-slate-200">
+    <div className="rounded-md border border-border bg-card">
       <Table>
         <TableHeader>
-          <TableRow className="bg-slate-50/50">
+          <TableRow className="bg-muted/50 hover:bg-muted/50">
             <TableHead>User</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Status</TableHead>
@@ -48,55 +53,67 @@ export function UserTable({ users, isLoading, onViewDetails, onSuspendUser }: Us
         </TableHeader>
         <TableBody>
           {users.map((user) => (
-            <TableRow key={user.id} className="hover:bg-slate-50/50">
+            <TableRow key={user.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => onViewDetails(user)}>
               <TableCell>
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
-                    <User className="w-4 h-4" />
+                  <div className={cn(
+                    "h-9 w-9 rounded-full flex items-center justify-center transition-colors",
+                    user.role === 'admin' ? "bg-primary/10 text-primary" : "bg-secondary text-secondary-foreground"
+                  )}>
+                    {user.avatar ? (
+                      <img src={user.avatar} alt={user.name} className="h-9 w-9 rounded-full object-cover" />
+                    ) : (
+                      <User className="w-4 h-4" />
+                    )}
                   </div>
                   <div>
-                    <div className="font-medium text-slate-900">{user.name}</div>
-                    <div className="text-xs text-slate-500">{user.email}</div>
+                    <div className="font-medium text-foreground">{user.name}</div>
+                    <div className="text-xs text-muted-foreground">{user.email}</div>
                   </div>
                 </div>
               </TableCell>
               <TableCell>
-                <Badge variant="outline" className="capitalize">
-                  {user.role}
-                </Badge>
+                <div className="flex items-center gap-1.5">
+                  {user.role === 'admin' && <ShieldAlert className="w-3.5 h-3.5 text-primary" />}
+                  {user.role === 'landlord' && <ShieldCheck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
+                  {user.role === 'caretaker' && <Shield className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />}
+                  <span className="capitalize text-sm text-foreground">{user.role}</span>
+                </div>
               </TableCell>
               <TableCell>
                 <Badge
-                  className={
+                  variant="outline"
+                  className={cn(
+                    "capitalize font-medium",
                     user.status === "active"
-                      ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800"
                       : user.status === "suspended"
-                      ? "bg-red-100 text-red-700 border-red-200"
-                      : "bg-amber-100 text-amber-700 border-amber-200"
-                  }
+                      ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
+                      : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800"
+                  )}
                 >
                   {user.status}
                 </Badge>
               </TableCell>
-              <TableCell className="text-slate-600">
+              <TableCell className="text-muted-foreground text-sm">
                 {format(new Date(user.joinedAt), "MMM d, yyyy")}
               </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={(e) => e.stopPropagation()}>
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => onViewDetails(user)}>
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onViewDetails(user); }}>
                       View details
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      className="text-red-600"
-                      onClick={() => onSuspendUser(user)}
+                      className={cn(user.status === "suspended" ? "text-emerald-600" : "text-destructive")}
+                      onClick={(e) => { e.stopPropagation(); onSuspendUser(user); }}
                     >
                       {user.status === "suspended" ? "Reactivate" : "Suspend"} account
                     </DropdownMenuItem>

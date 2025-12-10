@@ -11,6 +11,7 @@ import {
   Tooltip,
   Legend,
   ArcElement,
+  Filler,
 } from "chart.js";
 import { Line, Bar, Doughnut } from "react-chartjs-2";
 import { 
@@ -18,12 +19,24 @@ import {
   Users,
   DollarSign,
   Home,
-  Activity
+  Activity,
+  ArrowUpRight,
+  ArrowDownRight,
+  MoreVertical,
+  Calendar
 } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAnalytics, useAnalyticsBreakdown } from "@/hooks/use-analytics";
 import { cn } from "@/lib/utils/cn";
-import { useAnalytics } from "@/hooks/use-analytics";
 
 ChartJS.register(
   CategoryScale,
@@ -33,225 +46,409 @@ ChartJS.register(
   BarElement,
   ArcElement,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 export default function Page() {
-  const { data: analytics, isLoading } = useAnalytics();
+  const { data: analytics, isLoading } = useAnalytics('30d');
+  const { data: userStats } = useAnalyticsBreakdown('users', '30d');
+  const { data: revenueStats } = useAnalyticsBreakdown('revenue', '30d');
 
-  const userGrowthData = useMemo(() => ({
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+  const resolvedColors = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return {
+        primary: '#10b981',
+        primarySoft: 'rgba(16, 185, 129, 0.1)',
+        chart1: '#3b82f6',
+        chart1Soft: 'rgba(59, 130, 246, 0.1)',
+        chart2: '#10b981',
+        chart2Soft: 'rgba(16, 185, 129, 0.1)',
+        chart3: '#8b5cf6',
+      };
+    }
+
+    const styles = getComputedStyle(document.documentElement);
+    const chart1Raw = styles.getPropertyValue('--chart-1').trim();
+    const chart2Raw = styles.getPropertyValue('--chart-2').trim();
+    const chart3Raw = styles.getPropertyValue('--chart-3').trim();
+    const primaryRaw = styles.getPropertyValue('--primary').trim();
+
+    const hslFromRaw = (raw: string) => (raw ? `hsl(${raw})` : undefined);
+
+    const chart1 = hslFromRaw(chart1Raw) ?? '#3b82f6';
+    const chart2 = hslFromRaw(chart2Raw) ?? '#10b981';
+    const chart3 = hslFromRaw(chart3Raw) ?? '#8b5cf6';
+    const primary = hslFromRaw(primaryRaw) ?? '#10b981';
+
+    const soft = (color: string, alpha: number) => {
+      if (color.startsWith('hsl(')) {
+        return color.replace('hsl(', `hsl(`).replace(')', ` / ${alpha})`);
+      }
+      // Fallback for hex colors
+      return color;
+    };
+
+    return {
+      primary,
+      primarySoft: soft(primary, 0.1),
+      chart1,
+      chart1Soft: soft(chart1, 0.1),
+      chart2,
+      chart2Soft: soft(chart2, 0.1),
+      chart3,
+    };
+  }, []);
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: resolvedColors.primarySoft,
+        titleColor: resolvedColors.primary,
+        bodyColor: resolvedColors.primary,
+        borderColor: resolvedColors.chart1Soft,
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 8,
+        displayColors: false,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(148, 163, 184, 0.3)',
+          drawBorder: false,
+        },
+        ticks: {
+          color: 'rgba(148, 163, 184, 0.9)',
+          font: {
+            size: 11,
+          },
+        },
+      },
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          color: 'rgba(148, 163, 184, 0.9)',
+          font: {
+            size: 11,
+          },
+        },
+      },
+    },
+  };
+
+  const userGrowthData = useMemo(() => {
+    // Fallback if no real breakdown data is returned yet
+    // In production, userStats should be an array of { date: string, count: number }
+    const labels = userStats?.map((d: any) => d.label) || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const data = userStats?.map((d: any) => d.value) || [12, 19, 15, 25, 22, 30, 35];
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: "New Users",
+          data,
+          borderColor: resolvedColors.primary,
+          backgroundColor: resolvedColors.primarySoft,
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: resolvedColors.primary,
+          pointBorderColor: '#0f172a',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+      ],
+    };
+  }, [userStats, resolvedColors]);
+
+  const revenueData = useMemo(() => {
+    const labels = revenueStats?.map((d: any) => d.label) || ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+    const data = revenueStats?.map((d: any) => d.value) || [15000, 22000, 18000, 24000];
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: "Revenue",
+          data,
+          backgroundColor: resolvedColors.chart2,
+          borderRadius: 4,
+          hoverBackgroundColor: resolvedColors.chart2Soft,
+        },
+      ],
+    };
+  }, [revenueStats, resolvedColors]);
+
+  const distributionData = useMemo(() => ({
+    labels: ["Students", "Landlords", "Caretakers"],
     datasets: [
       {
-        label: "Students",
-        data: [65, 78, 90, 112, 130, 145],
-        borderColor: "#0ea5e9",
-        backgroundColor: "rgba(14, 165, 233, 0.1)",
-        tension: 0.4,
-        fill: true,
-      },
-      {
-        label: "Landlords",
-        data: [28, 35, 42, 48, 55, 62],
-        borderColor: "#059669",
-        backgroundColor: "rgba(5, 150, 105, 0.1)",
-        tension: 0.4,
-        fill: true,
-      },
-    ],
-  }), []);
-
-  const revenueData = useMemo(() => ({
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    datasets: [
-      {
-        label: "Revenue (KES)",
-        data: [45000, 52000, 48000, 61000, 58000, 67000],
-        backgroundColor: "#059669",
-        borderRadius: 4,
-      },
-    ],
-  }), []);
-
-  const userDistributionData = useMemo(() => ({
-    labels: ["Students", "Landlords", "Caretakers", "Admins"],
-    datasets: [
-      {
-        data: [145, 62, 18, 5],
+        data: [70, 20, 10], // Placeholder distribution until breakdown supports it
         backgroundColor: [
-          "#0ea5e9", // sky-500
-          "#059669", // emerald-600
-          "#f59e0b", // amber-500
-          "#6366f1", // indigo-500
+          resolvedColors.chart1,
+          resolvedColors.chart2,
+          resolvedColors.chart3,
         ],
         borderWidth: 0,
       },
     ],
-  }), []);
+  }), [resolvedColors]);
 
   if (isLoading) {
-    return <div className="p-8">Loading dashboard...</div>;
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-2">
+           <Skeleton className="h-8 w-48" />
+           <Skeleton className="h-4 w-96" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-32 rounded-xl" />
+          ))}
+        </div>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Skeleton className="h-[350px] rounded-xl" />
+          <Skeleton className="h-[350px] rounded-xl" />
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h1>
-        <p className="mt-2 text-slate-500">Overview of platform performance and key metrics.</p>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <p className="mt-1 text-muted-foreground">Welcome back, here's what's happening today.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="gap-2">
+            <Calendar className="h-4 w-4" />
+            Last 30 Days
+          </Button>
+          <Button className="gap-2">
+            <TrendingUp className="h-4 w-4" />
+            View Reports
+          </Button>
+        </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-none shadow-sm">
+        <Card className="border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-500">Total Users</p>
-                <h3 className="text-2xl font-bold text-slate-900 mt-1">{analytics?.totalUsers?.toLocaleString() || '0'}</h3>
+                <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
+                <h3 className="text-2xl font-bold text-foreground mt-2">
+                  KES {analytics?.totalRevenue?.toLocaleString() || '0'}
+                </h3>
               </div>
-              <div className="p-2 bg-sky-50 rounded-lg">
-                <Users className="w-5 h-5 text-sky-600" />
+              <div className="p-2 bg-primary/10 rounded-xl">
+                <DollarSign className="w-5 h-5 text-primary" />
               </div>
             </div>
-            <p className="text-xs text-emerald-600 mt-2 font-medium flex items-center">
-              <TrendingUp className="w-3 h-3 mr-1" /> +{analytics?.userGrowth?.percentage || 0}% from last month
-            </p>
+            <div className="flex items-center mt-4">
+              {(analytics?.revenueGrowth?.percentage || 0) >= 0 ? (
+                <span className="text-xs font-medium text-emerald-600 flex items-center bg-emerald-50 px-2 py-0.5 rounded-full dark:bg-emerald-900/20 dark:text-emerald-400">
+                  <ArrowUpRight className="w-3 h-3 mr-1" />
+                  {analytics?.revenueGrowth?.percentage}%
+                </span>
+              ) : (
+                <span className="text-xs font-medium text-red-600 flex items-center bg-red-50 px-2 py-0.5 rounded-full dark:bg-red-900/20 dark:text-red-400">
+                  <ArrowDownRight className="w-3 h-3 mr-1" />
+                  {Math.abs(analytics?.revenueGrowth?.percentage || 0)}%
+                </span>
+              )}
+              <span className="text-xs text-muted-foreground ml-2">vs last month</span>
+            </div>
           </CardContent>
         </Card>
-        <Card className="border-none shadow-sm">
+
+        <Card className="border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-500">Total Revenue</p>
-                <h3 className="text-2xl font-bold text-slate-900 mt-1">KES {analytics?.totalRevenue?.toLocaleString() || '0'}</h3>
+                <p className="text-sm font-medium text-muted-foreground">Total Users</p>
+                <h3 className="text-2xl font-bold text-foreground mt-2">
+                  {analytics?.totalUsers?.toLocaleString() || '0'}
+                </h3>
               </div>
-              <div className="p-2 bg-emerald-50 rounded-lg">
-                <DollarSign className="w-5 h-5 text-emerald-600" />
+              <div className="p-2 bg-blue-500/10 rounded-xl">
+                <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
-            <p className="text-xs text-emerald-600 mt-2 font-medium flex items-center">
-              <TrendingUp className="w-3 h-3 mr-1" /> +{analytics?.revenueGrowth?.percentage || 0}% from last month
-            </p>
+            <div className="flex items-center mt-4">
+               {(analytics?.userGrowth?.percentage || 0) >= 0 ? (
+                <span className="text-xs font-medium text-emerald-600 flex items-center bg-emerald-50 px-2 py-0.5 rounded-full dark:bg-emerald-900/20 dark:text-emerald-400">
+                  <ArrowUpRight className="w-3 h-3 mr-1" />
+                  {analytics?.userGrowth?.percentage}%
+                </span>
+              ) : (
+                <span className="text-xs font-medium text-red-600 flex items-center bg-red-50 px-2 py-0.5 rounded-full dark:bg-red-900/20 dark:text-red-400">
+                  <ArrowDownRight className="w-3 h-3 mr-1" />
+                  {Math.abs(analytics?.userGrowth?.percentage || 0)}%
+                </span>
+              )}
+              <span className="text-xs text-muted-foreground ml-2">vs last month</span>
+            </div>
           </CardContent>
         </Card>
-        <Card className="border-none shadow-sm">
+
+        <Card className="border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-500">Active Hostels</p>
-                <h3 className="text-2xl font-bold text-slate-900 mt-1">{analytics?.totalHostels || 0}</h3>
+                <p className="text-sm font-medium text-muted-foreground">Active Hostels</p>
+                <h3 className="text-2xl font-bold text-foreground mt-2">
+                  {analytics?.totalHostels?.toLocaleString() || '0'}
+                </h3>
               </div>
-              <div className="p-2 bg-amber-50 rounded-lg">
-                <Home className="w-5 h-5 text-amber-600" />
+              <div className="p-2 bg-amber-500/10 rounded-xl">
+                <Home className="w-5 h-5 text-amber-600 dark:text-amber-400" />
               </div>
             </div>
-            <p className="text-xs text-emerald-600 mt-2 font-medium flex items-center">
-              <TrendingUp className="w-3 h-3 mr-1" /> +5% from last month
-            </p>
+            <div className="flex items-center mt-4">
+              <span className="text-xs font-medium text-emerald-600 flex items-center bg-emerald-50 px-2 py-0.5 rounded-full dark:bg-emerald-900/20 dark:text-emerald-400">
+                 <ArrowUpRight className="w-3 h-3 mr-1" />
+                 +2 new
+              </span>
+              <span className="text-xs text-muted-foreground ml-2">this month</span>
+            </div>
           </CardContent>
         </Card>
-        <Card className="border-none shadow-sm">
+
+        <Card className="border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-500">Platform Growth</p>
-                <h3 className="text-2xl font-bold text-slate-900 mt-1">+{analytics?.bookingGrowth?.percentage || 0}%</h3>
+                <p className="text-sm font-medium text-muted-foreground">Bookings</p>
+                <h3 className="text-2xl font-bold text-foreground mt-2">
+                  {analytics?.totalBookings?.toLocaleString() || '0'}
+                </h3>
               </div>
-              <div className="p-2 bg-indigo-50 rounded-lg">
-                <Activity className="w-5 h-5 text-indigo-600" />
+              <div className="p-2 bg-indigo-500/10 rounded-xl">
+                <Activity className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               </div>
             </div>
-            <p className="text-xs text-slate-500 mt-2 font-medium">
-              Consistent growth
-            </p>
+            <div className="flex items-center mt-4">
+               {(analytics?.bookingGrowth?.percentage || 0) >= 0 ? (
+                <span className="text-xs font-medium text-emerald-600 flex items-center bg-emerald-50 px-2 py-0.5 rounded-full dark:bg-emerald-900/20 dark:text-emerald-400">
+                  <ArrowUpRight className="w-3 h-3 mr-1" />
+                  {analytics?.bookingGrowth?.percentage}%
+                </span>
+              ) : (
+                <span className="text-xs font-medium text-red-600 flex items-center bg-red-50 px-2 py-0.5 rounded-full dark:bg-red-900/20 dark:text-red-400">
+                  <ArrowDownRight className="w-3 h-3 mr-1" />
+                  {Math.abs(analytics?.bookingGrowth?.percentage || 0)}%
+                </span>
+              )}
+               <span className="text-xs text-muted-foreground ml-2">vs last month</span>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-none shadow-sm">
+      {/* Charts Layer */}
+      <div className="grid gap-6 lg:grid-cols-7">
+        <Card className="col-span-4 border-border/50 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-slate-900">User Growth</CardTitle>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-semibold">User Growth</CardTitle>
+                <CardDescription>New user registrations over time</CardDescription>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>Download PNG</DropdownMenuItem>
+                  <DropdownMenuItem>View Report</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <Line 
-                data={userGrowthData} 
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: { legend: { position: 'bottom' } },
-                  scales: { 
-                    y: { beginAtZero: true, grid: { color: "#f1f5f9" } },
-                    x: { grid: { display: false } }
-                  }
-                }} 
-              />
+          <CardContent className="pl-2">
+            <div className="h-[300px] w-full">
+              <Line data={userGrowthData} options={chartOptions} />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm">
+        <Card className="col-span-3 border-border/50 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-slate-900">Revenue Overview</CardTitle>
+            <CardTitle className="text-lg font-semibold">Revenue Trend</CardTitle>
+            <CardDescription>Income breakdown by week</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <Bar 
-                data={revenueData} 
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: { legend: { display: false } },
-                  scales: { 
-                    y: { beginAtZero: true, grid: { color: "#f1f5f9" } },
-                    x: { grid: { display: false } }
-                  }
-                }} 
-              />
+            <div className="h-[300px] w-full">
+              <Bar data={revenueData} options={chartOptions} />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Bottom Section: Distribution & Activity */}
+      {/* Bottom Section */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="border-none shadow-sm lg:col-span-1">
+        <Card className="border-border/50 shadow-sm lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-slate-900">User Distribution</CardTitle>
+            <CardTitle className="text-lg font-semibold">User Distribution</CardTitle>
           </CardHeader>
-          <CardContent className="flex justify-center">
-            <div className="w-[200px] h-[200px]">
+          <CardContent className="flex justify-center py-8">
+            <div className="w-[220px] h-[220px] relative">
               <Doughnut 
-                data={userDistributionData} 
+                data={distributionData} 
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
-                  plugins: { legend: { position: 'bottom' } }
+                  plugins: { 
+                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } 
+                  }
                 }} 
               />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm lg:col-span-2">
+        <Card className="border-border/50 shadow-sm lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-slate-900">Recent Activity</CardTitle>
+             <div className="flex items-center justify-between">
+               <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
+               <Button variant="ghost" size="sm" className="text-muted-foreground">View All</Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-6">
               {[
-                { description: 'New student registered: John Doe', time: '2 minutes ago' },
-                { description: 'Booking confirmed for Oakwood Hostel', time: '15 minutes ago' },
-                { description: 'Payment received from Jane Smith', time: '1 hour ago' },
-                { description: 'New hostel listed: Campus View Residence', time: '3 hours ago' },
-              ].map((activity, i) => (
-                <div key={i} className="flex items-start gap-4 pb-4 border-b border-slate-100 last:border-0 last:pb-0">
-                  <div className="w-2 h-2 mt-2 rounded-full bg-emerald-500" />
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">{activity.description}</p>
-                    <p className="text-xs text-slate-500">{activity.time}</p>
+                { title: 'New Booking', desc: 'John Doe booked room A101 at Sunshine Hostel', time: '2 mins ago', icon: <Home className="w-4 h-4 text-primary" />, color: "bg-primary/10" },
+                { title: 'Payment Received', desc: 'Secure payment of KES 15,000 from Sarah', time: '15 mins ago', icon: <DollarSign className="w-4 h-4 text-emerald-600" />, color: "bg-emerald-500/10" },
+                { title: 'New User', desc: 'Michael registered as a Landlord', time: '1 hour ago', icon: <Users className="w-4 h-4 text-blue-600" />, color: "bg-blue-500/10" },
+                { title: 'Verification Request', desc: 'Hostel "Green View" submitted for approval', time: '3 hours ago', icon: <Activity className="w-4 h-4 text-amber-600" />, color: "bg-amber-500/10" },
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-4">
+                  <div className={cn("mt-1 p-2 rounded-full", item.color)}>
+                    {item.icon}
+                  </div>
+                  <div className="flex-1 space-y-1">
+                     <p className="text-sm font-medium text-foreground">{item.title}</p>
+                     <p className="text-sm text-muted-foreground">{item.desc}</p>
+                  </div>
+                  <div className="text-xs text-muted-foreground whitespace-nowrap">
+                    {item.time}
                   </div>
                 </div>
               ))}

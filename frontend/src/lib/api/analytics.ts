@@ -15,7 +15,7 @@ export const getAnalytics = async (
   dateRange?: CustomDateRange
 ): Promise<PlatformAnalytics> => {
   const response = await apiClient.axios.get<ApiResponse<PlatformAnalytics>>(
-    '/api/v1/analytics/dashboard/',
+    '/analytics/dashboard/',
     {
       params: {
         period,
@@ -48,7 +48,7 @@ export const getAnalyticsBreakdown = async (
   period: string
 ): Promise<any> => {
   const response = await apiClient.axios.get<ApiResponse<any>>(
-    `/api/v1/analytics/breakdown/${category}/`,
+    `/analytics/breakdown/${category}/`,
     { params: { period } }
   );
   return response.data.data || [];
@@ -63,7 +63,7 @@ export const exportAnalytics = async (
   dateRange?: CustomDateRange
 ): Promise<Blob> => {
   const response = await apiClient.axios.post(
-    '/api/v1/analytics/export/',
+    '/analytics/export/',
     {
       period,
       format,

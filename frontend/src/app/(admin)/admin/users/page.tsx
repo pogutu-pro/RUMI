@@ -1,21 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Search, 
   Filter, 
-  Plus
+  Plus,
+  Users
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserTable } from "@/components/admin/user-table";
 import { useUsers, useUpdateUserStatus } from "@/hooks/use-users";
 import { User } from "@/types/entities.types";
+import { cn } from "@/lib/utils/cn";
 
 export default function Page() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   
@@ -31,44 +35,51 @@ export default function Page() {
     updateUserStatus.mutate({ id: user.id, status: newStatus });
   };
 
+  const handleViewDetails = (user: User) => {
+    router.push(`/admin/users/${user.id}`);
+  };
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Users</h1>
-          <p className="mt-2 text-slate-500">Manage all platform users from a single view.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">User Management</h1>
+          <p className="mt-1 text-muted-foreground">Manage students, landlords, and caretakers.</p>
         </div>
         <div className="flex gap-2">
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
             <Plus className="mr-2 h-4 w-4" />
             Add New User
           </Button>
         </div>
       </div>
 
-      <Card className="border-none shadow-sm">
+      <Card className="border-border/50 shadow-sm">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold text-slate-900">All Users</CardTitle>
+            <div>
+              <CardTitle className="text-lg font-semibold">All Users</CardTitle>
+              <CardDescription>View and manage user accounts</CardDescription>
+            </div>
             <div className="flex items-center gap-2">
               <div className="relative w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search users..."
-                  className="pl-9 bg-white"
+                  className="pl-9 bg-background"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4 text-slate-500" />
+                <Filter className="h-4 w-4 text-muted-foreground" />
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="all" className="w-full" onValueChange={setRoleFilter}>
-            <TabsList className="mb-4 bg-slate-100 p-1">
+            <TabsList className="mb-4 bg-muted/50 p-1">
               <TabsTrigger value="all">All Users</TabsTrigger>
               <TabsTrigger value="student">Students</TabsTrigger>
               <TabsTrigger value="landlord">Landlords</TabsTrigger>
@@ -76,46 +87,14 @@ export default function Page() {
               <TabsTrigger value="admin">Admins</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="all" className="mt-0">
-              <UserTable 
-                users={users || []} 
-                isLoading={isLoading} 
-                onViewDetails={() => {}} 
-                onSuspendUser={handleSuspendUser} 
-              />
-            </TabsContent>
-            <TabsContent value="student" className="mt-0">
-              <UserTable 
-                users={users || []} 
-                isLoading={isLoading} 
-                onViewDetails={() => {}} 
-                onSuspendUser={handleSuspendUser} 
-              />
-            </TabsContent>
-            <TabsContent value="landlord" className="mt-0">
-              <UserTable 
-                users={users || []} 
-                isLoading={isLoading} 
-                onViewDetails={() => {}} 
-                onSuspendUser={handleSuspendUser} 
-              />
-            </TabsContent>
-            <TabsContent value="caretaker" className="mt-0">
-              <UserTable 
-                users={users || []} 
-                isLoading={isLoading} 
-                onViewDetails={() => {}} 
-                onSuspendUser={handleSuspendUser} 
-              />
-            </TabsContent>
-            <TabsContent value="admin" className="mt-0">
-              <UserTable 
-                users={users || []} 
-                isLoading={isLoading} 
-                onViewDetails={() => {}} 
-                onSuspendUser={handleSuspendUser} 
-              />
-            </TabsContent>
+            <div className="relative min-h-[400px]">
+               <UserTable 
+                  users={users || []} 
+                  isLoading={isLoading} 
+                  onViewDetails={handleViewDetails} 
+                  onSuspendUser={handleSuspendUser} 
+                />
+            </div>
           </Tabs>
         </CardContent>
       </Card>

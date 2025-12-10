@@ -38,6 +38,13 @@
     
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 10%;
+
+    /* Chart Colors - Consistent Hues */
+    --chart-1: 221 83% 53%; /* Blue */
+    --chart-2: 160 84% 39%; /* Emerald */
+    --chart-3: 262 83% 58%; /* Purple */
+    --chart-4: 35 92% 55%;  /* Amber */
+    --chart-5: 346 87% 55%; /* Rose */
   }
 
   .dark {
@@ -77,6 +84,13 @@
     
     --warning: 43 96% 56%;
     --warning-foreground: 0 0% 10%;
+
+    /* Chart Colors - Dark Mode (Lighter for contrast) */
+    --chart-1: 221 83% 65%; /* Bright Blue */
+    --chart-2: 160 84% 50%; /* Bright Emerald */
+    --chart-3: 262 83% 68%; /* Bright Purple */
+    --chart-4: 35 92% 65%;  /* Bright Amber */
+    --chart-5: 346 87% 65%; /* Bright Rose */
   }
 }
 
@@ -107,4 +121,9 @@
   --font-family-sans: var(--font-sans);
   --font-family-heading: var(--font-family-heading);
   --border-radius: var(--radius);
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
 }
