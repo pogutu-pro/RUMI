@@ -44,6 +44,7 @@ class Hostel(models.Model):
         null=True,
         related_name='verified_hostels'
     )
+    images = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -26,7 +26,7 @@ class HostelAmenitySerializer(serializers.ModelSerializer):
 
 class HostelSerializer(serializers.ModelSerializer):
     """Serializer for hostel listings"""
-    amenities = HostelAmenitySerializer(many=True, read_only=True)
+    amenities = HostelAmenitySerializer(source='hostel_amenities', many=True, read_only=True)
     landlord_info = serializers.SerializerMethodField()
 
     class Meta:

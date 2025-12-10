@@ -110,37 +110,7 @@ class HostelDetailView(APIView):
                 'error': 'Hostel not found'
             }, status=status.HTTP_404_NOT_FOUND)
 
-        # Get rooms count and availability
-        rooms = Room.objects.filter(hostel=hostel, is_active=True)
-        total_rooms = rooms.count()
-        available_rooms = rooms.filter(is_available=True).count()
-
-        # Mock reviews (would come from reviews app)
-        average_rating = 4.5
-        review_count = 15
-
-        return Response({
-            'hostel_id': hostel.id,
-            'name': hostel.name,
-            'landlord': {
-                'landlord_id': hostel.landlord.id,
-                'company_name': hostel.landlord.company_name,
-                'phone': hostel.landlord.user.phone_number
-            },
-            'description': hostel.description,
-            'address': hostel.address,
-            'university': hostel.university,
-            'distance_from_university': hostel.distance_from_university,
-            'gender_policy': hostel.gender_policy,
-            'total_rooms': total_rooms,
-            'available_rooms': available_rooms,
-            'amenities': hostel.amenities,
-            'images': hostel.images,
-            'average_rating': average_rating,
-            'review_count': review_count,
-            'has_inventory_template': hostel.has_inventory_template,
-            'has_caretaker': hasattr(hostel, 'caretaker') and hostel.caretaker.is_active
-        }, status=status.HTTP_200_OK)
+        return Response(HostelSerializer(hostel).data, status=status.HTTP_200_OK)
 
 
 class RoomCreateView(APIView):
