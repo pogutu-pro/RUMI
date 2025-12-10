@@ -1,0 +1,112 @@
+'use client';
+
+import { useEffect, useMemo, type ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import type { Route } from 'next';
+import { getAccessToken } from '@/lib/auth/token';
+import { useProfile } from '@/hooks/use-auth';
+import { useAuthStore, hydrateAuthStore, ROLES } from '@/stores/auth.store';
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+const PUBLIC_ROUTES = [
+  '/',
+  '/about',
+  '/contact',
+  '/faq',
+  '/features',
+  '/how-it-works',
+  '/pricing',
+  '/privacy',
+  '/terms',
+  '/blog',
+  '/hostels',
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-email',
+  '/verify-phone',
+];
+
+const ROLE_REDIRECTS: Record<string, string> = {
+  [ROLES.STUDENT]: '/student/dashboard',
+  [ROLES.LANDLORD]: '/landlord/dashboard',
+  [ROLES.CARETAKER]: '/caretaker/dashboard',
+  [ROLES.SUPER_ADMIN]: '/admin/dashboard',
+  [ROLES.TECH_SUPPORT_ADMIN]: '/admin/dashboard',
+};
+
+const AUTH_ROUTES = [
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+];
+
+function isPublicPath(pathname: string | null | undefined) {
+  if (!pathname) return true;
+  return PUBLIC_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
+
+  useEffect(() => {
+    hydrateAuthStore();
+  }, []);
+
+  const shouldFetchProfile = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return !!getAccessToken();
+  }, []);
+
+  const profileQuery = useProfile();
+
+  // Wait for hydration and profile fetch if needed
+  const ready =
+    isInitialized &&
+    (!shouldFetchProfile || (isAuthenticated && !!user) || profileQuery.isFetched);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    if (
+      isAuthenticated &&
+      pathname &&
+      AUTH_ROUTES.some((r) => pathname.startsWith(r))
+    ) {
+      const redirect = user?.role
+        ? (ROLE_REDIRECTS[user.role] ?? '/dashboard')
+        : '/dashboard';
+      router.replace(redirect as Route);
+      return;
+    }
+
+    if (!isAuthenticated && pathname && !isPublicPath(pathname)) {
+      const next = encodeURIComponent(pathname);
+      router.replace(`/login?next=${next}` as Route);
+    }
+  }, [ready, isAuthenticated, pathname, router, user?.role]);
+
+  const isPublic = isPublicPath(pathname);
+
+  if (!ready) {
+    return null;
+  }
+
+  if (!isAuthenticated && !isPublic) {
+    return null;
+  }
+
+  return <>{children}</>;
+}

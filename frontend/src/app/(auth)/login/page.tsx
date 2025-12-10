@@ -1,0 +1,57 @@
+'use client';
+
+import React from 'react';
+import { useSearchParams } from 'next/navigation';
+import { AlertCircle } from 'lucide-react';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { LoginForm } from '@/components/auth/login-form';
+
+export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const sessionExpired = searchParams?.get('session_expired') === 'true';
+  const verified = searchParams?.get('verified') === 'true';
+
+  return (
+    <div className="w-full">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-center">
+          <h1 className="text-base font-bold text-gray-900">
+            Log in or sign up
+          </h1>
+        </div>
+        
+        <div className="p-6">
+          <div className="mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Welcome to Rumi</h2>
+          </div>
+
+          <div className="space-y-4 mb-6">
+            {sessionExpired && (
+              <Alert variant="destructive" role="alert">
+                <AlertCircle className="h-4 w-4" aria-hidden />
+                <AlertDescription>
+                  Your session expired. Please sign in again.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {verified && (
+              <Alert role="status">
+                <AlertCircle
+                  className="h-4 w-4 text-emerald-600"
+                  aria-hidden
+                />
+                <AlertDescription className="text-emerald-800">
+                  Email verified   you can now sign in.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
+          <LoginForm />
+        </div>
+      </div>
+    </div>
+  );
+}

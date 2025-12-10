@@ -1,0 +1,228 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import {
+  Info,
+  HelpCircle,
+  Mail,
+  FileText,
+  Shield,
+  Briefcase,
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+  Download,
+  Phone,
+} from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+
+export const metadata: Metadata = {
+  title: 'More',
+  description: 'Explore more RUMI features, help resources, and information',
+};
+
+interface MenuItemProps {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  external?: boolean;
+}
+
+function MenuItem({ href, icon, title, description, external }: MenuItemProps) {
+  return (
+    <Link 
+      href={href}
+      {...(external && { target: '_blank', rel: 'noopener noreferrer' })}
+    >
+      <Card className="p-5 hover:shadow-md hover:border-primary/20 transition-all cursor-pointer group">
+        <div className="flex items-start gap-4">
+          <div className="rounded-lg bg-primary/10 p-3 group-hover:bg-primary/20 transition-colors">
+            {icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-primary transition-colors">
+              {title}
+            </h3>
+            <p className="text-sm text-gray-600 line-clamp-2">{description}</p>
+          </div>
+        </div>
+      </Card>
+    </Link>
+  );
+}
+
+export default function MorePage() {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">More</h1>
+          <p className="text-gray-600">
+            Explore additional features and resources
+          </p>
+        </div>
+
+        {/* About & Information Section */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-gray-900">
+            About RUMI
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <MenuItem
+              href="/about"
+              icon={<Info className="h-6 w-6 text-primary" />}
+              title="About Us"
+              description="Learn more about RUMI and our mission"
+            />
+            <MenuItem
+              href="/how-it-works"
+              icon={<HelpCircle className="h-6 w-6 text-primary" />}
+              title="How It Works"
+              description="Understand how RUMI simplifies hostel booking"
+            />
+            <MenuItem
+              href="/features"
+              icon={<Briefcase className="h-6 w-6 text-primary" />}
+              title="Features"
+              description="Discover all RUMI platform features"
+            />
+            <MenuItem
+              href="/pricing"
+              icon={<FileText className="h-6 w-6 text-primary" />}
+              title="Pricing"
+              description="View our transparent pricing plans"
+            />
+          </div>
+        </div>
+
+        {/* Help & Support Section */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Help \u0026 Support
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <MenuItem
+              href="/faq"
+              icon={<HelpCircle className="h-6 w-6 text-primary" />}
+              title="FAQ"
+              description="Find answers to common questions"
+            />
+            <MenuItem
+              href="/contact"
+              icon={<Mail className="h-6 w-6 text-primary" />}
+              title="Contact Us"
+              description="Get in touch with our support team"
+            />
+            <MenuItem
+              href="tel:+254700000000"
+              icon={<Phone className="h-6 w-6 text-primary" />}
+              title="Call Us"
+              description="Speak to our customer service"
+              external
+            />
+            <MenuItem
+              href="/blog"
+              icon={<FileText className="h-6 w-6 text-primary" />}
+              title="Blog"
+              description="Read our latest news and tips"
+            />
+          </div>
+        </div>
+
+        {/* Legal Section */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-gray-900">Legal</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <MenuItem
+              href="/terms"
+              icon={<FileText className="h-6 w-6 text-primary" />}
+              title="Terms of Service"
+              description="Read our terms and conditions"
+            />
+            <MenuItem
+              href="/privacy"
+              icon={<Shield className="h-6 w-6 text-primary" />}
+              title="Privacy Policy"
+              description="Learn how we protect your data"
+            />
+          </div>
+        </div>
+
+        {/* Social Media Section */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Connect With Us
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <a
+              href="https://facebook.com/rumi"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-3 p-4 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors"
+            >
+              <Facebook className="h-8 w-8 text-blue-600" />
+              <span className="text-sm font-medium text-gray-900">Facebook</span>
+            </a>
+            <a
+              href="https://twitter.com/rumi"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-3 p-4 rounded-lg bg-sky-50 hover:bg-sky-100 transition-colors"
+            >
+              <Twitter className="h-8 w-8 text-sky-600" />
+              <span className="text-sm font-medium text-gray-900">Twitter</span>
+            </a>
+            <a
+              href="https://instagram.com/rumi"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-3 p-4 rounded-lg bg-pink-50 hover:bg-pink-100 transition-colors"
+            >
+              <Instagram className="h-8 w-8 text-pink-600" />
+              <span className="text-sm font-medium text-gray-900">Instagram</span>
+            </a>
+            <a
+              href="https://linkedin.com/company/rumi"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-3 p-4 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors"
+            >
+              <Linkedin className="h-8 w-8 text-blue-700" />
+              <span className="text-sm font-medium text-gray-900">LinkedIn</span>
+            </a>
+          </div>
+        </div>
+
+        {/* App Download Section */}
+        <Card className="p-8 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+          <div className="text-center space-y-4">
+            <Download className="h-12 w-12 text-primary mx-auto" />
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-gray-900">
+                Download the RUMI App
+              </h3>
+              <p className="text-gray-600">
+                Get the best hostel booking experience on your mobile device
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+              <Button size="lg" className="gap-2">
+                <Download className="h-5 w-5" />
+                Coming Soon
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        {/* Footer Info */}
+        <div className="text-center pt-6 pb-8 text-sm text-gray-600">
+          <p>© 2024 RUMI. All rights reserved.</p>
+          <p className="mt-2">Made with ❤️ for students in Kenya</p>
+        </div>
+      </div>
+    </div>
+  );
+}
