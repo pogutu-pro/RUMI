@@ -10,7 +10,7 @@ import {
   Building2, 
   Calendar,
   FileCheck,
-  KeyRounded,
+  KeyRound,
   UploadCloud,
   ArrowRight,
   ArrowLeft
@@ -203,7 +203,7 @@ export default function CheckInProcessPage() {
                    >
                         <div className="text-center py-8">
                             <div className="h-20 w-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <KeyRounded className="h-10 w-10 text-emerald-600" />
+                                <KeyRound className="h-10 w-10 text-emerald-600" />
                             </div>
                             <h3 className="text-2xl font-bold text-slate-900 mb-2">Ready for Handover</h3>
                             <p className="text-slate-600 max-w-md mx-auto">

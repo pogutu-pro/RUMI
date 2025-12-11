@@ -2,14 +2,33 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Download } from 'lucide-react';
+import { X, Download, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showPrompt, setShowPrompt] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    const userAgent = window.navigator.userAgent;
+    const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    setIsMobile(mobile);
+
+    // Check for iOS
+    const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    
+    if (isIOSDevice && !isStandalone) {
+      setIsIOS(true);
+      const isDismissed = localStorage.getItem('pwa-prompt-dismissed');
+      if (!isDismissed) {
+        setShowPrompt(true);
+      }
+    }
+
+    // Standard PWA (Android/Chrome/Desktop)
     const handler = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -42,7 +61,6 @@ export default function PWAInstallPrompt() {
   const handleDismiss = () => {
     setShowPrompt(false);
     localStorage.setItem('pwa-prompt-dismissed', 'true');
-    // Re-show after 7 days (optional logic could be added here)
   };
 
   if (!showPrompt) return null;
@@ -62,9 +80,15 @@ export default function PWAInstallPrompt() {
                 <Download className="w-6 h-6 text-green-600 dark:text-green-500" />
               </div>
               <div>
-                <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Install App</h3>
+                <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
+                  {isIOS ? 'Install RUMI on iOS' : isMobile ? 'Install App' : 'Install Desktop App'}
+                </h3>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  Install RUMI for a better experience.
+                  {isIOS 
+                    ? 'Tap the Share button and select "Add to Home Screen"' 
+                    : isMobile 
+                      ? 'Install RUMI for a better mobile experience.' 
+                      : 'Install RUMI on your desktop for quick access.'}
                 </p>
               </div>
             </div>
@@ -75,12 +99,21 @@ export default function PWAInstallPrompt() {
               <X className="w-5 h-5" />
             </button>
           </div>
-          <Button 
-            onClick={handleInstallClick}
-            className="w-full bg-green-600 hover:bg-green-700 text-white"
-          >
-            Install
-          </Button>
+          
+          {!isIOS && (
+            <Button 
+              onClick={handleInstallClick}
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+            >
+              Install
+            </Button>
+          )}
+          
+          {isIOS && (
+            <div className="text-xs text-zinc-400 flex items-center justify-center gap-1 bg-zinc-50 dark:bg-zinc-800/50 p-2 rounded">
+               Look for <Upload className="w-3 h-3 inline mx-1" /> then "Add to Home Screen" <div className="w-4 h-4 border border-zinc-300 rounded mx-1 flex items-center justify-center">+</div>
+            </div>
+          )}
         </div>
       </motion.div>
     </AnimatePresence>

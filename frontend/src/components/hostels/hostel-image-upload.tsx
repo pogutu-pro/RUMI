@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -149,12 +149,11 @@ export default function HostelImageUpload({
                 type="file"
                 multiple
                 accept="image/*"
-                onChange={handleUpload}
-                disabled={uploading}
+                onChange={handleFileInput}
               />
-            </label>
-          </div>
+            </motion.div>
         )}
+        </AnimatePresence>
       </div>
       
       {images.length === 0 && (

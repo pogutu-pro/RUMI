@@ -108,7 +108,7 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: '/favicon.png', sizes: '180x180', type: 'image/png' }],
   },
-  manifest: '/manifest.json',
+
   alternates: { canonical: '/' },
   appleWebApp: {
     statusBarStyle: 'default',

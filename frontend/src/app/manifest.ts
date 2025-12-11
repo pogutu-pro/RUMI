@@ -1,0 +1,72 @@
+import type { MetadataRoute } from 'next'
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: 'RUMI - Student Accommodation Made Easy',
+    short_name: 'RUMI',
+    description: 'Find and book verified student hostels near your university. Seamless offline booking and management.',
+    start_url: '/',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#ffffff',
+    theme_color: '#2d7a4f',
+    categories: ["productivity", "travel", "utilities"],
+    id: "/",
+    dir: "ltr",
+    lang: "en",
+    prefer_related_applications: false,
+    shortcuts: [
+      {
+        name: "Hostels",
+        short_name: "Hostels",
+        description: "Browse available student hostels",
+        url: "/hostels",
+        icons: [{ src: "/icon-192x192.png", sizes: "192x192" }]
+      },
+      {
+        name: "Dashboard",
+        short_name: "Dashboard",
+        description: "View your bookings and messages",
+        url: "/dashboard",
+        icons: [{ src: "/icon-192x192.png", sizes: "192x192" }]
+      }
+    ],
+    icons: [
+      {
+        src: '/icon.svg',
+        sizes: 'any',
+        type: 'image/svg+xml',
+        purpose: 'any maskable'
+      },
+      {
+        src: '/icon-192x192.png',
+        sizes: '192x192',
+        type: 'image/png'
+      },
+      {
+        src: '/icon-512x512.png',
+        sizes: '512x512',
+        type: 'image/png'
+      }
+    ],
+    screenshots: [
+      {
+        src: '/screenshot-mobile.png',
+        sizes: '1170x2532',
+        type: 'image/png',
+        // form_factor is not strictly typed in some versions, but valid in manifest
+        // @ts-expect-error - MetadataRoute.Manifest might not support form_factor yet
+        form_factor: 'narrow',
+        label: 'Home Screen'
+      },
+      {
+        src: '/screenshot-desktop.png',
+        sizes: '1920x1080',
+        type: 'image/png',
+        // @ts-expect-error
+        form_factor: 'wide',
+        label: 'Dashboard'
+      }
+    ]
+  }
+}
