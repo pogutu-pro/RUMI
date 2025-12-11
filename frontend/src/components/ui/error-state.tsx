@@ -1,79 +1,62 @@
-import * as React from 'react';
-import Link from 'next/link';
-import { Frown, Home } from 'lucide-react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Shell } from '@/components/layouts/shell';
-import { cn } from '@/lib/utils/cn';
+import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
-interface ErrorStateProps extends React.HTMLAttributes<HTMLDivElement> {
-  statusCode: 404 | 403 | 500 | 400;
+interface ErrorStateProps {
   title?: string;
   message?: string;
+  onRetry?: () => void;
+  className?: string;
+  compact?: boolean;
 }
 
-const ERROR_DETAILS: Record<
-  ErrorStateProps['statusCode'],
-  { title: string; message: string }
-> = {
-  404: {
-    title: 'Page Not Found',
-    message:
-      "Sorry, we couldn't find the page you're looking for. It might have been moved or deleted.",
-  },
-  403: {
-    title: 'Access Denied',
-    message:
-      "You don't have permission to view this page. Please check your account privileges.",
-  },
-  500: {
-    title: 'Server Error',
-    message:
-      "We're experiencing internal server issues. Please try again later.",
-  },
-  400: {
-    title: 'Bad Request',
-    message:
-      'The request sent to the server was invalid. Please check the data you provided.',
-  },
-};
-
 export function ErrorState({
-  statusCode,
-  title,
-  message,
+  title = 'Error',
+  message = 'Something went wrong. Please try again.',
+  onRetry,
   className,
-  ...props
+  compact = false,
 }: ErrorStateProps) {
-  const details = ERROR_DETAILS[statusCode] || ERROR_DETAILS[500];
+  if (compact) {
+    return (
+       <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className={cn("flex items-center gap-2 text-destructive bg-destructive/10 p-2 rounded-md", className)}
+       >
+        <AlertCircle className="h-4 w-4 shrink-0" />
+        <p className="text-sm font-medium flex-1">{message}</p>
+        {onRetry && (
+            <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-destructive/20" onClick={onRetry}>
+                <RefreshCw className="h-3 w-3" />
+                <span className="sr-only">Retry</span>
+            </Button>
+        )}
+       </motion.div>
+    )
+  }
 
   return (
-    <Shell
-      variant="centered"
-      className={cn('min-h-[70vh] flex items-center justify-center', className)}
-      {...props}
+    <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={cn(
+            'flex flex-col items-center justify-center text-center p-6 rounded-lg bg-muted/30 border-2 border-dashed border-muted-foreground/20',
+            className
+      )}
     >
-      <div className="text-center p-8">
-        <div className="flex items-center justify-center mb-6">
-          <h1 className="text-7xl font-extrabold tracking-tight text-primary/10 mr-4">
-            {statusCode}
-          </h1>
-          <Frown className="h-16 w-16 text-destructive" />
-        </div>
-
-        <h2 className="text-3xl font-bold tracking-tight mb-2 text-foreground">
-          {title || details.title}
-        </h2>
-        <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto">
-          {message || details.message}
-        </p>
-
-        <Button asChild size="lg">
-          <Link href="/">
-            <Home className="mr-2 h-5 w-5" />
-            Go to Home / Dashboard
-          </Link>
-        </Button>
+      <div className="bg-destructive/10 p-3 rounded-full mb-3">
+        <AlertCircle className="w-8 h-8 text-destructive" />
       </div>
-    </Shell>
+      <h3 className="text-lg font-semibold text-foreground mb-1">{title}</h3>
+      <p className="text-muted-foreground text-sm max-w-sm mb-4">{message}</p>
+      {onRetry && (
+        <Button onClick={onRetry} variant="outline" size="sm" className="gap-2">
+          <RefreshCw className="w-4 h-4" />
+          Try Again
+        </Button>
+      )}
+    </motion.div>
   );
 }

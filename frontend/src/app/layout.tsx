@@ -6,6 +6,7 @@ import { getApiUrl } from '@/lib/utils/env';
 import '@/styles/globals.css';
 import PWAInstallPrompt from '@/components/pwa/PWAInstallPrompt';
 import NetworkStatus from '@/components/pwa/NetworkStatus';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -178,11 +179,13 @@ export default function RootLayout({
           'min-h-screen bg-background font-sans antialiased overflow-x-hidden scroll-smooth',
         )}
       >
-        <Providers>
-          {children}
-          <PWAInstallPrompt />
-          <NetworkStatus />
-        </Providers>
+        <ErrorBoundary>
+          <Providers>
+            {children}
+            <PWAInstallPrompt />
+            <NetworkStatus />
+          </Providers>
+        </ErrorBoundary>
 
         <a
           href="#main-content"
