@@ -1,5 +1,5 @@
 import React from 'react';
-import { Spinner } from '@/components/ui/spinner';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { ErrorState } from '@/components/ui/error-state';
 import { LogoLoader } from '@/components/ui/logo-loader';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -55,7 +55,7 @@ export function AsyncBoundary({
 
     return (
         <div className="flex items-center justify-center p-8 w-full min-h-[100px]">
-            <Spinner size={compact ? "sm" : "lg"} variant="primary" />
+            <LoadingSpinner size={compact ? 16 : 32} />
         </div>
     );
   }
