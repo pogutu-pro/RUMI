@@ -4,6 +4,7 @@ export interface SubscriptionPlan {
   price: number;
   features: string[];
   interval: 'monthly' | 'yearly';
+  description?: string;
 }
 
 export interface UserSubscription {

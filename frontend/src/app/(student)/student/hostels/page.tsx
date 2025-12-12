@@ -38,6 +38,8 @@ export default function StudentHostelsPage() {
     ...filters,
   });
 
+  const hostels = data?.results ?? [];
+
   const handleFiltersChange = (newFilters: FiltersState) => {
     setFilters(newFilters);
     setCurrentPage(1); // Reset to first page on filter change
@@ -186,15 +188,13 @@ export default function StudentHostelsPage() {
       )}
 
       {/* Hostels Grid */}
-      {!isLoading && !error && data && data.results.length > 0 && (
+      {!isLoading && !error && hostels.length > 0 && (
         <>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {data.results.map((hostel) => (
+            {hostels.map((hostel) => (
               <HostelCard
                 key={hostel.id}
                 hostel={hostel}
-                // isFavorite={favorites.has(hostel.id)} // HostelCard handles this internally or via props if needed, but new HostelCard might have different props. Checking HostelCard definition...
-                // The new HostelCard (formerly Modern) takes: hostel, onFavoriteToggle, isFavorite, className.
                 isFavorite={favorites.has(hostel.id)}
                 onFavoriteToggle={toggleFavorite}
                 basePath="/student/hostels"
@@ -209,7 +209,7 @@ export default function StudentHostelsPage() {
                 currentPage={currentPage}
                 totalPages={totalPages}
                 pageSize={20}
-                totalItems={data.count}
+                totalItems={data?.count ?? 0}
                 onPageChange={setCurrentPage}
               />
             </div>
@@ -218,7 +218,7 @@ export default function StudentHostelsPage() {
       )}
 
       {/* Empty State */}
-      {!isLoading && !error && data && data.results.length === 0 && (
+      {!isLoading && !error && data && hostels.length === 0 && (
         <div className="text-center py-20 rounded-3xl bg-muted/30 border-2 border-dashed">
           <div className="mx-auto h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
             <Search className="h-8 w-8 text-muted-foreground" />
