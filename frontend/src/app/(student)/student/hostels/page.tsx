@@ -9,8 +9,9 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Pagination } from '@/components/ui/pagination';
 import { Search, Filter, SlidersHorizontal, Home } from 'lucide-react';
 import { useHostels } from '@/hooks/use-hostels';
-import { HostelCard } from '@/features/hostels';
-import HostelFiltersPanel, {
+import {
+  HostelCard,
+  HostelFiltersPanel,
   type FiltersState,
 } from '@/features/hostels';
 
