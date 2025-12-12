@@ -159,6 +159,7 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
       className={cn(inter.variable, jakarta.variable)}
+      data-scroll-behavior="smooth"
     >
       <head>
         <link rel="preconnect" href={getApiUrl()} crossOrigin="anonymous" />
