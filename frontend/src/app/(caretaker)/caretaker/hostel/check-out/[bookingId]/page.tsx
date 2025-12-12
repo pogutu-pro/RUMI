@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { processCheckOut, uploadCheckOutPhotos, getTenant } from '@/lib/api/caretaker';
+import { processCheckOut, uploadCheckOutPhotos, getTenant } from '@/features/caretaker';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
 const checkOutSchema = z.object({
@@ -43,7 +43,10 @@ const checkOutSchema = z.object({
 
 type CheckOutFormData = z.infer<typeof checkOutSchema>;
 
-export default function Page({ params }: { params: { bookingId: string } }) {
+import { use } from 'react';
+
+export default function Page({ params }: { params: Promise<{ bookingId: string }> }) {
+  const { bookingId } = use(params);
   const router = useRouter();
   const { toast } = useToast();
   const [step, setStep] = React.useState(1);
@@ -51,7 +54,7 @@ export default function Page({ params }: { params: { bookingId: string } }) {
   const [searchQuery, setSearchQuery] = React.useState('');
 
   // If params.bookingId is not 'new', assume it's a tenant ID for now
-  const tenantId = params.bookingId !== 'new' ? params.bookingId : undefined;
+  const tenantId = bookingId !== 'new' ? bookingId : undefined;
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<CheckOutFormData>({
     resolver: zodResolver(checkOutSchema),
@@ -181,7 +184,7 @@ export default function Page({ params }: { params: { bookingId: string } }) {
                 <div className="bg-muted/50 p-4 rounded-lg space-y-2 animate-in fade-in">
                   <div className="flex items-center gap-2 font-medium">
                     <User className="h-4 w-4" />
-                    {tenant.firstName} {tenant.lastName}
+                    {tenant.first_name} {tenant.last_name}
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Home className="h-4 w-4" />

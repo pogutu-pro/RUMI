@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTransfers, updateTransferStatus } from '@/lib/api/transfers';
+import { getTransfers, updateTransferStatus } from '@/features/transfers';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { TransferRequest } from '@/types/entities.types';
 

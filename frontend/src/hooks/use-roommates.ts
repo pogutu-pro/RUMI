@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { roommatesApi, type RoommateSummary } from '@/lib/api/roommates';
+import { roommatesApi, type RoommateSummary } from '@/features/roommates';
 import { toast } from 'sonner';
 
 /**

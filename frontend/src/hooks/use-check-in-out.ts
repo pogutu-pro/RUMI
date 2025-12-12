@@ -5,7 +5,7 @@ import {
   uploadCheckInPhotos,
   processCheckOut,
   uploadCheckOutPhotos,
-} from '@/lib/api/caretaker';
+} from '@/features/caretaker';
 import type { CheckInData, CheckOutData } from '@/types/caretaker.types';
 import { useToast } from './use-toast';
 

@@ -48,6 +48,7 @@
     "@serwist/next": "^9.2.3",
     "@tanstack/react-query": "5.90.12",
     "@tanstack/react-query-devtools": "^5.91.1",
+    "@tanstack/react-table": "^8.21.3",
     "axios": "1.13.2",
     "chart.js": "^4.5.1",
     "class-variance-authority": "0.7.1",

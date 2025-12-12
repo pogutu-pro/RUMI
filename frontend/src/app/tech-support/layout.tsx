@@ -7,7 +7,7 @@ import { TechSupportSidebar } from '@/components/layouts/tech-support-sidebar';
 import { TechSupportTopNav } from '@/components/layouts/tech-support-top-nav';
 import { DashboardThemeProvider } from '@/components/providers/dashboard-theme-provider';
 import { cn } from '@/lib/utils/cn';
-import { useAdminStore } from '@/stores/admin.store';
+import { useAdminStore } from '@/features/admin';
 
 interface TechSupportLayoutProps {
   children: ReactNode;

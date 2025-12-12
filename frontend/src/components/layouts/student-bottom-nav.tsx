@@ -65,7 +65,7 @@ export function StudentBottomNav() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  const isActive = (href: string) => {
+  const is_active = (href: string) => {
     if (href === '/student/dashboard') {
       return pathname === href;
     }
@@ -92,7 +92,7 @@ export function StudentBottomNav() {
         <div className="flex items-center justify-around px-2 py-2">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-            const active = isActive(item.href);
+            const active = is_active(item.href);
             
             return (
               <Link

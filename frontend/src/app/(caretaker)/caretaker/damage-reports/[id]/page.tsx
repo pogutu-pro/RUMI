@@ -1,13 +1,15 @@
 "use client";
 
-import { DamageReportCard } from '@/components/inventory/damage-report-card';
-import { DamageInvoice } from '@/components/inventory/damage-invoice';
+import { DamageReportCard } from '@/features/inventory';
+import { DamageInvoice } from '@/features/inventory';
 import { useDamageReport } from '@/hooks/use-damage-reports';
 
+import { use } from 'react';
+
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 const DamageReportDetailContent = ({ id }: { id: string }) => {
@@ -30,5 +32,6 @@ const DamageReportDetailContent = ({ id }: { id: string }) => {
 };
 
 export default function Page({ params }: PageProps) {
-  return <DamageReportDetailContent id={params.id} />;
+  const { id } = use(params);
+  return <DamageReportDetailContent id={id} />;
 }

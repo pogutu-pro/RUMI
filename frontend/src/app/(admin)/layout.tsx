@@ -7,7 +7,7 @@ import { AdminSidebar } from '@/components/layouts/admin-sidebar';
 import { AdminTopNav } from '@/components/layouts/admin-top-nav';
 import { DashboardThemeProvider } from '@/components/providers/dashboard-theme-provider';
 import { cn } from '@/lib/utils/cn';
-import { useAdminStore } from '@/stores/admin.store';
+import { useAdminStore } from '@/features/admin';
 
 interface AdminLayoutProps {
   children: ReactNode;

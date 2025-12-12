@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Star, Plus, TrendingUp, Award, MessageSquare, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getMyReviews } from '@/lib/api/reviews';
-import ReviewCard from '@/components/reviews/review-card';
-import RatingStars from '@/components/reviews/rating-stars';
+import { getMyReviews } from '@/features/reviews';
+import { ReviewCard } from '@/features/reviews';
+import { RatingStars } from '@/features/reviews';
 
 // Review Writing Modal Component
 function ReviewWritingModal({

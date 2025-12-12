@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -67,8 +67,8 @@ export default function CaretakerProfilePage() {
 
   const displayName = React.useMemo(() => {
     if (!user) return 'Caretaker';
-    if (user.firstName || user.lastName) {
-      return [user.firstName, user.lastName].filter(Boolean).join(' ');
+    if (user.first_name || user.last_name) {
+      return [user.first_name, user.last_name].filter(Boolean).join(' ');
     }
     return user.email.split('@')[0];
   }, [user]);
@@ -95,7 +95,7 @@ export default function CaretakerProfilePage() {
         
         <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center md:items-start">
           <Avatar className="h-32 w-32 border-4 border-white/20 shadow-2xl">
-            <AvatarImage src={user?.avatar || user?.profileImage || undefined} />
+            <AvatarImage src={user?.avatar || user?.profile_picture || undefined} />
             <AvatarFallback className="bg-slate-700 text-white text-4xl font-bold">
               {initials}
             </AvatarFallback>
@@ -115,7 +115,7 @@ export default function CaretakerProfilePage() {
                 <Mail className="h-4 w-4" /> {user?.email}
               </p>
               <p className="text-slate-400 text-sm flex items-center justify-center md:justify-start gap-2 mt-1">
-                <Phone className="h-3 w-3" /> {user?.phoneNumber || '+254 700 000 000'}
+                <Phone className="h-3 w-3" /> {user?.phone_number || '+254 700 000 000'}
               </p>
             </div>
 

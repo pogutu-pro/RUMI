@@ -11,7 +11,7 @@ import {
   enableRecurringPayment,
   cancelRecurringPayment,
   GetPaymentsFilters,
-} from '@/lib/api/payments';
+} from '@/features/payments';
 import { toast } from 'sonner';
 
 export const usePayments = (filters?: GetPaymentsFilters) => {

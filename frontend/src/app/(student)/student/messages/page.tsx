@@ -1,15 +1,15 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useMessagingStore } from '@/stores/messaging.store';
-import { ConversationCard } from '@/components/messaging/conversation-card';
-import { ChatHeader } from '@/components/messaging/chat-header';
-import { MessageBubble } from '@/components/messaging/message-bubble';
-import { MessageInput } from '@/components/messaging/message-input';
-import { TypingIndicator } from '@/components/messaging/typing-indicator';
-import { EmptyState } from '@/components/messaging/empty-state';
-import { ScrollToBottomButton } from '@/components/messaging/scroll-to-bottom';
-import { PullToRefresh } from '@/components/messaging/pull-to-refresh';
+import { useMessagingStore } from '@/features/messaging';
+import { ConversationCard } from '@/features/messaging';
+import { ChatHeader } from '@/features/messaging';
+import { MessageBubble } from '@/features/messaging';
+import { MessageInput } from '@/features/messaging';
+import { TypingIndicator } from '@/features/messaging';
+import { EmptyState } from '@/features/messaging';
+import { ScrollToBottomButton } from '@/features/messaging';
+import { PullToRefresh } from '@/features/messaging';
 import { useKeyboardHeight } from '@/hooks/use-keyboard';
 import { Search, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -162,7 +162,7 @@ export default function StudentMessagesPage() {
                 <ConversationCard
                   key={conversation.id}
                   conversation={conversation}
-                  isActive={conversation.id === activeConversationId}
+                  is_active={conversation.id === activeConversationId}
                   onClick={() => handleSelectConversation(conversation.id)}
                   onPin={() =>
                     conversation.isPinned

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { AuthCard } from '@/components/auth/auth-card';
-import { LandlordRegisterForm } from '@/components/auth/landlord-register-form';
+import { AuthCard } from '@/features/auth';
+import { LandlordRegisterForm } from '@/features/auth';
 
 export const metadata: Metadata = {
   title: 'Landlord Registration | Rumi',

@@ -36,9 +36,10 @@ export default function SearchPage() {
   }, [searchQuery, router]);
 
   // Fetch data based on search query
-  const { data: hostels, isLoading: hostelsLoading } = useHostels({ 
+  const { data: hostelsResponse, isLoading: hostelsLoading } = useHostels({ 
     search: debouncedQuery 
   });
+  const hostels = hostelsResponse?.results || [];
   
   const { data: bookings, isLoading: bookingsLoading } = useBookings();
   const { data: payments, isLoading: paymentsLoading } = usePayments();

@@ -71,10 +71,13 @@ export interface TenantInfo {
   userId: ID;
   studentId: string;
   firstName: string;
+  first_name?: string; // Alias
   lastName: string;
+  last_name?: string; // Alias
   email: string;
   phone?: string;
   profileImage?: string;
+  profile_picture?: string; // Alias
   
   // Accommodation details
   roomId: ID;

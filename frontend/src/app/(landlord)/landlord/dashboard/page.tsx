@@ -43,7 +43,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 import { useHostels } from '@/hooks/use-hostels';
 import { usePaymentStats } from '@/hooks/use-payments';
 
@@ -227,8 +227,8 @@ export default function LandlordDashboard() {
 
   const displayName = React.useMemo(() => {
     if (!user) return 'Landlord';
-    if (user.firstName || user.lastName) {
-      return [user.firstName, user.lastName].filter(Boolean).join(' ');
+    if (user.first_name || user.last_name) {
+      return [user.first_name, user.last_name].filter(Boolean).join(' ');
     }
     return user.email.split('@')[0];
   }, [user]);

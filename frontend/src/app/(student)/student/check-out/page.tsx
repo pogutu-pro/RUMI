@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { useInventoryStore } from '@/stores/useInventoryStore';
-import { useBookingStore } from '@/stores/booking.store';
+import { useInventoryStore } from '@/features/inventory';
+import { useCurrentBookingStore } from '@/features/bookings';
 import { 
   CheckCircle2, 
   Utensils, 
@@ -21,14 +21,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { InventoryCategorySection } from '@/components/inventory/inventory-category-section';
-import { InventoryItemRow } from '@/components/inventory/inventory-item-row';
-import type { InventoryCategory } from '@/lib/api/inventory';
+import { InventoryCategorySection } from '@/features/inventory';
+import { InventoryItemRow } from '@/features/inventory';
+import type { InventoryCategory } from '@/features/inventory';
 import { toast } from 'sonner';
 
 export default function CheckOutPage() {
   const router = useRouter();
-  const { currentBooking } = useBookingStore();
+  const { currentBooking } = useCurrentBookingStore();
   const { 
     activeReport, 
     isLoading, 

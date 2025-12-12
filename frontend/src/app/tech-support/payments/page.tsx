@@ -29,8 +29,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from '@/components/ui/badge';
-import { useTechSupportStore } from '@/stores/tech-support.store';
-import { TransactionTable } from '@/components/tech-support/transaction-table';
+import { useTechSupportStore } from '@/features/support';
+import { TransactionTable } from '@/features/support';
 
 interface PaymentSupportPageProps {
   defaultTab?: string;

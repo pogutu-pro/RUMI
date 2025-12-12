@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/react-query/query-keys';
-import { getAnalytics, getAnalyticsBreakdown, exportAnalytics } from '@/lib/api/analytics';
+import { getAnalytics, getAnalyticsBreakdown, exportAnalytics } from '@/features/analytics';
 import { toast } from 'sonner';
 
 export type AnalyticsPeriod = '7d' | '30d' | '90d' | '1y' | 'custom';

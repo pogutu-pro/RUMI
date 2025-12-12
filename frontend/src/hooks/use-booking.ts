@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getBooking } from '@/lib/api/bookings';
+import { getBooking } from '@/features/bookings';
 import type { Booking } from '@/types/entities.types';
 
 export interface UseBookingOptions {

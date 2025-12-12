@@ -8,13 +8,13 @@ import { Menu, X, User } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { UserMenu } from '@/components/layouts/user-menu';
-import { SimpleHostelSearch } from '@/components/hostels/simple-hostel-search';
+import { SimpleHostelSearch } from '@/features/hostels';
 import { cn } from '@/lib/utils/cn';
 import { sanitizeInput, sanitizeImageUrl } from '@/lib/utils/security';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { PublicMenuContent } from '@/components/layouts/public-menu-content';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
-import { useFiltersStore } from '@/stores/filters.store';
+import { useFiltersStore } from '@/features/hostels';
 
 interface HostelsHeaderProps {
   user?: {

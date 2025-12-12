@@ -1,6 +1,6 @@
 'use client';
-import HostelList from '@/components/hostels/hostel-list';
-import { useReviewStore } from '@/stores/review.store';
+import { HostelList } from '@/features/hostels';
+import { useReviewStore } from '@/features/reviews';
 
 export default function Page() {
   // TODO: Fetch real hostels and filter by those the user can review

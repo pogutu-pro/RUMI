@@ -4,8 +4,8 @@ import { useEffect, useMemo, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import type { Route } from 'next';
 import { getAccessToken } from '@/lib/auth/token';
-import { useProfile } from '@/hooks/use-auth';
-import { useAuthStore, hydrateAuthStore, ROLES } from '@/stores/auth.store';
+import { useProfile } from '@/features/auth';
+import { useAuthStore, hydrateAuthStore, ROLES } from '@/features/auth';
 
 interface AuthProviderProps {
   children: ReactNode;

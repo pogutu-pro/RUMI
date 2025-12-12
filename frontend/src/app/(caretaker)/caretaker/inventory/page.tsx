@@ -45,8 +45,8 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useInventory } from '@/hooks/use-inventory';
-import type { InventoryItem, InventoryReport } from '@/lib/api/inventory';
-import { inventoryApi } from '@/lib/api/inventory';
+import type { InventoryItem, InventoryReport } from '@/features/inventory';
+import { inventoryApi } from '@/features/inventory';
 import { cn } from '@/lib/utils/cn';
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {

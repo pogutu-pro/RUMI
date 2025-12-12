@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { AuthCard } from '@/components/auth/auth-card';
-import { StudentRegisterForm } from '@/components/auth/student-register-form';
+import { AuthCard } from '@/features/auth';
+import { StudentRegisterForm } from '@/features/auth';
 
 export const metadata: Metadata = {
   title: 'Student Registration | Rumi',

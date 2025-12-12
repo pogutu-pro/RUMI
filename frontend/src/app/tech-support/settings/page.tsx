@@ -27,7 +27,7 @@ import {
   User,
   LifeBuoy
 } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 
 // Validation schemas
 const passwordSchema = z.object({
@@ -200,11 +200,11 @@ export default function TechSupportSettingsPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <FormLabel>First Name</FormLabel>
-                  <Input defaultValue={user?.firstName} className="bg-background/50" />
+                  <Input defaultValue={user?.first_name} className="bg-background/50" />
                 </div>
                 <div className="space-y-2">
                   <FormLabel>Last Name</FormLabel>
-                  <Input defaultValue={user?.lastName} className="bg-background/50" />
+                  <Input defaultValue={user?.last_name} className="bg-background/50" />
                 </div>
               </div>
               <div className="space-y-2">

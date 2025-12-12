@@ -28,14 +28,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Save, Upload, User, Mail, Phone } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 import { getUserInitials } from '@/lib/utils/user';
 
 const profileSchema = z.object({
-  firstName: z.string().min(2, { message: 'First name must be at least 2 characters' }),
-  lastName: z.string().min(2, { message: 'Last name must be at least 2 characters' }),
+  first_name: z.string().min(2, { message: 'First name must be at least 2 characters' }),
+  last_name: z.string().min(2, { message: 'Last name must be at least 2 characters' }),
   email: z.string().email({ message: 'Invalid email address' }),
-  phoneNumber: z.string().min(10, { message: 'Phone number must be at least 10 digits' }),
+  phone_number: z.string().min(10, { message: 'Phone number must be at least 10 digits' }),
   bio: z.string().max(500, { message: 'Bio must not exceed 500 characters' }).optional(),
 });
 
@@ -47,10 +47,10 @@ export default function EditProfilePage() {
   const [isLoading, setIsLoading] = React.useState(false);
 
   const defaultValues: Partial<ProfileValues> = {
-    firstName: user?.firstName || 'John',
-    lastName: user?.lastName || 'Caretaker',
+    first_name: user?.first_name || 'John',
+    last_name: user?.last_name || 'Caretaker',
     email: user?.email || 'john.caretaker@rumi.com',
-    phoneNumber: user?.phoneNumber || '+254700000000',
+    phone_number: user?.phone_number || '+254700000000',
     bio: (user as any)?.bio || 'Experienced caretaker managing multiple properties.',
   };
 
@@ -81,7 +81,7 @@ export default function EditProfilePage() {
     }
   }
 
-  const initials = user ? getUserInitials(`${user.firstName} ${user.lastName}`) : 'CT';
+  const initials = user ? getUserInitials(`${user.first_name} ${user.last_name}`) : 'CT';
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto pb-10">
@@ -110,7 +110,7 @@ export default function EditProfilePage() {
             </CardHeader>
             <CardContent className="flex items-center gap-6">
               <Avatar className="h-24 w-24 border-2 border-muted">
-                <AvatarImage src={user?.avatar || user?.profileImage || undefined} />
+                <AvatarImage src={user?.avatar || user?.profile_picture || undefined} />
                 <AvatarFallback className="text-2xl bg-slate-100 dark:bg-slate-800">
                   {initials}
                 </AvatarFallback>
@@ -143,7 +143,7 @@ export default function EditProfilePage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField
                   control={form.control}
-                  name="firstName"
+                  name="first_name"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>First Name</FormLabel>
@@ -159,7 +159,7 @@ export default function EditProfilePage() {
                 />
                 <FormField
                   control={form.control}
-                  name="lastName"
+                  name="last_name"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Last Name</FormLabel>
@@ -197,7 +197,7 @@ export default function EditProfilePage() {
                 />
                 <FormField
                   control={form.control}
-                  name="phoneNumber"
+                  name="phone_number"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Phone Number</FormLabel>

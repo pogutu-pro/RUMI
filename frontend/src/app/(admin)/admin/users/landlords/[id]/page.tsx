@@ -46,10 +46,10 @@ const getLandlordDetails = async (id: string) => {
   // Mock data for now
   return {
     id,
-    firstName: "Sarah",
-    lastName: "Kamau",
+    first_name: "Sarah",
+    last_name: "Kamau",
     email: "sarah.kamau@example.com",
-    phoneNumber: "+254 722 345 678",
+    phone_number: "+254 722 345 678",
     businessName: "Kamau Properties Ltd",
     businessRegistrationNumber: "PVT-20231234",
     businessAddress: "123 Business Plaza, Nairobi",
@@ -177,13 +177,13 @@ export default function LandlordDetailPage({
             <Avatar className="h-20 w-20 border-4 border-white shadow-lg">
               <AvatarImage src={landlord.profilePicture || undefined} />
               <AvatarFallback className="bg-gradient-to-br from-amber-400 to-orange-500 text-white text-2xl font-bold">
-                {landlord.firstName[0]}
-                {landlord.lastName[0]}
+                {landlord.first_name[0]}
+                {landlord.last_name[0]}
               </AvatarFallback>
             </Avatar>
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-                {landlord.firstName} {landlord.lastName}
+                {landlord.first_name} {landlord.last_name}
               </h1>
               <p className="text-slate-500 mt-1">{landlord.businessName}</p>
               <div className="flex items-center gap-2 mt-3">
@@ -317,7 +317,7 @@ export default function LandlordDetailPage({
                   <Phone className="h-4 w-4 text-slate-500" />
                   <div>
                     <p className="text-sm text-slate-500">Phone</p>
-                    <p className="font-medium">{landlord.phoneNumber}</p>
+                    <p className="font-medium">{landlord.phone_number}</p>
                   </div>
                 </div>
                 <Separator />

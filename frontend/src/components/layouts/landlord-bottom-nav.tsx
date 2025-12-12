@@ -23,7 +23,7 @@ import {
 import { cn } from '@/lib/utils/cn';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 
 interface NavItem {
   icon: React.ElementType;
@@ -56,7 +56,7 @@ export function LandlordBottomNav() {
   const [isMoreOpen, setIsMoreOpen] = React.useState(false);
   const { logout } = useAuth();
 
-  const isActive = (href: string) => {
+  const is_active = (href: string) => {
     if (!pathname) return false;
 
     // Home
@@ -119,7 +119,7 @@ export function LandlordBottomNav() {
         <div className="flex items-center justify-around px-2 py-2">
           {mainNavItems.map((item) => {
             const Icon = item.icon;
-            const active = isActive(item.href);
+            const active = is_active(item.href);
             
             return (
               <Link

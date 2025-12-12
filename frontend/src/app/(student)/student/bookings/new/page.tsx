@@ -5,7 +5,7 @@ import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import HostelList from '@/components/hostels/hostel-list';
+import { HostelList } from '@/features/hostels';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useHostels } from '@/hooks/use-hostels';
 

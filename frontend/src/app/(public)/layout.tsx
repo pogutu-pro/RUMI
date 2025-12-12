@@ -3,7 +3,7 @@ import { PublicHeader } from '@/components/layouts/public-header';
 import { Footer } from '@/components/layouts/public-footer';
 import { MobileBottomNav } from '@/components/layouts/mobile-bottom-nav';
 import { PublicThemeProvider } from '@/components/providers/public-theme-provider';
-import CompareTray from '@/components/hostels/compare-tray';
+import { CompareTray } from '@/features/hostels';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {

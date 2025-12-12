@@ -44,10 +44,10 @@ const getStudentDetails = async (id: string) => {
   // Mock data for now
   return {
     id,
-    firstName: "John",
-    lastName: "Doe",
+    first_name: "John",
+    last_name: "Doe",
     email: "john.doe@university.edu",
-    phoneNumber: "+254 712 345 678",
+    phone_number: "+254 712 345 678",
     university: "University of Nairobi",
     course: "Computer Science",
     year: "3rd Year",
@@ -188,13 +188,13 @@ export default function StudentDetailPage({
             <Avatar className="h-20 w-20 border-4 border-white shadow-lg">
               <AvatarImage src={student.profilePicture || undefined} />
               <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-blue-500 text-white text-2xl font-bold">
-                {student.firstName[0]}
-                {student.lastName[0]}
+                {student.first_name[0]}
+                {student.last_name[0]}
               </AvatarFallback>
             </Avatar>
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-                {student.firstName} {student.lastName}
+                {student.first_name} {student.last_name}
               </h1>
               <p className="text-slate-500 mt-1">{student.email}</p>
               <div className="flex items-center gap-2 mt-3">
@@ -307,7 +307,7 @@ export default function StudentDetailPage({
                   <Phone className="h-4 w-4 text-slate-500" />
                   <div>
                     <p className="text-sm text-slate-500">Phone</p>
-                    <p className="font-medium">{student.phoneNumber}</p>
+                    <p className="font-medium">{student.phone_number}</p>
                   </div>
                 </div>
                 <Separator />

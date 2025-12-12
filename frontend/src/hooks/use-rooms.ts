@@ -6,7 +6,7 @@ import {
   createRoom,
   updateRoom,
   deleteRoom,
-} from '@/lib/api/rooms';
+} from '@/features/hostels';
 import { toast } from 'sonner';
 import type { Room } from '@/types/entities.types';
 

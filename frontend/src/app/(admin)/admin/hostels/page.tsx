@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useHostels } from "@/hooks/use-hostels";
-import { useAdminStore } from "@/stores/admin.store";
+import { useAdminStore } from "@/features/admin";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils/cn";
 
@@ -57,10 +57,12 @@ export default function Page() {
   const [localSearch, setLocalSearch] = useState(hostelFilters.search || "");
 
   // Fetch real data
-  const { data: hostels, isLoading } = useHostels({
+  const { data: hostelsResponse, isLoading } = useHostels({
      search: hostelFilters.search,
      status: hostelFilters.approvalStatus === 'all' ? undefined : hostelFilters.approvalStatus
   });
+  
+  const hostels = hostelsResponse?.results || [];
 
   // Calculate statistics (client-side aggregation for now if not provided by API)
   const stats = useMemo(() => {

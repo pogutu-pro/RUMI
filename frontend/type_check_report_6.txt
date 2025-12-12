@@ -1,0 +1,517 @@
+.next/types/app/(auth)/auth/page.ts(36,29): error TS2344: Type '{ searchParams?: { [key: string]: string | undefined; } | undefined; }' does not satisfy the constraint 'PageProps'.
+  Types of property 'searchParams' are incompatible.
+    Type '{ [key: string]: string | undefined; } | undefined' is not assignable to type 'Promise<any> | undefined'.
+      Type '{ [key: string]: string | undefined; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/(caretaker)/caretaker/damage-reports/[id]/page.ts(36,29): error TS2344: Type 'PageProps' does not satisfy the constraint 'import("/home/ogutu/Pictures/RUMI/frontend/.next/types/app/(caretaker)/caretaker/damage-reports/[id]/page").PageProps'.
+  Types of property 'params' are incompatible.
+    Type '{ id: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/(caretaker)/caretaker/hostel/check-in/[bookingId]/page.ts(36,29): error TS2344: Type '{ params: { bookingId: string; }; }' does not satisfy the constraint 'PageProps'.
+  Types of property 'params' are incompatible.
+    Type '{ bookingId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/(caretaker)/caretaker/hostel/check-out/[bookingId]/page.ts(36,29): error TS2344: Type '{ params: { bookingId: string; }; }' does not satisfy the constraint 'PageProps'.
+  Types of property 'params' are incompatible.
+    Type '{ bookingId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/(caretaker)/caretaker/inventory/verify/[reportId]/page.ts(36,29): error TS2344: Type 'PageProps' does not satisfy the constraint 'import("/home/ogutu/Pictures/RUMI/frontend/.next/types/app/(caretaker)/caretaker/inventory/verify/[reportId]/page").PageProps'.
+  Types of property 'params' are incompatible.
+    Type '{ reportId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/(landlord)/landlord/approvals/[reportId]/page.ts(36,29): error TS2344: Type 'PageProps' does not satisfy the constraint 'import("/home/ogutu/Pictures/RUMI/frontend/.next/types/app/(landlord)/landlord/approvals/[reportId]/page").PageProps'.
+  Types of property 'params' are incompatible.
+    Type '{ reportId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/(public)/blog/[slug]/page.ts(36,29): error TS2344: Type 'BlogPostPageProps' does not satisfy the constraint 'PageProps'.
+  Types of property 'params' are incompatible.
+    Type '{ slug: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/(public)/blog/[slug]/page.ts(40,31): error TS2344: Type 'BlogPostPageProps' does not satisfy the constraint 'PageProps'.
+  Types of property 'params' are incompatible.
+    Type '{ slug: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/tech-support/users/page.ts(36,13): error TS2344: Type 'OmitWithTag<UserManagementPageProps, keyof PageProps, "default">' does not satisfy the constraint '{ [x: string]: never; }'.
+  Property 'defaultTab' is incompatible with index signature.
+    Type 'string' is not assignable to type 'never'.
+.next/types/app/tech-support/users/page.ts(36,29): error TS2559: Type 'UserManagementPageProps' has no properties in common with type 'PageProps'.
+src/app/(admin)/admin/hostels/page.tsx(62,6): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'UseHostelsParams'.
+src/app/(admin)/admin/hostels/page.tsx(70,22): error TS2339: Property 'length' does not exist on type 'HostelsResponse'.
+src/app/(admin)/admin/hostels/page.tsx(71,25): error TS2339: Property 'filter' does not exist on type 'HostelsResponse'.
+src/app/(admin)/admin/hostels/page.tsx(71,32): error TS7006: Parameter 'h' implicitly has an 'any' type.
+src/app/(admin)/admin/hostels/page.tsx(72,24): error TS2339: Property 'filter' does not exist on type 'HostelsResponse'.
+src/app/(admin)/admin/hostels/page.tsx(72,31): error TS7006: Parameter 'h' implicitly has an 'any' type.
+src/app/(admin)/admin/hostels/page.tsx(74,18): error TS2339: Property 'reduce' does not exist on type 'HostelsResponse'.
+src/app/(admin)/admin/hostels/page.tsx(74,26): error TS7006: Parameter 'acc' implicitly has an 'any' type.
+src/app/(admin)/admin/hostels/page.tsx(74,31): error TS7006: Parameter 'h' implicitly has an 'any' type.
+src/app/(admin)/admin/hostels/page.tsx(80,26): error TS2339: Property 'length' does not exist on type 'HostelsResponse'.
+src/app/(admin)/admin/hostels/page.tsx(235,27): error TS2339: Property 'map' does not exist on type 'HostelsResponse'.
+src/app/(admin)/admin/hostels/page.tsx(235,32): error TS7006: Parameter 'hostel' implicitly has an 'any' type.
+src/app/(admin)/admin/hostels/page.tsx(303,28): error TS2339: Property 'length' does not exist on type 'HostelsResponse'.
+src/app/(admin)/admin/settings/page.tsx(34,11): error TS2339: Property 'user' does not exist on type 'UseQueryResult<User, Error>'.
+src/app/(caretaker)/caretaker/check-in/page.tsx(30,27): error TS2551: Property 'first_name' does not exist on type 'TenantInfo'. Did you mean 'firstName'?
+src/app/(caretaker)/caretaker/check-in/page.tsx(30,54): error TS2551: Property 'last_name' does not exist on type 'TenantInfo'. Did you mean 'lastName'?
+src/app/(caretaker)/caretaker/check-out/page.tsx(29,27): error TS2551: Property 'first_name' does not exist on type 'TenantInfo'. Did you mean 'firstName'?
+src/app/(caretaker)/caretaker/check-out/page.tsx(29,54): error TS2551: Property 'last_name' does not exist on type 'TenantInfo'. Did you mean 'lastName'?
+src/app/(caretaker)/caretaker/hostel/check-out/[bookingId]/page.tsx(184,29): error TS2551: Property 'first_name' does not exist on type 'TenantInfo'. Did you mean 'firstName'?
+src/app/(caretaker)/caretaker/hostel/check-out/[bookingId]/page.tsx(184,49): error TS2551: Property 'last_name' does not exist on type 'TenantInfo'. Did you mean 'lastName'?
+src/app/(caretaker)/caretaker/tenants/page.tsx(168,50): error TS2339: Property 'profile_picture' does not exist on type 'TenantInfo'.
+src/app/(caretaker)/caretaker/tenants/page.tsx(168,82): error TS2551: Property 'first_name' does not exist on type 'TenantInfo'. Did you mean 'firstName'?
+src/app/(caretaker)/caretaker/tenants/page.tsx(168,103): error TS2551: Property 'last_name' does not exist on type 'TenantInfo'. Did you mean 'lastName'?
+src/app/(caretaker)/caretaker/tenants/page.tsx(170,47): error TS2551: Property 'first_name' does not exist on type 'TenantInfo'. Did you mean 'firstName'?
+src/app/(caretaker)/caretaker/tenants/page.tsx(170,66): error TS2551: Property 'last_name' does not exist on type 'TenantInfo'. Did you mean 'lastName'?
+src/app/(caretaker)/caretaker/tenants/page.tsx(178,39): error TS2551: Property 'first_name' does not exist on type 'TenantInfo'. Did you mean 'firstName'?
+src/app/(caretaker)/caretaker/tenants/page.tsx(178,59): error TS2551: Property 'last_name' does not exist on type 'TenantInfo'. Did you mean 'lastName'?
+src/app/(landlord)/landlord/analytics/page.tsx(252,66): error TS18048: 'percent' is possibly 'undefined'.
+src/app/(landlord)/landlord/bookings/page.tsx(58,72): error TS2339: Property 'number' does not exist on type 'Room'.
+src/app/(landlord)/landlord/bookings/page.tsx(234,80): error TS2339: Property 'number' does not exist on type 'Room'.
+src/app/(landlord)/landlord/caretakers/new/page.tsx(72,34): error TS2345: Argument of type '(h: { id: string; name: string; }) => { id: string; name: string; }' is not assignable to parameter of type '(value: Hostel, index: number, array: Hostel[]) => { id: string; name: string; }'.
+  Types of parameters 'h' and 'value' are incompatible.
+    Type 'Hostel' is not assignable to type '{ id: string; name: string; }'.
+      Types of property 'id' are incompatible.
+        Type 'number' is not assignable to type 'string'.
+src/app/(landlord)/landlord/caretakers/performance/page.tsx(72,15): error TS2551: Property 'first_name' does not exist on type '{ rating: string; tasksCompleted: number; responseTime: number; occupancyRate: number; id: string; userId: string; firstName: string; lastName: string; email: string; phone: string; hostelId: string; ... 4 more ...; updatedAt: string; }'. Did you mean 'firstName'?
+src/app/(landlord)/landlord/caretakers/performance/page.tsx(73,15): error TS2551: Property 'last_name' does not exist on type '{ rating: string; tasksCompleted: number; responseTime: number; occupancyRate: number; id: string; userId: string; firstName: string; lastName: string; email: string; phone: string; hostelId: string; ... 4 more ...; updatedAt: string; }'. Did you mean 'lastName'?
+src/app/(landlord)/landlord/caretakers/performance/page.tsx(132,48): error TS2551: Property 'first_name' does not exist on type '{ rating: string; tasksCompleted: number; responseTime: number; occupancyRate: number; id: string; userId: string; firstName: string; lastName: string; email: string; phone: string; hostelId: string; ... 4 more ...; updatedAt: string; }'. Did you mean 'firstName'?
+src/app/(landlord)/landlord/caretakers/performance/page.tsx(132,70): error TS2551: Property 'last_name' does not exist on type '{ rating: string; tasksCompleted: number; responseTime: number; occupancyRate: number; id: string; userId: string; firstName: string; lastName: string; email: string; phone: string; hostelId: string; ... 4 more ...; updatedAt: string; }'. Did you mean 'lastName'?
+src/app/(landlord)/landlord/caretakers/performance/page.tsx(138,36): error TS2551: Property 'first_name' does not exist on type '{ rating: string; tasksCompleted: number; responseTime: number; occupancyRate: number; id: string; userId: string; firstName: string; lastName: string; email: string; phone: string; hostelId: string; ... 4 more ...; updatedAt: string; }'. Did you mean 'firstName'?
+src/app/(landlord)/landlord/caretakers/performance/page.tsx(138,59): error TS2551: Property 'last_name' does not exist on type '{ rating: string; tasksCompleted: number; responseTime: number; occupancyRate: number; id: string; userId: string; firstName: string; lastName: string; email: string; phone: string; hostelId: string; ... 4 more ...; updatedAt: string; }'. Did you mean 'lastName'?
+src/app/(landlord)/landlord/caretakers/performance/page.tsx(212,52): error TS2551: Property 'first_name' does not exist on type '{ rating: string; tasksCompleted: number; responseTime: number; occupancyRate: number; id: string; userId: string; firstName: string; lastName: string; email: string; phone: string; hostelId: string; ... 4 more ...; updatedAt: string; }'. Did you mean 'firstName'?
+src/app/(landlord)/landlord/caretakers/performance/page.tsx(212,74): error TS2551: Property 'last_name' does not exist on type '{ rating: string; tasksCompleted: number; responseTime: number; occupancyRate: number; id: string; userId: string; firstName: string; lastName: string; email: string; phone: string; hostelId: string; ... 4 more ...; updatedAt: string; }'. Did you mean 'lastName'?
+src/app/(landlord)/landlord/caretakers/performance/page.tsx(217,40): error TS2551: Property 'first_name' does not exist on type '{ rating: string; tasksCompleted: number; responseTime: number; occupancyRate: number; id: string; userId: string; firstName: string; lastName: string; email: string; phone: string; hostelId: string; ... 4 more ...; updatedAt: string; }'. Did you mean 'firstName'?
+src/app/(landlord)/landlord/caretakers/performance/page.tsx(217,63): error TS2551: Property 'last_name' does not exist on type '{ rating: string; tasksCompleted: number; responseTime: number; occupancyRate: number; id: string; userId: string; firstName: string; lastName: string; email: string; phone: string; hostelId: string; ... 4 more ...; updatedAt: string; }'. Did you mean 'lastName'?
+src/app/(landlord)/landlord/hostels/[id]/page.tsx(8,8): error TS1192: Module '"/home/ogutu/Pictures/RUMI/frontend/src/features/hostels/index"' has no default export.
+src/app/(landlord)/landlord/hostels/new/page.tsx(30,10): error TS2305: Module '"@/features/hostels"' has no exported member 'HostelImageUpload'.
+src/app/(landlord)/landlord/hostels/new/page.tsx(222,50): error TS7006: Parameter 'files' implicitly has an 'any' type.
+src/app/(landlord)/landlord/notifications/page.tsx(141,34): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/(landlord)/landlord/payments/subscription/page.tsx(26,19): error TS2367: This comparison appears to be unintentional because the types '"expired" | "active" | "cancelled" | undefined' and '"trialing"' have no overlap.
+src/app/(landlord)/landlord/payments/subscription/page.tsx(61,41): error TS2339: Property 'current_period_end' does not exist on type 'UserSubscription'.
+src/app/(landlord)/landlord/payments/subscription/page.tsx(62,102): error TS2339: Property 'current_period_end' does not exist on type 'UserSubscription'.
+src/app/(landlord)/landlord/profile/edit/page.tsx(83,17): error TS2339: Property 'updateUser' does not exist on type '{ user: User | null; isAuthenticated: boolean; logout: () => void; }'.
+src/app/(landlord)/landlord/profile/edit/page.tsx(116,5): error TS2322: Type 'Resolver<{ companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; numberOfProperties?: unknown; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }>' is not assignable to type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }>'.
+  Types of parameters 'options' and 'options' are incompatible.
+    Type 'ResolverOptions<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }>' is not assignable to type 'ResolverOptions<{ companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; numberOfProperties?: unknown; businessAddress?: string | undefined; website?: string | undefined; }>'.
+      Type 'unknown' is not assignable to type 'number'.
+src/app/(landlord)/landlord/profile/edit/page.tsx(300,32): error TS2322: Type 'Nullable<string> | undefined' is not assignable to type 'string | Blob | undefined'.
+  Type 'null' is not assignable to type 'string | Blob | undefined'.
+src/app/(landlord)/landlord/profile/edit/page.tsx(461,66): error TS2345: Argument of type '(data: BusinessDetailsFormValues) => Promise<void>' is not assignable to parameter of type 'SubmitHandler<TFieldValues>'.
+  Types of parameters 'data' and 'data' are incompatible.
+    Type 'TFieldValues' is not assignable to type '{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }'.
+      Property 'numberOfProperties' is missing in type 'FieldValues' but required in type '{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }'.
+src/app/(landlord)/landlord/profile/edit/page.tsx(463,21): error TS2322: Type 'Control<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }>'.
+  The types of '_options.resolver' are incompatible between these types.
+    Type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues> | undefined' is not assignable to type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }> | undefined'.
+      Type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues>' is not assignable to type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }>'.
+        Type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, TFieldValues> | Promise<...>' is not assignable to type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, { ...; }> | Promise<...>'.
+          Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, { ...; }> | Promise<...>'.
+            Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverSuccess<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }>'.
+              Type 'TFieldValues' is not assignable to type '{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }'.
+                Property 'numberOfProperties' is missing in type 'FieldValues' but required in type '{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }'.
+src/app/(landlord)/landlord/profile/edit/page.tsx(479,23): error TS2322: Type 'Control<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }>'.
+  The types of '_options.resolver' are incompatible between these types.
+    Type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues> | undefined' is not assignable to type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }> | undefined'.
+      Type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues>' is not assignable to type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }>'.
+        Type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, TFieldValues> | Promise<...>' is not assignable to type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, { ...; }> | Promise<...>'.
+          Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, { ...; }> | Promise<...>'.
+            Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverSuccess<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }>'.
+              Type 'TFieldValues' is not assignable to type '{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }'.
+                Property 'numberOfProperties' is missing in type 'FieldValues' but required in type '{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }'.
+src/app/(landlord)/landlord/profile/edit/page.tsx(492,23): error TS2322: Type 'Control<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }>'.
+  The types of '_options.resolver' are incompatible between these types.
+    Type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues> | undefined' is not assignable to type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }> | undefined'.
+      Type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues>' is not assignable to type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }>'.
+        Type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, TFieldValues> | Promise<...>' is not assignable to type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, { ...; }> | Promise<...>'.
+          Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, { ...; }> | Promise<...>'.
+            Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverSuccess<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }>'.
+              Type 'TFieldValues' is not assignable to type '{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }'.
+                Property 'numberOfProperties' is missing in type 'FieldValues' but required in type '{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }'.
+src/app/(landlord)/landlord/profile/edit/page.tsx(507,21): error TS2322: Type 'Control<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }>'.
+  The types of '_options.resolver' are incompatible between these types.
+    Type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues> | undefined' is not assignable to type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }> | undefined'.
+      Type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues>' is not assignable to type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }>'.
+        Type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, TFieldValues> | Promise<...>' is not assignable to type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, { ...; }> | Promise<...>'.
+          Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, { ...; }> | Promise<...>'.
+            Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverSuccess<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }>'.
+              Type 'TFieldValues' is not assignable to type '{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }'.
+                Property 'numberOfProperties' is missing in type 'FieldValues' but required in type '{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }'.
+src/app/(landlord)/landlord/profile/edit/page.tsx(524,21): error TS2322: Type 'Control<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }>'.
+  The types of '_options.resolver' are incompatible between these types.
+    Type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues> | undefined' is not assignable to type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }> | undefined'.
+      Type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues>' is not assignable to type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }>'.
+        Type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, TFieldValues> | Promise<...>' is not assignable to type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, { ...; }> | Promise<...>'.
+          Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, { ...; }> | Promise<...>'.
+            Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverSuccess<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }>'.
+              Type 'TFieldValues' is not assignable to type '{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }'.
+                Property 'numberOfProperties' is missing in type 'FieldValues' but required in type '{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }'.
+src/app/(landlord)/landlord/profile/edit/page.tsx(543,21): error TS2322: Type 'Control<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }>'.
+  The types of '_options.resolver' are incompatible between these types.
+    Type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues> | undefined' is not assignable to type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }> | undefined'.
+      Type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, TFieldValues>' is not assignable to type 'Resolver<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, any, { ...; }>'.
+        Type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, TFieldValues> | Promise<...>' is not assignable to type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, { ...; }> | Promise<...>'.
+          Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverResult<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }, { ...; }> | Promise<...>'.
+            Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverSuccess<{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }>'.
+              Type 'TFieldValues' is not assignable to type '{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }'.
+                Property 'numberOfProperties' is missing in type 'FieldValues' but required in type '{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; businessAddress?: string | undefined; website?: string | undefined; }'.
+src/app/(landlord)/landlord/profile/page.tsx(111,26): error TS2322: Type 'Nullable<string> | undefined' is not assignable to type 'string | Blob | undefined'.
+  Type 'null' is not assignable to type 'string | Blob | undefined'.
+src/app/(landlord)/landlord/profile/page.tsx(185,26): error TS2551: Property 'createdAt' does not exist on type 'User'. Did you mean 'created_at'?
+src/app/(landlord)/landlord/profile/page.tsx(185,52): error TS2551: Property 'createdAt' does not exist on type 'User'. Did you mean 'created_at'?
+src/app/(landlord)/landlord/support/[ticketId]/page.tsx(77,80): error TS2551: Property 'created_at' does not exist on type 'SupportTicket'. Did you mean 'createdAt'?
+src/app/(landlord)/landlord/support/[ticketId]/page.tsx(106,100): error TS2551: Property 'created_at' does not exist on type 'SupportTicket'. Did you mean 'createdAt'?
+src/app/(landlord)/landlord/support/page.tsx(43,32): error TS2339: Property 'results' does not exist on type 'SupportTicket[]'.
+src/app/(landlord)/landlord/support/page.tsx(164,26): error TS7006: Parameter 'ticket' implicitly has an 'any' type.
+src/app/(landlord)/landlord/support/page.tsx(164,34): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/app/(landlord)/landlord/tenants/[id]/page.tsx(55,85): error TS18048: 'user.first_name' is possibly 'undefined'.
+src/app/(landlord)/landlord/tenants/[id]/page.tsx(55,105): error TS18048: 'user.last_name' is possibly 'undefined'.
+src/app/(landlord)/landlord/tenants/[id]/page.tsx(90,50): error TS2339: Property 'date_joined' does not exist on type 'User'.
+src/app/(landlord)/landlord/tenants/[id]/page.tsx(191,118): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+src/app/(landlord)/landlord/tenants/[id]/page.tsx(201,118): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+src/app/(landlord)/landlord/tenants/check-in/[bookingId]/page.tsx(50,11): error TS2353: Object literal may only specify known properties, and 'bookingId' does not exist in type 'CheckInData'.
+src/app/(landlord)/landlord/tenants/check-in/[bookingId]/page.tsx(79,70): error TS2339: Property 'number' does not exist on type 'Room'.
+src/app/(landlord)/landlord/tenants/check-in/[bookingId]/page.tsx(145,53): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+src/app/(landlord)/landlord/tenants/check-ins/page.tsx(55,34): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+src/app/(landlord)/landlord/tenants/check-ins/page.tsx(63,30): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+src/app/(landlord)/landlord/tenants/check-ins/page.tsx(63,68): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+src/app/(landlord)/landlord/tenants/check-ins/page.tsx(141,84): error TS2339: Property 'number' does not exist on type 'Room'.
+src/app/(landlord)/landlord/tenants/check-ins/page.tsx(142,46): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+src/app/(landlord)/landlord/tenants/check-out/[bookingId]/page.tsx(50,11): error TS2353: Object literal may only specify known properties, and 'bookingId' does not exist in type 'CheckOutData'.
+src/app/(landlord)/landlord/tenants/check-out/[bookingId]/page.tsx(79,70): error TS2339: Property 'number' does not exist on type 'Room'.
+src/app/(landlord)/landlord/tenants/check-out/[bookingId]/page.tsx(231,38): error TS2304: Cannot find name 'Separator'.
+src/app/(landlord)/landlord/tenants/check-outs/page.tsx(49,34): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+src/app/(landlord)/landlord/tenants/check-outs/page.tsx(144,84): error TS2339: Property 'number' does not exist on type 'Room'.
+src/app/(landlord)/landlord/tenants/page.tsx(60,30): error TS2339: Property 'results' does not exist on type 'User[]'.
+src/app/(landlord)/landlord/tenants/page.tsx(62,43): error TS7006: Parameter 'tenant' implicitly has an 'any' type.
+src/app/(landlord)/landlord/tenants/page.tsx(110,56): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/app/(landlord)/landlord/tenants/page.tsx(110,86): error TS7006: Parameter 'h' implicitly has an 'any' type.
+src/app/(landlord)/landlord/tenants/page.tsx(114,41): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/app/(landlord)/landlord/tenants/page.tsx(115,38): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/app/(landlord)/landlord/tenants/page.tsx(242,31): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+src/app/(landlord)/landlord/tenants/page.tsx(242,44): error TS2322: Type 'unknown' is not assignable to type 'string'.
+src/app/(landlord)/landlord/tenants/page.tsx(242,59): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/(landlord)/landlord/tenants/page.tsx(259,30): error TS7006: Parameter 'tenant' implicitly has an 'any' type.
+src/app/(landlord)/landlord/tenants/page.tsx(259,38): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/app/(landlord)/landlord/tenants/roommates/page.tsx(50,57): error TS2352: Conversion of type 'Hostel' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/app/(public)/hostels/[slug]/error.tsx(22,9): error TS2322: Type '{ statusCode: number; title: string; message: string; }' is not assignable to type 'IntrinsicAttributes & ErrorStateProps'.
+  Property 'statusCode' does not exist on type 'IntrinsicAttributes & ErrorStateProps'.
+src/app/(public)/hostels/not-found.tsx(12,9): error TS2322: Type '{ title: string; description: string; icon: string; }' is not assignable to type 'IntrinsicAttributes & EmptyStateProps'.
+  Property 'icon' does not exist on type 'IntrinsicAttributes & EmptyStateProps'.
+src/app/(public)/pricing/page.tsx(238,7): error TS2322: Type '{ hidden: { opacity: number; y: number; scale: number; }; visible: { opacity: number; y: number; scale: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; scale: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/app/(public)/pricing/page.tsx(456,23): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/app/(public)/pricing/page.tsx(463,13): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/app/(public)/pricing/page.tsx(481,13): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/app/(public)/pricing/page.tsx(490,13): error TS2322: Type '{ hidden: { opacity: number; y: number; }; visible: { opacity: number; y: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
+  Property 'visible' is incompatible with index signature.
+    Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
+      Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
+        Type '{ opacity: number; y: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition<any> | undefined; transitionEnd?: ResolvedValues | undefined; }'.
+          Types of property 'transition' are incompatible.
+            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition<any> | undefined'.
+              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides<any>'.
+                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition<any>'.
+                  Types of property 'ease' are incompatible.
+                    Type 'number[]' is not assignable to type 'Easing | Easing[] | undefined'.
+                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
+                        Type 'number[]' is not assignable to type 'Easing[]'.
+                          Type 'number' is not assignable to type 'Easing'.
+src/app/(student)/student/bookings/active/page.tsx(74,61): error TS2339: Property 'type' does not exist on type 'Room'.
+src/app/(student)/student/bookings/active/page.tsx(108,38): error TS2551: Property 'totalAmount' does not exist on type 'Booking'. Did you mean 'total_amount'?
+src/app/(student)/student/bookings/history/page.tsx(63,39): error TS2339: Property 'moveOutDate' does not exist on type 'Booking'.
+src/app/(student)/student/hostels/favorites/page.tsx(7,9): error TS7034: Variable 'hostels' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/app/(student)/student/hostels/favorites/page.tsx(11,28): error TS7005: Variable 'hostels' implicitly has an 'any[]' type.
+src/app/(student)/student/hostels/page.tsx(13,8): error TS1192: Module '"/home/ogutu/Pictures/RUMI/frontend/src/features/hostels/index"' has no default export.
+src/app/(student)/student/messages/page.tsx(165,19): error TS2322: Type '{ key: string; conversation: Conversation; is_active: boolean; onClick: () => void; onPin: () => Promise<void>; onMute: () => Promise<void>; }' is not assignable to type 'IntrinsicAttributes & ConversationCardProps'.
+  Property 'is_active' does not exist on type 'IntrinsicAttributes & ConversationCardProps'. Did you mean 'isActive'?
+src/app/(student)/student/profile/edit/page.tsx(57,17): error TS2339: Property 'updateProfile' does not exist on type '{ user: User | null; isAuthenticated: boolean; logout: () => void; }'.
+src/app/(student)/student/profile/page.tsx(188,31): error TS2551: Property 'createdAt' does not exist on type 'User'. Did you mean 'created_at'?
+src/app/(student)/student/profile/page.tsx(188,57): error TS2551: Property 'createdAt' does not exist on type 'User'. Did you mean 'created_at'?
+src/app/(student)/student/roommates/page.tsx(160,41): error TS2339: Property 'compatibilityScore' does not exist on type 'RoommateSummary'.
+src/app/(student)/student/search/page.tsx(61,15): error TS2339: Property 'description' does not exist on type 'Payment'.
+src/app/(student)/student/search/page.tsx(63,15): error TS2339: Property 'transactionId' does not exist on type 'Payment'.
+src/app/(student)/student/search/page.tsx(67,32): error TS2339: Property 'length' does not exist on type 'NonNullable<NoInfer<TQueryFnData>>'.
+src/app/(student)/student/search/page.tsx(215,31): error TS2339: Property 'length' does not exist on type 'NonNullable<NoInfer<TQueryFnData>>'.
+src/app/(student)/student/search/page.tsx(221,75): error TS2339: Property 'length' does not exist on type 'NonNullable<NoInfer<TQueryFnData>>'.
+src/app/(student)/student/search/page.tsx(225,26): error TS2339: Property 'slice' does not exist on type 'NonNullable<NoInfer<TQueryFnData>>'.
+src/app/(student)/student/search/page.tsx(225,43): error TS7006: Parameter 'hostel' implicitly has an 'any' type.
+src/app/(student)/student/search/page.tsx(247,26): error TS2339: Property 'length' does not exist on type 'NonNullable<NoInfer<TQueryFnData>>'.
+src/app/(student)/student/search/page.tsx(250,41): error TS2339: Property 'length' does not exist on type 'NonNullable<NoInfer<TQueryFnData>>'.
+src/app/(student)/student/search/page.tsx(323,34): error TS2339: Property 'description' does not exist on type 'Payment'.
+src/app/(student)/student/security/page.tsx(115,75): error TS2322: Type '{ children: Element; className: string; asChild: true; }' is not assignable to type 'IntrinsicAttributes & CardProps & RefAttributes<HTMLDivElement>'.
+  Property 'asChild' does not exist on type 'IntrinsicAttributes & CardProps & RefAttributes<HTMLDivElement>'.
+src/app/(student)/student/transfers/page.tsx(55,55): error TS2367: This comparison appears to be unintentional because the types 'TransferRequestStatus' and '"completed"' have no overlap.
+src/app/context/subscriptioncontext.tsx(108,20): error TS18047: 'response' is possibly 'null'.
+src/app/context/subscriptioncontext.tsx(108,29): error TS2339: Property 'data' does not exist on type 'UserSubscription'.
+src/app/context/subscriptioncontext.tsx(123,25): error TS2339: Property 'data' does not exist on type 'SubscriptionPlan[]'.
+src/app/context/subscriptioncontext.tsx(141,7): error TS2304: Cannot find name 'toast'.
+src/app/context/subscriptioncontext.tsx(144,7): error TS2304: Cannot find name 'toast'.
+src/app/context/subscriptioncontext.tsx(151,65): error TS2554: Expected 0 arguments, but got 1.
+src/app/context/subscriptioncontext.tsx(152,29): error TS2339: Property 'data' does not exist on type 'void'.
+src/app/context/subscriptioncontext.tsx(167,29): error TS2339: Property 'data' does not exist on type 'UserSubscription'.
+src/app/manifest.ts(39,9): error TS2820: Type '"any maskable"' is not assignable to type '"any" | "maskable" | "monochrome" | undefined'. Did you mean '"maskable"'?
+src/app/manifest.ts(58,9): error TS2578: Unused '@ts-expect-error' directive.
+src/app/manifest.ts(66,9): error TS2578: Unused '@ts-expect-error' directive.
+src/app/tech-support/profile/page.tsx(96,26): error TS2322: Type 'Nullable<string> | undefined' is not assignable to type 'string | Blob | undefined'.
+  Type 'null' is not assignable to type 'string | Blob | undefined'.
+src/components/layouts/dashboard-sidebar.tsx(27,26): error TS2307: Cannot find module '@/providers/theme-provider' or its corresponding type declarations.
+src/components/ui/calendar.tsx(41,9): error TS2353: Object literal may only specify known properties, and 'IconLeft' does not exist in type 'Partial<CustomComponents>'.
+src/components/ui/currency-input.tsx(92,8): error TS2503: Cannot find namespace 'JSX'.
+src/components/ui/data-table.tsx(144,21): error TS2322: Type '{ title: string; description: string; className: string; icon: string; }' is not assignable to type 'IntrinsicAttributes & EmptyStateProps'.
+  Property 'icon' does not exist on type 'IntrinsicAttributes & EmptyStateProps'.
+src/components/ui/empty-state.tsx(24,47): error TS2304: Cannot find name 'IconName'.
+src/components/ui/empty-state.tsx(46,11): error TS2322: Type '"Frown" | "Search" | "PlusCircle" | "AlertCircle"' is not assignable to type '"Calendar" | "Option" | "List" | "Group" | "Table" | "Library" | "Bed" | "Users" | "Settings" | "Sun" | "Tablet" | "Menu" | "University" | "Phone" | "Delete" | "ArrowLeft" | "ArrowRight" | ... 1637 more ... | "ZoomOut"'.
+  Type '"PlusCircle"' is not assignable to type '"Calendar" | "Option" | "List" | "Group" | "Table" | "Library" | "Bed" | "Users" | "Settings" | "Sun" | "Tablet" | "Menu" | "University" | "Phone" | "Delete" | "ArrowLeft" | "ArrowRight" | ... 1637 more ... | "ZoomOut"'.
+src/components/ui/form-fields.tsx(48,9): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Object literal may only specify known properties, and 'id' does not exist in type 'Partial<unknown> & Attributes'.
+src/components/ui/form-fields.tsx(123,11): error TS2430: Interface 'FormFieldProps' incorrectly extends interface 'Omit<InputProps & RefAttributes<HTMLInputElement>, "ref">'.
+  Types of property 'error' are incompatible.
+    Type 'string | undefined' is not assignable to type 'boolean | undefined'.
+      Type 'string' is not assignable to type 'boolean | undefined'.
+src/components/ui/form-fields.tsx(218,9): error TS2322: Type '{ name?: string | undefined; value?: string | number | readonly string[] | undefined; popover?: "" | "auto" | "manual" | "hint" | undefined; dir?: string | undefined; lang?: string | undefined; ... 307 more ...; className: string | undefined; }' is not assignable to type 'IntrinsicAttributes & PasswordInputProps & RefAttributes<HTMLInputElement>'.
+  Property 'error' does not exist on type 'IntrinsicAttributes & PasswordInputProps & RefAttributes<HTMLInputElement>'. Did you mean 'onError'?
+src/components/ui/map-picker.tsx(5,29): error TS2307: Cannot find module 'react-map-gl' or its corresponding type declarations.
+src/components/ui/map-picker.tsx(74,18): error TS7006: Parameter 'evt' implicitly has an 'any' type.
+src/components/ui/multi-image-upload.tsx(90,13): error TS2322: Type '{ key: string; index: number; file: UploadedFile; onRemove: (id: string) => void; }' is not assignable to type 'IntrinsicAttributes & IntrinsicClassAttributes<Component<SortableElementProps, any, any>> & Readonly<...>'.
+  Property 'file' does not exist on type 'IntrinsicAttributes & IntrinsicClassAttributes<Component<SortableElementProps, any, any>> & Readonly<...>'.
+src/components/ui/multi-image-upload.tsx(204,13): error TS2322: Type '{ files: UploadedFile[]; onRemove: (id: string) => void; onSortEnd: ({ oldIndex, newIndex, }: { oldIndex: number; newIndex: number; }) => void; useDragHandle: true; lockAxis: "y"; }' is not assignable to type 'IntrinsicAttributes & IntrinsicClassAttributes<Component<SortableContainerProps, any, any>> & Readonly<...>'.
+  Property 'files' does not exist on type 'IntrinsicAttributes & IntrinsicClassAttributes<Component<SortableContainerProps, any, any>> & Readonly<...>'.
+src/components/ui/pagination.tsx(40,3): error TS4104: The type 'readonly [10, 20, 50, 100]' is 'readonly' and cannot be assigned to the mutable type 'number[]'.
+src/features/admin/components/email-template-editor.tsx(71,48): error TS2353: Object literal may only specify known properties, and 'name' does not exist in type 'ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...>'.
+src/features/admin/components/email-template-editor.tsx(72,48): error TS2353: Object literal may only specify known properties, and 'email' does not exist in type 'ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...>'.
+src/features/admin/components/email-template-editor.tsx(72,48): error TS2552: Cannot find name 'email'. Did you mean 'Mail'?
+src/features/admin/components/email-template-editor.tsx(73,48): error TS2353: Object literal may only specify known properties, and 'booking_id' does not exist in type 'ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...>'.
+src/features/admin/components/email-template-editor.tsx(73,48): error TS18004: No value exists in scope for the shorthand property 'booking_id'. Either declare one or provide an initializer.
+src/features/admin/components/email-template-editor.tsx(74,48): error TS2353: Object literal may only specify known properties, and 'amount' does not exist in type 'ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...>'.
+src/features/admin/components/email-template-editor.tsx(74,48): error TS18004: No value exists in scope for the shorthand property 'amount'. Either declare one or provide an initializer.
+src/features/admin/components/hostel-table.tsx(36,19): error TS2339: Property 'map' does not exist on type 'NonNullable<NoInfer<TQueryFnData>>'.
+src/features/admin/components/hostel-table.tsx(36,24): error TS7006: Parameter 'hostel' implicitly has an 'any' type.
+src/features/admin/components/sms-template-editor.tsx(67,23): error TS2353: Object literal may only specify known properties, and 'name' does not exist in type 'ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...>'.
+src/features/admin/components/sms-template-editor.tsx(70,23): error TS2353: Object literal may only specify known properties, and 'booking_id' does not exist in type 'ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...>'.
+src/features/admin/components/sms-template-editor.tsx(70,23): error TS18004: No value exists in scope for the shorthand property 'booking_id'. Either declare one or provide an initializer.
+src/features/admin/components/sms-template-editor.tsx(73,23): error TS2353: Object literal may only specify known properties, and 'amount' does not exist in type 'ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...>'.
+src/features/admin/components/sms-template-editor.tsx(73,23): error TS18004: No value exists in scope for the shorthand property 'amount'. Either declare one or provide an initializer.
+src/features/analytics/components/payment-success-rate-chart.tsx(28,58): error TS18048: 'percent' is possibly 'undefined'.
+src/features/auth/components/caretaker-registration-form.tsx(68,42): error TS2345: Argument of type '{ phone: string; role: "caretaker"; email: string; password: string; confirmPassword: string; firstName: string; lastName: string; agreeToTerms: boolean; hostelId?: string | undefined; employmentStartDate?: Date | undefined; nationalId?: string | undefined; }' is not assignable to parameter of type 'CaretakerRegisterRequest'.
+  Types of property 'employmentStartDate' are incompatible.
+    Type 'Date | undefined' is not assignable to type 'string | undefined'.
+      Type 'Date' is not assignable to type 'string'.
+src/features/auth/components/register-form.tsx(58,5): error TS2322: Type 'Resolver<{ role: "student"; university: string; studentIdNumber: string; yearOfStudy: number; email: string; password: string; confirmPassword: string; firstName: string; lastName: string; phone: string; agreeToTerms: boolean; course?: string | undefined; } | { ...; }, any, { ...; } | { ...; }>' is not assignable to type 'Resolver<{ role: "student"; university: string; studentIdNumber: string; yearOfStudy: number; email: string; password: string; confirmPassword: string; firstName: string; lastName: string; phone: string; agreeToTerms: boolean; course?: string | undefined; } | { ...; } | { ...; }, any, { ...; } | ... 1 more ... | { ....'.
+  Types of parameters 'values' and 'values' are incompatible.
+    Type '{ role: "student"; university: string; studentIdNumber: string; yearOfStudy: number; email: string; password: string; confirmPassword: string; firstName: string; lastName: string; phone: string; agreeToTerms: boolean; course?: string | undefined; } | { ...; } | { ...; }' is not assignable to type '{ role: "student"; university: string; studentIdNumber: string; yearOfStudy: number; email: string; password: string; confirmPassword: string; firstName: string; lastName: string; phone: string; agreeToTerms: boolean; course?: string | undefined; } | { ...; }'.
+      Type '{ role: "caretaker"; email: string; password: string; confirmPassword: string; firstName: string; lastName: string; phone: string; agreeToTerms: boolean; hostelId?: string | undefined; employmentStartDate?: Date | undefined; nationalId?: string | undefined; }' is not assignable to type '{ role: "student"; university: string; studentIdNumber: string; yearOfStudy: number; email: string; password: string; confirmPassword: string; firstName: string; lastName: string; phone: string; agreeToTerms: boolean; course?: string | undefined; } | { ...; }'.
+        Type '{ role: "caretaker"; email: string; password: string; confirmPassword: string; firstName: string; lastName: string; phone: string; agreeToTerms: boolean; hostelId?: string | undefined; employmentStartDate?: Date | undefined; nationalId?: string | undefined; }' is missing the following properties from type '{ role: "landlord"; nationalId: string; businessName: string; bankName: string; bankAccountNumber: string; email: string; password: string; confirmPassword: string; firstName: string; lastName: string; phone: string; agreeToTerms: boolean; kraPin?: string | undefined; }': businessName, bankName, bankAccountNumber
+src/features/auth/components/register-form.tsx(146,34): error TS2345: Argument of type '(data: RegisterFormData) => void' is not assignable to parameter of type 'SubmitHandler<TFieldValues>'.
+  Types of parameters 'data' and 'data' are incompatible.
+    Type 'TFieldValues' is not assignable to type '{ role: "student"; university: string; studentIdNumber: string; yearOfStudy: number; email: string; password: string; confirmPassword: string; firstName: string; lastName: string; phone: string; agreeToTerms: boolean; course?: string | undefined; } | { ...; } | { ...; }'.
+      Type 'FieldValues' is not assignable to type '{ role: "student"; university: string; studentIdNumber: string; yearOfStudy: number; email: string; password: string; confirmPassword: string; firstName: string; lastName: string; phone: string; agreeToTerms: boolean; course?: string | undefined; } | { ...; } | { ...; }'.
+        Type 'FieldValues' is missing the following properties from type '{ role: "landlord"; nationalId: string; businessName: string; bankName: string; bankAccountNumber: string; email: string; password: string; confirmPassword: string; firstName: string; lastName: string; phone: string; agreeToTerms: boolean; kraPin?: string | undefined; }': role, nationalId, businessName, bankName, and 8 more.
+          Type 'TFieldValues' is not assignable to type '{ role: "caretaker"; email: string; password: string; confirmPassword: string; firstName: string; lastName: string; phone: string; agreeToTerms: boolean; hostelId?: string | undefined; employmentStartDate?: Date | undefined; nationalId?: string | undefined; }'.
+            Type 'FieldValues' is missing the following properties from type '{ role: "caretaker"; email: string; password: string; confirmPassword: string; firstName: string; lastName: string; phone: string; agreeToTerms: boolean; hostelId?: string | undefined; employmentStartDate?: Date | undefined; nationalId?: string | undefined; }': role, email, password, confirmPassword, and 4 more.
+src/features/auth/hooks/use-auth.ts(66,51): error TS2367: This comparison appears to be unintentional because the types '"student" | "landlord" | "caretaker"' and '"tech_support"' have no overlap.
+src/features/auth/hooks/use-auth.ts(115,51): error TS2367: This comparison appears to be unintentional because the types '"student" | "landlord" | "caretaker"' and '"tech_support"' have no overlap.
+src/features/auth/hooks/use-auth.ts(163,51): error TS2367: This comparison appears to be unintentional because the types '"student" | "landlord" | "caretaker"' and '"tech_support"' have no overlap.
+src/features/hostels/components/hostel-amenities.tsx(24,3): error TS1117: An object literal cannot have multiple properties with the same name.
+src/features/hostels/components/hostel-comparison-table.tsx(33,29): error TS18048: 'hostel.pricePerMonth' is possibly 'undefined'.
+src/features/hostels/components/hostel-comparison-table.tsx(34,39): error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+src/features/hostels/components/hostel-form.tsx(10,10): error TS2305: Module '"@/features/hostels"' has no exported member 'addRoomToHostel'.
+src/features/hostels/components/hostel-form.tsx(50,10): error TS2304: Cannot find name 'Label'.
+src/features/hostels/components/hostel-form.tsx(50,42): error TS2304: Cannot find name 'Label'.
+src/features/hostels/components/hostel-form.tsx(58,10): error TS2304: Cannot find name 'Label'.
+src/features/hostels/components/hostel-form.tsx(58,45): error TS2304: Cannot find name 'Label'.
+src/features/hostels/components/hostel-form.tsx(70,10): error TS2304: Cannot find name 'Label'.
+src/features/hostels/components/hostel-form.tsx(70,47): error TS2304: Cannot find name 'Label'.
+src/features/hostels/components/hostel-form.tsx(82,10): error TS2304: Cannot find name 'Label'.
+src/features/hostels/components/hostel-form.tsx(82,49): error TS2304: Cannot find name 'Label'.
+src/features/hostels/components/hostel-reviews-section.tsx(8,8): error TS1192: Module '"/home/ogutu/Pictures/RUMI/frontend/src/features/reviews/index"' has no default export.
+src/features/hostels/components/hostel-reviews-section.tsx(9,8): error TS1192: Module '"/home/ogutu/Pictures/RUMI/frontend/src/features/reviews/index"' has no default export.
+src/features/hostels/components/hostel-sort.tsx(39,21): error TS2345: Argument of type 'string' is not assignable to parameter of type '"rating" | "popularity" | "price_asc" | "price_desc" | "distance"'.
+src/features/hostels/components/related-hostels.tsx(4,8): error TS1192: Module '"/home/ogutu/Pictures/RUMI/frontend/src/features/hostels/index"' has no default export.
+src/features/hostels/components/room-form.tsx(37,5): error TS2322: Type 'Hostel | { amenities: never[]; }' is not assignable to type 'AsyncDefaultValues<{ name: string; address: string; description: string; pricePerMonth: number; amenities: string[]; }> | { name?: string | undefined; address?: string | undefined; description?: string | undefined; pricePerMonth?: number | undefined; amenities?: (string | undefined)[] | undefined; } | undefined'.
+  Type 'Hostel' is not assignable to type 'AsyncDefaultValues<{ name: string; address: string; description: string; pricePerMonth: number; amenities: string[]; }> | { name?: string | undefined; address?: string | undefined; description?: string | undefined; pricePerMonth?: number | undefined; amenities?: (string | undefined)[] | undefined; } | undefined'.
+    Type 'Hostel' is not assignable to type '{ name?: string | undefined; address?: string | undefined; description?: string | undefined; pricePerMonth?: number | undefined; amenities?: (string | undefined)[] | undefined; }'.
+      Types of property 'amenities' are incompatible.
+        Type 'Record<string, any>' is missing the following properties from type '(string | undefined)[]': length, pop, push, concat, and 28 more.
+src/features/hostels/components/room-form.tsx(46,56): error TS2345: Argument of type '{ name: string; address: string; description: string; pricePerMonth: number; amenities: string[]; }' is not assignable to parameter of type 'Omit<Hostel, "id" | "reviews" | "rating" | "rooms" | "slug" | "reviewsCount">'.
+  Type '{ name: string; address: string; description: string; pricePerMonth: number; amenities: string[]; }' is missing the following properties from type 'Omit<Hostel, "id" | "reviews" | "rating" | "rooms" | "slug" | "reviewsCount">': landlord, status, rules, is_active, and 19 more.
+src/features/hostels/components/room-form.tsx(49,34): error TS2345: Argument of type '(data: FormData) => void' is not assignable to parameter of type 'SubmitHandler<TFieldValues>'.
+  Types of parameters 'data' and 'data' are incompatible.
+    Type 'TFieldValues' is not assignable to type '{ name: string; address: string; description: string; pricePerMonth: number; amenities: string[]; }'.
+      Type 'FieldValues' is missing the following properties from type '{ name: string; address: string; description: string; pricePerMonth: number; amenities: string[]; }': name, address, description, pricePerMonth, amenities
+src/features/hostels/components/room-form.tsx(90,35): error TS2304: Cannot find name 'formState'.
+src/features/hostels/components/room-form.tsx(95,41): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/features/hostels/components/room-form.tsx(107,46): error TS2345: Argument of type '"images"' is not assignable to parameter of type '"address" | "name" | "description" | "amenities" | "pricePerMonth" | `amenities.${number}`'.
+src/features/inventory/components/comparison-view.tsx(77,23): error TS2304: Cannot find name 'CONDITION_OPTS'.
+src/features/inventory/components/comparison-view.tsx(77,43): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/features/inventory/components/comparison-view.tsx(89,51): error TS2304: Cannot find name 'CONDITION_OPTS'.
+src/features/inventory/components/comparison-view.tsx(89,71): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/features/inventory/components/comparison-view.tsx(123,12): error TS2304: Cannot find name 'CONDITION_OPTS'.
+src/features/inventory/components/comparison-view.tsx(123,32): error TS7006: Parameter 'opt' implicitly has an 'any' type.
+src/features/inventory/components/inventory-item-card.tsx(59,15): error TS2339: Property 'notes' does not exist on type 'InventoryItem'.
+src/features/inventory/components/inventory-item-card.tsx(60,68): error TS2339: Property 'notes' does not exist on type 'InventoryItem'.
+src/features/landlord/components/bookings/bookings-list.tsx(58,72): error TS2339: Property 'number' does not exist on type 'Room'.
+src/features/landlord/components/bookings/bookings-list.tsx(104,27): error TS2353: Object literal may only specify known properties, and 'bookingId' does not exist in type '{ id: string; status: "pending" | "completed" | "cancelled" | "confirmed"; }'.
+src/features/landlord/components/bookings/bookings-list.tsx(160,85): error TS2339: Property 'number' does not exist on type 'Room'.
+src/features/landlord/components/bookings/bookings-list.tsx(200,76): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+src/features/messaging/components/conversation-list.tsx(24,25): error TS2339: Property 'map' does not exist on type 'PaginatedResponse<Conversation>'.
+src/features/messaging/components/conversation-list.tsx(24,30): error TS7006: Parameter 'conversation' implicitly has an 'any' type.
+src/features/messaging/components/conversation-list.tsx(66,25): error TS2339: Property 'length' does not exist on type 'PaginatedResponse<Conversation>'.
+src/features/payments/api/subscriptions.ts(13,7): error TS2353: Object literal may only specify known properties, and 'period' does not exist in type 'SubscriptionPlan'.
+src/features/payments/api/subscriptions.ts(21,7): error TS2353: Object literal may only specify known properties, and 'period' does not exist in type 'SubscriptionPlan'.
+src/features/payments/api/subscriptions.ts(29,7): error TS2353: Object literal may only specify known properties, and 'period' does not exist in type 'SubscriptionPlan'.
+src/features/payments/api/subscriptions.ts(47,10): error TS2352: Conversion of type '{ id: string; plan: { id: string; name: string; price: number; period: string; features: string[]; description: string; }; status: "active"; current_period_start: string; current_period_end: string; cancel_at_period_end: boolean; }' to type 'UserSubscription' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ id: string; plan: { id: string; name: string; price: number; period: string; features: string[]; description: string; }; status: "active"; current_period_start: string; current_period_end: string; cancel_at_period_end: boolean; }' is missing the following properties from type 'UserSubscription': startDate, endDate, autoRenew
+src/features/profile/components/caretaker-profile-form.tsx(30,26): error TS2559: Type '{ yearsOfExperience: number; specializations?: string | undefined; certifications?: string | undefined; availability?: string | undefined; }' has no properties in common with type 'UpdateCaretakerProfileRequest'.
+src/features/profile/components/landlord-profile-form.tsx(33,26): error TS2559: Type '{ numberOfProperties: number; companyName?: string | undefined; businessRegistrationNumber?: string | undefined; taxPin?: string | undefined; bankAccount?: string | undefined; bio?: string | undefined; }' has no properties in common with type 'UpdateLandlordProfileRequest'.
+src/features/profile/components/profile-card.tsx(17,29): error TS2339: Property 'firstName' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-card.tsx(17,51): error TS2339: Property 'lastName' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-card.tsx(18,18): error TS2339: Property 'firstName' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-card.tsx(18,41): error TS2339: Property 'lastName' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-card.tsx(26,40): error TS2339: Property 'profileImage' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-card.tsx(32,25): error TS2339: Property 'firstName' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-card.tsx(32,46): error TS2339: Property 'lastName' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-card.tsx(34,58): error TS2339: Property 'role' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-card.tsx(38,23): error TS2339: Property 'email' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-card.tsx(41,32): error TS2339: Property 'email' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-card.tsx(45,23): error TS2339: Property 'phone' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-card.tsx(48,32): error TS2339: Property 'phone' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-card.tsx(52,23): error TS2339: Property 'location' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-card.tsx(55,32): error TS2339: Property 'location' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-header.tsx(12,29): error TS2339: Property 'firstName' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-header.tsx(12,51): error TS2339: Property 'lastName' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-header.tsx(13,18): error TS2339: Property 'firstName' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-header.tsx(13,41): error TS2339: Property 'lastName' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-header.tsx(22,42): error TS2339: Property 'profileImage' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-header.tsx(28,27): error TS2339: Property 'firstName' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-header.tsx(28,48): error TS2339: Property 'lastName' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-header.tsx(32,29): error TS2339: Property 'role' does not exist on type 'ProfileResponse'.
+src/features/profile/components/profile-header.tsx(34,27): error TS2339: Property 'isVerified' does not exist on type 'ProfileResponse'.
+src/features/reviews/components/review-card.tsx(23,41): error TS2339: Property '0' does not exist on type 'ReviewReaction[] | undefined'.
+src/features/reviews/components/review-form.tsx(46,18): error TS2304: Cannot find name 'formState'.
+src/hooks/use-analytics.ts(24,53): error TS2554: Expected 1 arguments, but got 2.
+src/hooks/use-booking.ts(28,23): error TS2339: Property 'data' does not exist on type 'Booking'.
+src/hooks/use-hostel.ts(27,5): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(options: DefinedInitialDataOptions<Hostel[], Error, Hostel[], readonly unknown[]>, queryClient?: QueryClient | undefined): DefinedUseQueryResult<...>', gave the following error.
+    Type '() => Promise<HostelsResponse>' is not assignable to type 'QueryFunction<Hostel[], readonly unknown[]>'.
+      Type 'Promise<HostelsResponse>' is not assignable to type 'Hostel[] | Promise<Hostel[]>'.
+        Type 'Promise<HostelsResponse>' is not assignable to type 'Promise<Hostel[]>'.
+          Type 'HostelsResponse' is missing the following properties from type 'Hostel[]': length, pop, push, concat, and 28 more.
+  Overload 2 of 3, '(options: UndefinedInitialDataOptions<Hostel[], Error, Hostel[], readonly unknown[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Type '() => Promise<HostelsResponse>' is not assignable to type 'unique symbol | QueryFunction<Hostel[], readonly unknown[], never> | undefined'.
+      Type '() => Promise<HostelsResponse>' is not assignable to type 'QueryFunction<Hostel[], readonly unknown[], never>'.
+        Type 'Promise<HostelsResponse>' is not assignable to type 'Hostel[] | Promise<Hostel[]>'.
+          Type 'Promise<HostelsResponse>' is not assignable to type 'Promise<Hostel[]>'.
+            Type 'HostelsResponse' is missing the following properties from type 'Hostel[]': length, pop, push, concat, and 28 more.
+  Overload 3 of 3, '(options: UseQueryOptions<Hostel[], Error, Hostel[], readonly unknown[]>, queryClient?: QueryClient | undefined): UseQueryResult<Hostel[], Error>', gave the following error.
+    Type '() => Promise<HostelsResponse>' is not assignable to type 'unique symbol | QueryFunction<Hostel[], readonly unknown[], never> | undefined'.
+      Type '() => Promise<HostelsResponse>' is not assignable to type 'QueryFunction<Hostel[], readonly unknown[], never>'.
+        Type 'Promise<HostelsResponse>' is not assignable to type 'Hostel[] | Promise<Hostel[]>'.
+          Type 'Promise<HostelsResponse>' is not assignable to type 'Promise<Hostel[]>'.
+            Type 'HostelsResponse' is missing the following properties from type 'Hostel[]': length, pop, push, concat, and 28 more.
+src/hooks/use-hostel.ts(47,18): error TS2339: Property 'data' does not exist on type 'Hostel'.
+src/hooks/use-reviews.ts(38,5): error TS2322: Type '(id: string, reason?: string) => Promise<void>' is not assignable to type 'MutationFunction<void, string>'.
+  Types of parameters 'reason' and 'context' are incompatible.
+    Type 'MutationFunctionContext' is not assignable to type 'string'.
+src/hooks/use-users.ts(22,29): error TS2345: Argument of type 'UseUsersParams | undefined' is not assignable to parameter of type 'Record<string, unknown> | undefined'.
+  Type 'UseUsersParams' is not assignable to type 'Record<string, unknown>'.
+    Index signature for type 'string' is missing in type 'UseUsersParams'.
+src/lib/constants/routes.ts(317,10): error TS2678: Type '"tech_support"' is not comparable to type '"student" | "landlord" | "caretaker" | "tech_support_admin" | "super_admin" | "admin"'.
+src/lib/utils/notifications.ts(84,3): error TS2322: Type '(string & { unwrap: () => Promise<T>; }) | (number & { unwrap: () => Promise<T>; }) | { unwrap: () => Promise<T>; }' is not assignable to type 'Promise<T>'.
+  Type 'String & { unwrap: () => Promise<T>; }' is missing the following properties from type 'Promise<T>': then, catch, finally, [Symbol.toStringTag]

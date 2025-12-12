@@ -4,10 +4,10 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
-import { AuthCard } from '@/components/auth/auth-card';
-import { RoleSelector } from '@/components/auth/role-selector';
-import { StudentRegisterForm } from '@/components/auth/student-register-form';
-import { LandlordRegisterForm } from '@/components/auth/landlord-register-form';
+import { AuthCard } from '@/features/auth';
+import { RoleSelector } from '@/features/auth';
+import { StudentRegisterForm } from '@/features/auth';
+import { LandlordRegisterForm } from '@/features/auth';
 import type { UserRole } from '@/types/auth.types';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 

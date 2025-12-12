@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQuery } from '@tanstack/react-query';
-import { getReviews } from '@/lib/api/reviews';
+import { getReviews } from '@/features/reviews';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils/cn';
 import type { ReviewStatus } from '@/types/entities.types';

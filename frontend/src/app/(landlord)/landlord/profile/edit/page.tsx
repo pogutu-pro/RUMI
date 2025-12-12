@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -31,8 +31,8 @@ import Link from 'next/link';
 
 // Validation schemas
 const personalInfoSchema = z.object({
-  firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+  first_name: z.string().min(2, 'First name must be at least 2 characters'),
+  last_name: z.string().min(2, 'Last name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number').optional(),
   bio: z.string().max(1000, 'Bio must be less than 1000 characters').optional(),
@@ -89,8 +89,8 @@ export default function EditProfilePage() {
 
   const displayName = React.useMemo(() => {
     if (!user) return 'Landlord';
-    if (user.firstName || user.lastName) {
-      return [user.firstName, user.lastName].filter(Boolean).join(' ');
+    if (user.first_name || user.last_name) {
+      return [user.first_name, user.last_name].filter(Boolean).join(' ');
     }
     return user.email?.split('@')[0] || 'Landlord';
   }, [user]);
@@ -103,10 +103,10 @@ export default function EditProfilePage() {
   const personalInfoForm = useForm<PersonalInfoFormValues>({
     resolver: zodResolver(personalInfoSchema),
     defaultValues: {
-      firstName: user?.firstName || '',
-      lastName: user?.lastName || '',
+      first_name: user?.first_name || '',
+      last_name: user?.last_name || '',
       email: user?.email || '',
-      phone: user?.phoneNumber || user?.phone || '',
+      phone: user?.phone_number || user?.phone || '',
       bio: '',
     },
   });
@@ -297,7 +297,7 @@ export default function EditProfilePage() {
             <CardContent>
               <div className="flex items-center gap-6">
                 <Avatar className="h-24 w-24 border-4 border-background ring-4 ring-emerald-100 dark:ring-emerald-900/50">
-                  <AvatarImage src={avatarPreview || user?.avatar || user?.profileImage} />
+                  <AvatarImage src={avatarPreview || user?.avatar || user?.profile_picture || undefined} />
                   <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-blue-500 text-white text-3xl font-bold">
                     {initials}
                   </AvatarFallback>
@@ -311,7 +311,7 @@ export default function EditProfilePage() {
                     <Upload className="h-4 w-4 mr-2" />
                     {isUploading ? 'Uploading...' : 'Upload Photo'}
                   </Button>
-                  {(avatarPreview || user?.avatar || user?.profileImage) && (
+                  {(avatarPreview || user?.avatar || user?.profile_picture) && (
                     <Button
                       variant="outline"
                       onClick={handleRemoveAvatar}
@@ -349,7 +349,7 @@ export default function EditProfilePage() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <FormField
                       control={personalInfoForm.control}
-                      name="firstName"
+                      name="first_name"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>First Name</FormLabel>
@@ -362,7 +362,7 @@ export default function EditProfilePage() {
                     />
                     <FormField
                       control={personalInfoForm.control}
-                      name="lastName"
+                      name="last_name"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Last Name</FormLabel>

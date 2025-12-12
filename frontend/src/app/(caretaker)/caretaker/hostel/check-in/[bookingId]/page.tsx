@@ -23,7 +23,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Steps } from '@/components/ui/steps'; // Assuming this exists or I'll create a simple one
 import { useToast } from '@/hooks/use-toast';
-import { verifyBookingCode, processCheckIn, uploadCheckInPhotos } from '@/lib/api/caretaker';
+import { verifyBookingCode, processCheckIn, uploadCheckInPhotos } from '@/features/caretaker';
 import { useMutation } from '@tanstack/react-query';
 
 const checkInSchema = z.object({
@@ -37,7 +37,10 @@ const checkInSchema = z.object({
 
 type CheckInFormData = z.infer<typeof checkInSchema>;
 
-export default function Page({ params }: { params: { bookingId: string } }) {
+import { use } from 'react';
+
+export default function Page({ params }: { params: Promise<{ bookingId: string }> }) {
+  const { bookingId } = use(params);
   const router = useRouter();
   const { toast } = useToast();
   const [step, setStep] = React.useState(1);
@@ -47,7 +50,7 @@ export default function Page({ params }: { params: { bookingId: string } }) {
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<CheckInFormData>({
     resolver: zodResolver(checkInSchema),
     defaultValues: {
-      bookingCode: params.bookingId !== 'new' ? params.bookingId : '',
+      bookingCode: bookingId !== 'new' ? bookingId : '',
     }
   });
 

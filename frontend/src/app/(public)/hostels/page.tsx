@@ -5,8 +5,8 @@ import {
   QueryClient,
 } from '@tanstack/react-query';
 import Loading from './loading';
-import { getHostels } from '@/lib/api/hostels';
-import HostelsView from '@/components/hostels/hostels-view';
+import { getHostels } from '@/features/hostels';
+import { HostelsView } from '@/features/hostels';
 
 async function HostelsPageContent() {
   const queryClient = new QueryClient();

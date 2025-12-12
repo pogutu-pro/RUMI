@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useMaintenanceRequests, useUpdateMaintenanceStatus } from '@/hooks/use-caretaker-dashboard';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 import { cn } from '@/lib/utils/cn';
 
 export default function Page() {
@@ -324,7 +324,7 @@ export default function Page() {
                               status: 'in_progress',
                               message: 'Caretaker has started working on this request',
                               updatedBy: user?.id || '',
-                              updatedByName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'Caretaker'
+                              updatedByName: `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.email || 'Caretaker'
                             }
                           })}
                         >
@@ -341,7 +341,7 @@ export default function Page() {
                               status: 'resolved',
                               message: 'Maintenance request has been resolved',
                               updatedBy: user?.id || '',
-                              updatedByName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'Caretaker'
+                              updatedByName: `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.email || 'Caretaker'
                             }
                           })}
                         >

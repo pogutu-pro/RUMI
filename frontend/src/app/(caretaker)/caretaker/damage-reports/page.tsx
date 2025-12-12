@@ -1,6 +1,6 @@
 "use client";
 
-import { DamageReportList } from '@/components/inventory/damage-report-list';
+import { DamageReportList } from '@/features/inventory';
 import { useDamageReports } from '@/hooks/use-damage-reports';
 
 const DamageReportsContent = () => {

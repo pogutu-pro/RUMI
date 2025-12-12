@@ -17,14 +17,14 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { AuthCard } from '@/components/auth/auth-card';
+import { AuthCard } from '@/features/auth';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   resetPasswordSchema,
   type ResetPasswordFormData,
 } from '@/lib/validations/auth.schema';
-import { useResetPassword } from '@/hooks/use-auth';
+import { useResetPassword } from '@/features/auth';
 import { cn } from '@/lib/utils/cn';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 

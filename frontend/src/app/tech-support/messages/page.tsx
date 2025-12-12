@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import { useTechSupportStore } from '@/stores/tech-support.store';
-import { ChatInterface } from '@/components/tech-support/chat-interface';
+import { useTechSupportStore } from '@/features/support';
+import { ChatInterface } from '@/features/support';
 import { MessageSquare, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 

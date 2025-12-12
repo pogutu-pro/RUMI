@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { SlidersHorizontal, Heart, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import HostelCard from '@/components/hostels/hostel-card';
-import { useStudentStore } from '@/stores/useStudentStore';
+import { HostelCard } from '@/features/hostels';
+import { useStudentStore } from '@/features/student';
 
 export default function FavoritesPage() {
   const router = useRouter();

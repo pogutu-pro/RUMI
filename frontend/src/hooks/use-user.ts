@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { getUser } from '@/lib/api/users';
-import { useAuthStore } from '@/stores/auth.store';
+import { getUser } from '@/features/users';
+import { useAuthStore } from '@/features/auth';
 import type { User } from '@/types/entities.types';
 
 export interface UseUserOptions {

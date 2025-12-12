@@ -7,7 +7,7 @@ import {
   createNightCheckReport,
   getLateEntryLogs,
   createLateEntryLog,
-} from '@/lib/api/caretaker';
+} from '@/features/caretaker';
 import type { SecurityFilters, VisitorLog, NightCheckReport, LateEntryLog } from '@/types/caretaker.types';
 import { useToast } from './use-toast';
 

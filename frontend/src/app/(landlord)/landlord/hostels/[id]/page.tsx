@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { useHostel } from "@/hooks/use-hostel";
-import HostelDetails from "@/components/hostels/hostel-details";
+import HostelDetails from "@/features/hostels";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 

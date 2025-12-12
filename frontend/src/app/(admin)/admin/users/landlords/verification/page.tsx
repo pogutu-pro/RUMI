@@ -41,16 +41,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { getLandlordApplications, verifyLandlord } from "@/lib/api/admin";
+import { getLandlordApplications, verifyLandlord } from "@/features/admin";
 
 interface LandlordApplication {
   id: string;
   user: {
     id: string;
-    firstName: string;
-    lastName: string;
+    first_name: string;
+    last_name: string;
     email: string;
-    phoneNumber: string;
+    phone_number: string;
   };
   businessName?: string;
   businessRegistrationNumber?: string;
@@ -173,7 +173,7 @@ export default function LandlordVerificationPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-lg">
-                      {application.user.firstName} {application.user.lastName}
+                      {application.user.first_name} {application.user.last_name}
                     </CardTitle>
                     <CardDescription className="mt-1">
                       {application.businessName || "No business name"}
@@ -191,7 +191,7 @@ export default function LandlordVerificationPage() {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-slate-600">
                   <Phone className="h-4 w-4" />
-                  <span>{application.user.phoneNumber}</span>
+                  <span>{application.user.phone_number}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-slate-600">
                   <Calendar className="h-4 w-4" />
@@ -245,8 +245,8 @@ export default function LandlordVerificationPage() {
                   <div>
                     <Label className="text-slate-500">Full Name</Label>
                     <p className="font-medium mt-1">
-                      {selectedApplication.user.firstName}{" "}
-                      {selectedApplication.user.lastName}
+                      {selectedApplication.user.first_name}{" "}
+                      {selectedApplication.user.last_name}
                     </p>
                   </div>
                   <div>
@@ -258,7 +258,7 @@ export default function LandlordVerificationPage() {
                   <div>
                     <Label className="text-slate-500">Phone</Label>
                     <p className="font-medium mt-1">
-                      {selectedApplication.user.phoneNumber}
+                      {selectedApplication.user.phone_number}
                     </p>
                   </div>
                   <div>

@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { LoginForm } from '@/components/auth/login-form';
+import { LoginForm } from '@/features/auth';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();

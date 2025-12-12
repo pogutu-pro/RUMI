@@ -6,7 +6,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { createQueryClient } from '@/lib/react-query/query-client';
 import { AuthProvider } from '@/providers/auth-provider';
 import { ToastProvider } from '@/providers/toast-provider';
-import { TokenRefresher } from '@/components/auth/token-refresher';
+import { TokenRefresher } from '@/features/auth';
 
 interface ProvidersProps {
   children: React.ReactNode;

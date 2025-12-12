@@ -1,13 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { profilesApi } from '@/lib/api/profiles';
+import { profilesApi } from '@/features/profile';
 import { toast } from 'sonner';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/features/auth';
 import type {
   UpdateProfileRequest,
   UpdateStudentProfileRequest,
   UpdateLandlordProfileRequest,
   UpdateCaretakerProfileRequest,
-} from '@/lib/api/profiles';
+} from '@/features/profile';
 
 /**
  * Hook to fetch the current user's profile

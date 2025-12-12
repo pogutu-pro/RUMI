@@ -226,7 +226,7 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
       <ScrollArea className="flex-1 px-4">
         <div className="space-y-1.5 pb-4">
           {navItems.map((item, index) => {
-            const isActive = item.href
+            const is_active = item.href
               ? pathname === item.href || pathname.startsWith(item.href + '/')
               : item.items?.some((subItem) =>
                   pathname.startsWith(subItem.href),
@@ -245,7 +245,7 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                       variant="ghost"
                       className={cn(
                         'w-full justify-between font-bold text-base text-slate-900 dark:text-slate-400 hover:bg-muted hover:text-foreground transition-all duration-200',
-                        isActive &&
+                        is_active &&
                           'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary',
                       )}
                     >
@@ -288,7 +288,7 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                         size="icon"
                         className={cn(
                           'h-10 w-10 mx-auto mb-1 rounded-lg',
-                          isActive && 'bg-primary/10 text-primary',
+                          is_active && 'bg-primary/10 text-primary',
                         )}
                       >
                         <item.icon className="h-5 w-5" />
@@ -313,7 +313,7 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                 variant="ghost"
                 className={cn(
                   'w-full justify-start font-bold text-base text-slate-900 dark:text-slate-400 hover:bg-muted hover:text-foreground transition-all duration-200',
-                  isActive &&
+                  is_active &&
                     'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary',
                 )}
               >
@@ -334,7 +334,7 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                       size="icon"
                       className={cn(
                         'h-10 w-10 mx-auto mb-1 rounded-lg',
-                        isActive && 'bg-primary/10 text-primary',
+                        is_active && 'bg-primary/10 text-primary',
                       )}
                     >
                       <Link href={item.href!}>

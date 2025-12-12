@@ -15,7 +15,7 @@ import {
   getRoommateMatchRequests,
   approveRoommateMatch,
   rejectRoommateMatch,
-} from '@/lib/api/caretaker';
+} from '@/features/caretaker';
 import type {
   TenantFilters,
   MaintenanceFilters,

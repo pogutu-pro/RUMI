@@ -6,7 +6,7 @@ import { Search, Filter, Download, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BookingTable } from "@/components/admin/booking-table";
+import { BookingTable } from "@/features/admin";
 import { useBookings } from "@/hooks/use-bookings";
 import { Booking } from "@/types/entities.types";
 

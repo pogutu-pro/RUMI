@@ -6,7 +6,7 @@ import {
   type DamageReport,
   type DamageReportListParams,
   type CreateDamageReportPayload,
-} from '@/lib/api/damage-reports';
+} from '@/features/inventory';
 
 export const useDamageReports = (params?: DamageReportListParams) => {
   return useQuery<DamageReport[], Error>({

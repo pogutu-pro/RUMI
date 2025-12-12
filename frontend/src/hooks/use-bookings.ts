@@ -5,7 +5,7 @@ import {
   getBookings,
   getBookingById,
   updateBookingStatus,
-} from '@/lib/api/bookings';
+} from '@/features/bookings';
 import type { Booking } from '@/types/entities.types';
 
 interface UseBookingsParams {

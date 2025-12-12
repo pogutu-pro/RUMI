@@ -13,8 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { InventoryReport } from '@/lib/api/inventory';
-import { inventoryApi } from '@/lib/api/inventory';
+import type { InventoryReport } from '@/features/inventory';
+import { inventoryApi } from '@/features/inventory';
 
 export default function LandlordApprovalsPage() {
   const router = useRouter();

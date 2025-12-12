@@ -14,7 +14,7 @@ import {
   forgotPasswordSchema,
   type ForgotPasswordFormData,
 } from '@/lib/validations/auth.schema';
-import { useForgotPassword } from '@/hooks/use-auth';
+import { useForgotPassword } from '@/features/auth';
 import { cn } from '@/lib/utils/cn';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 

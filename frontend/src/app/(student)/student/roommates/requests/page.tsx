@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRoommateRequests, useRespondToRoommateRequest } from '@/hooks/use-roommates';
-import { RequestStatusCard } from '@/components/roommates/request-status-card';
+import { RequestStatusCard } from '@/features/roommates';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card,CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';

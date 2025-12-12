@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserTable } from "@/components/admin/user-table";
+import { UserTable } from "@/features/admin";
 import { useUsers, useUpdateUserStatus } from "@/hooks/use-users";
 import { User } from "@/types/entities.types";
 import { cn } from "@/lib/utils/cn";

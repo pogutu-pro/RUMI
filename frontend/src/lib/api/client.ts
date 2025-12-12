@@ -5,7 +5,7 @@ import axiosBase, {
   AxiosResponse,
 } from 'axios';
 
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/features/auth';
 
 import {
   getAccessToken,

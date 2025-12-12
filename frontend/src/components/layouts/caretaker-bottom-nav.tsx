@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils/cn';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 
 interface NavItem {
   icon: React.ElementType;
@@ -44,7 +44,7 @@ export function CaretakerBottomNav() {
   const [isMoreOpen, setIsMoreOpen] = React.useState(false);
   const { logout } = useAuth();
 
-  const isActive = (href: string) => {
+  const is_active = (href: string) => {
     if (!pathname) return false;
 
     // Home
@@ -99,7 +99,7 @@ export function CaretakerBottomNav() {
         <div className="flex items-center justify-around px-2 py-2">
           {mainNavItems.map((item) => {
             const Icon = item.icon;
-            const active = isActive(item.href);
+            const active = is_active(item.href);
             
             return (
               <Link

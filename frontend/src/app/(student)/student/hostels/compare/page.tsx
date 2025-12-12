@@ -1,6 +1,6 @@
 'use client';
-import HostelComparisonTable from '@/components/hostels/hostel-comparison-table';
-import { useStudentStore } from '@/stores/useStudentStore';
+import { HostelComparisonTable } from '@/features/hostels';
+import { useStudentStore } from '@/features/student';
 
 export default function Page() {
   const compareList = useStudentStore((state) => state.compareList);

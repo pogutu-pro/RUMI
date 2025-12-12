@@ -11,9 +11,9 @@ import {
   TransferSkeleton,
   NoResultsState,
   EmptyState,
-} from '@/components/transfers';
-import { useTransferStore } from '@/stores/transfer.store';
-import { getAvailableRooms } from '@/lib/api/transfers';
+} from '@/features/transfers';
+import { useTransferStore } from '@/features/transfers';
+import { getAvailableRooms } from '@/features/transfers';
 
 export default function AvailableRoomsPage() {
   const router = useRouter();

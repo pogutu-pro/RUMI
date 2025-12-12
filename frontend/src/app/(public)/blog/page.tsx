@@ -170,14 +170,14 @@ export default function BlogPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap gap-2">
               {filters.map((filter) => {
-                const isActive = filter.id === activeFilter;
+                const is_active = filter.id === activeFilter;
                 return (
                   <Button
                     key={filter.id}
                     size="sm"
-                    variant={isActive ? 'default' : 'outline'}
+                    variant={is_active ? 'default' : 'outline'}
                     className="rounded-full px-4"
-                    aria-pressed={isActive}
+                    aria-pressed={is_active}
                   >
                     {filter.label}
                   </Button>

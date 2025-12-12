@@ -37,18 +37,19 @@ export type NotificationChannel = 'email' | 'sms' | 'in_app';
 export interface User {
   id: ID;
   email: string;
-  firstName?: string;
-  lastName?: string;
+  first_name?: string;
+  last_name?: string;
   role: UserRole;
-  isActive: boolean;
-  isVerified: boolean;
-  isEmailVerified?: boolean;
+  is_active: boolean;
+  is_verified: boolean;
+  is_email_verified?: boolean;
   phone?: string;
-  phoneNumber?: string;
-  profileImage?: Nullable<string>;
+  phone_number?: string; // Add snake_case alias if needed or stick to one. Backend likely uses phone_number
+  profile_picture?: Nullable<string>;
   avatar?: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+  date_joined?: Timestamp; // Added based on error report
 }
 
 export type PersonalityType = 'introvert' | 'extrovert' | 'ambivert';
@@ -114,19 +115,19 @@ export type YearOfStudy = 1 | 2 | 3 | 4 | 5 | '5+' | number | `${number}`;
 export interface StudentProfile {
   type: 'student';
   id: ID;
-  userId: ID;
+  user_id: ID;
   university: string;
-  studentIdNumber: string;
-  yearOfStudy: YearOfStudy;
+  student_id_number: string;
+  year_of_study: YearOfStudy;
   course?: Nullable<string>;
-  lifestylePreferences?: Nullable<LifestylePreferences>;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
-  emergencyContactRelationship?: string;
-  profileCompletionPercentage: number; // 0-100
-  isProfileComplete: boolean;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  lifestyle_preferences?: Nullable<LifestylePreferences>;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_relationship?: string;
+  profile_completion_percentage: number; // 0-100
+  is_profile_complete: boolean;
+  created_at: Timestamp;
+  updated_at: Timestamp;
 }
 
 /* Landlord Profile */
@@ -143,23 +144,23 @@ export interface VerificationDocuments {
 export interface LandlordProfile {
   type: 'landlord';
   id: ID;
-  userId: ID;
-  nationalId?: string;
-  businessName?: string;
-  kraPin?: Nullable<string>;
-  bankAccountNumber?: string;
-  bankName?: string;
-  bankAccountName?: string;
-  paystackSubaccountCode?: Nullable<string>;
-  isVerified: boolean;
-  verificationStatus?: 'pending' | 'approved' | 'rejected';
-  verificationDocuments?: Nullable<VerificationDocuments>;
-  rejectionReason?: Nullable<string>;
-  totalHostels?: number;
-  totalRooms?: number;
-  totalEarnings?: number;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  user_id: ID;
+  national_id?: string;
+  business_name?: string;
+  kra_pin?: Nullable<string>;
+  bank_account_number?: string;
+  bank_name?: string;
+  bank_account_name?: string;
+  paystack_subaccount_code?: Nullable<string>;
+  is_verified: boolean;
+  verification_status?: 'pending' | 'approved' | 'rejected';
+  verification_documents?: Nullable<VerificationDocuments>;
+  rejection_reason?: Nullable<string>;
+  total_hostels?: number;
+  total_rooms?: number;
+  total_earnings?: number;
+  created_at: Timestamp;
+  updated_at: Timestamp;
 }
 
 /* Caretaker Profile  */
@@ -180,16 +181,16 @@ export interface CaretakerPermissions {
 export interface CaretakerProfile {
   type: 'caretaker';
   id: ID;
-  userId: ID;
-  hostelId: ID;
-  hostelName?: string;
-  landlordId: ID;
-  landlordName?: string;
-  employmentStartDate: Timestamp;
+  user_id: ID;
+  hostel_id: ID;
+  hostel_name?: string;
+  landlord_id: ID;
+  landlord_name?: string;
+  employment_start_date: Timestamp;
   permissions: CaretakerPermissions;
-  isActive: boolean;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  is_active: boolean;
+  created_at: Timestamp;
+  updated_at: Timestamp;
 }
 
 /* Union Types  */
@@ -303,16 +304,18 @@ export interface ApiError {
 
 export interface Notification {
   id: ID;
-  recipientId: ID;
-  notificationType: NotificationType;
+  recipient_id: ID;
+  notification_type: NotificationType;
   channel: NotificationChannel;
   title?: string;
   message: string;
   metadata?: JSONB;
-  status: 'pending' | 'sent' | 'failed' | 'read';
-  sentAt?: Nullable<Timestamp>;
-  readAt?: Nullable<Timestamp>;
-  createdAt: Timestamp;
+  status: 'pending' | 'sent' | 'failed' | 'read'; // keeping status as is, checking usage
+  type?: string; // Add type as implicit string if needed, or stick to notification_type
+  is_read: boolean; // Add is_read
+  sent_at?: Nullable<Timestamp>;
+  read_at?: Nullable<Timestamp>;
+  created_at: Timestamp;
 }
 
 export interface NotificationPreferences {

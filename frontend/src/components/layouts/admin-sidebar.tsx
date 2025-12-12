@@ -38,7 +38,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -200,7 +200,7 @@ export function AdminSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
       <ScrollArea className="flex-1 px-3 py-4">
         <nav className="space-y-1">
           {navItems.map((item, index) => {
-            const isActive = item.href
+            const is_active = item.href
               ? pathname === item.href
               : item.items?.some((subItem) => pathname.startsWith(subItem.href));
 
@@ -218,11 +218,11 @@ export function AdminSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                       variant="ghost"
                       className={cn(
                         "w-full justify-between h-10 px-3 hover:bg-accent hover:text-accent-foreground font-medium",
-                        isActive && "text-primary font-semibold"
+                        is_active && "text-primary font-semibold"
                       )}
                     >
                       <div className="flex items-center gap-3">
-                        <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
+                        <item.icon className={cn("h-5 w-5", is_active ? "text-primary" : "text-muted-foreground")} />
                         <span className="text-[16px]">{item.title}</span>
                       </div>
                       <ChevronDown
@@ -267,10 +267,10 @@ export function AdminSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                         size="icon"
                         className={cn(
                           "h-10 w-10 mx-auto mb-1 rounded-lg",
-                          isActive && "bg-accent text-accent-foreground"
+                          is_active && "bg-accent text-accent-foreground"
                         )}
                       >
-                        <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
+                        <item.icon className={cn("h-5 w-5", is_active ? "text-primary" : "text-muted-foreground")} />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="right" className="flex items-center gap-4 bg-popover text-popover-foreground border-border">
@@ -289,12 +289,12 @@ export function AdminSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                 variant="ghost"
                 className={cn(
                   "w-full justify-start h-10 px-3 hover:bg-accent hover:text-accent-foreground",
-                  isActive && "bg-accent text-accent-foreground font-semibold"
+                  is_active && "bg-accent text-accent-foreground font-semibold"
                 )}
               >
                 <Link href={item.href!}>
                   <div className="flex items-center gap-3">
-                    <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
+                    <item.icon className={cn("h-5 w-5", is_active ? "text-primary" : "text-muted-foreground")} />
                     <span className="text-[16px]">{item.title}</span>
                     {item.badge && (
                       <Badge variant="secondary" className="ml-auto h-5 px-1.5 text-[10px] bg-primary/10 text-primary">
@@ -314,11 +314,11 @@ export function AdminSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                       size="icon"
                       className={cn(
                         "h-10 w-10 mx-auto mb-1 rounded-lg",
-                        isActive && "bg-accent text-accent-foreground"
+                        is_active && "bg-accent text-accent-foreground"
                       )}
                     >
                       <Link href={item.href!}>
-                        <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
+                        <item.icon className={cn("h-5 w-5", is_active ? "text-primary" : "text-muted-foreground")} />
                         {item.badge && (
                           <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
                         )}

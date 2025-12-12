@@ -96,7 +96,7 @@ export const MobileNav = React.memo(function MobileNav({
           aria-label="Mobile navigation"
         >
           {navItems.map((item) => {
-            const isActive =
+            const is_active =
               pathname === item.href || pathname.startsWith(`${item.href}/`);
 
             return (
@@ -106,11 +106,11 @@ export const MobileNav = React.memo(function MobileNav({
                 onClick={handleNavClick}
                 className={cn(
                   'flex items-center gap-4 rounded-xl px-4 py-3.5 text-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                  isActive
+                  is_active
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-foreground hover:bg-accent hover:text-accent-foreground',
                 )}
-                aria-current={isActive ? 'page' : undefined}
+                aria-current={is_active ? 'page' : undefined}
               >
                 <Icon name={item.icon} size={24} aria-hidden="true" />
                 <span>{item.title}</span>

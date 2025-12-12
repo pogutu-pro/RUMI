@@ -9,10 +9,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Mail, CheckCircle2, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { AuthCard } from '@/components/auth/auth-card';
+import { AuthCard } from '@/features/auth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { OTPInput } from '@/components/ui/otp-input';
-import { useVerifyEmail, useResendVerification } from '@/hooks/use-auth';
+import { useVerifyEmail, useResendVerification } from '@/features/auth';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 import {
   verifyEmailSchema,

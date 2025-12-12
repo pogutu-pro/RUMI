@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 import { Separator } from '@/components/ui/separator';
 
 export default function TechSupportDashboard() {
@@ -33,7 +33,7 @@ export default function TechSupportDashboard() {
   
   // Get display name
   const displayName = React.useMemo(() => {
-    if (user?.firstName) return user.firstName;
+    if (user?.first_name) return user.first_name;
     if (user?.email) return user.email.split('@')[0];
     return 'Tech Support';
   }, [user]);

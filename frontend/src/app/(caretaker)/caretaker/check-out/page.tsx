@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getCaretakerDashboard } from '@/lib/api/caretaker';
+import { getCaretakerDashboard } from '@/features/caretaker';
 
 export default function CheckOutListPage() {
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -26,7 +26,7 @@ export default function CheckOutListPage() {
     .map((event) => ({
       id: event.id,
       studentName: event.tenant
-        ? `${event.tenant.firstName} ${event.tenant.lastName}`
+        ? `${event.tenant.first_name} ${event.tenant.last_name}`
         : event.title,
       roomNumber: event.room || 'TBD',
     })) || [];

@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
-import { LandlordCreateCaretakerForm } from '@/components/landlord/landlord-create-caretaker-form';
+import { LandlordCreateCaretakerForm } from '@/features/landlord';
 import { useLandlordHostels } from '@/hooks/use-hostel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -154,8 +154,8 @@ export default function ProfilePage() {
             <Avatar className="h-32 w-32 border-4 border-white/20 shadow-2xl">
               <AvatarImage src={user?.avatar} className="object-cover" />
               <AvatarFallback className="bg-white/10 text-white text-4xl font-bold backdrop-blur-sm">
-                {user?.firstName?.[0]}
-                {user?.lastName?.[0]}
+                {user?.first_name?.[0]}
+                {user?.last_name?.[0]}
               </AvatarFallback>
             </Avatar>
             <div className="absolute bottom-2 right-2 bg-emerald-500 rounded-full p-1.5 border-2 border-white shadow-lg">
@@ -166,7 +166,7 @@ export default function ProfilePage() {
           <div className="flex-1 text-center md:text-left space-y-2">
             <div className="flex flex-col md:flex-row items-center gap-3">
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-                {user?.firstName} {user?.lastName}
+                {user?.first_name} {user?.last_name}
               </h1>
               <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-md">
                 <Award className="w-3 h-3 mr-1" />
@@ -260,10 +260,10 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">Phone</p>
-                    <p className="text-xs text-muted-foreground">{user?.phoneNumber || 'Not added'}</p>
+                    <p className="text-xs text-muted-foreground">{user?.phone_number || 'Not added'}</p>
                   </div>
                 </div>
-                {!user?.phoneNumber && (
+                {!user?.phone_number && (
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0" asChild>
                     <Link href="/student/profile/edit"><Edit className="w-3 h-3" /></Link>
                   </Button>

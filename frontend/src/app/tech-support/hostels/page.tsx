@@ -13,8 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useTechSupportStore } from '@/stores/tech-support.store';
-import { HostelTable } from '@/components/tech-support/hostel-table';
+import { useTechSupportStore } from '@/features/support';
+import { HostelTable } from '@/features/support';
 import { Badge } from '@/components/ui/badge';
 
 interface HostelSupportPageProps {

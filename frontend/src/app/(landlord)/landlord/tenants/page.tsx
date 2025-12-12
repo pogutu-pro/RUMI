@@ -47,6 +47,7 @@ import { cn } from '@/lib/utils';
 
 import { useUsers } from '@/hooks/use-users';
 import { Skeleton } from '@/components/ui/skeleton';
+import { User as UserEntity } from '@/types/entities.types';
 
 export default function TenantsPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,7 +58,7 @@ export default function TenantsPage() {
   // TODO: Filter by "my tenants" only if backend supports it via this endpoint or a specific landlord-tenants endpoint.
   // Assuming 'student' role + backend filters for landlord's associated students
   const { data: usersData, isLoading } = useUsers({ role: 'student' });
-  const tenants = usersData?.results || [];
+  const tenants: UserEntity[] = Array.isArray(usersData) ? usersData : (usersData as any)?.results || [];
 
   const filteredTenants = tenants.filter((tenant) => {
     // Determine fields safely

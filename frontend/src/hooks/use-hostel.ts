@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { queryKeys } from '@/lib/react-query/query-keys';
-import { getHostels, getHostel } from '@/lib/api/hostels';
+import { getHostels, getHostel } from '@/features/hostels';
 import type { Hostel } from '@/types/entities.types';
 
 export interface UseHostelsParams {
@@ -10,6 +10,7 @@ export interface UseHostelsParams {
   maxPrice?: number;
   amenities?: string[];
   sort?: string;
+  status?: string;
 }
 
 export interface UseHostelOptions {
@@ -19,8 +20,10 @@ export interface UseHostelOptions {
   refetchOnWindowFocus?: boolean;
 }
 
+import { HostelsResponse } from '@/features/hostels/api/hostels';
+
 export const useHostels = (params?: UseHostelsParams) => {
-  return useQuery<Hostel[], Error>({
+  return useQuery<HostelsResponse, Error>({
     queryKey: queryKeys.hostels.list(
       params as Record<string, unknown> | undefined
     ),
@@ -44,7 +47,7 @@ export const useHostel = (
         throw new Error('Hostel identifier is required');
       }
       const res = await getHostel(idOrSlug);
-      return res.data;
+      return res; // getHostel returns the data directly
     },
     enabled: Boolean(idOrSlug) && options?.enabled !== false,
     staleTime: 10 * 60 * 1000,

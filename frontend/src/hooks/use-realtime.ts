@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useWebSocket } from './use-websocket';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/features/auth';
 
 export type RealtimeEvent =
   | 'message.new'

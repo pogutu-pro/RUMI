@@ -69,8 +69,8 @@ export default function CaretakerPerformancePage() {
   }));
 
   const filteredCaretakers = performanceData.filter(caretaker =>
-    caretaker.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    caretaker.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    caretaker.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    caretaker.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     caretaker.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -129,13 +129,13 @@ export default function CaretakerPerformancePage() {
                 <CardContent className="p-6 flex items-center gap-4 relative z-10">
                     <Avatar className="h-16 w-16 border-2 border-emerald-100 dark:border-emerald-900">
                     <AvatarFallback className="bg-emerald-100 text-emerald-700 font-bold text-xl">
-                        {getInitials(caretaker.first_name, caretaker.last_name)}
+                        {getInitials(caretaker.firstName, caretaker.lastName)}
                     </AvatarFallback>
                     </Avatar>
                     <div>
                     <div className="flex items-center gap-2">
                         <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">
-                        {caretaker.first_name} {caretaker.last_name}
+                        {caretaker.firstName} {caretaker.lastName}
                         </h3>
                         {index === 0 && (
                         <Badge className="bg-yellow-100 text-yellow-700 border-0 text-xs">Top Rated</Badge>
@@ -209,12 +209,12 @@ export default function CaretakerPerformancePage() {
                     <div className="flex items-center gap-4 min-w-[200px]">
                         <Avatar className="h-12 w-12">
                         <AvatarFallback className="bg-slate-100 dark:bg-slate-800">
-                            {getInitials(caretaker.first_name, caretaker.last_name)}
+                            {getInitials(caretaker.firstName, caretaker.lastName)}
                         </AvatarFallback>
                         </Avatar>
                         <div>
                         <h4 className="font-semibold text-slate-900 dark:text-slate-100">
-                            {caretaker.first_name} {caretaker.last_name}
+                            {caretaker.firstName} {caretaker.lastName}
                         </h4>
                         <p className="text-sm text-slate-500">{caretaker.email}</p>
                         </div>

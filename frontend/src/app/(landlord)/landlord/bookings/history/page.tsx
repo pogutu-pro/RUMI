@@ -1,6 +1,6 @@
 "use client";
 
-import BookingsList from '@/components/landlord/bookings/bookings-list';
+import { BookingsList } from '@/features/landlord';
 
 export default function BookingHistoryPage() {
   return (

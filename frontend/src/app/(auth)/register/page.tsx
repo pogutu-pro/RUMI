@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { RegisterForm } from '@/components/auth/register-form';
+import { RegisterForm } from '@/features/auth';
 
 export default function RegisterPage() {
   return (

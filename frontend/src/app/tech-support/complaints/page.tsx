@@ -12,10 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useTechSupportStore } from '@/stores/tech-support.store';
-import { ComplaintTable } from '@/components/tech-support/complaint-table';
-import { TicketDetailDialog } from '@/components/tech-support/ticket-detail-dialog';
-import { TechSupportTicket } from '@/lib/api/tech-support';
+import { useTechSupportStore } from '@/features/support';
+import { ComplaintTable } from '@/features/support';
+import { TicketDetailDialog } from '@/features/support';
+import { TechSupportTicket } from '@/features/support';
 import { Badge } from '@/components/ui/badge';
 
 export default function ComplaintsPage() {

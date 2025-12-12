@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getReviews, createReview, deleteReview, flagReview } from '@/lib/api/reviews';
+import { getReviews, createReview, deleteReview, flagReview } from '@/features/reviews';
 import { queryKeys } from '@/lib/react-query/query-keys';
 
 export const useReviews = () => {

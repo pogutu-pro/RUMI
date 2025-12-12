@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/react-query/query-keys';
-import { studentDashboardApi } from '@/lib/api/student-dashboard';
+import { studentDashboardApi } from '@/features/student';
 import type {
   StudentDashboardData,
   RentStatusInfo,

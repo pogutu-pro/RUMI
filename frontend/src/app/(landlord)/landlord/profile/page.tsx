@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -84,8 +84,8 @@ export default function ProfilePage() {
 
   const displayName = React.useMemo(() => {
     if (!user) return 'Landlord';
-    if (user.firstName || user.lastName) {
-      return [user.firstName, user.lastName].filter(Boolean).join(' ');
+    if (user.first_name || user.last_name) {
+      return [user.first_name, user.last_name].filter(Boolean).join(' ');
     }
     return user.email.split('@')[0];
   }, [user]);
@@ -108,7 +108,7 @@ export default function ProfilePage() {
       <div className="flex flex-col md:flex-row gap-8 items-start justify-between bg-card p-8 rounded-xl border shadow-sm">
         <div className="flex items-start gap-6">
           <Avatar className="h-24 w-24 border-2 border-muted">
-            <AvatarImage src={user?.avatar || user?.profileImage} />
+            <AvatarImage src={user?.avatar || user?.profile_picture || undefined} />
             <AvatarFallback className="bg-emerald-600 text-white text-2xl font-bold">
               {initials}
             </AvatarFallback>
@@ -123,7 +123,7 @@ export default function ProfilePage() {
                   <Building2 className="h-3 w-3 mr-1" />
                   Property Owner
                 </Badge>
-                {user?.isVerified && (
+                {user?.is_verified && (
                   <Badge variant="outline" className="text-blue-700 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
                     Verified Account
                   </Badge>
@@ -135,7 +135,7 @@ export default function ProfilePage() {
                 <Mail className="h-3.5 w-3.5" /> {user?.email}
               </p>
               <p className="flex items-center gap-2">
-                <Phone className="h-3.5 w-3.5" /> {user?.phoneNumber || user?.phone || 'No phone number'}
+                <Phone className="h-3.5 w-3.5" /> {user?.phone_number || user?.phone || 'No phone number'}
               </p>
             </div>
           </div>
@@ -182,7 +182,7 @@ export default function ProfilePage() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Member Since</p>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                  {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
+                  {user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
                 </h3>
               </div>
               <Calendar className="h-8 w-8 text-blue-600 opacity-20" />
@@ -196,7 +196,7 @@ export default function ProfilePage() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Verification</p>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                  {user?.isVerified ? 'Verified' : 'Pending'}
+                  {user?.is_verified ? 'Verified' : 'Pending'}
                 </h3>
               </div>
               <CheckCircle2 className="h-8 w-8 text-purple-600 opacity-20" />

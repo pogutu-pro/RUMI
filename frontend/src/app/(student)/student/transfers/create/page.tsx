@@ -25,9 +25,9 @@ import {
   RoomTransferCard,
   ReasonSelector,
   PriceDifferenceIndicator,
-} from '@/components/transfers';
-import { useTransferStore } from '@/stores/transfer.store';
-import { getAvailableRooms, createTransferRequest, getTransferPolicy } from '@/lib/api/transfers';
+} from '@/features/transfers';
+import { useTransferStore } from '@/features/transfers';
+import { getAvailableRooms, createTransferRequest, getTransferPolicy } from '@/features/transfers';
 import { TransferReason, AvailableRoom } from '@/types/entities.types';
 
 export default function CreateTransferPage() {

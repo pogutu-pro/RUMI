@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 export default async function AuthIndexPage({
   searchParams,
 }: {
-  searchParams?: { [key: string]: string | undefined };
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
-  const nextParam = searchParams?.next;
+  const { next: nextParam } = await searchParams;
   const cookieStore = await cookies();
   const token =
     cookieStore.get('rumi_access_token')?.value ??

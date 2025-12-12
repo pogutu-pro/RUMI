@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenants } from "@/hooks/use-caretaker-dashboard";
-import { useCaretakerStore } from "@/stores/caretaker.store";
+import { useCaretakerStore } from "@/features/caretaker";
 import { getPaymentStatusColor, formatDate, getInitials } from "@/lib/utils/caretaker-helpers";
 import { cn } from "@/lib/utils/cn";
 
@@ -165,9 +165,9 @@ export default function Page() {
                   <div className="flex-1 space-y-4">
                     <div className="flex items-start gap-4">
                       <Avatar className="h-16 w-16">
-                        <AvatarImage src={tenant.profileImage} alt={`${tenant.firstName} ${tenant.lastName}`} />
+                        <AvatarImage src={tenant.profile_picture} alt={`${tenant.first_name} ${tenant.last_name}`} />
                         <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
-                          {getInitials(tenant.firstName, tenant.lastName)}
+                          {getInitials(tenant.first_name, tenant.last_name)}
                         </AvatarFallback>
                       </Avatar>
 
@@ -175,7 +175,7 @@ export default function Page() {
                         <div className="flex items-start justify-between">
                           <div>
                             <h3 className="text-lg font-semibold">
-                              {tenant.firstName} {tenant.lastName}
+                              {tenant.first_name} {tenant.last_name}
                             </h3>
                             <p className="text-sm text-muted-foreground">
                               Student ID: {tenant.studentId}

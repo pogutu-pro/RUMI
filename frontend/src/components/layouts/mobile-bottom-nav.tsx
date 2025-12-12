@@ -76,7 +76,7 @@ export function MobileBottomNav() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  const isActive = (href: string) => {
+  const is_active = (href: string) => {
     if (href === '/') {
       return pathname === '/';
     }
@@ -97,7 +97,7 @@ export function MobileBottomNav() {
     >
       <div className="flex items-center justify-around h-16 px-2">
         {NAV_ITEMS.map((item) => {
-          const active = isActive(item.href);
+          const active = is_active(item.href);
           
           if (item.href === '/more') {
              return (

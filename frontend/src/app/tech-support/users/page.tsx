@@ -24,19 +24,22 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { useTechSupportStore } from '@/stores/tech-support.store';
-import { UserTable } from '@/components/tech-support/user-table';
+import { useTechSupportStore } from '@/features/support';
+import { UserTable } from '@/features/support';
 import { Badge } from '@/components/ui/badge';
 
 interface UserManagementPageProps {
-  defaultTab?: string;
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }
 
-export default function UserManagementPage({ defaultTab = "directory" }: UserManagementPageProps) {
+export default async function UserManagementPage({ searchParams }: UserManagementPageProps) {
   const { users, isLoadingUsers, fetchUsers } = useTechSupportStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const [activeTab, setActiveTab] = useState(defaultTab === 'verification' ? 'verification' : 'directory');
+  
+  const resolvedParams = await searchParams;
+  const initialTab = resolvedParams?.tab === 'verification' ? 'verification' : 'directory';
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   useEffect(() => {
     fetchUsers();
@@ -49,7 +52,7 @@ export default function UserManagementPage({ defaultTab = "directory" }: UserMan
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.phone_number.includes(searchTerm);
     
-    // In verification tab, maybe filter by !user.isVerified?
+    // In verification tab, maybe filter by !user.is_verified?
     // For now, keep role filter
     const matchesRole = roleFilter === "all" || user.role.toLowerCase() === roleFilter;
 

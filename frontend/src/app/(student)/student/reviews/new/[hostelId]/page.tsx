@@ -8,7 +8,7 @@ import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import RatingInput from '@/components/reviews/rating-input';
+import { RatingInput } from '@/features/reviews';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useHostel } from '@/hooks/use-hostel';
 import { useCreateReview } from '@/hooks/use-reviews';

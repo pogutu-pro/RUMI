@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 import { 
   useRentStatus, 
   useRecentTransactions, 
@@ -10,11 +10,11 @@ import {
   useActiveTickets, 
   useActivityFeed 
 } from '@/hooks/use-student-dashboard';
-import { useBookingStore } from '@/stores/booking.store';
-import { RentStatusIndicator } from '@/components/student/rent-status-indicator';
-import { DashboardStat } from '@/components/dashboard/dashboard-stats';
-import { RecentActivity } from '@/components/dashboard/recent-activity';
-import { QuickActions } from '@/components/dashboard/quick-actions';
+import { useCurrentBookingStore } from '@/features/bookings';
+import { RentStatusIndicator } from '@/features/student';
+import { DashboardStat } from '@/features/dashboard';
+import { RecentActivity } from '@/features/dashboard';
+import { QuickActions } from '@/features/dashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,7 +31,7 @@ import {
 
 export default function Page() {
   const { user } = useAuth();
-  const { currentBooking } = useBookingStore();
+  const { currentBooking } = useCurrentBookingStore();
   
   // Fetch dashboard data
   const { data: rentStatus, isLoading: rentLoading } = useRentStatus();
@@ -42,8 +42,8 @@ export default function Page() {
 
   const displayName = React.useMemo(() => {
     if (!user) return 'Student';
-    if (user.firstName || user.lastName) {
-      return [user.firstName, user.lastName].filter(Boolean).join(' ');
+    if (user.first_name || user.last_name) {
+      return [user.first_name, user.last_name].filter(Boolean).join(' ');
     }
     return user.email.split('@')[0];
   }, [user]);

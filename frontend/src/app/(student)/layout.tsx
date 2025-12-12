@@ -7,7 +7,7 @@ import { StudentTopNav } from '@/components/layouts/student-top-nav';
 import { StudentBottomNav } from '@/components/layouts/student-bottom-nav';
 import { DashboardThemeProvider } from '@/components/providers/dashboard-theme-provider';
 import type { Metadata } from 'next';
-import CompareTray from '@/components/hostels/compare-tray';
+import { CompareTray } from '@/features/hostels';
 import { cn } from '@/lib/utils';
 
 interface StudentLayoutProps {

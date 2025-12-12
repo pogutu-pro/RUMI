@@ -34,7 +34,7 @@ export function PublicMenuContent({ onClose, user, onSignOut }: PublicMenuConten
       <div className="flex-1 overflow-y-auto px-1">
         <nav className="flex flex-col gap-2 pb-4">
           {MENU_ITEMS.map((item) => {
-            const isActive = pathname.startsWith(item.href);
+            const is_active = pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
@@ -42,7 +42,7 @@ export function PublicMenuContent({ onClose, user, onSignOut }: PublicMenuConten
                 onClick={onClose}
                 className={cn(
                   'flex items-center px-4 py-3 rounded-lg text-base font-medium transition-colors',
-                  isActive
+                  is_active
                     ? 'bg-primary/10 text-primary'
                     : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                 )}

@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { Bell, Clock, User, Settings } from 'lucide-react';
 
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 import { CaretakerSidebar } from '@/components/layouts/caretaker-sidebar';
 import { CaretakerBottomNav } from '@/components/layouts/caretaker-bottom-nav';
 import { DashboardThemeProvider } from '@/components/providers/dashboard-theme-provider';
@@ -31,7 +31,7 @@ import { cn } from '@/lib/utils/cn';
 import { getUserInitials } from '@/lib/utils/user';
 import { sanitizeImageUrl } from '@/lib/utils/security';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { useCaretakerStore } from '@/stores/caretaker.store';
+import { useCaretakerStore } from '@/features/caretaker';
 
 interface CaretakerLayoutProps {
   children: ReactNode;
@@ -81,8 +81,8 @@ export default function Layout({ children }: CaretakerLayoutProps) {
 
   const displayName = React.useMemo(() => {
     if (!user) return 'Caretaker';
-    if (user.firstName || user.lastName) {
-      return [user.firstName, user.lastName].filter(Boolean).join(' ');
+    if (user.first_name || user.last_name) {
+      return [user.first_name, user.last_name].filter(Boolean).join(' ');
     }
     return user.email;
   }, [user]);
@@ -92,9 +92,9 @@ export default function Layout({ children }: CaretakerLayoutProps) {
   }, [displayName]);
 
   const image = React.useMemo(() => {
-    const src = user?.profileImage || user?.avatar;
+    const src = user?.profile_picture || user?.avatar;
     return src ? sanitizeImageUrl(src) : undefined;
-  }, [user?.profileImage, user?.avatar]);
+  }, [user?.profile_picture, user?.avatar]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 

@@ -5,7 +5,7 @@ import {
   getUserById,
   updateUserStatus,
   deleteUser,
-} from '@/lib/api/users';
+} from '@/features/users';
 import type { User } from '@/types/entities.types';
 
 interface UseUsersParams {

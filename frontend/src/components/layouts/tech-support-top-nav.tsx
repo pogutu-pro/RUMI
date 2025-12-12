@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 import { getUserInitials } from '@/lib/utils/user';
 import { sanitizeImageUrl } from '@/lib/utils/security';
 import { cn } from '@/lib/utils/cn';
@@ -81,8 +81,8 @@ export function TechSupportTopNav({
 
   const displayName = React.useMemo(() => {
     if (!user) return 'Tech Support';
-    if (user.firstName || user.lastName) {
-      return [user.firstName, user.lastName].filter(Boolean).join(' ');
+    if (user.first_name || user.last_name) {
+      return [user.first_name, user.last_name].filter(Boolean).join(' ');
     }
     return user.email.split('@')[0];
   }, [user]);
@@ -92,9 +92,9 @@ export function TechSupportTopNav({
   }, [displayName]);
 
   const image = React.useMemo(() => {
-    const src = user?.profileImage || user?.avatar;
+    const src = user?.profile_picture || user?.avatar;
     return src ? sanitizeImageUrl(src) : undefined;
-  }, [user?.profileImage, user?.avatar]);
+  }, [user?.profile_picture, user?.avatar]);
 
   const handleSignOut = React.useCallback(async () => {
     try {

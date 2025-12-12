@@ -112,10 +112,10 @@ export default function Page() {
                           <Mail className="w-4 h-4" />
                           {user.email}
                       </div>
-                      {user.phoneNumber && (
+                      {user.phone_number && (
                           <div className="flex items-center gap-1.5">
                               <Phone className="w-4 h-4" />
-                              {user.phoneNumber}
+                              {user.phone_number}
                           </div>
                       )}
                       <div className="flex items-center gap-1.5">

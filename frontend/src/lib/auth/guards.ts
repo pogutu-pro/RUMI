@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import type { Route } from 'next';
 import { cookies } from 'next/headers';
 import type { UserRole } from '@/types/auth.types';
-import { useAuthStore } from '@/stores/auth.store';
+import { useAuthStore } from '@/features/auth';
 
 const TOKEN_COOKIE = 'rumi_access_token';
 const ROLE_COOKIE = 'rumi_user_role';

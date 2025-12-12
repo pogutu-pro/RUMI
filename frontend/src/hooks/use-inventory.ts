@@ -7,11 +7,11 @@ import {
   submitCheckIn,
   verifyCheckIn,
   InventoryItem,
-} from '@/lib/api/inventory-api';
+} from '@/features/inventory';
 import { 
   getInventoryItems, 
   InventoryItem as FullInventoryItem 
-} from '@/lib/api/inventory';
+} from '@/features/inventory';
 import { toast } from 'sonner';
 
 export const useInventoryTemplate = (hostelId: string) => {

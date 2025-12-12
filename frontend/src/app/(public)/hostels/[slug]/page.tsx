@@ -6,9 +6,9 @@ import {
   QueryClient,
 } from '@tanstack/react-query';
 import Loading from './loading';
-import { getHostelBySlug, getRelatedHostels } from '@/lib/api/hostels';
+import { getHostelBySlug, getRelatedHostels } from '@/features/hostels';
 import type { Metadata } from 'next';
-import HostelDetailClient from '@/components/hostels/hostel-detail-client';
+import { HostelDetailClient } from '@/features/hostels';
 
 interface HostelPageProps {
   params: Promise<{ slug: string }>;

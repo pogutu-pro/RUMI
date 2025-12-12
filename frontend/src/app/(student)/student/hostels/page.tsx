@@ -9,10 +9,10 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Pagination } from '@/components/ui/pagination';
 import { Search, Filter, SlidersHorizontal, Home } from 'lucide-react';
 import { useHostels } from '@/hooks/use-hostels';
-import HostelCard from '@/components/hostels/hostel-card';
+import { HostelCard } from '@/features/hostels';
 import HostelFiltersPanel, {
   type FiltersState,
-} from '@/components/hostels/hostel-filters-panel';
+} from '@/features/hostels';
 
 export default function StudentHostelsPage() {
   const [searchQuery, setSearchQuery] = React.useState('');

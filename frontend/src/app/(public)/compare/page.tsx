@@ -1,6 +1,6 @@
 'use client';
 
-import CompareView from '@/components/hostels/compare-view';
+import { CompareView } from '@/features/hostels';
 
 export default function PublicComparePage() {
   return (

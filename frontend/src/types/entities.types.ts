@@ -170,6 +170,11 @@ export interface TransferApproval {
 export interface Conversation {
   id: string;
   participants: string[];
+  otherUser?: {
+    id: string;
+    name: string;
+    avatar?: string;
+  };
   lastMessage?: Message;
   unreadCount: number;
   createdAt: Date;
@@ -295,6 +300,9 @@ export interface Hostel {
 export interface Room {
   id: string;
   name: string;
+  number?: string; // Alias
+  room_number?: string; // Alias
+  roomNumber?: string; // Alias
   price: number;
   beds: number;
   capacity: number;
@@ -432,29 +440,63 @@ export interface Booking {
   id: string;
   hostel: Hostel;
   room: Room;
+  // Backend snake_case mappings
+  student_id?: string;
+  student?: { // Often includes full object
+    id: string;
+    name: string;
+    first_name?: string;
+    last_name?: string;
+    email: string;
+    profile_picture?: string;
+  } | string; 
+  check_in_date?: string; // Backend often returns this
+  move_in_date?: string; // Or this
+  // Frontend camelCase (keep for legacy compatibility if mapped)
   moveInDate: Date;
+  
   durationMonths: number;
+  duration_months?: number; // Backend
+  
   totalPrice: number;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  total_amount?: number; // Backend?
+  monthly_rent?: number;
+  
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed'; // Added completed
   paymentMethod: 'mpesa' | 'bank';
+  
   studentId: string;
   studentName: string;
+  
   hostelName: string;
+  
   roomNumber: string;
+  room_number?: string; // Backend
+  
   amount: number;
   duration: string;
+  
+  reference?: string; // Payment reference
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface User {
   id: string;
   name: string;
+  first_name?: string;
+  last_name?: string;
   email: string;
   role: 'student' | 'landlord' | 'caretaker' | 'admin';
   status: 'active' | 'suspended' | 'pending';
   avatar?: string;
+  profile_picture?: string;
   phoneNumber?: string;
+  phone_number?: string;
   joinedAt: Date;
+  created_at?: Date | string;
   lastActiveAt?: Date;
+  is_verified?: boolean; // For compat
 }
 
 export interface Payment {

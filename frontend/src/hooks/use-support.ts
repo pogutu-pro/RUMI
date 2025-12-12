@@ -6,7 +6,7 @@ import {
   updateTicketStatus,
   addTicketReply,
   assignTicket,
-} from '@/lib/api/support';
+} from '@/features/support';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { toast } from 'sonner';
 import type { SupportTicket, SupportCategory, SupportPriority } from '@/types/entities.types';

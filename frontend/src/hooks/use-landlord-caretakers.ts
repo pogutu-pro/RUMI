@@ -5,7 +5,7 @@ import {
   type CreateCaretakerRequest,
   type UpdateCaretakerRequest,
   type LandlordCaretaker,
-} from '@/lib/api/landlord-caretakers';
+} from '@/features/landlord';
 
 /**
  * Query key factory for caretaker-related queries

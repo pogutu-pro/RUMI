@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { AuthCard } from '@/components/auth/auth-card';
-import { CaretakerRegistrationForm } from '@/components/auth/caretaker-registration-form';
+import { AuthCard } from '@/features/auth';
+import { CaretakerRegistrationForm } from '@/features/auth';
 
 export const metadata: Metadata = {
   title: 'Caretaker Registration | Rumi',

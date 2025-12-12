@@ -17,8 +17,8 @@ import {
   TransferStatusBadge,
   TransferTimeline,
   PriceDifferenceIndicator,
-} from '@/components/transfers';
-import { getMyTransfers, cancelTransferRequest } from '@/lib/api/transfers';
+} from '@/features/transfers';
+import { getMyTransfers, cancelTransferRequest } from '@/features/transfers';
 import { TransferRequest } from '@/types/entities.types';
 import { TRANSFER_REASONS } from '@/lib/constants/transfer-rules';
 

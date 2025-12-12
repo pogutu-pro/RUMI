@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getHostels, getHostelById, getHostelBySlug, type HostelsResponse } from '@/lib/api/hostels';
+import { getHostels, getHostelById, getHostelBySlug, type HostelsResponse } from '@/features/hostels';
 
 export interface UseHostelsParams {
   search?: string;

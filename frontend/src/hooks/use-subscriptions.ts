@@ -8,7 +8,7 @@ import {
   cancelSubscription,
   reactivateSubscription,
   checkFeatureAccess,
-} from '@/lib/api/subscriptions';
+} from '@/features/payments';
 import { toast } from 'sonner';
 
 export const useSubscriptionPlans = () => {

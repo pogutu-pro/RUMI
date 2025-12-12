@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { useInventoryStore } from '@/stores/useInventoryStore';
+import { useInventoryStore } from '@/features/inventory';
 import { 
   CheckCircle2, 
   Utensils, 
@@ -23,18 +23,21 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { InventoryCategorySection } from '@/components/inventory/inventory-category-section';
-import { ComparisonView } from '@/components/inventory/comparison-view';
-import type { InventoryCategory } from '@/lib/api/inventory';
+import { InventoryCategorySection } from '@/features/inventory';
+import { ComparisonView } from '@/features/inventory';
+import type { InventoryCategory } from '@/features/inventory';
 import { toast } from 'sonner';
 
+import { use } from 'react';
+
 interface PageProps {
-  params: {
+  params: Promise<{
     reportId: string;
-  };
+  }>;
 }
 
 export default function VerificationPage({ params }: PageProps) {
+  const { reportId } = use(params);
   const router = useRouter();
   const { 
     activeReport, 
@@ -48,10 +51,10 @@ export default function VerificationPage({ params }: PageProps) {
   const [generalNote, setGeneralNote] = React.useState('');
 
   React.useEffect(() => {
-    if (params.reportId) {
-      fetchReportById(params.reportId);
+    if (reportId) {
+      fetchReportById(reportId);
     }
-  }, [params.reportId, fetchReportById]);
+  }, [reportId, fetchReportById]);
 
   // Group items logic (reused from student view mostly)
   const groupedItems = React.useMemo(() => {

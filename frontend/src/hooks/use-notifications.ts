@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { notificationsApi } from '@/lib/api/notifications';
+import { notificationsApi } from '@/features/notifications';
 import { toast } from 'sonner';
 import type {
   GetNotificationsParams,
   UpdatePreferencesRequest,
-} from '@/lib/api/notifications';
+} from '@/features/notifications';
 
 /**
  * Hook to fetch paginated notifications

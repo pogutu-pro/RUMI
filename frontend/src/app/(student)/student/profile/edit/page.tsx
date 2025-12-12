@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -31,16 +31,16 @@ import { Loader2, Upload, User, ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 
 const profileFormSchema = z.object({
-  firstName: z.string().min(2, {
+  first_name: z.string().min(2, {
     message: 'First name must be at least 2 characters.',
   }),
-  lastName: z.string().min(2, {
+  last_name: z.string().min(2, {
     message: 'Last name must be at least 2 characters.',
   }),
   email: z.string().email({
     message: 'Please enter a valid email address.',
   }),
-  phoneNumber: z.string().min(10, {
+  phone_number: z.string().min(10, {
     message: 'Phone number must be at least 10 characters.',
   }),
   bio: z.string().max(160).optional(),
@@ -59,10 +59,10 @@ export default function EditProfilePage() {
 
   // Default values for the form
   const defaultValues: Partial<ProfileFormValues> = {
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
+    first_name: user?.first_name || '',
+    last_name: user?.last_name || '',
     email: user?.email || '',
-    phoneNumber: user?.phoneNumber || '',
+    phone_number: user?.phone_number || '',
     bio: 'I am a student at RUMI University.',
     urls: {
       linkedin: '',
@@ -130,8 +130,8 @@ export default function EditProfilePage() {
               <Avatar className="h-24 w-24 border-4 border-muted">
                 <AvatarImage src={user?.avatar} />
                 <AvatarFallback className="text-2xl">
-                  {user?.firstName?.[0]}
-                  {user?.lastName?.[0]}
+                  {user?.first_name?.[0]}
+                  {user?.last_name?.[0]}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col gap-2 w-full sm:w-auto">
@@ -162,7 +162,7 @@ export default function EditProfilePage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField
                   control={form.control}
-                  name="firstName"
+                  name="first_name"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>First Name</FormLabel>
@@ -175,7 +175,7 @@ export default function EditProfilePage() {
                 />
                 <FormField
                   control={form.control}
-                  name="lastName"
+                  name="last_name"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Last Name</FormLabel>
@@ -207,7 +207,7 @@ export default function EditProfilePage() {
                 />
                 <FormField
                   control={form.control}
-                  name="phoneNumber"
+                  name="phone_number"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Phone Number</FormLabel>

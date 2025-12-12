@@ -105,7 +105,7 @@ export function ConfirmationDialog({
               confirmVariant === 'destructive' ? 'destructive' : 'default'
             }
             onClick={handleConfirm}
-            loading={isConfirming}
+            disabled={isConfirming}
           >
             {confirmText}
           </Button>

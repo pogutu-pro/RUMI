@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/features/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -69,8 +69,8 @@ export default function TechSupportProfilePage() {
 
   const displayName = React.useMemo(() => {
     if (!user) return 'Tech Support';
-    if (user.firstName || user.lastName) {
-      return [user.firstName, user.lastName].filter(Boolean).join(' ');
+    if (user.first_name || user.last_name) {
+      return [user.first_name, user.last_name].filter(Boolean).join(' ');
     }
     return user.email.split('@')[0];
   }, [user]);
@@ -93,7 +93,7 @@ export default function TechSupportProfilePage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="flex items-start gap-4">
           <Avatar className="h-20 w-20 border-4 border-background ring-4 ring-indigo-100 dark:ring-indigo-900/50">
-            <AvatarImage src={user?.avatar || user?.profileImage} />
+            <AvatarImage src={user?.avatar || user?.profile_picture} />
             <AvatarFallback className="bg-gradient-to-br from-indigo-400 to-purple-500 text-white text-2xl font-bold">
               {initials}
             </AvatarFallback>

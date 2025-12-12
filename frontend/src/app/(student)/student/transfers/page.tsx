@@ -15,7 +15,7 @@ import {
   AlertCircle,
   Calendar,
 } from 'lucide-react';
-import { DashboardStatCard } from '@/components/student/dashboard-stat-card';
+import { DashboardStatCard } from '@/features/student';
 import {
   TransferStatusBadge,
   TransferTimeline,
@@ -23,9 +23,9 @@ import {
   TransferSkeleton,
   EmptyState,
   TransferAlert,
-} from '@/components/transfers';
-import { useTransferStore } from '@/stores/transfer.store';
-import { getMyTransfers } from '@/lib/api/transfers';
+} from '@/features/transfers';
+import { useTransferStore } from '@/features/transfers';
+import { getMyTransfers } from '@/features/transfers';
 
 export default function TransfersPage() {
   const router = useRouter();

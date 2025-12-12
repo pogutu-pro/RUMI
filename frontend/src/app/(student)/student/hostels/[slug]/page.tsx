@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { useHostelBySlug } from '@/hooks/use-hostels';
 import { cn } from '@/lib/utils';
-import HostelBookingWidget from '@/components/hostels/hostel-booking-widget';
+import { HostelBookingWidget } from '@/features/hostels';
 
 function ImageGallery({ images }: { images: string[] }) {
   const displayImages = images.slice(0, 5);

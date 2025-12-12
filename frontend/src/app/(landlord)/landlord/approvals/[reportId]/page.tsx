@@ -13,6 +13,8 @@ import {
   DollarSign
 } from 'lucide-react';
 
+import { ArrowRight } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,27 +31,30 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useInventoryStore } from '@/stores/useInventoryStore';
-import { inventoryApi } from '@/lib/api/inventory';
+import { useInventoryStore } from '@/features/inventory';
+import { inventoryApi } from '@/features/inventory';
 import { toast } from 'sonner';
 
+import { use } from 'react';
+
 interface PageProps {
-  params: {
+  params: Promise<{
     reportId: string;
-  };
+  }>;
 }
 
 export default function LandlordApprovalDetailPage({ params }: PageProps) {
+  const { reportId } = use(params);
   const router = useRouter();
   const { activeReport, isLoading, fetchReportById } = useInventoryStore();
   const [disputeReason, setDisputeReason] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   React.useEffect(() => {
-    if (params.reportId) {
-      fetchReportById(params.reportId);
+    if (reportId) {
+      fetchReportById(reportId);
     }
-  }, [params.reportId, fetchReportById]);
+  }, [reportId, fetchReportById]);
 
   if (isLoading || !activeReport) {
     return (

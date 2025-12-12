@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { messagesApi } from '@/lib/api/messages';
+import { messagesApi } from '@/features/messaging';
 import { toast } from 'sonner';
 import type {
   SendMessageRequest,
   CreateConversationRequest,
   GetMessagesParams,
   GetConversationsParams,
-} from '@/lib/api/messages';
+} from '@/features/messaging';
 
 /**
  * Hook to fetch all conversations
