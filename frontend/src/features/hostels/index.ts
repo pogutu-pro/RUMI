@@ -46,3 +46,4 @@ export * from './api/rooms';
 export * from './hooks/use-hostels';
 export * from './hooks/use-rooms';
 export * from './types';
+export { default as HostelDetails } from './components/hostel-details';

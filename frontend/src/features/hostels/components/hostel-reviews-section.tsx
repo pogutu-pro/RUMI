@@ -5,7 +5,8 @@ import { motion } from 'framer-motion';
 import { Star, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ReviewCard, RatingBreakdown, ReviewFilterTabs } from '@/features/reviews';
-import type { Review, ReviewFilters } from '@/types/entities.types';
+import type { Review } from '@/types/entities.types';
+import type { ReviewFilters } from '@/features/reviews/types';
 
 interface HostelReviewsSectionProps {
   reviews: Review[];

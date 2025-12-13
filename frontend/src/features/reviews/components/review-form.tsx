@@ -22,6 +22,7 @@ export default function ReviewForm({ hostelId, onSuccess }: ReviewFormProps) {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<ReviewFormData>({
     resolver: zodResolver(reviewSchema),
@@ -43,7 +44,7 @@ export default function ReviewForm({ hostelId, onSuccess }: ReviewFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
         <RatingInput
-          value={formState.rating || 0}
+          value={watch('rating') || 0}
           onChange={(r) => setValue('rating', r)}
         />
         {errors.rating && (

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useHostels } from '@/features/hostels';
-import { useBookings } from '@/features/bookingss';
+import { useBookings } from '@/features/bookings';
 import { usePayments } from '@/features/payments';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';

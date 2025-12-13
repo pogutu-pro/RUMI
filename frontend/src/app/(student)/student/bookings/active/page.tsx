@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useBookings } from '@/features/bookingss';
+import { useBookings } from '@/features/bookings';
 import { Calendar, MapPin, Users, DollarSign, ArrowLeft } from 'lucide-react';
 
 export default function ActiveBookingsPage() {

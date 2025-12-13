@@ -1,9 +1,7 @@
 import { useAppStore } from '@/stores/app.store';
 import { UserRole } from './auth.types';
 
-// Re-export UserRole for consistency
-export { UserRole };
-export const ROLES = UserRole;
+// Re-export removed to avoid conflict
 
 
 // -- Selectors --

@@ -3,34 +3,8 @@ import type { ApiResponse } from '@/types/api.types';
 import type { SubscriptionPlan, UserSubscription } from '@/types/subscription.types';
 
 export const getPlans = async (): Promise<SubscriptionPlan[]> => {
-  // const response = await api.axios.get<ApiResponse<SubscriptionPlan[]>>('/accounts/subscriptions/plans/');
-  // return response.data.data || [];
-  return [
-    {
-      id: 'plan_free',
-      name: 'Starter',
-      price: 0,
-      interval: 'monthly',
-      features: ['1 Property', '5 Units', 'Basic Reporting'],
-      description: 'For single property owners'
-    },
-    {
-      id: 'plan_pro',
-      name: 'Professional',
-      price: 2500,
-      interval: 'monthly',
-      features: ['Up to 5 Properties', 'Unlimited Units', 'Advanced Financial Reports', 'Priority Support'],
-      description: 'For growing portfolios'
-    },
-    {
-      id: 'plan_business',
-      name: 'Business',
-      price: 8000,
-      interval: 'monthly',
-      features: ['Unlimited Properties', 'Multi-User Access', 'API Access', 'Dedicated Account Manager'],
-      description: 'For full management agencies'
-    }
-  ];
+  const response = await api.axios.get<ApiResponse<SubscriptionPlan[]>>('/accounts/subscriptions/plans/');
+  return response.data.data || [];
 };
 
 export const getPlanDetails = async (planId: string): Promise<SubscriptionPlan> => {
@@ -40,29 +14,26 @@ export const getPlanDetails = async (planId: string): Promise<SubscriptionPlan> 
 };
 
 export const getMySubscription = async (): Promise<UserSubscription | null> => {
-  // Mock data because endpoint might be triggering 401
-  // const response = await api.axios.get<ApiResponse<UserSubscription>>('/accounts/subscriptions/my-subscription/');
-  // return response.data.data || null;
-
-  return {
-    id: 'sub_123',
-    plan: {
-      id: 'plan_free',
-      name: 'Starter Plan',
-      price: 0,
-      interval: 'monthly',
-      features: ['Basic Listing', '5 Units', 'Standard Support'],
-      description: 'Perfect for getting started'
-    },
-    status: 'active',
-    current_period_start: new Date().toISOString(),
-    current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    cancel_at_period_end: false,
-    startDate: new Date().toISOString(),
-    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    autoRenew: true,
-  } as UserSubscription;
+  const response = await api.axios.get<ApiResponse<UserSubscription>>('/accounts/subscriptions/my-subscription/');
+  return response.data.data || null;
 };
+
+// -- New Endpoints --
+
+export const getPaymentHistory = async () => {
+    const response = await api.axios.get<ApiResponse<any[]>>('/accounts/subscriptions/payments/history/');
+    return response.data.data || [];
+};
+
+export const initiateSubscriptionPayment = async (planId: string, interval: string) => {
+    const response = await api.axios.post<ApiResponse<any>>('/accounts/subscriptions/payments/initiate/', {
+        planId,
+        interval
+    });
+    return response.data.data;
+};
+
+// -------------------
 
 export const upgradeSubscription = async (planId: string): Promise<UserSubscription> => {
   const response = await api.axios.post<ApiResponse<UserSubscription>>('/accounts/subscriptions/upgrade/', { planId });

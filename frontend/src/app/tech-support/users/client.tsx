@@ -34,7 +34,8 @@ interface UserManagementClientProps {
 }
 
 export default function UserManagementClient({ initialTab }: UserManagementClientProps) {
-  const { data: users = [], isLoading: isLoadingUsers } = useSupportUsers();
+  const { data: response, isLoading: isLoadingUsers } = useSupportUsers();
+  const users = response?.data || [];
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   

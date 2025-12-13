@@ -16,6 +16,8 @@ export const getMyTransfers = async (hostelId: string): Promise<TransferRequest[
   return response.data.data || [];
 };
 
+export const getTransfers = getMyTransfers;
+
 /**
  * Get available rooms for transfer in a specific hostel
  */

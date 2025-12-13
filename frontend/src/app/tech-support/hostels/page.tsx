@@ -23,7 +23,8 @@ interface HostelSupportPageProps {
 }
 
 export default function HostelSupportPage({ defaultStatus = "all" }: HostelSupportPageProps) {
-  const { data: hostels = [], isLoading: isLoadingHostels } = useSupportHostels();
+  const { data: response, isLoading: isLoadingHostels } = useSupportHostels();
+  const hostels = response?.data || [];
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState(defaultStatus);
 

@@ -22,7 +22,7 @@ import type {
   MaintenanceUpdate,
   RoommateAssignment,
 } from '@/types/caretaker.types';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 // ==================== Dashboard ====================
 

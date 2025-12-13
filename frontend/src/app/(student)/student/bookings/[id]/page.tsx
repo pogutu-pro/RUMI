@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { useBooking } from '@/features/bookingss';
+import { useBooking } from '@/features/bookings';
 
 export default function Page() {
   const params = useParams<{ id: string }>();

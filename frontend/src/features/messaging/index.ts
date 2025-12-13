@@ -4,7 +4,7 @@ export * from './components/message-bubble';
 export * from './components/message-input';
 export * from './components/typing-indicator';
 export * from './components/empty-state';
-export * from './components/scroll-to-bottom-button';
+export * from './components/scroll-to-bottom';
 export * from './components/pull-to-refresh';
 export * from './hooks/use-messaging';
 // Removed: export * from './stores/messaging.store';

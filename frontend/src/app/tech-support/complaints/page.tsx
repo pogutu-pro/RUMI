@@ -20,7 +20,8 @@ import { TechSupportTicket } from '@/features/support';
 import { Badge } from '@/components/ui/badge';
 
 export default function ComplaintsPage() {
-  const { data: tickets = [], isLoading: isLoadingTickets } = useSupportTickets();
+  const { data: response, isLoading: isLoadingTickets } = useSupportTickets();
+  const tickets = response?.data || [];
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTicket, setSelectedTicket] = useState<TechSupportTicket | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);

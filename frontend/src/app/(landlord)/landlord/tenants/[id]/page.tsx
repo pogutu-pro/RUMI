@@ -21,7 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useUser } from '@/features/users'; 
-import { useBookings } from '@/features/bookingss';
+import { useBookings } from '@/features/bookings';
 
 export default function TenantProfilePage() {
   const { id } = useParams();

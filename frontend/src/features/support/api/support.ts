@@ -83,6 +83,16 @@ export const addTicketReply = async (
 };
 
 /**
+ * Get replies for a ticket
+ */
+export const getTicketReplies = async (ticketId: string): Promise<TicketReply[]> => {
+  const response = await apiClient.axios.get<ApiResponse<TicketReply[]>>(
+    `/support/tickets/${ticketId}/replies/`
+  );
+  return response.data.data || [];
+};
+
+/**
  * Assign ticket to a support agent
  */
 export const assignTicket = async (

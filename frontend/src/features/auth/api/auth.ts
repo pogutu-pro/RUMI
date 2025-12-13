@@ -174,6 +174,21 @@ async function resetPassword(
 }
 
 /**
+ * Verify password reset token
+ * Endpoint: POST /api/v1/accounts/password/reset/verify/
+ */
+async function verifyResetPasswordToken(
+  token: string,
+): Promise<MessageResponse> {
+  const res = await axios.post<MessageResponse>(
+    '/accounts/password/reset/verify/',
+    { token },
+    { headers: csrf.getHeader() },
+  );
+  return res.data;
+}
+
+/**
  * Get user profile
  * Endpoint: GET /api/v1/accounts/profile/
  */

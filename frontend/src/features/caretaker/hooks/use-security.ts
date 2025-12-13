@@ -9,7 +9,7 @@ import {
   createLateEntryLog,
 } from '@/features/caretaker';
 import type { SecurityFilters, VisitorLog, NightCheckReport, LateEntryLog } from '@/types/caretaker.types';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 // ==================== Visitor Logs ====================
 

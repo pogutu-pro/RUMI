@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { 
-  MessageSquare, 
   CheckCircle2, 
   AlertCircle, 
   Clock, 
@@ -22,6 +21,8 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TechSupportTicket } from '@/features/support';
+import { useTicketReplies, useAddTicketReply } from '../hooks/use-support';
+import { formatDistanceToNow } from 'date-fns';
 
 interface TicketDetailDialogProps {
   ticket: TechSupportTicket | null;
@@ -33,12 +34,17 @@ interface TicketDetailDialogProps {
 
 export function TicketDetailDialog({ ticket, isOpen, onClose, onResolve, onEscalate }: TicketDetailDialogProps) {
   const [reply, setReply] = useState("");
+  const { data: replies, isLoading } = useTicketReplies(ticket?.id || "");
+  const { mutate: sendReply, isPending } = useAddTicketReply();
 
   if (!ticket) return null;
 
   const handleSendReply = () => {
-    console.log(`Sending reply to ticket ${ticket.id}: ${reply}`);
-    setReply("");
+    if (!reply.trim()) return;
+    
+    sendReply({ ticketId: ticket.id, message: reply }, {
+        onSuccess: () => setReply("")
+    });
   };
 
   return (
@@ -76,7 +82,6 @@ export function TicketDetailDialog({ ticket, isOpen, onClose, onResolve, onEscal
             <h4 className="text-sm font-medium mb-2 text-slate-500">Description</h4>
             <p className="text-sm text-slate-700 dark:text-slate-300">
               User is reporting an issue regarding {ticket.category.toLowerCase()}. 
-              (This is a placeholder description as the mock data doesn't have full details yet.)
             </p>
           </div>
 
@@ -84,18 +89,22 @@ export function TicketDetailDialog({ ticket, isOpen, onClose, onResolve, onEscal
             <h4 className="text-sm font-medium text-slate-500">Discussion</h4>
             <ScrollArea className="h-[200px] w-full rounded-md border p-4">
               <div className="space-y-4">
-                <div className="flex flex-col gap-1 items-start">
-                  <div className="bg-white dark:bg-slate-800 border rounded-lg p-3 max-w-[80%] text-sm">
-                    Hi, I'm having trouble with...
-                  </div>
-                  <span className="text-xs text-slate-400 px-1">Alice Johnson • 2h ago</span>
-                </div>
-                <div className="flex flex-col gap-1 items-end">
-                  <div className="bg-blue-600 text-white rounded-lg p-3 max-w-[80%] text-sm">
-                    Hello Alice, thanks for reaching out. Could you provide more details?
-                  </div>
-                  <span className="text-xs text-slate-400 px-1">Support Agent • 1h ago</span>
-                </div>
+                {isLoading ? (
+                    <p className="text-sm text-muted-foreground text-center">Loading discussion...</p>
+                ) : replies && replies.length > 0 ? (
+                    replies.map((msg: any) => (
+                        <div key={msg.id} className={`flex flex-col gap-1 ${msg.isInternal ? 'items-end' : 'items-start'}`}>
+                            <div className={`${msg.isInternal ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-800 border'} rounded-lg p-3 max-w-[80%] text-sm`}>
+                                {msg.message || msg.content}
+                            </div>
+                            <span className="text-xs text-slate-400 px-1">
+                                {msg.isInternal ? 'Support Agent' : ticket.user_name} • {msg.createdAt ? formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true }) : 'Just now'}
+                            </span>
+                        </div>
+                    ))
+                ) : (
+                    <p className="text-sm text-muted-foreground text-center">No messages yet.</p>
+                )}
               </div>
             </ScrollArea>
           </div>
@@ -107,7 +116,7 @@ export function TicketDetailDialog({ ticket, isOpen, onClose, onResolve, onEscal
               onChange={(e) => setReply(e.target.value)}
               className="min-h-[80px]"
             />
-            <Button size="icon" className="h-[80px] w-[80px]" onClick={handleSendReply}>
+            <Button size="icon" className="h-[80px] w-[80px]" onClick={handleSendReply} disabled={isPending}>
               <Send className="h-5 w-5" />
             </Button>
           </div>
@@ -130,3 +139,4 @@ export function TicketDetailDialog({ ticket, isOpen, onClose, onResolve, onEscal
     </Dialog>
   );
 }
+

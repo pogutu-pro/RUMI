@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useBookings } from '@/features/bookingss';
+import { useBookings } from '@/features/bookings';
 
 export default function RoommatesPage() {
   const [searchQuery, setSearchQuery] = useState('');

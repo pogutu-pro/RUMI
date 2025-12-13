@@ -53,6 +53,7 @@ export const useHostel = (
         throw new Error('Hostel identifier is required');
       }
       const res = await getHostel(idOrSlug);
+      if (!res) throw new Error('Hostel not found');
       return res;
     },
     enabled: Boolean(idOrSlug) && options?.enabled !== false,
@@ -89,3 +90,5 @@ export const usePrefetchHostel = () => {
     });
   };
 };
+
+export const useHostelBySlug = useHostel;

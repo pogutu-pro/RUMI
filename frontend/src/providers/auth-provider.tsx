@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import type { Route } from 'next';
 import { getAccessToken } from '@/lib/auth/token';
 import { useProfile } from '@/features/auth';
-import { useAuthStore, hydrateAuthStore, ROLES } from '@/features/auth';
+import { useAuthStore, hydrateAuthStore, UserRole } from '@/features/auth';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -32,11 +32,11 @@ const PUBLIC_ROUTES = [
 ];
 
 const ROLE_REDIRECTS: Record<string, string> = {
-  [ROLES.STUDENT]: '/student/dashboard',
-  [ROLES.LANDLORD]: '/landlord/dashboard',
-  [ROLES.CARETAKER]: '/caretaker/dashboard',
-  [ROLES.SUPER_ADMIN]: '/admin/dashboard',
-  [ROLES.TECH_SUPPORT_ADMIN]: '/tech-support/dashboard',
+  [UserRole.STUDENT]: '/student/dashboard',
+  [UserRole.LANDLORD]: '/landlord/dashboard',
+  [UserRole.CARETAKER]: '/caretaker/dashboard',
+  [UserRole.SUPER_ADMIN]: '/admin/dashboard',
+  [UserRole.TECH_SUPPORT_ADMIN]: '/tech-support/dashboard',
   'tech_support': '/tech-support/dashboard',
 };
 

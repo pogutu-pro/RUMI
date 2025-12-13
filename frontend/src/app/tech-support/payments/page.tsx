@@ -38,7 +38,8 @@ interface PaymentSupportPageProps {
 }
 
 export default function PaymentSupportPage({ defaultTab = "all" }: PaymentSupportPageProps) {
-  const { data: transactions = [], isLoading: isLoadingTransactions } = useSupportTransactions();
+  const { data: response, isLoading: isLoadingTransactions } = useSupportTransactions();
+  const transactions = response?.data || [];
   const [searchTerm, setSearchTerm] = useState("");
   const [refundReason, setRefundReason] = useState("");
   const [selectedTxnId, setSelectedTxnId] = useState<string | null>(null);

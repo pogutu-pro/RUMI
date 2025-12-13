@@ -4,8 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-import { useHostel } from "@/features/hostels";
-import HostelDetails from "@/features/hostels";
+import { useHostel, HostelDetails } from "@/features/hostels";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 

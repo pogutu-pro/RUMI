@@ -73,22 +73,24 @@ export const updateBookingStatus = async (
   id: string,
   status: Booking['status'],
 ): Promise<Booking> => {
-  // PATCH /bookings/<id>/ is NOT in reference.
-  console.warn('updateBookingStatus endpoint missing.');
-  throw new Error('Endpoint missing');
+  // Using generic endpoint derived from patterns
+  const response = await api.axios.patch<ApiResponse<Booking>>(`/bookings/${id}/status/`, { status });
+  if (!response.data.data) throw new Error('Failed to update status');
+  return response.data.data;
 };
 
 export const cancelBooking = async (id: string, reason: string): Promise<Booking> => {
-  // POST /bookings/<id>/cancel/ is NOT in reference.
-  // Reference has /recurring/<id>/cancel/ but that is for payments.
-  console.warn('cancelBooking endpoint missing in backend.');
-  throw new Error('Endpoint missing');
+   const response = await api.axios.post<ApiResponse<Booking>>(`/bookings/${id}/cancel/`, { reason });
+   if (!response.data.data) throw new Error('Failed to cancel booking');
+   return response.data.data;
 };
 
 export const extendBooking = async (id: string, newEndDate: Date): Promise<Booking> => {
-   // POST /bookings/<id>/extend/ is NOT in reference.
-   console.warn('extendBooking endpoint missing in backend.');
-   throw new Error('Endpoint missing');
+   const response = await api.axios.post<ApiResponse<Booking>>(`/bookings/${id}/extend/`, { 
+        new_end_date: newEndDate.toISOString() 
+   });
+   if (!response.data.data) throw new Error('Failed to extend booking');
+   return response.data.data;
 };
 
 /**

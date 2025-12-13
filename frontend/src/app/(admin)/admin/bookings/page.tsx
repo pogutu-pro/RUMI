@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { BookingTable } from "@/features/admin";
-import { useBookings } from "@/features/bookingss";
+import { useBookings } from "@/features/bookings";
 import { Booking } from '@/features/bookings';
 
 export default function Page() {

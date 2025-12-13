@@ -38,7 +38,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
-import { useBookings } from '@/features/bookingss';
+import { useBookings } from '@/features/bookings';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function BookingsPage() {

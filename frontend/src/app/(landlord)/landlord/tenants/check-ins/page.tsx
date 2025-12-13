@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { useBookings } from '@/features/bookingss';
+import { useBookings } from '@/features/bookings';
 import Link from 'next/link';
 import { useProcessCheckIn } from '@/features/bookings';
 

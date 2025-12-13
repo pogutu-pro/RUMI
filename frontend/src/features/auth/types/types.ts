@@ -159,3 +159,25 @@ export interface FormState<T = unknown> {
   isSubmitting: boolean;
   isValid: boolean;
 }
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  isRead: boolean;
+  createdAt: string;
+  link?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface NotificationPreferences {
+  email: boolean;
+  sms: boolean;
+  push: boolean;
+  categories: {
+    marketing: boolean;
+    transactional: boolean;
+    updates: boolean;
+  };
+}

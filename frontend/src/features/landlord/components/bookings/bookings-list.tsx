@@ -36,7 +36,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { useBookings, useUpdateBookingStatus } from '@/features/bookingss';
+import { useBookings, useUpdateBookingStatus } from '@/features/bookings';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
@@ -55,7 +55,7 @@ export function BookingsList({ status = 'all' }: BookingsListProps) {
     const reference = booking.reference || `BKG-${booking.id}`;
     const studentName = typeof booking.student === 'object' ? `${booking.student.first_name} ${booking.student.last_name}` : 'Student';
     const hostelName = typeof booking.hostel === 'object' ? booking.hostel.name : '';
-    const roomNumber = typeof booking.room === 'object' ? booking.room.number : (booking.room_number || '');
+    const roomNumber = typeof booking.room === 'object' ? booking.room.number : (booking.roomNumber || '');
     
     // Check if status matches if we are in 'all' mode but want to support client-side filter? 
     // Actually the prop 'status' already filtered the API.
@@ -66,7 +66,7 @@ export function BookingsList({ status = 'all' }: BookingsListProps) {
       reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
       studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       hostelName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      roomNumber.toLowerCase().includes(searchQuery.toLowerCase());
+      (roomNumber && roomNumber.toLowerCase().includes(searchQuery.toLowerCase()));
       
     // If we are in 'history' mode (passed as 'completed' usually), we might want to include cancelled?
     // The hook call `useBookings` with `status: 'completed'` only returns completed.
@@ -101,7 +101,7 @@ export function BookingsList({ status = 'all' }: BookingsListProps) {
   };
 
   const handleStatusUpdate = (bookingId: string, newStatus: 'confirmed' | 'cancelled') => {
-    updateStatus.mutate({ bookingId, status: newStatus }, {
+    updateStatus.mutate({ id: bookingId, status: newStatus }, {
       onSuccess: () => toast.success(`Booking ${newStatus} successfully`),
       onError: () => toast.error(`Failed to update booking`)
     });
@@ -157,7 +157,7 @@ export function BookingsList({ status = 'all' }: BookingsListProps) {
                  const StatusIcon = getStatusIcon(booking.status);
                  const studentName = typeof booking.student === 'object' ? `${booking.student.first_name} ${booking.student.last_name}` : 'Unknown Student';
                  const hostelName = typeof booking.hostel === 'object' ? booking.hostel.name : 'Unknown Hostel';
-                 const roomNumber = typeof booking.room === 'object' ? booking.room.number : (booking.room_number || 'N/A');
+                 const roomNumber = typeof booking.room === 'object' ? booking.room.number : (booking.roomNumber || 'N/A');
                  
                  return (
                     <motion.div

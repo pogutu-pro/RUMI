@@ -7,7 +7,7 @@ import {
   uploadCheckOutPhotos,
 } from '@/features/caretaker';
 import type { CheckInData, CheckOutData } from '@/types/caretaker.types';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 // ==================== Check-In ====================
 

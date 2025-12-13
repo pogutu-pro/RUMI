@@ -25,31 +25,11 @@ export interface UpdatePreferencesRequest {
 export const getNotifications = async (
   params?: GetNotificationsParams
 ): Promise<PaginatedResponse<Notification>> => {
-  // Mock data to prevent logout on missing endpoint
-  // const response = await apiClient.axios.get<PaginatedResponse<Notification>>(
-  //   '/notifications/',
-  //   { params }
-  // );
-  // return response.data;
-  
-  return {
-    results: [
-      {
-        id: '1',
-        title: 'Welcome to RUMI',
-        message: 'Get started by adding your first property.',
-        notification_type: 'system_maintenance', // closest match to info
-        channel: 'in_app',
-        status: 'read',
-        is_read: false,
-        recipient_id: 'user1',
-        created_at: new Date().toISOString(),
-      }
-    ],
-    count: 1,
-    next: null,
-    previous: null
-  };
+  const response = await apiClient.axios.get<PaginatedResponse<Notification>>(
+    '/notifications/',
+    { params }
+  );
+  return response.data;
 };
 
 /**

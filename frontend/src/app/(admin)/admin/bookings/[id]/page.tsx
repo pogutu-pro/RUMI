@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { useBooking, useUpdateBookingStatus } from "@/features/bookingss";
+import { useBooking, useUpdateBookingStatus } from "@/features/bookings";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils/cn";
 

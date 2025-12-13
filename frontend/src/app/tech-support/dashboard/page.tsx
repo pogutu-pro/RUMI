@@ -32,11 +32,17 @@ import { Separator } from '@/components/ui/separator';
 export default function TechSupportDashboard() {
   const { user } = useAuth();
   
-  const { data: logs = [], isLoading: isLoadingLogs } = useSupportLogs();
-  const { data: tickets = [], isLoading: isLoadingTickets } = useSupportTickets();
-  const { data: users = [], isLoading: isLoadingUsers } = useSupportUsers();
-  const { data: transactions = [], isLoading: isLoadingTransactions } = useSupportTransactions();
-  const { data: hostels = [], isLoading: isLoadingHostels } = useSupportHostels();
+  const { data: logsRes, isLoading: isLoadingLogs } = useSupportLogs();
+  const { data: ticketsRes, isLoading: isLoadingTickets } = useSupportTickets();
+  const { data: usersRes, isLoading: isLoadingUsers } = useSupportUsers();
+  const { data: transactionsRes, isLoading: isLoadingTransactions } = useSupportTransactions();
+  const { data: hostelsRes, isLoading: isLoadingHostels } = useSupportHostels();
+
+  const logs = logsRes?.data || [];
+  const tickets = ticketsRes?.data || [];
+  const users = usersRes?.data || [];
+  const transactions = transactionsRes?.data || [];
+  const hostels = hostelsRes?.data || [];
 
   // Metrics (Derived from data arrays)
   const stats = [

@@ -8,7 +8,8 @@ import { MessageSquare, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function MessagesPage() {
-  const { data: messages = [], isLoading: isLoadingMessages } = useSupportMessages();
+  const { data: response, isLoading: isLoadingMessages } = useSupportMessages();
+  const messages = response?.data || [];
 
   const handleSendMessage = (content: string) => {
     console.log("Sending message:", content);
