@@ -950,6 +950,228 @@ class RevenueAnalyticsView(APIView):
         })
 
 
+class RecurringPaymentPauseView(APIView):
+    """
+    Pause recurring payments (Student only)
+    """
+    permission_classes = [IsStudent]
+
+    def post(self, request, recurring_id):
+        student = request.user.student_profile
+
+        try:
+            recurring_payment = RecurringPayment.objects.get(
+                id=recurring_id,
+                student=student,
+                is_active=True
+            )
+        except RecurringPayment.DoesNotExist:
+            return Response({'error': 'Recurring payment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        recurring_payment.is_active = False
+        recurring_payment.paused_at = timezone.now()
+        recurring_payment.save()
+
+        serializer = RecurringPaymentSerializer(recurring_payment)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RecurringPaymentResumeView(APIView):
+    """
+    Resume recurring payments (Student only)
+    """
+    permission_classes = [IsStudent]
+
+    def post(self, request, recurring_id):
+        student = request.user.student_profile
+
+        try:
+            recurring_payment = RecurringPayment.objects.get(
+                id=recurring_id,
+                student=student
+            )
+        except RecurringPayment.DoesNotExist:
+            return Response({'error': 'Recurring payment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if recurring_payment.is_active:
+            return Response({'error': 'Recurring payment is already active'}, status=status.HTTP_400_BAD_REQUEST)
+
+        recurring_payment.is_active = True
+        recurring_payment.paused_at = None
+        recurring_payment.save()
+
+        serializer = RecurringPaymentSerializer(recurring_payment)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RecurringPaymentCancelView(APIView):
+    """
+    Cancel recurring payments (Student only)
+    """
+    permission_classes = [IsStudent]
+
+    def post(self, request, recurring_id):
+        student = request.user.student_profile
+
+        try:
+            recurring_payment = RecurringPayment.objects.get(
+                id=recurring_id,
+                student=student
+            )
+        except RecurringPayment.DoesNotExist:
+            return Response({'error': 'Recurring payment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        recurring_payment.is_active = False
+        recurring_payment.cancelled_at = timezone.now()
+        recurring_payment.save()
+
+        serializer = RecurringPaymentSerializer(recurring_payment)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class LateFeesView(APIView):
+    """
+    View late fees for a booking (Student/Landlord)
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, booking_id):
+        try:
+            booking = Booking.objects.select_related('student__user', 'room__hostel__landlord').get(id=booking_id)
+        except Booking.DoesNotExist:
+            return Response({'error': 'Booking not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check permissions
+        if request.user.role == 'student':
+            if booking.student.user != request.user:
+                return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        elif request.user.role == 'landlord':
+            if booking.room.hostel.landlord.user != request.user:
+                return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        elif not request.user.role in ['tech_support', 'super_admin']:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        late_fees = LateFeeCharge.objects.filter(booking=booking).order_by('-charged_at')
+        serializer = LateFeeChargeSerializer(late_fees, many=True)
+        return Response({'late_fees': serializer.data}, status=status.HTTP_200_OK)
+
+
+class LateFeePayView(APIView):
+    """
+    Pay late fee (Student only)
+    """
+    permission_classes = [IsStudent]
+
+    def post(self, request, late_fee_id):
+        student = request.user.student_profile
+
+        try:
+            late_fee = LateFeeCharge.objects.select_related('booking').get(
+                id=late_fee_id,
+                student=student,
+                status='pending'
+            )
+        except LateFeeCharge.DoesNotExist:
+            return Response({'error': 'Late fee not found or already paid'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Use existing payment initialization with late_fee type
+        payment_view = PaymentInitializeView()
+        payment_request = request._clone()
+        payment_request.data = payment_request.data.copy()
+        payment_request.data.update({
+            'booking_id': late_fee.booking.id,
+            'payment_type': 'late_fee',
+            'late_fee_id': late_fee.id
+        })
+
+        return payment_view.post(payment_request)
+
+
+class SavedPaymentMethodSetDefaultView(APIView):
+    """
+    Set default payment method (Student only)
+    """
+    permission_classes = [IsStudent]
+
+    def post(self, request, method_id):
+        student = request.user.student_profile
+
+        try:
+            payment_method = SavedPaymentMethod.objects.get(
+                id=method_id,
+                student=student,
+                is_active=True
+            )
+        except SavedPaymentMethod.DoesNotExist:
+            return Response({'error': 'Payment method not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Remove default from all other methods
+        SavedPaymentMethod.objects.filter(student=student).update(is_default=False)
+
+        # Set this one as default
+        payment_method.is_default = True
+        payment_method.save()
+
+        serializer = SavedPaymentMethodSerializer(payment_method)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SavedPaymentMethodDeleteView(APIView):
+    """
+    Delete saved payment method (Student only)
+    """
+    permission_classes = [IsStudent]
+
+    def delete(self, request, method_id):
+        student = request.user.student_profile
+
+        try:
+            payment_method = SavedPaymentMethod.objects.get(
+                id=method_id,
+                student=student
+            )
+        except SavedPaymentMethod.DoesNotExist:
+            return Response({'error': 'Payment method not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Don't allow deletion of default method if it's the only one
+        if payment_method.is_default:
+            other_methods = SavedPaymentMethod.objects.filter(
+                student=student,
+                is_active=True
+            ).exclude(id=method_id)
+            if not other_methods.exists():
+                return Response({
+                    'error': 'Cannot delete the only payment method. Add another method first.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        payment_method.is_active = False
+        payment_method.save()
+
+        return Response({'message': 'Payment method deleted'}, status=status.HTTP_200_OK)
+
+
+class TaxReportDownloadView(APIView):
+    """
+    Download tax report PDF (Landlord only)
+    """
+    permission_classes = [IsLandlord]
+
+    def get(self, request, report_id):
+        landlord = request.user.landlord_profile
+
+        try:
+            tax_report = TaxReport.objects.get(
+                id=report_id,
+                landlord=landlord
+            )
+        except TaxReport.DoesNotExist:
+            return Response({'error': 'Tax report not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # For now, return report data (implement PDF generation as needed)
+        serializer = TaxReportSerializer(tax_report)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class TaxReportsView(APIView):
     """
     View tax reports (Landlord only)
@@ -959,15 +1181,12 @@ class TaxReportsView(APIView):
     def get(self, request):
         landlord = request.user.landlord_profile
 
-        # Get current year reports
-        current_year = timezone.now().year
+        # Get reports for the last 12 months
         tax_reports = TaxReport.objects.filter(
-            landlord=landlord,
-            tax_year=current_year
-        ).order_by('-tax_month')
+            landlord=landlord
+        ).order_by('-report_month')[:12]
 
         serializer = TaxReportSerializer(tax_reports, many=True)
         return Response({
-            'tax_year': current_year,
             'reports': serializer.data
         })

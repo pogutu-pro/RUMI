@@ -44,3 +44,7 @@ __pycache__/
 *.py[cod]
 *.class
 *.pyc
+
+# Virtual environments
+venv/
+Backend/venv/

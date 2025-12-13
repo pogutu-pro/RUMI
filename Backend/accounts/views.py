@@ -1646,6 +1646,20 @@ class ConversationMessagesView(APIView):
         conversation.updated_at = timezone.now()
         conversation.save(update_fields=['updated_at'])
 
+        # Broadcast message via WebSocket
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'chat_{conversation.id}',
+            {
+                'type': 'chat_message',
+                'message': MessageSerializer(message).data,
+                'sender_id': request.user.id
+            }
+        )
+
         # Return the created message
         message_serializer = MessageSerializer(message)
 
@@ -1710,6 +1724,20 @@ class SendMessageView(APIView):
         # Update conversation timestamp
         conversation.updated_at = timezone.now()
         conversation.save(update_fields=['updated_at'])
+
+        # Broadcast message via WebSocket
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'chat_{conversation.id}',
+            {
+                'type': 'chat_message',
+                'message': MessageSerializer(message).data,
+                'sender_id': request.user.id
+            }
+        )
 
         # Return conversation and message data
         conversation_serializer = ConversationSerializer(conversation, context={'request': request})

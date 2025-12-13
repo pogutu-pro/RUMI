@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'celery',
     'drf_yasg',
     'debug_toolbar',
+    'channels',
     # Custom apps
     'accounts',
     'hostels',
@@ -91,6 +92,9 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'rumi.wsgi.application'
+
+# ASGI Application
+ASGI_APPLICATION = 'rumi.asgi.application'
 
 
 # Database
@@ -219,6 +223,16 @@ CACHES = {
 # Session Configuration
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'default'
+
+# Channels Configuration
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [os.getenv('REDIS_URL', 'redis://localhost:6379/2')],
+        },
+    },
+}
 
 # Admin Configuration
 TECH_SUPPORT_ADMIN_ID = 1  # Default admin user ID
