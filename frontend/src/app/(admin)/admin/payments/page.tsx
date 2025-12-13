@@ -34,7 +34,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { usePayments, usePaymentStats } from "@/hooks/use-payments";
+import { usePayments, usePaymentStats } from "@/features/payments";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils/cn";
 import { Skeleton } from "@/components/ui/skeleton";

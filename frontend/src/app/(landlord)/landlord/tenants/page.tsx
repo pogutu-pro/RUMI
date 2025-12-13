@@ -45,9 +45,9 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
-import { useUsers } from '@/hooks/use-users';
+import { useUsers } from '@/features/users';
 import { Skeleton } from '@/components/ui/skeleton';
-import { User as UserEntity } from '@/types/entities.types';
+import { User as UserEntity } from '@/features/users';
 
 export default function TenantsPage() {
   const [searchQuery, setSearchQuery] = useState('');

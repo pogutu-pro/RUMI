@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useUser, useUpdateUserStatus } from "@/hooks/use-users";
+import { useUser, useUpdateUserStatus } from "@/features/users";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils/cn";
 

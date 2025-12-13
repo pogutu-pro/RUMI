@@ -24,7 +24,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { getInitials } from '@/lib/utils/caretaker-helpers';
-import { useLateEntryLogs, useCreateLateEntryLog } from '@/hooks/use-security';
+import { useLateEntryLogs, useCreateLateEntryLog } from '@/features/caretaker';
 
 const lateEntrySchema = z.object({
   tenantName: z.string().min(2, 'Student name is required'),

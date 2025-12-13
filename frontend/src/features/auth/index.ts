@@ -15,3 +15,4 @@ export * from './components/student-register-form';
 export * from './components/caretaker-registration-form';
 export * from './components/landlord-register-form';
 export * from './api/auth';
+export * from './types/types';

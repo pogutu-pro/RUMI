@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useRoommateRequests, useRespondToRoommateRequest } from '@/hooks/use-roommates';
+import { useRoommateRequests, useRespondToRoommateRequest } from '@/features/roommates';
 import { RequestStatusCard } from '@/features/roommates';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card,CardContent } from '@/components/ui/card';

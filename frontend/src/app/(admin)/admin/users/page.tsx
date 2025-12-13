@@ -14,8 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserTable } from "@/features/admin";
-import { useUsers, useUpdateUserStatus } from "@/hooks/use-users";
-import { User } from "@/types/entities.types";
+import { useUsers, useUpdateUserStatus } from "@/features/users";
+import { User } from '@/features/users';
 import { cn } from "@/lib/utils/cn";
 
 export default function Page() {

@@ -1,6 +1,6 @@
 'use client';
 
-import { usePaymentMethods } from '@/hooks/use-payment-methods';
+import { usePaymentMethods } from '@/features/payments';
 import { PaymentMethodCard } from './payment-method-card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';

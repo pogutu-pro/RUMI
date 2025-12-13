@@ -9,7 +9,7 @@ import {
   useUnreadMessages, 
   useActiveTickets, 
   useActivityFeed 
-} from '@/hooks/use-student-dashboard';
+} from '@/features/student';
 import { useCurrentBookingStore } from '@/features/bookings';
 import { RentStatusIndicator } from '@/features/student';
 import { DashboardStat } from '@/features/dashboard';

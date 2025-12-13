@@ -23,7 +23,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useNightCheckReports, useCreateNightCheckReport } from '@/hooks/use-security';
+import { useNightCheckReports, useCreateNightCheckReport } from '@/features/caretaker';
 
 const nightCheckSchema = z.object({
   checkTime: z.string().min(1, 'Check time is required'),

@@ -12,7 +12,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { usePayments, usePaymentStats } from '@/hooks/use-payments'; // We might need a specific hook for payouts if it exists, otherwise assume mock or generic payments
+import { usePayments, usePaymentStats } from '@/features/payments'; // We might need a specific hook for payouts if it exists, otherwise assume mock or generic payments
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PayoutsPage() {

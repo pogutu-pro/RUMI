@@ -8,6 +8,12 @@ import {
 } from '@/features/bookings';
 import type { Booking } from '@/types/entities.types';
 
+export interface UseBookingOptions {
+  enabled?: boolean;
+  refetchInterval?: number;
+  refetchOnWindowFocus?: boolean;
+}
+
 interface UseBookingsParams {
   status?: Booking['status'] | 'all';
 }
@@ -26,16 +32,21 @@ export const useBookings = (params?: UseBookingsParams) => {
   });
 };
 
-export const useBooking = (id: string | null | undefined) => {
+export const useBooking = (
+  id: string | null | undefined,
+  options?: UseBookingOptions
+) => {
   return useQuery<Booking, Error>({
     queryKey: id ? queryKeys.bookings.detail(id) : queryKeys.bookings.detail(''),
     queryFn: () => {
       if (!id) throw new Error('Booking identifier is required');
       return getBookingById(id);
     },
-    enabled: Boolean(id),
+    enabled: Boolean(id) && (options?.enabled !== false),
     staleTime: 5 * 60 * 1000,
     retry: 1,
+    refetchInterval: options?.refetchInterval,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus,
   });
 };
 

@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useSupportTicket, useAddTicketReply, useUpdateTicketStatus } from '@/hooks/use-support';
+import { useSupportTicket, useAddTicketReply, useUpdateTicketStatus } from '@/features/support';
 import { toast } from 'sonner';
 
 export default function TicketDetailsPage() {

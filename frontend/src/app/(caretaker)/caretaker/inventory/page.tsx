@@ -44,7 +44,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useInventory } from '@/hooks/use-inventory';
+import { useInventory } from '@/features/inventory';
 import type { InventoryItem, InventoryReport } from '@/features/inventory';
 import { inventoryApi } from '@/features/inventory';
 import { cn } from '@/lib/utils/cn';

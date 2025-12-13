@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation';
 import { authApi } from '@/features/auth';
 import { getAccessToken } from '@/lib/auth/token';
 import { useAuthStore } from '../stores/auth.store';
-import type { 
-  LoginRequest, 
+import type {
+  LoginRequest,
   ForgotPasswordRequest,
   EmailVerificationRequest,
   PhoneVerificationRequest,
@@ -34,7 +34,12 @@ export function useRegister() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: StudentRegisterRequest | LandlordRegisterRequest | CaretakerRegisterRequest) => {
+    mutationFn: (
+      data:
+        | StudentRegisterRequest
+        | LandlordRegisterRequest
+        | CaretakerRegisterRequest,
+    ) => {
       // Determine the registration method based on the data type
       if ('role' in data) {
         if (data.role === 'student') {
@@ -49,16 +54,16 @@ export function useRegister() {
     },
     onSuccess: (response: AuthResponse) => {
       // Update auth store
-      setAuth({ 
+      setAuth({
         user: response.user,
         profile: response.profile,
         accessToken: response.access,
-        refreshToken: response.refresh
+        refreshToken: response.refresh,
       });
-      
+
       // Invalidate and refetch user-related queries
       queryClient.invalidateQueries({ queryKey: ['user'] });
-      
+
       // Redirect to appropriate dashboard based on role
       const role = response.user?.role;
       if (role === 'super_admin') {
@@ -73,7 +78,7 @@ export function useRegister() {
         // Default to student dashboard
         router.push('/student/dashboard');
       }
-      
+
       toast.success('Registration successful!');
     },
     onError: (error: any) => {
@@ -96,17 +101,17 @@ export function useLogin() {
     mutationFn: (data: LoginRequest) => authApi.login(data),
     onSuccess: (response) => {
       // Update auth store
-      setAuth({ 
+      setAuth({
         user: response.user,
         profile: response.profile,
         accessToken: response.access,
-        refreshToken: response.refresh
+        refreshToken: response.refresh,
       });
-      
+
       // Invalidate and refetch user-related queries
       queryClient.invalidateQueries({ queryKey: ['user'] });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      
+
       // Redirect based on user role
       // Redirect based on user role
       const role = response.user?.role;
@@ -121,11 +126,14 @@ export function useLogin() {
       } else {
         router.push('/student/dashboard');
       }
-      
+
       toast.success('Welcome back!');
     },
     onError: (error: any) => {
-      const message = error?.response?.data?.message || error?.message || 'Login failed. Please try again.';
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Login failed. Please try again.';
       toast.error(message);
     },
   });
@@ -144,17 +152,17 @@ export function useGoogleLogin() {
     mutationFn: (token: string) => authApi.googleLogin(token),
     onSuccess: (response) => {
       // Update auth store
-      setAuth({ 
+      setAuth({
         user: response.user,
         profile: response.profile,
         accessToken: response.access,
-        refreshToken: response.refresh
+        refreshToken: response.refresh,
       });
-      
+
       // Invalidate and refetch user-related queries
       queryClient.invalidateQueries({ queryKey: ['user'] });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      
+
       // Redirect based on user role
       // Redirect based on user role
       const role = response.user?.role;
@@ -169,11 +177,14 @@ export function useGoogleLogin() {
       } else {
         router.push('/student/dashboard');
       }
-      
+
       toast.success('Successfully signed in with Google!');
     },
     onError: (error: any) => {
-      const message = error?.response?.data?.message || error?.message || 'Google login failed. Please try again.';
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Google login failed. Please try again.';
       toast.error(message);
     },
   });
@@ -190,7 +201,10 @@ export function useForgotPassword() {
       toast.success('Password reset instructions sent to your email');
     },
     onError: (error: any) => {
-      const message = error?.response?.data?.message || error?.message || 'Failed to send reset instructions. Please try again.';
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to send reset instructions. Please try again.';
       toast.error(message);
     },
   });
@@ -211,7 +225,7 @@ export function useProfile() {
       if (response.user) {
         setAuth({
           user: response.user,
-          profile: response.profile
+          profile: response.profile,
         });
       }
       return response;
@@ -227,13 +241,20 @@ export function useProfile() {
 // In src/hooks/use-auth.ts, update the useVerifyEmail hook
 export function useVerifyEmail() {
   return useMutation({
-    mutationFn: (data: { email?: string; otp: string; token?: string }) => 
-      authApi.verifyEmail({ email: data.email, otp: data.otp, token: data.token }),
+    mutationFn: (data: { email?: string; otp: string; token?: string }) =>
+      authApi.verifyEmail({
+        email: data.email,
+        otp: data.otp,
+        token: data.token,
+      }),
     onSuccess: () => {
       toast.success('Email verified successfully');
     },
     onError: (error: any) => {
-      const message = error?.response?.data?.message || error?.message || 'Verification failed. Please try again.';
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Verification failed. Please try again.';
       toast.error(message);
     },
   });
@@ -244,13 +265,16 @@ export function useVerifyEmail() {
  */
 export function useVerifyPhone() {
   return useMutation({
-    mutationFn: (data: { phone: string; otp: string }) => 
+    mutationFn: (data: { phone: string; otp: string }) =>
       authApi.verifyPhone(data),
     onSuccess: () => {
       toast.success('Phone verified successfully');
     },
     onError: (error: any) => {
-      const message = error?.response?.data?.message || error?.message || 'Verification failed. Please try again.';
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Verification failed. Please try again.';
       toast.error(message);
     },
   });
@@ -276,15 +300,20 @@ export function useResendVerification() {
  */
 export function useRegisterCaretaker() {
   const router = useRouter();
-  
+
   return useMutation({
-    mutationFn: (data: CaretakerRegisterRequest) => authApi.registerCaretaker(data),
+    mutationFn: (data: CaretakerRegisterRequest) =>
+      authApi.registerCaretaker(data),
     onSuccess: () => {
-      toast.success('Caretaker registration successful! Please check your email to verify your account.');
+      toast.success(
+        'Caretaker registration successful! Please check your email to verify your account.',
+      );
       router.push('/login');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to register caretaker');
+      toast.error(
+        error.response?.data?.message || 'Failed to register caretaker',
+      );
     },
   });
 }
@@ -294,15 +323,20 @@ export function useRegisterCaretaker() {
  */
 export function useRegisterLandlord() {
   const router = useRouter();
-  
+
   return useMutation({
-    mutationFn: (data: LandlordRegisterRequest) => authApi.registerLandlord(data),
+    mutationFn: (data: LandlordRegisterRequest) =>
+      authApi.registerLandlord(data),
     onSuccess: () => {
-      toast.success('Landlord registration successful! Please check your email to verify your account.');
+      toast.success(
+        'Landlord registration successful! Please check your email to verify your account.',
+      );
       router.push('/login');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to register landlord');
+      toast.error(
+        error.response?.data?.message || 'Failed to register landlord',
+      );
     },
   });
 }
@@ -312,15 +346,19 @@ export function useRegisterLandlord() {
  */
 export function useRegisterStudent() {
   const router = useRouter();
-  
+
   return useMutation({
     mutationFn: (data: StudentRegisterRequest) => authApi.registerStudent(data),
     onSuccess: () => {
-      toast.success('Student registration successful! Please check your email to verify your account.');
+      toast.success(
+        'Student registration successful! Please check your email to verify your account.',
+      );
       router.push('/login');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to register student');
+      toast.error(
+        error.response?.data?.message || 'Failed to register student',
+      );
     },
   });
 }
@@ -330,11 +368,13 @@ export function useRegisterStudent() {
  */
 export function useResetPassword() {
   const router = useRouter();
-  
+
   return useMutation({
     mutationFn: (data: ResetPasswordRequest) => authApi.resetPassword(data),
     onSuccess: () => {
-      toast.success('Password reset successful! You can now login with your new password.');
+      toast.success(
+        'Password reset successful! You can now login with your new password.',
+      );
       router.push('/login');
     },
     onError: (error: any) => {

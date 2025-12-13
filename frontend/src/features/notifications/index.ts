@@ -7,3 +7,4 @@ export * from './components/notification-bell';
 export * from './components/notification-dropdown';
 export * from './stores/notifications.store';
 export * from './api/notifications';
+export * from './hooks/use-notifications';

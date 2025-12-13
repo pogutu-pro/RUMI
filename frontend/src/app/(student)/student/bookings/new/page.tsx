@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { HostelList } from '@/features/hostels';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { useHostels } from '@/hooks/use-hostels';
+import { useHostels } from '@/features/hostels';
 
 export default function Page() {
   const [query, setQuery] = React.useState('');

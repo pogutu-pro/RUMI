@@ -43,3 +43,6 @@ export * from './components/hostel-booking-widget';
 export * from './components/compare-view';
 export * from './api/hostels';
 export * from './api/rooms';
+export * from './hooks/use-hostels';
+export * from './hooks/use-rooms';
+export * from './types';

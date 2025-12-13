@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from 'date-fns';
-import { ActivityEvent } from '@/types/entities.types';
+import { ActivityEvent } from '@/features/student';
 import { cn } from '@/lib/utils';
 import { Bell, CreditCard, FileText, Home, Info, MessageSquare, Settings, User } from 'lucide-react';
 

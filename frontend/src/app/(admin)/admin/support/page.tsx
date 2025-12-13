@@ -29,8 +29,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSupportTickets, useUpdateTicketStatus } from "@/hooks/use-support";
-import { SupportTicket } from "@/types/entities.types";
+import { useSupportTickets, useUpdateTicketStatus } from "@/features/support";
+import { SupportTicket } from '@/features/support';
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils/cn";

@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Pagination } from '@/components/ui/pagination';
 import { Search, Filter, SlidersHorizontal, Home } from 'lucide-react';
-import { useHostels } from '@/hooks/use-hostels';
+import { useHostels } from '@/features/hostels';
 import {
   HostelCard,
   HostelFiltersPanel,

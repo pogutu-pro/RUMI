@@ -44,8 +44,8 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth';
-import { useHostels } from '@/hooks/use-hostels';
-import { usePaymentStats } from '@/hooks/use-payments';
+import { useHostels } from '@/features/hostels';
+import { usePaymentStats } from '@/features/payments';
 
 // Mock data - replace with API calls
 const monthlyRevenueData = [

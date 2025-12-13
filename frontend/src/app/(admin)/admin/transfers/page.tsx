@@ -14,8 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useTransfers, useUpdateTransferStatus } from "@/hooks/use-transfers";
-import { TransferRequest } from "@/types/entities.types";
+import { useTransfers, useUpdateTransferStatus } from "@/features/transfers";
+import { TransferRequest } from '@/features/transfers';
 import { format } from "date-fns";
 
 export default function Page() {

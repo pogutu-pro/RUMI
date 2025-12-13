@@ -19,7 +19,7 @@ import {
   PriceDifferenceIndicator,
 } from '@/features/transfers';
 import { getMyTransfers, cancelTransferRequest } from '@/features/transfers';
-import { TransferRequest } from '@/types/entities.types';
+import { TransferRequest } from '@/features/transfers';
 import { TRANSFER_REASONS } from '@/lib/constants/transfer-rules';
 
 export default function TransferDetailPage({

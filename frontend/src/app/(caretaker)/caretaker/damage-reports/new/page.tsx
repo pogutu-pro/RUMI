@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 
 import { CARETAKER_ROUTES } from '@/lib/constants/routes';
 import { DamageReportForm } from '@/features/inventory';
-import { useCreateDamageReport } from '@/hooks/use-damage-reports';
+import { useCreateDamageReport } from '@/features/inventory';
 import type { CreateDamageReportPayload } from '@/features/inventory';
 
 export default function Page() {

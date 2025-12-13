@@ -14,7 +14,7 @@ import {
   Sparkles,
   Wind,
 } from 'lucide-react';
-import { AvailableRoom } from '@/types/entities.types';
+import { AvailableRoom } from '@/features/transfers';
 import { ROOM_TYPE_LABELS } from '@/lib/constants/transfer-rules';
 import { RoommatePreviewCard } from './roommate-preview-card';
 

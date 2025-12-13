@@ -25,7 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useSupportTickets } from '@/hooks/use-support';
+import { useSupportTickets } from '@/features/support';
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 

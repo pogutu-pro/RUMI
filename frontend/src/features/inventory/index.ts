@@ -24,3 +24,6 @@ export {
   submitCheckIn,
   verifyCheckIn 
 } from './api/inventory-api';
+export * from './hooks/use-damage-reports';
+export * from './hooks/use-inventory';
+export * from './types';

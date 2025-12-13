@@ -20,7 +20,7 @@ import {
   landlordCreateCaretakerSchema,
   type LandlordCreateCaretakerFormData,
 } from '@/lib/validations/landlord-caretaker.schema';
-import { useCreateCaretaker } from '@/hooks/use-landlord-caretakers';
+import { useCreateCaretaker } from '@/features/landlord';
 
 interface LandlordCreateCaretakerFormProps {
   hostels: Array<{ id: string; name: string }>;

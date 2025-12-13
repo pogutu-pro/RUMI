@@ -36,7 +36,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { useBookings, useUpdateBookingStatus } from '@/hooks/use-bookings';
+import { useBookings, useUpdateBookingStatus } from '@/features/bookingss';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 

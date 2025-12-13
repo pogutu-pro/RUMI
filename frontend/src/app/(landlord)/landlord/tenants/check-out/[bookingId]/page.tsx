@@ -25,8 +25,8 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useBooking } from '@/hooks/use-booking';
-import { useProcessCheckOut } from '@/hooks/use-check-in-out';
+import { useBooking } from '@/features/bookings';
+import { useProcessCheckOut } from '@/features/bookings';
 import { toast } from 'sonner';
 
 export default function CheckOutProcessPage() {

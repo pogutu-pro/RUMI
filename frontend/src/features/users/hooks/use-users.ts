@@ -5,8 +5,15 @@ import {
   getUserById,
   updateUserStatus,
   deleteUser,
+  getUser,
 } from '@/features/users';
+import { useAuthStore } from '@/features/auth';
 import type { User } from '@/types/entities.types';
+
+export interface UseUserOptions {
+  enabled?: boolean;
+  refetchOnWindowFocus?: boolean;
+}
 
 interface UseUsersParams {
   role?: User['role'] | 'all';
@@ -24,11 +31,23 @@ export const useUsers = (params?: UseUsersParams) => {
   });
 };
 
-export const useUser = (id: string) => {
+export const useUser = (
+  id?: string | null,
+  options?: UseUserOptions
+) => {
+   const { user: currentUser } = useAuthStore();
+    
+    // If no userId is provided, use the current user's ID
+    const targetUserId = id || currentUser?.id;
+
   return useQuery({
-    queryKey: queryKeys.users.detail(id),
-    queryFn: () => getUserById(id),
-    enabled: !!id,
+    queryKey: targetUserId ? queryKeys.users.detail(targetUserId) : ['user', 'unknown'],
+    queryFn: () => {
+        if (!targetUserId) throw new Error('User ID is required');
+        return getUserById(targetUserId);
+    },
+    enabled: !!targetUserId && (options?.enabled !== false),
+    refetchOnWindowFocus: options?.refetchOnWindowFocus,
   });
 };
 
@@ -53,4 +72,18 @@ export const useDeleteUser = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
   });
+};
+
+/**
+ * Hook to get the current authenticated user
+ * @returns The current user from auth store
+ */
+export const useCurrentUser = () => {
+  const { user, isAuthenticated } = useAuthStore();
+  
+  return {
+    user,
+    isAuthenticated,
+    isLoading: false,
+  };
 };

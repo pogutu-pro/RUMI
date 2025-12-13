@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { RatingInput } from '@/features/reviews';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { useHostel } from '@/hooks/use-hostel';
-import { useCreateReview } from '@/hooks/use-reviews';
+import { useHostel } from '@/features/hostels';
+import { useCreateReview } from '@/features/reviews';
 
 export default function Page() {
   const params = useParams<{ hostelId: string }>();

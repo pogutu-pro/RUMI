@@ -12,7 +12,7 @@ Moon,
   Sparkles,
   Volume2,
 } from 'lucide-react';
-import { RoommatePreview } from '@/types/entities.types';
+import { RoommatePreview } from '@/features/roommates';
 
 interface RoommatePreviewCardProps {
   roommate: RoommatePreview;

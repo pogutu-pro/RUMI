@@ -2,7 +2,7 @@
 
 import { DamageReportCard } from '@/features/inventory';
 import { DamageInvoice } from '@/features/inventory';
-import { useDamageReport } from '@/hooks/use-damage-reports';
+import { useDamageReport } from '@/features/inventory';
 
 import { use } from 'react';
 

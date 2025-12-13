@@ -9,3 +9,5 @@ export * from './components/ticket-detail-dialog';
 export * from './stores/tech-support.store';
 export * from './api/support';
 export * from './api/tech-support';
+export * from './hooks/use-support';
+export * from './types';

@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useSupportTickets } from '@/hooks/use-support';
-import { useStudentDashboard } from '@/hooks/use-student-dashboard';
+import { useSupportTickets } from '@/features/support';
+import { useStudentDashboard } from '@/features/student';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

@@ -3,7 +3,7 @@
  * Calculates compatibility based on personality quiz + profile data
  */
 
-import { RoommatePreferences } from '@/types/entities.types';
+import { RoommatePreferences } from '@/features/roommates';
 import { QUIZ_QUESTIONS, QuestionId } from '@/lib/constants/roommate-quiz-constants';
 
 export interface CompatibilityResult {

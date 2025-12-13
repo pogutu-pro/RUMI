@@ -2,7 +2,7 @@
  * Transfer business rules and constants
  */
 
-import { TransferReason } from '@/types/entities.types';
+import { TransferReason } from '@/features/transfers';
 
 export const TRANSFER_REASONS: Record<TransferReason, { label: string; icon: string; description: string }> = {
   better_environment: {

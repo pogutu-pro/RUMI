@@ -1,4 +1,4 @@
-import { UserRole } from '@/types/auth.types';
+import { UserRole } from '@/features/auth';
 
 const ROLE_HIERARCHY: Record<UserRole, number> = {
   [UserRole.STUDENT]: 1,

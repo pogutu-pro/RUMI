@@ -46,7 +46,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { useHostels } from "@/hooks/use-hostels";
+import { useHostels } from "@/features/hostels";
 import { useAdminStore } from "@/features/admin";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils/cn";

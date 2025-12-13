@@ -17,3 +17,5 @@ export * from './components/review-card';
 export * from './components/review-filters';
 export * from './stores/review.store';
 export * from './api/reviews';
+export * from './hooks/use-reviews';
+export * from './types';

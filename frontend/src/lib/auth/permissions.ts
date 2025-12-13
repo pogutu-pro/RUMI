@@ -1,6 +1,6 @@
 // FILE: src/lib/auth/permissions.ts
 
-import { UserRole } from '@/types/auth.types';
+import { UserRole } from '@/features/auth';
 
 export enum Permission {
   VIEW_HOSTELS = 'view_hostels',

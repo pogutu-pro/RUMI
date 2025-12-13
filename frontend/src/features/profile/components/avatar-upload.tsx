@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { useUploadProfileImage, useDeleteProfileImage } from '@/hooks/use-profile';
+import { useUploadProfileImage, useDeleteProfileImage } from '@/features/profile';
 
 interface AvatarUploadProps {
   currentImageUrl?: string;

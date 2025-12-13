@@ -1,4 +1,4 @@
-import { User } from '@/types/entities.types';
+import { User } from '@/features/users';
 
 export const getUsers = async (filters?: Record<string, unknown>): Promise<User[]> => {
   // Mock data

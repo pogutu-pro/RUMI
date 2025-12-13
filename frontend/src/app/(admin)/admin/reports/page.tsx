@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useExportAnalytics } from "@/hooks/use-analytics";
+import { useExportAnalytics } from "@/features/analytics";
 import { cn } from "@/lib/utils/cn";
 import { Badge } from "@/components/ui/badge";
 

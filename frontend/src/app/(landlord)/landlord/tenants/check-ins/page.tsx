@@ -30,9 +30,9 @@ import {
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { useBookings } from '@/hooks/use-bookings';
+import { useBookings } from '@/features/bookingss';
 import Link from 'next/link';
-import { useProcessCheckIn } from '@/hooks/use-check-in-out';
+import { useProcessCheckIn } from '@/features/bookings';
 
 export default function CheckInsPage() {
   const [searchQuery, setSearchQuery] = useState('');

@@ -12,7 +12,7 @@ import {
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useMySubscription, useSubscriptionPlans } from '@/hooks/use-subscriptions';
+import { useMySubscription, useSubscriptionPlans } from '@/features/payments';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';

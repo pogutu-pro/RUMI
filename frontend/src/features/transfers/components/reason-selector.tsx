@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { TransferReason } from '@/types/entities.types';
+import { TransferReason } from '@/features/transfers';
 import { TRANSFER_REASONS } from '@/lib/constants/transfer-rules';
 
 interface ReasonSelectorProps {

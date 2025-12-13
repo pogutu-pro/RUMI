@@ -5,3 +5,5 @@ export * from './components/transaction-list';
 export * from './components/activity-feed';
 export * from './stores/student.store';
 export * from './api/dashboard';
+export * from './hooks/use-student-dashboard';
+export * from './types';

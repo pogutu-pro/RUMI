@@ -43,7 +43,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { useHostels } from '@/hooks/use-hostels';
+import { useHostels } from '@/features/hostels';
 
 export default function HostelsPage() {
   const [searchQuery, setSearchQuery] = useState('');

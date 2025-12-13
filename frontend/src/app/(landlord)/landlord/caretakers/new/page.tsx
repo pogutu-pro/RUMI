@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { LandlordCreateCaretakerForm } from '@/features/landlord';
-import { useLandlordHostels } from '@/hooks/use-hostel';
+import { useLandlordHostels } from '@/features/hostels';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 

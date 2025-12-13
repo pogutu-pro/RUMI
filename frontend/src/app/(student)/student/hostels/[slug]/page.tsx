@@ -28,7 +28,7 @@ import {
   Flag,
   Grid,
 } from 'lucide-react';
-import { useHostelBySlug } from '@/hooks/use-hostels';
+import { useHostelBySlug } from '@/features/hostels';
 import { cn } from '@/lib/utils';
 import { HostelBookingWidget } from '@/features/hostels';
 

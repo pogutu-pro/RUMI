@@ -11,3 +11,5 @@ export * from './components/profile-card';
 export * from './components/profile-stats';
 export * from './components/bank-details-form';
 export * from './api/profiles';
+export * from './hooks/use-profile';
+export * from './types';

@@ -33,7 +33,7 @@ import {
   useMarkAllNotificationsAsRead,
   useMarkNotificationAsRead,
   useDeleteNotification,
-} from '@/hooks/use-notifications';
+} from '@/features/notifications';
 
 export default function NotificationsPage() {
   const { data: notificationsData, isLoading } = useNotifications();

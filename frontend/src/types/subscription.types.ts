@@ -1,17 +1,1 @@
-export interface SubscriptionPlan {
-  id: string;
-  name: string;
-  price: number;
-  features: string[];
-  interval: 'monthly' | 'yearly';
-  description?: string;
-}
-
-export interface UserSubscription {
-  id: string;
-  plan: SubscriptionPlan;
-  status: 'active' | 'cancelled' | 'expired';
-  startDate: string;
-  endDate: string;
-  autoRenew: boolean;
-}
+export * from '@/features/payments/types';

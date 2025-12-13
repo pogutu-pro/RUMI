@@ -1,7 +1,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { Hostel } from '@/types/entities.types';
+import { Hostel } from '@/features/hostels';
 
 interface StudentState {
   // Favorites

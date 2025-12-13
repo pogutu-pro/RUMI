@@ -1,6 +1,6 @@
 'use client';
 
-import { usePayments } from '@/hooks/use-payments';
+import { usePayments } from '@/features/payments';
 import {
   Table,
   TableBody,

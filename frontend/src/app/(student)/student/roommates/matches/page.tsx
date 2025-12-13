@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useRoommateQuiz } from '@/hooks/use-roommate-quiz';
-import { useRoommateMatches, useSendRoommateRequest } from '@/hooks/use-roommates';
+import { useRoommateQuiz } from '@/features/roommates';
+import { useRoommateMatches, useSendRoommateRequest } from '@/features/roommates';
 import { QuestionCard } from '@/features/roommates';
 import { QuizProgress } from '@/features/roommates';
 import { MatchCard } from '@/features/roommates';

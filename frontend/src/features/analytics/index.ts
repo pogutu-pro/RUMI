@@ -9,3 +9,5 @@ export * from './components/date-range-selector';
 export * from './components/occupancy-chart';
 export * from './components/analytics-dashboard';
 export * from './api/analytics';
+export * from './hooks/use-analytics';
+export * from './types/types';

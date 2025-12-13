@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Check, X, MessageSquare, UserX } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { RoommateRequest } from '@/types/entities.types';
+import { RoommateRequest } from '@/features/roommates';
 import { formatDistanceToNow } from 'date-fns';
 
 interface RequestStatusCardProps {

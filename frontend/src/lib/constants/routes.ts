@@ -1,5 +1,5 @@
 // FILE: src/lib/constants/routes.ts
-import { UserRole } from '@/types/auth.types';
+import { UserRole } from '@/features/auth';
 
 type RouteValue = string | ((...args: any[]) => string);
 type NestedRoutes = { [key: string]: RouteValue | NestedRoutes };

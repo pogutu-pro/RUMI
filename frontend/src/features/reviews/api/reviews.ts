@@ -1,4 +1,4 @@
-import { Review, ReviewTag, ReviewReaction } from '@/types/entities.types';
+import { Review, ReviewTag, ReviewReaction } from '@/features/reviews';
 
 // Mock review tags for variety
 const sampleTags: ReviewTag[][] = [

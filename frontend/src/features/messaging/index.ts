@@ -10,3 +10,6 @@ export * from './components/conversation-card';
 export * from './components/conversation-list';
 export * from './stores/messaging.store';
 export * from './api/messages';
+export * from './hooks/use-messages';
+export * from './hooks/use-realtime';
+export * from './types';

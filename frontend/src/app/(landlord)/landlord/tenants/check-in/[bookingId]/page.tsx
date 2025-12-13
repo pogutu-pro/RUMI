@@ -25,8 +25,8 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useBooking } from '@/hooks/use-booking';
-import { useProcessCheckIn } from '@/hooks/use-check-in-out';
+import { useBooking } from '@/features/bookings';
+import { useProcessCheckIn } from '@/features/bookings';
 import { toast } from 'sonner';
 
 export default function CheckInProcessPage() {

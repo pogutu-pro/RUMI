@@ -28,7 +28,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useAnalytics, useAnalyticsBreakdown } from "@/hooks/use-analytics";
+import { useAnalytics, useAnalyticsBreakdown } from "@/features/analytics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils/cn";
 

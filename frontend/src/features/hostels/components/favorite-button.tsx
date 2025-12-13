@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { toggleFavoriteHostel } from '@/features/hostels';
 import { useAuth } from '@/features/auth';
 import { useStudentStore } from '@/features/student';
-import { Hostel } from '@/types/entities.types';
+import { Hostel } from '@/features/hostels';
 
 interface FavoriteButtonProps {
   hostelId: string;

@@ -35,7 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAnalytics, useAnalyticsBreakdown } from "@/hooks/use-analytics";
+import { useAnalytics, useAnalyticsBreakdown } from "@/features/analytics";
 import { cn } from "@/lib/utils/cn";
 
 ChartJS.register(

@@ -1,6 +1,6 @@
 'use client';
 
-import { usePayments } from '@/hooks/use-payments';
+import { usePayments } from '@/features/payments';
 import { TransactionCard } from './transaction-card';
 import { useState } from 'react';
 import { TransactionDetails } from './transaction-details';

@@ -49,7 +49,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { useCaretakers } from '@/hooks/use-landlord-caretakers';
+import { useCaretakers } from '@/features/landlord';
 
 export default function CaretakerPerformancePage() {
   const [searchQuery, setSearchQuery] = useState('');

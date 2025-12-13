@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
-import { useInitiatePayment } from '@/hooks/use-payments';
+import { useInitiatePayment } from '@/features/payments';
 
 const paymentSchema = z.object({
   bookingId: z.string().min(1, 'Booking ID is required'),

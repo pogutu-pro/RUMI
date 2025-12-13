@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUpdateStudentProfile } from '@/hooks/use-profile';
+import { useUpdateStudentProfile } from '@/features/profile';
 
 const schema = z.object({
   institution: z.string().min(1, 'Institution is required'),

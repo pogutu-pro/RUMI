@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Mail, Phone, MapPin, Edit } from 'lucide-react';
-import { useProfile } from '@/hooks/use-profile';
+import { useProfile } from '@/features/profile';
 
 export function ProfileCard() {
   const { data: profileData, isLoading } = useProfile();

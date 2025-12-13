@@ -28,7 +28,7 @@ import {
 } from '@/features/transfers';
 import { useTransferStore } from '@/features/transfers';
 import { getAvailableRooms, createTransferRequest, getTransferPolicy } from '@/features/transfers';
-import { TransferReason, AvailableRoom } from '@/types/entities.types';
+import { TransferReason, AvailableRoom } from '@/features/transfers';
 
 export default function CreateTransferPage() {
   const router = useRouter();

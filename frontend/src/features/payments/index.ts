@@ -17,3 +17,7 @@ export * from './components/recurring-payment-settings';
 export * from './components/transaction-list';
 export * from './api/payments';
 export * from './api/subscriptions';
+export * from './hooks/use-payment-methods';
+export * from './hooks/use-payments';
+export * from './hooks/use-subscriptions';
+export * from './types';

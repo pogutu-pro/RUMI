@@ -11,3 +11,5 @@ export * from './components/roommate-preview-card';
 export * from './components/transfer-status-badge';
 export * from './stores/transfer.store';
 export * from './api/transfers';
+export * from './hooks/use-transfers';
+export * from './types';

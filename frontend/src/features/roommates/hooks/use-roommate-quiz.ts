@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { RoommatePreferences } from '@/types/entities.types';
+import { RoommatePreferences } from '@/features/roommates';
 import { QUIZ_QUESTIONS, QuestionId, QUIZ_METADATA } from '@/lib/constants/roommate-quiz-constants';
 import { useUpdateRoommatePreferences } from './use-roommates';
 

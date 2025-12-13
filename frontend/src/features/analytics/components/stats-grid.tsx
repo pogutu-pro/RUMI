@@ -2,7 +2,7 @@
 
 import { StatsCard } from './stats-card';
 import { Users, Home, DollarSign, TrendingUp } from 'lucide-react';
-import { useAnalytics } from '@/hooks/use-analytics';
+import { useAnalytics } from '@/features/analytics';
 
 export function StatsGrid() {
   const { data: analytics } = useAnalytics('30d');

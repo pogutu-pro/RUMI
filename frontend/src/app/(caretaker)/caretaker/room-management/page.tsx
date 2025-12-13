@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useRooms } from '@/hooks/use-caretaker-dashboard';
+import { useRooms } from '@/features/caretaker';
 import { getInitials } from '@/lib/utils/caretaker-helpers';
 import { cn } from '@/lib/utils/cn';
 

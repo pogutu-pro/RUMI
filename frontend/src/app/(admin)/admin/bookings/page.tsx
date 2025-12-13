@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { BookingTable } from "@/features/admin";
-import { useBookings } from "@/hooks/use-bookings";
-import { Booking } from "@/types/entities.types";
+import { useBookings } from "@/features/bookingss";
+import { Booking } from '@/features/bookings';
 
 export default function Page() {
   const router = useRouter();

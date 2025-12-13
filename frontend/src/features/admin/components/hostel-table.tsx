@@ -1,6 +1,6 @@
 'use client';
 
-import { useHostels } from '@/hooks/use-hostel';
+import { useHostels } from '@/features/hostels';
 import {
   Table,
   TableBody,

@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useMaintenanceRequests, useUpdateMaintenanceStatus } from '@/hooks/use-caretaker-dashboard';
+import { useMaintenanceRequests, useUpdateMaintenanceStatus } from '@/features/caretaker';
 import { useAuth } from '@/features/auth';
 import { cn } from '@/lib/utils/cn';
 

@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
-import { useCaretakerDashboard } from '@/hooks/use-caretaker-dashboard';
+import { useCaretakerDashboard } from '@/features/caretaker';
 import { cn } from '@/lib/utils/cn';
 
 export default function Page() {

@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUpdateLandlordProfile } from '@/hooks/use-profile';
+import { useUpdateLandlordProfile } from '@/features/profile';
 
 const schema = z.object({
   companyName: z.string().optional(),

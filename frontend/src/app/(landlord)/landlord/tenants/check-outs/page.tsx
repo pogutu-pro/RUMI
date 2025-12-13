@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { useBookings } from '@/hooks/use-bookings';
+import { useBookings } from '@/features/bookingss';
 import Link from 'next/link';
 
 export default function CheckOutsPage() {

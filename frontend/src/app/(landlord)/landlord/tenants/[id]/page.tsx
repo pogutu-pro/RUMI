@@ -20,8 +20,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { useUser } from '@/hooks/use-users'; 
-import { useBookings } from '@/hooks/use-bookings';
+import { useUser } from '@/features/users'; 
+import { useBookings } from '@/features/bookingss';
 
 export default function TenantProfilePage() {
   const { id } = useParams();

@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useTenants } from "@/hooks/use-caretaker-dashboard";
+import { useTenants } from "@/features/caretaker";
 import { useCaretakerStore } from "@/features/caretaker";
 import { getPaymentStatusColor, formatDate, getInitials } from "@/lib/utils/caretaker-helpers";
 import { cn } from "@/lib/utils/cn";
