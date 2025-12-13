@@ -32,6 +32,7 @@ import { getUserInitials } from '@/lib/utils/user';
 import { sanitizeImageUrl } from '@/lib/utils/security';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useCaretakerStore } from '@/features/caretaker';
+import { useAppStore } from '@/stores/app.store';
 
 interface CaretakerLayoutProps {
   children: ReactNode;
@@ -76,7 +77,11 @@ const mockNotifications: Notification[] = [
 export default function Layout({ children }: CaretakerLayoutProps) {
   const { user, logout } = useAuth();
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const { isSidebarOpen, setSidebarOpen } = useCaretakerStore();
+  
+  // Connect to Global UI Store
+  const isSidebarOpen = useAppStore((state) => state.isSidebarOpen);
+  const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
+  
   const [notifications, setNotifications] = React.useState<Notification[]>(mockNotifications);
 
   const displayName = React.useMemo(() => {
