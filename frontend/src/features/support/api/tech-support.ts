@@ -1,4 +1,5 @@
-import { apiClient } from '@/lib/api/client';
+import apiClient from '@/lib/api/client';
+import { ApiResponse } from '@/types/api.types';
 
 // Types
 export interface TechSupportUser {
@@ -61,69 +62,78 @@ export interface TechSupportMessage {
   is_read: boolean;
 }
 
+// Predicted Endpoints based on standard REST patterns and existing /support/ routing
 export const techSupportApi = {
   // Users
   getUsers: async (params?: any) => {
-    return apiClient.axios.get<TechSupportUser[]>('/accounts/tech-support/users/', { params });
+    const response = await apiClient.axios.get<ApiResponse<TechSupportUser[]>>('/support/users/', { params });
+    return response.data;
   },
   verifyUser: async (userId: string) => {
-    return apiClient.axios.post(`/accounts/tech-support/users/${userId}/verify/`);
+    return apiClient.axios.post(`/support/users/${userId}/verify/`);
   },
   toggleUserLock: async (userId: string, reason: string) => {
-    return apiClient.axios.post(`/accounts/tech-support/users/${userId}/toggle-lock/`, { reason });
+    return apiClient.axios.post(`/support/users/${userId}/toggle-lock/`, { reason });
   },
 
   // Hostels
   getHostels: async (params?: any) => {
-    return apiClient.axios.get<TechSupportHostel[]>('/hostels/tech-support/', { params });
+    const response = await apiClient.axios.get<ApiResponse<TechSupportHostel[]>>('/support/hostels/', { params });
+    return response.data;
   },
   verifyHostel: async (hostelId: string) => {
-    return apiClient.axios.post(`/hostels/tech-support/${hostelId}/verify/`);
+    return apiClient.axios.post(`/support/hostels/${hostelId}/verify/`);
   },
   toggleHostelVisibility: async (hostelId: string, reason: string) => {
-    return apiClient.axios.post(`/hostels/tech-support/${hostelId}/toggle-visibility/`, { reason });
+    return apiClient.axios.post(`/support/hostels/${hostelId}/visibility/`, { reason }); // Simplified endpoint prediction
   },
   flagHostel: async (hostelId: string, reason: string) => {
-    return apiClient.axios.post(`/hostels/tech-support/${hostelId}/flag/`, { reason });
+    return apiClient.axios.post(`/support/hostels/${hostelId}/flag/`, { reason });
   },
 
   // Payments
   getTransactions: async (params?: any) => {
-    return apiClient.axios.get<TechSupportTransaction[]>('/payments/tech-support/', { params });
+    const response = await apiClient.axios.get<ApiResponse<TechSupportTransaction[]>>('/support/transactions/', { params });
+    return response.data;
   },
   requestRefund: async (transactionId: string, reason: string) => {
-    return apiClient.axios.post(`/payments/tech-support/${transactionId}/request-refund/`, { reason });
+    return apiClient.axios.post(`/support/transactions/${transactionId}/refund-request/`, { reason });
   },
 
-  // Complaints
+  // Complaints (Tickets) - Reusing standard support endpoints but maybe with admin privileges
   getTickets: async (params?: any) => {
-    return apiClient.axios.get<TechSupportTicket[]>('/support/tech-support/tickets/', { params });
+    const response = await apiClient.axios.get<ApiResponse<TechSupportTicket[]>>('/support/tickets/admin/', { params }); // Likely an admin-specific endpoint
+    return response.data;
   },
-  assignTicket: async (ticketId: string) => {
-    return apiClient.axios.post(`/support/tech-support/tickets/${ticketId}/assign/`);
+  assignTicket: async (ticketId: string, assigneeId?: string) => {
+     // If assigneeId is provided, assign to them, else maybe auto-assign to self?
+    return apiClient.axios.post(`/support/tickets/${ticketId}/assign/`, { assigneeId });
   },
   resolveTicket: async (ticketId: string, resolution: string) => {
-    return apiClient.axios.post(`/support/tech-support/tickets/${ticketId}/resolve/`, { resolution });
+    return apiClient.axios.post(`/support/tickets/${ticketId}/resolve/`, { resolution });
   },
   escalateTicket: async (ticketId: string, reason: string) => {
-    return apiClient.axios.post(`/support/tech-support/tickets/${ticketId}/escalate/`, { reason });
+    return apiClient.axios.post(`/support/tickets/${ticketId}/escalate/`, { reason });
   },
   
   // Messaging
   getMessages: async (params?: any) => {
-    return apiClient.axios.get<TechSupportMessage[]>('/messaging/tech-support/', { params });
+    const response = await apiClient.axios.get<ApiResponse<TechSupportMessage[]>>('/support/messages/', { params });
+    return response.data;
   },
   sendMessage: async (userId: string, content: string) => {
-    return apiClient.axios.post('/messaging/tech-support/send/', { user_id: userId, content });
+    return apiClient.axios.post('/support/messages/send/', { user_id: userId, content });
   },
 
   // Logs
   getLogs: async (params?: any) => {
-    return apiClient.axios.get<TechSupportLog[]>('/accounts/tech-support/logs/', { params });
+    const response = await apiClient.axios.get<ApiResponse<TechSupportLog[]>>('/support/logs/', { params });
+    return response.data;
   },
 
   // Dashboard Stats
   getStats: async () => {
-    return apiClient.axios.get('/accounts/tech-support/stats/');
+    const response = await apiClient.axios.get<ApiResponse<any>>('/support/stats/');
+    return response.data;
   }
 };

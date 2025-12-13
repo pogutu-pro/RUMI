@@ -6,7 +6,7 @@ export interface User {
   first_name?: string;
   last_name?: string;
   email: string;
-  role: 'student' | 'landlord' | 'caretaker' | 'admin';
+  role: 'student' | 'landlord' | 'caretaker' | 'tech_support' | 'tech_support_admin' | 'super_admin' | 'admin';
   status: 'active' | 'suspended' | 'pending';
   avatar?: string;
   profile_picture?: string;

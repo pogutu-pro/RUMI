@@ -1,7 +1,16 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useMessagingStore } from '@/features/messaging';
+import { 
+  useConversations, 
+  useMessages, 
+  useSendMessage, 
+  useMarkAsRead,
+  usePinConversation,
+  useUnpinConversation,
+  useMuteConversation,
+  useUnmuteConversation
+} from '@/features/messaging/hooks/use-messaging';
 import { ConversationCard } from '@/features/messaging';
 import { ChatHeader } from '@/features/messaging';
 import { MessageBubble } from '@/features/messaging';
@@ -13,6 +22,7 @@ import { PullToRefresh } from '@/features/messaging';
 import { useKeyboardHeight } from '@/hooks/use-keyboard';
 import { Search, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Conversation } from '@/types/messaging.types';
 
 export default function StudentMessagesPage() {
   const [isMobile, setIsMobile] = useState(false);
@@ -21,32 +31,22 @@ export default function StudentMessagesPage() {
   const [isNearBottom, setIsNearBottom] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Local UI State
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+
+  // Queries & Mutations
+  const { data: conversations = [], isLoading: isLoadingConversations, refetch: refetchConversations } = useConversations();
+  const { data: messages = [], isLoading: isLoadingMessages } = useMessages(activeConversationId);
+  const { mutate: sendMessage, isPending: isSending } = useSendMessage();
+  const { mutate: markAsRead } = useMarkAsRead();
+  const { mutate: pinConversation } = usePinConversation();
+  const { mutate: unpinConversation } = useUnpinConversation();
+  const { mutate: muteConversation } = useMuteConversation();
+  const { mutate: unmuteConversation } = useUnmuteConversation();
 
   // Handle keyboard for mobile
   useKeyboardHeight();
-
-  const {
-    conversations,
-    activeConversationId,
-    messages,
-    isLoading,
-    isLoadingMessages,
-    isSending,
-    fetchConversations,
-    selectConversation,
-    sendMessage,
-    pinConversation,
-    unpinConversation,
-    muteConversation,
-    unmuteConversation,
-    getConversation,
-    getMessages,
-  } = useMessagingStore();
-
-  // Fetch conversations on mount
-  useEffect(() => {
-    fetchConversations();
-  }, [fetchConversations]);
 
   // Handle mobile responsive
   useEffect(() => {
@@ -85,18 +85,20 @@ export default function StudentMessagesPage() {
     }
   }, [handleScroll]);
 
-  const activeConversation = activeConversationId ? getConversation(activeConversationId) : null;
-  const conversationMessages = activeConversationId ? getMessages(activeConversationId) : [];
+  const activeConversation = activeConversationId 
+    ? conversations.find(c => c.id === activeConversationId) 
+    : null;
 
   // Sort conversations: pinned → recent
-  const sortedConversations = [...conversations].sort((a, b) => {
+  const sortedConversations = [...conversations].sort((a: Conversation, b: Conversation) => {
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 
   const handleSelectConversation = (conversationId: string) => {
-    selectConversation(conversationId);
+    setActiveConversationId(conversationId);
+    markAsRead(conversationId);
     if (isMobile) {
       setShowChat(true);
     }
@@ -108,7 +110,7 @@ export default function StudentMessagesPage() {
 
   const handleSendMessage = (content: string) => {
     if (activeConversationId) {
-      sendMessage(activeConversationId, content);
+      sendMessage({ conversationId: activeConversationId, content });
     }
   };
 
@@ -117,7 +119,7 @@ export default function StudentMessagesPage() {
   };
 
   const handleRefresh = async () => {
-    await fetchConversations();
+    await refetchConversations();
   };
 
   return (
@@ -151,14 +153,14 @@ export default function StudentMessagesPage() {
         {/* Conversations with Pull-to-Refresh */}
         <div className="flex-1 overflow-y-auto">
           <PullToRefresh onRefresh={handleRefresh}>
-            {isLoading ? (
+            {isLoadingConversations ? (
               <div className="flex h-full items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
               </div>
             ) : sortedConversations.length === 0 ? (
               <EmptyState />
             ) : (
-              sortedConversations.map((conversation) => (
+              sortedConversations.map((conversation: Conversation) => (
                 <ConversationCard
                   key={conversation.id}
                   conversation={conversation}
@@ -213,12 +215,12 @@ export default function StudentMessagesPage() {
                 <div className="flex h-full items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
                 </div>
-              ) : conversationMessages.length === 0 ? (
+              ) : messages.length === 0 ? (
                 <EmptyState />
               ) : (
                 <>
-                  {conversationMessages.map((message, index) => {
-                    const prevMessage = conversationMessages[index - 1];
+                  {messages.map((message, index) => {
+                    const prevMessage = messages[index - 1];
                     const isGrouped =
                       prevMessage &&
                       prevMessage.senderId === message.senderId &&

@@ -12,21 +12,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useTechSupportStore } from '@/features/support';
+// import { useTechSupportStore } from '@/features/support';
+import { useSupportTickets } from '@/features/support/hooks/use-support';
 import { ComplaintTable } from '@/features/support';
 import { TicketDetailDialog } from '@/features/support';
 import { TechSupportTicket } from '@/features/support';
 import { Badge } from '@/components/ui/badge';
 
 export default function ComplaintsPage() {
-  const { tickets, isLoadingTickets, fetchTickets } = useTechSupportStore();
+  const { data: tickets = [], isLoading: isLoadingTickets } = useSupportTickets();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTicket, setSelectedTicket] = useState<TechSupportTicket | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-
-  useEffect(() => {
-    fetchTickets();
-  }, [fetchTickets]);
 
   const filteredTickets = tickets.filter(tkt => 
     tkt.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||

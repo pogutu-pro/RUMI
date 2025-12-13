@@ -10,7 +10,7 @@ import {
   useActiveTickets, 
   useActivityFeed 
 } from '@/features/student';
-import { useCurrentBookingStore } from '@/features/bookings';
+import { useMyBooking } from '@/features/bookings/hooks/use-my-booking';
 import { RentStatusIndicator } from '@/features/student';
 import { DashboardStat } from '@/features/dashboard';
 import { RecentActivity } from '@/features/dashboard';
@@ -31,7 +31,7 @@ import {
 
 export default function Page() {
   const { user } = useAuth();
-  const { currentBooking } = useCurrentBookingStore();
+  const { data: currentBooking, isLoading: bookingLoading } = useMyBooking();
   
   // Fetch dashboard data
   const { data: rentStatus, isLoading: rentLoading } = useRentStatus();
@@ -185,7 +185,9 @@ export default function Page() {
               <CardTitle className="text-lg font-semibold">Current Accommodation</CardTitle>
             </CardHeader>
             <CardContent>
-              {currentBooking ? (
+              {bookingLoading ? (
+                 <Skeleton className="h-48 w-full rounded-lg" />
+              ) : currentBooking ? (
                 <div className="flex flex-col md:flex-row gap-6">
                   <div className="h-48 w-full md:w-1/3 rounded-lg bg-muted/50 flex items-center justify-center">
                     <Home className="h-12 w-12 text-muted-foreground/50" />

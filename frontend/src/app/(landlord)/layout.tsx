@@ -8,6 +8,7 @@ import { LandlordBottomNav } from '@/components/layouts/landlord-bottom-nav';
 import { LandlordTopNav } from '@/components/layouts/landlord-top-nav';
 import { DashboardThemeProvider } from '@/components/providers/dashboard-theme-provider';
 import { cn } from '@/lib/utils/cn';
+import { useAppStore } from '@/stores/app.store';
 
 interface LandlordLayoutProps {
   children: ReactNode;
@@ -15,13 +16,20 @@ interface LandlordLayoutProps {
 
 export default function Layout({ children }: LandlordLayoutProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+  
+  // Refactored to use Global Store for persistence
+  const isSidebarOpen = useAppStore((state) => state.isSidebarOpen);
+  const toggleSidebar = useAppStore((state) => state.toggleSidebar);
+  const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
+  
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
 
-  // Initialize sidebar state based on screen size
-  React.useEffect(() => {
-    setIsSidebarOpen(isDesktop);
-  }, [isDesktop]);
+  // Initialize sidebar state based on screen size (only set valid defaults if not manually overridden, 
+  // or rely on store persistence. For now, sync with desktop if it's a fresh load?)
+  // Actually, standard pattern: Persistence holds truth. 
+  // But on mobile, we might want it closed by default.
+  // We'll let the persistent store decide, but maybe enforce closed on mobile initially?
+  // Let's stick to the store's decision for desktop.
 
   return (
     <DashboardThemeProvider>
@@ -30,7 +38,7 @@ export default function Layout({ children }: LandlordLayoutProps) {
         <div className="hidden md:block">
           <LandlordSidebar
             isOpen={isSidebarOpen}
-            setIsOpen={setIsSidebarOpen}
+            setIsOpen={setSidebarOpen} 
             isMobile={false}
           />
         </div>
@@ -42,7 +50,7 @@ export default function Layout({ children }: LandlordLayoutProps) {
         <LandlordTopNav
           onMenuClick={() => {
             if (isDesktop) {
-              setIsSidebarOpen(!isSidebarOpen);
+              setSidebarOpen(!isSidebarOpen);
             } else {
               setIsMobileOpen(!isMobileOpen);
             }

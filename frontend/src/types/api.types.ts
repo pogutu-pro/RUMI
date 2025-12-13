@@ -20,6 +20,9 @@ export type {
   TokenResponse,
   PermissionsResponse,
   MessageResponse,
+  EmailVerificationRequest,
+  PhoneVerificationRequest,
+  ResendOtpRequest,
 } from '@/features/auth/types/types';
 
 // Some types were not moved yet or matched exactly?

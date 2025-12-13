@@ -3,7 +3,8 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useInventoryStore } from '@/features/inventory';
-import { useCurrentBookingStore } from '@/features/bookings';
+import { useMyInventoryReport, useSubmitInventoryReport } from '@/features/inventory/hooks/use-inventory-query';
+import { useMyBooking } from '@/features/bookings/hooks/use-my-booking';
 import { 
   CheckCircle2, 
   Utensils, 
@@ -28,21 +29,27 @@ import { toast } from 'sonner';
 
 export default function CheckOutPage() {
   const router = useRouter();
-  const { currentBooking } = useCurrentBookingStore();
+  const { data: currentBooking, isLoading: bookingLoading } = useMyBooking();
+  
+  // React Query for Server State
+  const { data: serverReport, isLoading: reportLoading } = useMyInventoryReport(currentBooking?.id, 'check_out');
+  const submitMutation = useSubmitInventoryReport();
+
+  // Zustand for Client Draft State
   const { 
     activeReport, 
-    isLoading, 
-    error, 
-    fetchStudentReport, 
-    updateItemConditionLocal, 
-    submitReport 
+    setReport,
+    updateItemConditionLocal 
   } = useInventoryStore();
 
+  // Sync Server State to Client Draft
   React.useEffect(() => {
-    if (currentBooking?.id) {
-      fetchStudentReport(currentBooking.id, 'check_out');
+    if (serverReport) {
+      setReport(serverReport);
     }
-  }, [currentBooking?.id, fetchStudentReport]);
+  }, [serverReport, setReport]);
+
+  const isLoading = bookingLoading || reportLoading;
 
   const categoryIcons: Record<InventoryCategory, React.ElementType> = {
     kitchen: Utensils,
@@ -69,8 +76,21 @@ export default function CheckOutPage() {
   const categories = Object.keys(groupedItems) as InventoryCategory[];
 
   const handleSubmit = async () => {
-    await submitReport();
-    router.push('/student/dashboard'); 
+    if (!activeReport) return;
+    
+    // Transform to payload
+    const payload = {
+      reportId: activeReport.id,
+      items: activeReport.items.map(item => ({
+        itemId: item.itemId,
+        condition: item.studentCondition,
+        comment: item.studentComment,
+      })),
+    };
+
+    submitMutation.mutate(payload, {
+        onSuccess: () => router.push('/student/dashboard')
+    });
   };
 
   if (!currentBooking) {
@@ -88,7 +108,7 @@ export default function CheckOutPage() {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || bookingLoading) {
     return (
       <div className="space-y-6 max-w-4xl mx-auto p-4 md:p-8">
         <div className="space-y-2">

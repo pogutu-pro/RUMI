@@ -1,10 +1,13 @@
 'use client';
+
+import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/features/auth';
 import { getAccessToken } from '@/lib/auth/token';
 import { useAuthStore } from '../stores/auth.store';
-import type {
+import { UserRole, LoginPayload } from '../stores/auth.types';
+import {
   LoginRequest,
   ForgotPasswordRequest,
   EmailVerificationRequest,
@@ -13,25 +16,116 @@ import type {
   CaretakerRegisterRequest,
   LandlordRegisterRequest,
   StudentRegisterRequest,
-  StudentProfileRequest,
   ResetPasswordRequest,
   AuthResponse,
 } from '@/types/api.types';
 import { toast } from 'sonner';
 
+// -- Constants --
+
+const AUTH_REDIRECTS: Record<string, string> = {
+  [UserRole.SUPER_ADMIN]: '/admin/dashboard',
+  [UserRole.TECH_SUPPORT_ADMIN]: '/tech-support/dashboard',
+  [UserRole.TECH_SUPPORT]: '/tech-support/dashboard',
+  [UserRole.LANDLORD]: '/landlord/dashboard',
+  [UserRole.CARETAKER]: '/caretaker/dashboard',
+  [UserRole.STUDENT]: '/student/dashboard',
+};
+
+const DEFAULT_REDIRECT = '/student/dashboard';
+
+// -- Helper Hook --
+
+function useAuthRedirect() {
+  const router = useRouter();
+
+  const redirectUser = React.useCallback(
+    (role: string | undefined) => {
+      if (!role) {
+        router.push(DEFAULT_REDIRECT);
+        return;
+      }
+      const path = AUTH_REDIRECTS[role] || DEFAULT_REDIRECT;
+      router.push(path);
+    },
+    [router]
+  );
+
+  return { redirectUser };
+}
+
+// -- Main Facade Hook --
+
 export function useAuth() {
-  const { user, isAuthenticated, logout } = useAuthStore();
-  return { user, isAuthenticated, logout };
+  const user = useAuthStore((s) => s.user);
+  const status = useAuthStore((s) => s.status);
+  const error = useAuthStore((s) => s.error);
+  const storeLogin = useAuthStore((s) => s.login);
+  const storeLogout = useAuthStore((s) => s.logout);
+  const storeSetProfile = useAuthStore((s) => s.setProfile);
+  
+  const isAuthenticated = status === 'authenticated';
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  const logout = React.useCallback(() => {
+    storeLogout();
+    queryClient.removeQueries(); // Clear all server state
+    queryClient.clear(); // Clear cache
+    router.push('/login');
+  }, [storeLogout, queryClient, router]);
+
+  const login = React.useCallback((payload: LoginPayload) => {
+    storeLogin(payload);
+  }, [storeLogin]);
+
+  return { 
+    user, 
+    status, 
+    error,
+    isAuthenticated, 
+    login,
+    logout,
+    setProfile: storeSetProfile
+  };
+}
+
+// -- Feature Hooks --
+
+/**
+ * Shared success handler for login/register
+ */
+function useAuthSuccess() {
+  const { login } = useAuth();
+  const { redirectUser } = useAuthRedirect();
+  const queryClient = useQueryClient();
+
+  return (response: AuthResponse, successMessage: string) => {
+    // 1. Update Store
+    login({
+      user: response.user,
+      profile: response.profile || undefined, // Adapt nullable to optional if needed
+      accessToken: response.access,
+      refreshToken: response.refresh,
+    });
+
+    // 2. Invalidate Queries
+    queryClient.invalidateQueries({ queryKey: ['user'] });
+    queryClient.invalidateQueries({ queryKey: ['profile'] });
+
+    // 3. Redirect
+    redirectUser(response.user?.role);
+
+    // 4. Toast
+    toast.success(successMessage);
+  };
 }
 
 /**
  * Hook for user registration
- * Handles user registration and redirects on success
  */
 export function useRegister() {
-  const router = useRouter();
-  const { setAuth } = useAuthStore();
-  const queryClient = useQueryClient();
+  const handleSuccess = useAuthSuccess();
 
   return useMutation({
     mutationFn: (
@@ -40,46 +134,22 @@ export function useRegister() {
         | LandlordRegisterRequest
         | CaretakerRegisterRequest,
     ) => {
-      // Determine the registration method based on the data type
       if ('role' in data) {
-        if (data.role === 'student') {
-          return authApi.registerStudent(data as StudentRegisterRequest);
-        } else if (data.role === 'landlord') {
-          return authApi.registerLandlord(data as LandlordRegisterRequest);
-        } else if (data.role === 'caretaker') {
-          return authApi.registerCaretaker(data as CaretakerRegisterRequest);
-        }
+          switch (data.role) {
+            case UserRole.STUDENT:
+                return authApi.registerStudent(data as StudentRegisterRequest);
+            case UserRole.LANDLORD:
+                return authApi.registerLandlord(data as LandlordRegisterRequest);
+            case UserRole.CARETAKER:
+                return authApi.registerCaretaker(data as CaretakerRegisterRequest);
+            default:
+                 throw new Error('Invalid role');
+          }
       }
       throw new Error('Invalid registration data');
     },
     onSuccess: (response: AuthResponse) => {
-      // Update auth store
-      setAuth({
-        user: response.user,
-        profile: response.profile,
-        accessToken: response.access,
-        refreshToken: response.refresh,
-      });
-
-      // Invalidate and refetch user-related queries
-      queryClient.invalidateQueries({ queryKey: ['user'] });
-
-      // Redirect to appropriate dashboard based on role
-      const role = response.user?.role;
-      if (role === 'super_admin') {
-        router.push('/admin/dashboard');
-      } else if (role === 'tech_support_admin' || role === 'tech_support') {
-        router.push('/tech-support/dashboard');
-      } else if (role === 'landlord') {
-        router.push('/landlord/dashboard');
-      } else if (role === 'caretaker') {
-        router.push('/caretaker/dashboard');
-      } else {
-        // Default to student dashboard
-        router.push('/student/dashboard');
-      }
-
-      toast.success('Registration successful!');
+      handleSuccess(response, 'Registration successful!');
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || 'Registration failed';
@@ -90,44 +160,14 @@ export function useRegister() {
 
 /**
  * Hook for user login
- * Handles authentication and redirects on success
  */
 export function useLogin() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const { setAuth } = useAuthStore();
+  const handleSuccess = useAuthSuccess();
 
   return useMutation({
     mutationFn: (data: LoginRequest) => authApi.login(data),
-    onSuccess: (response) => {
-      // Update auth store
-      setAuth({
-        user: response.user,
-        profile: response.profile,
-        accessToken: response.access,
-        refreshToken: response.refresh,
-      });
-
-      // Invalidate and refetch user-related queries
-      queryClient.invalidateQueries({ queryKey: ['user'] });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-
-      // Redirect based on user role
-      // Redirect based on user role
-      const role = response.user?.role;
-      if (role === 'super_admin') {
-        router.push('/admin/dashboard');
-      } else if (role === 'tech_support_admin' || role === 'tech_support') {
-        router.push('/tech-support/dashboard');
-      } else if (role === 'landlord') {
-        router.push('/landlord/dashboard');
-      } else if (role === 'caretaker') {
-        router.push('/caretaker/dashboard');
-      } else {
-        router.push('/student/dashboard');
-      }
-
-      toast.success('Welcome back!');
+    onSuccess: (response: AuthResponse) => {
+      handleSuccess(response, 'Welcome back!');
     },
     onError: (error: any) => {
       const message =
@@ -141,44 +181,14 @@ export function useLogin() {
 
 /**
  * Hook for Google login
- * Handles Google OAuth flow and backend authentication
  */
 export function useGoogleLogin() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const { setAuth } = useAuthStore();
+  const handleSuccess = useAuthSuccess();
 
   return useMutation({
     mutationFn: (token: string) => authApi.googleLogin(token),
-    onSuccess: (response) => {
-      // Update auth store
-      setAuth({
-        user: response.user,
-        profile: response.profile,
-        accessToken: response.access,
-        refreshToken: response.refresh,
-      });
-
-      // Invalidate and refetch user-related queries
-      queryClient.invalidateQueries({ queryKey: ['user'] });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-
-      // Redirect based on user role
-      // Redirect based on user role
-      const role = response.user?.role;
-      if (role === 'super_admin') {
-        router.push('/admin/dashboard');
-      } else if (role === 'tech_support_admin' || role === 'tech_support') {
-        router.push('/tech-support/dashboard');
-      } else if (role === 'landlord') {
-        router.push('/landlord/dashboard');
-      } else if (role === 'caretaker') {
-        router.push('/caretaker/dashboard');
-      } else {
-        router.push('/student/dashboard');
-      }
-
-      toast.success('Successfully signed in with Google!');
+    onSuccess: (response: AuthResponse) => {
+      handleSuccess(response, 'Successfully signed in with Google!');
     },
     onError: (error: any) => {
       const message =
@@ -191,9 +201,44 @@ export function useGoogleLogin() {
 }
 
 /**
- * Hook for forgot password functionality
- * Sends password reset instructions to user's email
+ * Hook for fetching user profile
  */
+export function useProfile() {
+  const { setProfile, user } = useAuth();
+  
+  const query = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      const response = await authApi.getProfile();
+      return response;
+    },
+    // Only fetch if we have a token AND we have a user (meaning we are authenticated)
+    // OR if we are in a specific 'checking' state?
+    // Actually, usually we fetch profile to hydrate the store.
+    enabled: !!getAccessToken(),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  const { data } = query;
+  
+  // Robust Synchronization
+  // Only update if data exists AND it's different or we don't have it yet.
+  React.useEffect(() => {
+    if (data?.profile && user) {
+        // We could add a deep comparison here to avoid setProfile if identical,
+        // but for now, we trust React's batching or Zustand's equality check (if implemented).
+        // Since setProfile just replaces the object, it might trigger updates.
+        // Ideally, we check an ID or version.
+        // For this refactor, we ensure it only runs when 'data' changes.
+        setProfile(data.profile);
+    }
+  }, [data, setProfile, user]); // Added user to deps to ensure we don't set profile if user is null
+
+  return query;
+}
+
+// -- Other Auth Hooks (Cleaned up) --
+
 export function useForgotPassword() {
   return useMutation({
     mutationFn: (data: ForgotPasswordRequest) => authApi.forgotPassword(data),
@@ -210,43 +255,10 @@ export function useForgotPassword() {
   });
 }
 
-/**
- * Hook for fetching user profile
- * Returns user profile data and loading state
- */
-export function useProfile() {
-  const queryClient = useQueryClient();
-  const { setAuth } = useAuthStore();
-
-  return useQuery({
-    queryKey: ['profile'],
-    queryFn: async () => {
-      const response = await authApi.getProfile();
-      if (response.user) {
-        setAuth({
-          user: response.user,
-          profile: response.profile,
-        });
-      }
-      return response;
-    },
-    enabled: !!getAccessToken(),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-}
-
-/**
- * Hook for email verification
- */
-// In src/hooks/use-auth.ts, update the useVerifyEmail hook
 export function useVerifyEmail() {
   return useMutation({
-    mutationFn: (data: { email?: string; otp: string; token?: string }) =>
-      authApi.verifyEmail({
-        email: data.email,
-        otp: data.otp,
-        token: data.token,
-      }),
+    mutationFn: (data: EmailVerificationRequest) =>
+      authApi.verifyEmail(data),
     onSuccess: () => {
       toast.success('Email verified successfully');
     },
@@ -260,12 +272,9 @@ export function useVerifyEmail() {
   });
 }
 
-/**
- * Hook for phone verification
- */
 export function useVerifyPhone() {
   return useMutation({
-    mutationFn: (data: { phone: string; otp: string }) =>
+    mutationFn: (data: PhoneVerificationRequest) =>
       authApi.verifyPhone(data),
     onSuccess: () => {
       toast.success('Phone verified successfully');
@@ -280,24 +289,18 @@ export function useVerifyPhone() {
   });
 }
 
-/**
- * Hook for resending verification code
- */
 export function useResendVerification() {
   return useMutation({
     mutationFn: (data: ResendOtpRequest) => authApi.resendOtp(data),
     onSuccess: () => {
       toast.success('Verification code sent successfully');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'Failed to send verification code');
     },
   });
 }
 
-/**
- * Hook for caretaker registration
- */
 export function useRegisterCaretaker() {
   const router = useRouter();
 
@@ -318,9 +321,6 @@ export function useRegisterCaretaker() {
   });
 }
 
-/**
- * Hook for landlord registration
- */
 export function useRegisterLandlord() {
   const router = useRouter();
 
@@ -341,9 +341,6 @@ export function useRegisterLandlord() {
   });
 }
 
-/**
- * Hook for student registration
- */
 export function useRegisterStudent() {
   const router = useRouter();
 
@@ -363,9 +360,6 @@ export function useRegisterStudent() {
   });
 }
 
-/**
- * Hook for resetting password
- */
 export function useResetPassword() {
   const router = useRouter();
 

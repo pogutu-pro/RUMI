@@ -2,27 +2,20 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { 
   InventoryReport, 
-  ItemCondition, 
-  inventoryApi, 
-  ReportType 
+  ItemCondition
 } from '@/features/inventory';
-import { toast } from 'sonner';
 
 interface InventoryState {
-  // State
+  // State (Draft / Local Edit Mode)
   activeReport: InventoryReport | null;
-  isLoading: boolean;
-  error: string | null;
-
+  
   // Actions
-  fetchStudentReport: (bookingId: string, type: ReportType) => Promise<void>;
-  fetchReportById: (reportId: string) => Promise<void>;
+  setReport: (report: InventoryReport | null) => void;
   
-  // Student Actions
+  // Student Local Edits
   updateItemConditionLocal: (itemId: string, condition: ItemCondition, comment?: string) => void;
-  submitReport: () => Promise<void>;
   
-  // Caretaker Actions
+  // Caretaker Local Edits
   verifyItemLocal: (
     itemId: string, 
     condition: ItemCondition, 
@@ -31,7 +24,6 @@ interface InventoryState {
     isChargeable?: boolean,
     damageCost?: number
   ) => void;
-  submitVerification: (generalNote?: string) => Promise<void>;
 
   reset: () => void;
 }
@@ -39,39 +31,9 @@ interface InventoryState {
 export const useInventoryStore = create<InventoryState>()(
   devtools((set, get) => ({
     activeReport: null,
-    isLoading: false,
-    error: null,
 
-    fetchStudentReport: async (bookingId, type) => {
-      set({ isLoading: true, error: null });
-      try {
-        let report = await inventoryApi.getMyReport(bookingId, type);
-        
-        // If no report exists, we might need to create one (or backend does it).
-        // For now, assuming backend returns null if not started.
-        // In a real flow, we might trigger createReport here if it's the first time.
-        if (!report) {
-           const newReport = await inventoryApi.createReport({ bookingId, type });
-           report = newReport;
-        }
-
-        set({ activeReport: report, isLoading: false });
-      } catch (err: any) {
-        set({ error: err.message || 'Failed to fetch report', isLoading: false });
-        toast.error('Failed to load inventory report');
-      }
-    },
-
-    fetchReportById: async (reportId) => {
-      set({ isLoading: true, error: null });
-      try {
-        const report = await inventoryApi.getReportById(reportId);
-        set({ activeReport: report, isLoading: false });
-      } catch (err: any) {
-        set({ error: err.message || 'Failed to fetch report', isLoading: false });
-        toast.error('Failed to load report');
-      }
-    },
+    // Hydrate store from API data (called by useEffect in component)
+    setReport: (report) => set({ activeReport: report }),
 
     updateItemConditionLocal: (itemId, condition, comment) => {
       const { activeReport } = get();
@@ -85,30 +47,6 @@ export const useInventoryStore = create<InventoryState>()(
       });
 
       set({ activeReport: { ...activeReport, items: updatedItems } });
-    },
-
-    submitReport: async () => {
-      const { activeReport } = get();
-      if (!activeReport) return;
-
-      set({ isLoading: true });
-      try {
-        const payload = {
-          reportId: activeReport.id,
-          items: activeReport.items.map(item => ({
-            itemId: item.itemId,
-            condition: item.studentCondition,
-            comment: item.studentComment,
-          })),
-        };
-
-        const updatedReport = await inventoryApi.submitReport(payload);
-        set({ activeReport: updatedReport, isLoading: false });
-        toast.success('Report submitted successfully!');
-      } catch (err: any) {
-        set({ error: err.message || 'Failed to submit report', isLoading: false });
-        toast.error('Failed to submit report. Please try again.');
-      }
     },
 
     verifyItemLocal: (itemId, condition, isFlagged, comment, isChargeable, damageCost) => {
@@ -132,34 +70,6 @@ export const useInventoryStore = create<InventoryState>()(
       set({ activeReport: { ...activeReport, items: updatedItems } });
     },
 
-    submitVerification: async (generalNote) => {
-      const { activeReport } = get();
-      if (!activeReport) return;
-
-      set({ isLoading: true });
-      try {
-        const payload = {
-          reportId: activeReport.id,
-          generalNote,
-          items: activeReport.items.map(item => ({
-            itemId: item.itemId,
-            condition: item.caretakerCondition || item.studentCondition, // Default to student's if not overriden
-            comment: item.caretakerComment,
-            isChargeable: item.isChargeable,
-            damageCost: item.damageCost
-          })),
-        };
-
-        const updatedReport = await inventoryApi.verifyReport(payload);
-        set({ activeReport: updatedReport, isLoading: false });
-        toast.success('Report verified successfully!');
-      } catch (err: any) {
-        set({ error: err.message || 'Failed to verify report', isLoading: false });
-        toast.error('Failed to verify report');
-      }
-    },
-
-    reset: () => set({ activeReport: null, isLoading: false, error: null }),
+    reset: () => set({ activeReport: null }),
   }))
 );
-

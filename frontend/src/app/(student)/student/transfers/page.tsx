@@ -25,30 +25,16 @@ import {
   TransferAlert,
 } from '@/features/transfers';
 import { useTransferStore } from '@/features/transfers';
-import { getMyTransfers } from '@/features/transfers';
+import { useMyTransfers } from '@/features/transfers/hooks/use-transfers-query';
 
 export default function TransfersPage() {
   const router = useRouter();
-  const { myTransfers, activeRequest, transferHistory, setMyTransfers, isLoading, setLoading } =
-    useTransferStore();
+  // TODO: Replace 'default-hostel' with actual hostel ID
+  const { data: myTransfers = [], isLoading } = useMyTransfers('default-hostel');
 
-  // Fetch transfers on mount
-  React.useEffect(() => {
-    const fetchTransfers = async () => {
-      setLoading(true);
-      try {
-        // TODO: Replace with actual hostel ID from user context
-        const transfers = await getMyTransfers('default-hostel');
-        setMyTransfers(transfers);
-      } catch (error) {
-        console.error('Error fetching transfers:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTransfers();
-  }, [setMyTransfers, setLoading]);
+  // Derived state
+  const activeRequest = myTransfers.find(t => t.status === 'pending' || t.status === 'approved') || null;
+  const transferHistory = myTransfers.filter(t => t.status === 'rejected' || t.status === 'cancelled' || t.status === 'completed');
 
   const stats = {
     activeRequests: activeRequest ? 1 : 0,

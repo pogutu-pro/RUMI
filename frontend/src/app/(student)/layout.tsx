@@ -9,20 +9,23 @@ import { DashboardThemeProvider } from '@/components/providers/dashboard-theme-p
 import type { Metadata } from 'next';
 import { CompareTray } from '@/features/hostels';
 import { cn } from '@/lib/utils';
+import { useAppStore } from '@/stores/app.store';
 
 interface StudentLayoutProps {
   children: React.ReactNode;
 }
 
 export default function Layout({ children }: StudentLayoutProps) {
-  const isDesktop = useMediaQuery('(min-width: 768px)'); // Changed from 1024px to 768px for tablet+
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+  
+  // Refactored to use Global useAppStore
+  const isSidebarOpen = useAppStore((state) => state.isSidebarOpen);
+  const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
+  
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
 
-  // Initialize sidebar state based on screen size
-  React.useEffect(() => {
-    setIsSidebarOpen(isDesktop);
-  }, [isDesktop]);
+  // Persistence logic handles default state, no need for useEffect sync unless enforcing desktop open initially
+  // React.useEffect(() => { setIsSidebarOpen(isDesktop); }, [isDesktop]);
 
   return (
     <DashboardThemeProvider>
@@ -31,7 +34,7 @@ export default function Layout({ children }: StudentLayoutProps) {
       <div className="hidden md:block">
         <StudentSidebar
           isOpen={isSidebarOpen}
-          setIsOpen={setIsSidebarOpen}
+          setIsOpen={setSidebarOpen}
           isMobile={false}
         />
       </div>
@@ -49,7 +52,7 @@ export default function Layout({ children }: StudentLayoutProps) {
       <StudentTopNav
         onMenuClick={() => {
           if (isDesktop) {
-            setIsSidebarOpen(!isSidebarOpen);
+            setSidebarOpen(!isSidebarOpen);
           } else {
             setIsMobileOpen(!isMobileOpen);
           }

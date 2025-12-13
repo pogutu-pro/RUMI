@@ -42,17 +42,7 @@ export type {
   LifestylePreferences,
   BudgetPreferences,
   AvailabilityPreferences,
-  RoommatePreferences, // This was also in roommates types? No, entities had both.
-  // Actually RoommatePreferences was in entities.types.ts.
-  // I put it in features/roommates/types.ts? 
-  // Let's check where I put it. RoommatePreferences was put in `features/roommates/types.ts`.
-  // Wait, I also see it in `profile/types.ts`? No, profile has `LifestylePreferences`.
-  // Let's verify imports from roommates.
 } from '@/features/profile/types';
 
 // Messaging
 export * from '@/features/messaging/types';
-
-export type {
-    RoommatePreferences
-} from '@/features/roommates/types';
