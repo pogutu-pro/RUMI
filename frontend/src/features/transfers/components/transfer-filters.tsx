@@ -22,7 +22,7 @@ interface TransferFiltersProps {
 }
 
 export function TransferFilters({ onClose }: TransferFiltersProps) {
-  const { filters, setFilters, resetFilters, applyFilters } = useTransferStore();
+  const { filters, setFilters, resetFilters } = useTransferStore();
   const [isOpen, setIsOpen] = React.useState(false);
 
   const [localFilters, setLocalFilters] = React.useState(filters);

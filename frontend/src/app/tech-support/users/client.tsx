@@ -24,7 +24,8 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { useTechSupportStore } from '@/features/support';
+// import { useTechSupportStore } from '@/features/support'; // Removed store
+import { useSupportUsers } from '@/features/support/hooks/use-support';
 import { UserTable } from '@/features/support';
 import { Badge } from '@/components/ui/badge';
 
@@ -33,15 +34,11 @@ interface UserManagementClientProps {
 }
 
 export default function UserManagementClient({ initialTab }: UserManagementClientProps) {
-  const { users, isLoadingUsers, fetchUsers } = useTechSupportStore();
+  const { data: users = [], isLoading: isLoadingUsers } = useSupportUsers();
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   
   const [activeTab, setActiveTab] = useState(initialTab);
-
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = 

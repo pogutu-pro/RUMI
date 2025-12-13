@@ -1,2 +1,2 @@
 // Central store exports
-export * from './ui.store';
+export * from './ui.slice';

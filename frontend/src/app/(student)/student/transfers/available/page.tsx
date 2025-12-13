@@ -13,37 +13,19 @@ import {
   EmptyState,
 } from '@/features/transfers';
 import { useTransferStore } from '@/features/transfers';
-import { getAvailableRooms } from '@/features/transfers';
+import { useAvailableRooms } from '@/features/transfers/hooks/use-transfers-query';
 
 export default function AvailableRoomsPage() {
   const router = useRouter();
   const {
-    filteredRooms,
-    setAvailableRooms,
     setFilters,
-    filters,
-    isLoading,
-    setLoading,
+    filters
   } = useTransferStore();
   const [searchQuery, setSearchQuery] = React.useState('');
 
-  // Fetch available rooms on mount
-  React.useEffect(() => {
-    const fetchRooms = async () => {
-      setLoading(true);
-      try {
-        // TODO: Replace with actual hostel ID from user context
-        const rooms = await getAvailableRooms('default-hostel');
-        setAvailableRooms(rooms);
-      } catch (error) {
-        console.error('Error fetching available rooms:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRooms();
-  }, [setAvailableRooms, setLoading]);
+  // Fetch available rooms using React Query
+  // TODO: Replace 'default-hostel' with actual hostel ID from context/url
+  const { data: filteredRooms = [], isLoading } = useAvailableRooms('default-hostel', filters);
 
   // Handle search
   const handleSearch = (query: string) => {

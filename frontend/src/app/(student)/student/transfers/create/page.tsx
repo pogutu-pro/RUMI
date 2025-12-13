@@ -27,7 +27,8 @@ import {
   PriceDifferenceIndicator,
 } from '@/features/transfers';
 import { useTransferStore } from '@/features/transfers';
-import { getAvailableRooms, createTransferRequest, getTransferPolicy } from '@/features/transfers';
+// import { getAvailableRooms, createTransferRequest, getTransferPolicy } from '@/features/transfers';
+import { useAvailableRooms, useTransferPolicy, useCreateTransfer } from '@/features/transfers/hooks/use-transfers-query';
 import { TransferReason, AvailableRoom } from '@/features/transfers';
 
 export default function CreateTransferPage() {
@@ -42,42 +43,24 @@ export default function CreateTransferPage() {
     resetDraftTransfer,
     nextStep,
     prevStep,
-    setCurrentStep,
-    currentPolicy,
-    setTransferPolicy,
   } = useTransferStore();
 
-  const [availableRooms, setAvailableRooms] = React.useState<AvailableRoom[]>([]);
+  const { data: availableRooms = [] } = useAvailableRooms('default-hostel');
+  const { data: currentPolicy } = useTransferPolicy('default-hostel');
+  const createTransferMutation = useCreateTransfer();
+
   const [selectedRoom, setSelectedRoom] = React.useState<AvailableRoom | null>(null);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [successSubmitted, setSuccessSubmitted] = React.useState(false);
 
-  // Fetch data on mount
+  // Pre-select room
   React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [rooms, policy] = await Promise.all([
-          getAvailableRooms('default-hostel'),
-          getTransferPolicy('default-hostel'),
-        ]);
-        setAvailableRooms(rooms);
-        setTransferPolicy(policy);
-
-        // Pre-select room if provided
-        if (preselectedRoomId) {
-          const room = rooms.find((r) => r.id === preselectedRoomId);
-          if (room) {
-            setSelectedRoom(room);
-            updateDraftTransfer({ toRoomId: room.id });
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
+    if (preselectedRoomId && availableRooms.length > 0) {
+      const room = availableRooms.find((r) => r.id === preselectedRoomId);
+      if (room) {
+        setSelectedRoom(room);
+        updateDraftTransfer({ toRoomId: room.id });
       }
-    };
-
-    fetchData();
-  }, [preselectedRoomId, updateDraftTransfer, setTransferPolicy]);
+    }
+  }, [preselectedRoomId, availableRooms, updateDraftTransfer]);
 
   const handleRoomSelect = (room: AvailableRoom) => {
     setSelectedRoom(room);
@@ -96,25 +79,25 @@ export default function CreateTransferPage() {
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      await createTransferRequest('default-hostel', {
-        bookingId: 'booking-123', // TODO: Get from user context
-        fromRoomId: 'current-room-id', // TODO: Get from user context
-        toRoomId: selectedRoom.id,
-        reason: draftTransfer.reason,
-        reasonDetails: draftTransfer.reasonDetails,
-        transferDate: draftTransfer.transferDate,
-      });
-
-      setSuccessSubmitted(true);
-      resetDraftTransfer();
-    } catch (error) {
-      console.error('Error submitting transfer:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    createTransferMutation.mutate({
+        hostelId: 'default-hostel',
+        data: {
+            bookingId: 'booking-123',
+            fromRoomId: 'current-room-id',
+            toRoomId: selectedRoom.id,
+            reason: draftTransfer.reason,
+            reasonDetails: draftTransfer.reasonDetails,
+            transferDate: draftTransfer.transferDate,
+        }
+    }, {
+        onSuccess: () => {
+            resetDraftTransfer();
+        }
+    });
   };
+
+  const isSubmitting = createTransferMutation.isPending;
+  const successSubmitted = createTransferMutation.isSuccess;
 
   const progressPercentage = (currentStep / 3) * 100;
 

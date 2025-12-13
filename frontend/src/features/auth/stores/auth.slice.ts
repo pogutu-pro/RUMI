@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { AuthSlice } from './auth.types';
+import { AuthSlice, LoginPayload, AuthStatus } from './auth.types';
 import { AppState } from '@/stores/types';
 import { getAccessToken, setTokens, clearTokens } from '@/lib/auth/token';
 
@@ -15,8 +15,13 @@ export const createAuthSlice: StateCreator<
   accessToken: null,
   error: null,
 
-  login: ({ user, accessToken, refreshToken, profile }) => {
+  login: (payload: LoginPayload) => {
+    const { user, accessToken, refreshToken, profile } = payload;
+    
+    // 1. Side Effects: Set Tokens
     setTokens(accessToken, refreshToken || '');
+    
+    // 2. State Update: Atomic update of all auth properties
     set({ 
       status: 'authenticated', 
       user, 
@@ -27,7 +32,10 @@ export const createAuthSlice: StateCreator<
   },
 
   logout: () => {
+    // 1. Side Effects: Clear Tokens
     clearTokens();
+    
+    // 2. State Update: Reset to initial state
     set({ 
       status: 'unauthenticated', 
       user: null, 
@@ -35,29 +43,41 @@ export const createAuthSlice: StateCreator<
       accessToken: null,
       error: null
     });
-    // Optional: Clear other stores or query cache here if logic permits
   },
 
   hydrate: () => {
-    const token = getAccessToken();
-    // We trust the token presence initially, but real validation happens via API usually.
-    // If we have a token but no user, we might be in a 'checking' state or need to fetch profile.
-    // For now, if we have a token, we assume checking until profile loads, or 'authenticated' if we persisted user.
-    // The persist middleware handles 'user' restoration. 
-    // This hydrate action is manually called to sync cookie existence.
+    // This function checks purely for the existence of a token to allow optimistic UI or fast-path
+    // However, the real source of truth is the user object which is persisted.
+    // If we have a token but no user, we might want to trigger a profile fetch (handled by hooks usually)
+    // or set status to 'checking'.
     
-    const { user } = get();
-    if (token && user) {
-        set({ status: 'authenticated', accessToken: token });
-    } else if (token && !user) {
-        // Token exists but no user data? We need to fetch it.
-        set({ status: 'checking', accessToken: token });
+    const token = getAccessToken();
+    const { user, status } = get();
+
+    if (token) {
+        // If we are already authenticated, do nothing to avoid churn
+        if (status === 'authenticated' && user) return;
+
+        // If we have a user from persistence but status was idle, restore it
+        if (user) {
+             set({ status: 'authenticated', accessToken: token });
+        } else {
+            // Token exists, but no user. We are strictly 'checking'.
+            // The consuming hook (useProfile) should see this and fetch the user.
+            set({ status: 'checking', accessToken: token });
+        }
     } else {
-        set({ status: 'unauthenticated' });
+        set({ status: 'unauthenticated', accessToken: null, user: null, profile: null });
     }
   },
 
-  setProfile: (profile) => set({ profile }),
+  setProfile: (profile) => {
+    const { user } = get();
+    // Only allow setting profile if we have a user (safety check)
+    if (user) {
+        set({ profile });
+    }
+  },
 
   updateUser: (updates) => {
     const { user } = get();
@@ -66,5 +86,5 @@ export const createAuthSlice: StateCreator<
     }
   },
 
-  setError: (error) => set({ status: 'error', error }),
+  setError: (error) => set({ error, status: 'error' }),
 });

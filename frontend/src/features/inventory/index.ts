@@ -25,5 +25,6 @@ export {
   verifyCheckIn 
 } from './api/inventory-api';
 export * from './hooks/use-damage-reports';
-export * from './hooks/use-inventory';
+export * from './hooks/use-inventory'; // Existing hook file (might overlap)
+export * from './hooks/use-inventory-query'; // NEW
 export * from './types';

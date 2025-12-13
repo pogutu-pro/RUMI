@@ -1,9 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
-  AvailableRoom,
-  TransferRequest,
-  TransferPolicy,
   TransferReason,
 } from '@/types/entities.types';
 
@@ -20,23 +17,10 @@ interface TransferFilters {
 }
 
 interface TransferState {
-  // Available rooms
-  availableRooms: AvailableRoom[];
-  filteredRooms: AvailableRoom[];
-  selectedRoom: AvailableRoom | null;
+  // Client State / Filters
   filters: TransferFilters;
-
-  // Transfer requests
-  myTransfers: TransferRequest[];
-  activeRequest: TransferRequest | null;
-  transferHistory: TransferRequest[];
-
-  // Transfer policy
-  currentPolicy: TransferPolicy | null;
-
+  
   // UI state
-  isLoading: boolean;
-  error: string | null;
   currentStep: number; // For wizard (1, 2, 3)
 
   // Draft transfer data
@@ -48,21 +32,8 @@ interface TransferState {
   };
 
   // Actions
-  setAvailableRooms: (rooms: AvailableRoom[]) => void;
   setFilters: (filters: Partial<TransferFilters>) => void;
-  applyFilters: () => void;
   resetFilters: () => void;
-  setSelectedRoom: (room: AvailableRoom | null) => void;
-
-  setMyTransfers: (transfers: TransferRequest[]) => void;
-  setActiveRequest: (request: TransferRequest | null) => void;
-  addTransferRequest: (request: TransferRequest) => void;
-  updateTransferStatus: (id: string, status: string) => void;
-
-  setTransferPolicy: (policy: TransferPolicy) => void;
-
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
 
   // Wizard navigation
   setCurrentStep: (step: number) => void;
@@ -73,9 +44,6 @@ interface TransferState {
   updateDraftTransfer: (data: Partial<TransferState['draftTransfer']>) => void;
   resetDraftTransfer: () => void;
 
-  // Utility
-  hasActiveRequest: () => boolean;
-  canRequestTransfer: () => boolean;
   reset: () => void;
 }
 
@@ -99,150 +67,20 @@ export const useTransferStore = create<TransferState>()(
   persist(
     (set, get) => ({
       // Initial state
-      availableRooms: [],
-      filteredRooms: [],
-      selectedRoom: null,
       filters: initialFilters,
-
-      myTransfers: [],
-      activeRequest: null,
-      transferHistory: [],
-
-      currentPolicy: null,
-
-      isLoading: false,
-      error: null,
       currentStep: 1,
-
       draftTransfer: initialDraftTransfer,
 
       // Actions
-      setAvailableRooms: (rooms) => {
-        set({ availableRooms: rooms });
-        get().applyFilters();
-      },
-
       setFilters: (newFilters) => {
         set((state) => ({
           filters: { ...state.filters, ...newFilters },
         }));
-        get().applyFilters();
-      },
-
-      applyFilters: () => {
-        const { availableRooms, filters } = get();
-        let filtered = [...availableRooms];
-
-        // Price range filter
-        if (filters.priceRange) {
-          filtered = filtered.filter(
-            (room) =>
-              room.currentPrice >= filters.priceRange!.min &&
-              room.currentPrice <= filters.priceRange!.max
-          );
-        }
-
-        // Room type filter
-        if (filters.roomTypes && filters.roomTypes.length > 0) {
-          filtered = filtered.filter((room) =>
-            filters.roomTypes!.includes(room.roomType)
-          );
-        }
-
-        // Floor filter
-        if (filters.floors && filters.floors.length > 0) {
-          filtered = filtered.filter((room) =>
-            filters.floors!.includes(room.floor)
-          );
-        }
-
-        // Quiet floor filter
-        if (filters.quietFloorOnly) {
-          filtered = filtered.filter((room) => room.isQuietFloor);
-        }
-
-        // Roommate preference filter
-        if (filters.roommatePreference === 'same') {
-          filtered = filtered.filter(
-            (room) => room.currentRoommate?.isCurrentRoommate
-          );
-        } else if (filters.roommatePreference === 'new') {
-          filtered = filtered.filter(
-            (room) => !room.currentRoommate?.isCurrentRoommate
-          );
-        }
-
-        // Search query filter
-        if (filters.searchQuery) {
-          const query = filters.searchQuery.toLowerCase();
-          filtered = filtered.filter(
-            (room) =>
-              room.roomNumber.toLowerCase().includes(query) ||
-              room.hostelName.toLowerCase().includes(query)
-          );
-        }
-
-        set({ filteredRooms: filtered });
       },
 
       resetFilters: () => {
         set({ filters: initialFilters });
-        get().applyFilters();
       },
-
-      setSelectedRoom: (room) => set({ selectedRoom: room }),
-
-      setMyTransfers: (transfers) => {
-        const active = transfers.find(
-          (t) => t.status === 'pending' || t.status === 'approved'
-        );
-        const history = transfers.filter(
-          (t) => t.status === 'rejected' || t.status === 'cancelled'
-        );
-
-        set({
-          myTransfers: transfers,
-          activeRequest: active || null,
-          transferHistory: history,
-        });
-      },
-
-      setActiveRequest: (request) => set({ activeRequest: request }),
-
-      addTransferRequest: (request) => {
-        set((state) => ({
-          myTransfers: [request, ...state.myTransfers],
-          activeRequest: request,
-        }));
-      },
-
-      updateTransferStatus: (id, status) => {
-        set((state) => {
-          const updatedTransfers = state.myTransfers.map((t) =>
-            t.id === id ? { ...t, status: status as any } : t
-          );
-
-          const active = updatedTransfers.find(
-            (t) => t.status === 'pending' || t.status === 'approved'
-          );
-          const history = updatedTransfers.filter(
-            (t) =>
-              t.status === 'rejected' ||
-              t.status === 'cancelled'
-          );
-
-          return {
-            myTransfers: updatedTransfers,
-            activeRequest: active || null,
-            transferHistory: history,
-          };
-        });
-      },
-
-      setTransferPolicy: (policy) => set({ currentPolicy: policy }),
-
-      setLoading: (loading) => set({ isLoading: loading }),
-      setError: (error) => set({ error }),
 
       // Wizard navigation
       setCurrentStep: (step) => set({ currentStep: step }),
@@ -259,29 +97,9 @@ export const useTransferStore = create<TransferState>()(
 
       resetDraftTransfer: () => set({ draftTransfer: initialDraftTransfer }),
 
-      // Utility
-      hasActiveRequest: () => {
-        const { activeRequest } = get();
-        return activeRequest !== null;
-      },
-
-      canRequestTransfer: () => {
-        const { activeRequest } = get();
-        return activeRequest === null || activeRequest.status === 'rejected';
-      },
-
       reset: () =>
         set({
-          availableRooms: [],
-          filteredRooms: [],
-          selectedRoom: null,
           filters: initialFilters,
-          myTransfers: [],
-          activeRequest: null,
-          transferHistory: [],
-          currentPolicy: null,
-          isLoading: false,
-          error: null,
           currentStep: 1,
           draftTransfer: initialDraftTransfer,
         }),

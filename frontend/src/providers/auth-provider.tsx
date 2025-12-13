@@ -59,8 +59,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const pathname = usePathname();
 
   const user = useAuthStore((state) => state.user);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const isInitialized = useAuthStore((state) => state.isInitialized);
+  // Derived state from status
+  const status = useAuthStore((state) => state.status);
+  const isAuthenticated = status === 'authenticated';
+  const isInitialized = status !== 'idle';
 
   useEffect(() => {
     hydrateAuthStore();

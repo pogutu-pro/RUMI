@@ -11,6 +11,7 @@ export const USER_ROLES = [
   'landlord',
   'caretaker',
   'tech_support_admin',
+  'tech_support',
   'super_admin',
 ] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -20,8 +21,11 @@ export const UserRole = {
   LANDLORD: 'landlord',
   CARETAKER: 'caretaker',
   TECH_SUPPORT_ADMIN: 'tech_support_admin',
+  TECH_SUPPORT: 'tech_support',
   SUPER_ADMIN: 'super_admin',
 } as const;
+
+import { StudentProfile, LandlordProfile, CaretakerProfile } from '@/features/profile/types';
 
 export interface AuthTokens {
   access: string;
@@ -30,15 +34,8 @@ export interface AuthTokens {
 
 // Re-export User for convenience in Auth context
 export type { User }; 
-// Note: We might need to reconcile the Auth 'User' vs Entity 'User' if they differ significantly.
-// For now, importing the standardized User from features/users is the goal.
 
-export interface UserProfile { // Union type placeholder, will define specific profiles in features/profile
-    type: 'student' | 'landlord' | 'caretaker';
-    id: ID;
-    user_id: ID;
-    [key: string]: any;
-}
+export type UserProfile = StudentProfile | LandlordProfile | CaretakerProfile;
 
 export interface AuthResponse {
   access: string;
@@ -91,10 +88,53 @@ export interface VerifyEmailRequest {
   otp?: string;
 }
 
+
 export interface ResendVerificationRequest {
   email: string;
   type?: 'email' | 'phone';
 }
+
+// Specific Registration Requests
+export interface StudentRegisterRequest extends RegisterBaseRequest {
+  role: 'student';
+  [key: string]: any;
+}
+
+export interface LandlordRegisterRequest extends RegisterBaseRequest {
+  role: 'landlord';
+  [key: string]: any;
+}
+
+export interface CaretakerRegisterRequest extends RegisterBaseRequest {
+  role: 'caretaker';
+  [key: string]: any;
+}
+
+// Response Types
+export interface ProfileResponse {
+    user: User;
+    profile: UserProfile;
+}
+
+export interface TokenResponse extends AuthTokens {}
+
+export interface PermissionsResponse {
+    permissions: string[];
+}
+
+export interface MessageResponse {
+    message: string;
+}
+
+export interface RefreshTokenRequest {
+    refresh: string;
+}
+
+// Aliases for compatibility with use-auth hooks
+export type EmailVerificationRequest = VerifyEmailRequest;
+export type PhoneVerificationRequest = VerifyEmailRequest; // Assuming same structure for now
+export type ResendOtpRequest = ResendVerificationRequest;
+
 
 export interface AuthState {
   user: Nullable<User>;

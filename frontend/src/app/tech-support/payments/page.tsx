@@ -29,7 +29,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from '@/components/ui/badge';
-import { useTechSupportStore } from '@/features/support';
+// import { useTechSupportStore } from '@/features/support';
+import { useSupportTransactions } from '@/features/support/hooks/use-support';
 import { TransactionTable } from '@/features/support';
 
 interface PaymentSupportPageProps {
@@ -37,16 +38,12 @@ interface PaymentSupportPageProps {
 }
 
 export default function PaymentSupportPage({ defaultTab = "all" }: PaymentSupportPageProps) {
-  const { transactions, isLoadingTransactions, fetchTransactions } = useTechSupportStore();
+  const { data: transactions = [], isLoading: isLoadingTransactions } = useSupportTransactions();
   const [searchTerm, setSearchTerm] = useState("");
   const [refundReason, setRefundReason] = useState("");
   const [selectedTxnId, setSelectedTxnId] = useState<string | null>(null);
   const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(defaultTab);
-
-  useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
 
   const filteredTxns = transactions.filter(txn => {
     const matchesSearch = txn.transaction_reference.toLowerCase().includes(searchTerm.toLowerCase()) ||

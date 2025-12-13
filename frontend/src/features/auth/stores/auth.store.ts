@@ -1,13 +1,13 @@
 import { useAppStore } from '@/stores/app.store';
-import { ROLES } from '@/types/auth.types';
+import { UserRole } from './auth.types';
 
-// Re-export ROLES for compatibility
-export { ROLES };
+// Re-export UserRole for consistency
+export { UserRole };
+export const ROLES = UserRole;
+
 
 // -- Selectors --
-// Retaining the hook-based API for compatibility with existing components
-
-export const useAuthStore = useAppStore; // Warning: direct usage gives full store now
+export const useAuthStore = useAppStore;
 
 export const useAuthUser = () => useAppStore((s) => s.user);
 export const useAuthProfile = () => useAppStore((s) => s.profile);
@@ -20,46 +20,41 @@ export const useUserRole = () => useAppStore((s) => s.user?.role ?? null);
 export const useAccessToken = () => useAppStore((s) => s.accessToken);
 
 export const useIsStudent = () =>
-  useAppStore((s) => s.user?.role === ROLES.STUDENT);
+  useAppStore((s) => s.user?.role === UserRole.STUDENT);
 
 export const useIsLandlord = () =>
-  useAppStore((s) => s.user?.role === ROLES.LANDLORD);
+  useAppStore((s) => s.user?.role === UserRole.LANDLORD);
 
 export const useIsCaretaker = () =>
-  useAppStore((s) => s.user?.role === ROLES.CARETAKER);
+  useAppStore((s) => s.user?.role === UserRole.CARETAKER);
 
 export const useIsAdmin = () =>
   useAppStore(
     (s) =>
-      s.user?.role === ROLES.SUPER_ADMIN ||
-      s.user?.role === ROLES.TECH_SUPPORT_ADMIN
+      s.user?.role === UserRole.SUPER_ADMIN ||
+      s.user?.role === UserRole.TECH_SUPPORT_ADMIN
   );
 
 // -- Actions --
 export const hydrateAuthStore = () => useAppStore.getState().hydrate();
 export const logout = () => useAppStore.getState().logout();
-export const login = (payload: any) => useAppStore.getState().login(payload); // Type safety looseness for quick compat, strictly use AppStore in new code
 
-// Profile completeness checks (logic moved from old store)
+// Profile completeness checks
 export const useIsStudentProfileComplete = () =>
   useAppStore((s) => {
     if (
-      s.profile?.hasOwnProperty('type') &&
-      (s.profile as any).type === 'student'
+      s.profile?.type === 'student'
     ) {
-      // @ts-ignore
       return Boolean(s.profile.is_profile_complete);
     }
-    return true; // Default true if not student or unknown to avoid blocking
+    return true; 
   });
 
 export const useIsLandlordVerified = () =>
     useAppStore((s) => {
       if (
-        s.profile?.hasOwnProperty('type') &&
-        (s.profile as any).type === 'landlord'
+        s.profile?.type === 'landlord'
       ) {
-        // @ts-ignore
         return Boolean(s.profile.is_verified);
       }
       return true;

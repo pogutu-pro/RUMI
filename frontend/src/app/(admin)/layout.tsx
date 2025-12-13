@@ -7,7 +7,7 @@ import { AdminSidebar } from '@/components/layouts/admin-sidebar';
 import { AdminTopNav } from '@/components/layouts/admin-top-nav';
 import { DashboardThemeProvider } from '@/components/providers/dashboard-theme-provider';
 import { cn } from '@/lib/utils/cn';
-import { useAdminStore } from '@/features/admin';
+import { useAppStore } from '@/stores/app.store';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -15,7 +15,11 @@ interface AdminLayoutProps {
 
 export default function Layout({ children }: AdminLayoutProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const { isSidebarOpen, setSidebarOpen } = useAdminStore();
+  
+  // Use Global UI Store
+  const isSidebarOpen = useAppStore((state) => state.isSidebarOpen);
+  const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
+  
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
 
   return (

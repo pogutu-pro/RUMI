@@ -11,5 +11,6 @@ export * from './components/roommate-preview-card';
 export * from './components/transfer-status-badge';
 export * from './stores/transfer.store';
 export * from './api/transfers';
-export * from './hooks/use-transfers';
+export * from './hooks/use-transfers'; // Existing hook file (deprecate maybe?)
+export * from './hooks/use-transfers-query'; // NEW
 export * from './types';

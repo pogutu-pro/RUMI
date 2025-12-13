@@ -36,7 +36,6 @@ interface AdminState {
   selectedPaymentId: string | null;
 
   // UI state
-  isSidebarOpen: boolean;
   activeView: 'table' | 'grid' | 'map';
 
   // Actions
@@ -53,7 +52,6 @@ interface AdminState {
   setSelectedHostel: (id: string | null) => void;
   setSelectedPayment: (id: string | null) => void;
 
-  setSidebarOpen: (open: boolean) => void;
   setActiveView: (view: 'table' | 'grid' | 'map') => void;
 }
 
@@ -85,7 +83,6 @@ export const useAdminStore = create<AdminState>()(
       selectedUserId: null,
       selectedHostelId: null,
       selectedPaymentId: null,
-      isSidebarOpen: true,
       activeView: 'table',
 
       // Filter actions
@@ -113,13 +110,11 @@ export const useAdminStore = create<AdminState>()(
       setSelectedPayment: (id) => set({ selectedPaymentId: id }),
 
       // UI actions
-      setSidebarOpen: (open) => set({ isSidebarOpen: open }),
       setActiveView: (view) => set({ activeView: view }),
     }),
     {
       name: 'admin-storage',
       partialize: (state) => ({
-        isSidebarOpen: state.isSidebarOpen,
         activeView: state.activeView,
         userFilters: state.userFilters,
         hostelFilters: state.hostelFilters,
@@ -154,4 +149,3 @@ export const useAdminSelections = () => {
     setSelectedPayment,
   };
 };
-

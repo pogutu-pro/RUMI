@@ -1,17 +1,14 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import { useTechSupportStore } from '@/features/support';
+// import { useTechSupportStore } from '@/features/support';
+import { useSupportMessages } from '@/features/support/hooks/use-support';
 import { ChatInterface } from '@/features/support';
 import { MessageSquare, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function MessagesPage() {
-  const { messages, isLoadingMessages, fetchMessages } = useTechSupportStore();
-
-  useEffect(() => {
-    fetchMessages();
-  }, [fetchMessages]);
+  const { data: messages = [], isLoading: isLoadingMessages } = useSupportMessages();
 
   const handleSendMessage = (content: string) => {
     console.log("Sending message:", content);

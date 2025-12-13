@@ -11,17 +11,40 @@ import {
   ShieldAlert,
   Search,
   Activity,
-  Calendar
+  Calendar,
+  ShieldCheck
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+// import { useTechSupportStore } from '@/features/support'; // Removed store
 import { useAuth } from '@/features/auth';
+import { 
+  useSupportLogs, 
+  useSupportTickets, 
+  useSupportUsers, 
+  useSupportTransactions,
+  useSupportHostels 
+} from '@/features/support/hooks/use-support';
 import { Separator } from '@/components/ui/separator';
 
 export default function TechSupportDashboard() {
   const { user } = useAuth();
+  
+  const { data: logs = [], isLoading: isLoadingLogs } = useSupportLogs();
+  const { data: tickets = [], isLoading: isLoadingTickets } = useSupportTickets();
+  const { data: users = [], isLoading: isLoadingUsers } = useSupportUsers();
+  const { data: transactions = [], isLoading: isLoadingTransactions } = useSupportTransactions();
+  const { data: hostels = [], isLoading: isLoadingHostels } = useSupportHostels();
+
+  // Metrics (Derived from data arrays)
+  const stats = [
+    { label: "Active Tickets", value: tickets.filter((t: any) => t.status === 'open' || t.status === 'in_progress').length, icon: AlertCircle, color: "text-amber-500", bg: "bg-amber-500/10", change: "+12%" },
+    { label: "Pending Verifications", value: users.filter((u: any) => !u.is_verified).length, icon: ShieldCheck, color: "text-blue-500", bg: "bg-blue-500/10", change: "-5%" },
+    { label: "Payment Disputes", value: transactions.filter((t: any) => t.status === 'failed').length, icon: Activity, color: "text-red-500", bg: "bg-red-500/10", change: "+2%" },
+    { label: "Avg. Response Time", value: "2.4 hrs", icon: Clock, color: "text-emerald-500", bg: "bg-emerald-500/10", change: "-15%" }
+  ];
   
   // Get time-based greeting
   const getGreeting = () => {

@@ -13,7 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useTechSupportStore } from '@/features/support';
+// import { useTechSupportStore } from '@/features/support';
+import { useSupportHostels } from '@/features/support/hooks/use-support';
 import { HostelTable } from '@/features/support';
 import { Badge } from '@/components/ui/badge';
 
@@ -22,13 +23,9 @@ interface HostelSupportPageProps {
 }
 
 export default function HostelSupportPage({ defaultStatus = "all" }: HostelSupportPageProps) {
-  const { hostels, isLoadingHostels, fetchHostels } = useTechSupportStore();
+  const { data: hostels = [], isLoading: isLoadingHostels } = useSupportHostels();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState(defaultStatus);
-
-  useEffect(() => {
-    fetchHostels();
-  }, [fetchHostels]);
 
   const filteredHostels = hostels.filter(hostel => 
     hostel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
