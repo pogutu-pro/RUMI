@@ -1,5 +1,5 @@
 import apiClient from '@/lib/api/client';
-import { User, UserActivity } from '@/features/users'; // Assuming types exist or will be added
+import { User } from '@/features/users'; // Assuming types exist or will be added
 import { ApiResponse, PaginatedResponse } from '@/types/api.types';
 
 // -- Types --
@@ -86,7 +86,7 @@ export const usersApi = {
 // Aliases for compatibility if needed, but direct usage of usersApi is preferred.
 export const getUsers = async (params?: any) => {
   const data = await usersApi.getUsers(params);
-  return data.results; // Adapter for legacy expectations if they expected just an array
+  return data.data; // Adapter for legacy expectations if they expected just an array
 };
 
 export const getUserById = async (id: string): Promise<User> => {
@@ -100,7 +100,7 @@ export const getUserById = async (id: string): Promise<User> => {
     // Generally REST has GET /resource/:id
     try {
         const res = await apiClient.get<ApiResponse<User>>(`/accounts/users/${id}/`);
-        return res.data.data;
+        return res.data.data!;
     } catch (e) {
         console.warn('getUserById endpoint might be missing or limited to admin.');
         throw e;
@@ -113,7 +113,7 @@ export const deleteUser = async (userId: string) => {
     return usersApi.deactivateUser(userId, 'Deleted by admin');
 };
 
-export const updateUserStatus = async (userId: string, data: { status: 'active' | 'inactive'; reason?: string }) => {
+export const updateUserStatus = async (userId: string, data: { status: string; reason?: string }) => {
     if (data.status === 'active') {
         return usersApi.reactivateUser(userId, data.reason);
     } else {

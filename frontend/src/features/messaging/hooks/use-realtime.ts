@@ -31,7 +31,8 @@ export interface UseRealtimeOptions {
  */
 export const useRealtime = (options: UseRealtimeOptions = {}) => {
   const { channels = [], autoConnect = true } = options;
-  const { user, isAuthenticated } = useAuthStore();
+  const user = useAuthUser();
+  const isAuthenticated = useIsAuthenticated();
   
   const eventHandlersRef = useRef<
     Map<RealtimeEvent, Set<(data: any) => void>>

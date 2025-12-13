@@ -158,4 +158,18 @@ export const paymentsApi = {
     );
     return res.data;
   },
+
+  // Payment Stats
+  getPaymentStats: async () => {
+    const res = await apiClient.get<ApiResponse<any>>('/payments/analytics/revenue/'); // Use any or Import PaymentStats if easier for now, keeping it simple as I can't import Payment API func easily here without refactor
+    // Actually api.ts calls apiClient directly.
+    return res.data.data || {
+        totalRevenue: 0,
+        pendingAmount: 0,
+        failedAmount: 0,
+        completedCount: 0,
+        pendingCount: 0,
+        failedCount: 0,
+      };
+  },
 };

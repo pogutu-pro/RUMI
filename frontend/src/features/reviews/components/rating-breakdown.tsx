@@ -38,7 +38,7 @@ export default function RatingBreakdown({
         label: `${star} star${star !== 1 ? 's' : ''}`,
       };
     });
-  }, [reviews, showEmptyStars]);
+  }, [reviews]);
 
   if (reviews.length === 0) {
     return (

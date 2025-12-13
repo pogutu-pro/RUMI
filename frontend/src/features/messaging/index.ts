@@ -7,4 +7,5 @@ export * from './components/empty-state';
 export * from './components/scroll-to-bottom';
 export * from './components/pull-to-refresh';
 export * from './hooks/use-messaging';
-// Removed: export * from './stores/messaging.store';
+export * from './api/messages';
+export * from './types';

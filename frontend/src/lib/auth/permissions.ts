@@ -73,6 +73,14 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.APPROVE_CHECKOUT,
   ],
 
+  tech_support: [
+    Permission.VIEW_HOSTELS,
+    Permission.VIEW_BOOKINGS,
+    Permission.VIEW_PAYMENTS,
+    Permission.VIEW_REVIEWS,
+    Permission.VIEW_REPORTS,
+  ],
+
   tech_support_admin: [
     Permission.VIEW_HOSTELS,
     Permission.APPROVE_HOSTEL,

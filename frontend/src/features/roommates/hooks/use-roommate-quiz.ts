@@ -24,26 +24,33 @@ export interface QuizState {
 }
 
 export function useRoommateQuiz() {
-  const [quizState, setQuizState] = useState<QuizState>({
-    currentQuestionIndex: 0,
-    answers: [],
-    isComplete: false,
+  // Load progress from localStorage on mount (lazy initialization)
+  const [quizState, setQuizState] = useState<QuizState>(() => {
+    if (typeof window === 'undefined') {
+      return {
+        currentQuestionIndex: 0,
+        answers: [],
+        isComplete: false,
+      };
+    }
+
+    try {
+      const savedProgress = localStorage.getItem(STORAGE_KEY);
+      if (savedProgress) {
+        return JSON.parse(savedProgress);
+      }
+    } catch (error) {
+      console.error('Failed to load quiz progress', error);
+    }
+
+    return {
+      currentQuestionIndex: 0,
+      answers: [],
+      isComplete: false,
+    };
   });
 
   const updatePreferencesMutation = useUpdateRoommatePreferences();
-
-  // Load progress from localStorage on mount
-  useEffect(() => {
-    const savedProgress = localStorage.getItem(STORAGE_KEY);
-    if (savedProgress) {
-      try {
-        const parsed = JSON.parse(savedProgress);
-        setQuizState(parsed);
-      } catch (error) {
-        console.error('Failed to load quiz progress', error);
-      }
-    }
-  }, []);
 
   // Save progress to localStorage whenever it changes
   useEffect(() => {

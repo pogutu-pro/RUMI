@@ -69,13 +69,13 @@ export function MessageBubble({
         {/* Bubble */}
         <div
           className={cn(
-            'group relative rounded-[20px] px-3.5 py-2 transition-shadow',
+            'group relative max-w-full px-4 py-2.5 transition-all duration-200',
             isOwnMessage
-              ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md hover:shadow-lg'
-              : 'border border-gray-200 bg-white text-gray-900 shadow-sm hover:shadow-md',
-            hasImage && 'p-1.5',
-            isGrouped && isOwnMessage && 'rounded-tr-md',
-            isGrouped && !isOwnMessage && 'rounded-tl-md'
+              ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-100 rounded-2xl rounded-tr-sm'
+              : 'bg-white border border-gray-100 text-gray-900 shadow-sm rounded-2xl rounded-tl-sm',
+            hasImage && 'p-1',
+            isGrouped && isOwnMessage && 'rounded-tr-2xl mt-0.5', // Adjust for grouping
+            isGrouped && !isOwnMessage && 'rounded-tl-2xl mt-0.5'
           )}
         >
           {/* Image Attachments */}
@@ -140,8 +140,8 @@ export function MessageBubble({
           {/* Timestamp & Status */}
           <div
             className={cn(
-              'mt-1 flex items-center gap-1.5 text-[11px]',
-              isOwnMessage ? 'justify-end text-white/70' : 'justify-start text-gray-500'
+              'mt-1 flex items-center gap-1 text-[10px] font-medium leading-none select-none',
+              isOwnMessage ? 'justify-end text-emerald-100/90' : 'justify-start text-gray-400'
             )}
           >
             <span>{formatTimestamp(message.createdAt, true)}</span>
@@ -150,15 +150,15 @@ export function MessageBubble({
             {isOwnMessage && (
               <div className="ml-0.5">
                 {message.status === 'sending' && (
-                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  <div className="h-2.5 w-2.5 animate-spin rounded-full border-[1.5px] border-white/30 border-t-white" />
                 )}
-                {message.status === 'sent' && <Check className="h-3.5 w-3.5" strokeWidth={2.5} />}
-                {message.status === 'delivered' && <CheckCheck className="h-3.5 w-3.5" strokeWidth={2.5} />}
+                {message.status === 'sent' && <Check className="h-3 w-3 opacity-90" strokeWidth={2.5} />}
+                {message.status === 'delivered' && <CheckCheck className="h-3 w-3 opacity-90" strokeWidth={2.5} />}
                 {message.status === 'read' && (
-                  <CheckCheck className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
+                  <CheckCheck className="h-3 w-3 text-white" strokeWidth={2.5} />
                 )}
                 {message.status === 'failed' && (
-                  <span className="text-red-300 font-semibold">!</span>
+                  <span className="text-red-200 font-bold" title="Failed to send">!</span>
                 )}
               </div>
             )}

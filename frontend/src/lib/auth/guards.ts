@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 import type { Route } from 'next';
 import { cookies } from 'next/headers';
-import type { UserRole } from '@/types/auth.types';
-import { useAuthStore } from '@/features/auth';
+import { UserRole } from '@/features/auth/types/types';
+import { useAuthStore, useIsAuthenticated } from '@/features/auth';
 
 const TOKEN_COOKIE = 'rumi_access_token';
 const ROLE_COOKIE = 'rumi_user_role';
@@ -11,7 +11,7 @@ export function useAuthGuard(options?: {
   requiredRole?: UserRole | UserRole[];
   redirectTo?: string;
 }) {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isAuthenticated = useIsAuthenticated();
   const user = useAuthStore((state) => state.user);
 
   if (!isAuthenticated) {

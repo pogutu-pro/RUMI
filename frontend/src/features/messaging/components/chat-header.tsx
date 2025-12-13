@@ -24,7 +24,7 @@ export function ChatHeader({
   const participant = conversation.otherParticipant;
 
   return (
-    <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 shadow-sm backdrop-blur-sm">
+    <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-100 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-md support-backdrop-blur:bg-white/95">
       {/* Back Button (Mobile - WhatsApp Style) */}
       {showBackButton && (
         <button
@@ -138,7 +138,7 @@ export function ChatHeader({
       {/* Mobile - Info Button Only */}
       <button
         onClick={onInfoClick}
-        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-gray-600 transition-colors hover:bg-gray-100 active:scale-95 md:hidden"
+        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 active:scale-95 md:hidden"
         aria-label="Conversation info"
       >
         <Info className="h-5 w-5" />

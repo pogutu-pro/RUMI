@@ -103,6 +103,11 @@ export const queryKeys = {
       [...queryKeys.payments.all, 'recurring'] as QueryKey,
     stats: (): QueryKey => [...queryKeys.payments.all, 'stats'] as QueryKey,
   },
+  messaging: {
+    all: ['messaging'] as const,
+    conversations: (): QueryKey => ['messaging', 'conversations'] as QueryKey,
+    detail: (conversationId: string): QueryKey => ['messaging', 'conversation', conversationId] as QueryKey,
+  },
   notifications: {
     all: ['notifications'] as const,
     list: (unreadOnly?: boolean): QueryKey =>

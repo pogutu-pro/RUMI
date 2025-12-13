@@ -101,11 +101,7 @@ export const usePayments = useStudentTransactions; // Alias to student transacti
 export const usePaymentStats = () => {
     return useQuery({
         queryKey: ['payments', 'stats'],
-        queryFn: async () => ({
-            total_revenue: 0,
-            pending_payouts: 0,
-            completed_payouts: 0
-        })
+        queryFn: paymentsApi.getPaymentStats,
     });
 };
 

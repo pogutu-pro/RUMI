@@ -81,7 +81,8 @@ export function notifyPromise<T>(
     error: string | ((error: Error) => string);
   }
 ): Promise<T> {
-  return toast.promise(promise, messages);
+  toast.promise(promise, messages);
+  return promise;
 }
 
 export const notifications = {

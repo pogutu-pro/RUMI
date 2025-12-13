@@ -1,4 +1,4 @@
-import type { ID, Timestamp, UserRole } from './auth.types';
+import type { ID, Timestamp, UserRole } from '@/features/auth/types/types';
 
 // ============================================================================
 // CORE TYPES
@@ -153,6 +153,11 @@ export interface SendMessageRequest {
   content: string;
   messageType?: MessageType;
   attachments?: File[];
+}
+
+export interface CreateConversationRequest {
+  participantId: ID;
+  message?: string;
 }
 
 export interface SendMessageResponse {

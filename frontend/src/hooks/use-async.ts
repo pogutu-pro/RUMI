@@ -1,4 +1,4 @@
-import { useState, useCallback, useReducer, useRef } from 'react';
+import { useState, useCallback, useReducer, useRef, useEffect } from 'react';
 import { logger } from '@/lib/logger';
 
 // State machine states
@@ -76,8 +76,11 @@ export function useAsync<T = any>(initialState?: Partial<AsyncState<T>>, options
   const errorCallbackRef = useRef(options?.onError);
 
   // Update refs when options change
-  successCallbackRef.current = options?.onSuccess;
-  errorCallbackRef.current = options?.onError;
+  // Update refs when options change
+  useEffect(() => {
+    successCallbackRef.current = options?.onSuccess;
+    errorCallbackRef.current = options?.onError;
+  }, [options?.onSuccess, options?.onError]);
 
   const run = useCallback(
     (promise: Promise<T>) => {

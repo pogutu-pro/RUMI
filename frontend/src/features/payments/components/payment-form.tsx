@@ -51,7 +51,16 @@ export function PaymentForm({ bookingId, amount, onSuccess }: PaymentFormProps) 
     },
   });
 
-  const selectedMethod = form.watch('method');
+  const selectedMethod = useWatch({
+    control: form.control,
+    name: 'method',
+  });
+
+  const watchedAmount = useWatch({
+    control: form.control,
+    name: 'amount',
+  });
+
 
   async function onSubmit(data: PaymentFormValues) {
     initiatePayment.mutate(
@@ -138,7 +147,7 @@ export function PaymentForm({ bookingId, amount, onSuccess }: PaymentFormProps) 
               {initiatePayment.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Pay KES {form.watch('amount')?.toLocaleString()}
+              Pay KES {watchedAmount?.toLocaleString()}
             </Button>
           </form>
         </Form>

@@ -21,7 +21,7 @@ export function ConversationList({ onSelectConversation, selectedId }: Conversat
   return (
     <ScrollArea className="h-[600px]">
       <div className="space-y-2 p-4">
-        {conversations?.results.map((conversation) => {
+        {conversations?.data.map((conversation) => {
           const isSelected = selectedId === conversation.id;
           const lastMessage = conversation.lastMessage;
 
@@ -34,13 +34,13 @@ export function ConversationList({ onSelectConversation, selectedId }: Conversat
               onClick={() => onSelectConversation?.(conversation.id)}
             >
               <Avatar>
-                <AvatarImage src={conversation.otherUser?.avatar} />
-                <AvatarFallback>{conversation.otherUser?.name?.[0]}</AvatarFallback>
+                <AvatarImage src={conversation.otherParticipant?.avatar} />
+                <AvatarFallback>{conversation.otherParticipant?.name?.[0]}</AvatarFallback>
               </Avatar>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <p className="font-medium truncate">{conversation.otherUser?.name}</p>
+                  <p className="font-medium truncate">{conversation.otherParticipant?.name}</p>
                   {lastMessage && (
                     <span className="text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(lastMessage.createdAt), { addSuffix: true })}
@@ -63,7 +63,7 @@ export function ConversationList({ onSelectConversation, selectedId }: Conversat
           );
         })}
 
-        {conversations?.results.length === 0 && (
+        {conversations?.data.length === 0 && (
           <div className="text-center text-muted-foreground py-8">
             No conversations yet
           </div>

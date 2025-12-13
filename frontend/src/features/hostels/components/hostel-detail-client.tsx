@@ -96,12 +96,14 @@ export function HostelDetailClient({ slug }: HostelDetailClientProps) {
     if (!rawHostel) return null;
     return {
       ...rawHostel,
-      rooms: rawHostel.rooms && rawHostel.rooms.length > 0 
+      rooms: rawHostel?.rooms && rawHostel.rooms.length > 0 
         ? rawHostel.rooms 
         : MOCK_ROOMS,
       // Also set pricePerMonth from base_price if not set
-      pricePerMonth: rawHostel.pricePerMonth || parseFloat(rawHostel.base_price) || 8000,
-    };
+      pricePerMonth: rawHostel?.pricePerMonth || (rawHostel?.base_price ? parseFloat(rawHostel.base_price) : 8000),
+      // Ensure reviews is defined
+      reviews: rawHostel?.reviews || [],
+    } as Hostel;
   }, [rawHostel]);
 
 

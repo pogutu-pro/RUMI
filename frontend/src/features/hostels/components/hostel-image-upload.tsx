@@ -110,7 +110,7 @@ export default function HostelImageUpload({
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="group relative aspect-[4/3] rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800 bg-slate-50"
+              className="group relative aspect-4/3 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800 bg-slate-50"
             >
               <Image
                 src={url}
@@ -118,7 +118,7 @@ export default function HostelImageUpload({
                 fill
                 className="object-cover transition-transform duration-500 group-hover:scale-110"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <Button
                 type="button"
                 variant="destructive"
@@ -136,7 +136,7 @@ export default function HostelImageUpload({
               initial={false}
               animate={{ opacity: 1 }}
               className={cn(
-                "relative aspect-[4/3] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 group hover:border-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20",
+                "relative aspect-4/3 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 group hover:border-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20",
                 isDragging ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 scale-[0.98]" : "border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50"
               )}
               onClick={triggerUpload}

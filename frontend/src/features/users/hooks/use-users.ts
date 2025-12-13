@@ -7,7 +7,7 @@ import {
   deleteUser,
   getUser,
 } from '@/features/users';
-import { useAuthStore } from '@/features/auth';
+import { useAuthStore, useIsAuthenticated } from '@/features/auth';
 import type { User } from '@/types/entities.types';
 
 export interface UseUserOptions {
@@ -56,7 +56,7 @@ export const useUpdateUserStatus = () => {
 
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: User['status'] }) =>
-      updateUserStatus(id, status),
+      updateUserStatus(id, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
@@ -79,7 +79,8 @@ export const useDeleteUser = () => {
  * @returns The current user from auth store
  */
 export const useCurrentUser = () => {
-  const { user, isAuthenticated } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useIsAuthenticated();
   
   return {
     user,

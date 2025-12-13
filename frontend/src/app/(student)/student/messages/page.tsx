@@ -164,7 +164,7 @@ export default function StudentMessagesPage() {
                 <ConversationCard
                   key={conversation.id}
                   conversation={conversation}
-                  is_active={conversation.id === activeConversationId}
+                  isActive={conversation.id === activeConversationId}
                   onClick={() => handleSelectConversation(conversation.id)}
                   onPin={() =>
                     conversation.isPinned

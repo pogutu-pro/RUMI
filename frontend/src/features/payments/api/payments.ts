@@ -1,5 +1,6 @@
 import apiClient from '@/lib/api/client';
 import type { Payment } from '@/types/entities.types';
+import type { PaymentStats } from '../types';
 import type { ApiResponse } from '@/types/api.types';
 
 export interface GetPaymentsFilters {
@@ -69,15 +70,8 @@ export const getAdminPayments = async (filters?: GetPaymentsFilters): Promise<Pa
 /**
  * Get payment statistics
  */
-export const getPaymentStats = async () => {
-  const response = await apiClient.axios.get<ApiResponse<{
-    totalRevenue: number;
-    pendingAmount: number;
-    failedAmount: number;
-    completedCount: number;
-    pendingCount: number;
-    failedCount: number;
-  }>>('/payments/analytics/revenue/');
+export const getPaymentStats = async (): Promise<PaymentStats> => {
+  const response = await apiClient.axios.get<ApiResponse<PaymentStats>>('/payments/analytics/revenue/');
   
   return response.data.data || {
     totalRevenue: 0,
@@ -92,17 +86,23 @@ export const getPaymentStats = async () => {
 /**
  * Initiate a payment
  */
+export interface PaymentInitializeRequest {
+  bookingId: string;
+  method: 'mpesa' | 'bank';
+  phoneNumber?: string;
+  amount?: number;
+}
+
+/**
+ * Initiate a payment
+ */
 export const initiatePayment = async (
-  bookingId: string,
-  method: 'mpesa' | 'bank'
+  data: PaymentInitializeRequest
 ): Promise<{ success: boolean; transactionId: string }> => {
   const response = await apiClient.axios.post<ApiResponse<{
     success: boolean;
     transactionId: string;
-  }>>('/payments/initialize/', {
-    bookingId,
-    method,
-  });
+  }>>('/payments/initialize/', data);
   
   return response.data.data || { success: false, transactionId: '' };
 };

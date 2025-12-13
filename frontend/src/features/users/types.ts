@@ -1,4 +1,4 @@
-import { Timestamp } from '@/features/auth/types/types';
+import { Timestamp, UserRole } from '@/features/auth/types/types';
 
 export interface User {
   id: string;
@@ -6,7 +6,7 @@ export interface User {
   first_name?: string;
   last_name?: string;
   email: string;
-  role: 'student' | 'landlord' | 'caretaker' | 'tech_support' | 'tech_support_admin' | 'super_admin' | 'admin';
+  role: UserRole;
   status: 'active' | 'suspended' | 'pending';
   avatar?: string;
   profile_picture?: string;

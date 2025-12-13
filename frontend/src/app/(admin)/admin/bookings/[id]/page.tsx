@@ -145,25 +145,25 @@ export default function Page() {
                          <p className="text-sm font-medium text-muted-foreground">Property</p>
                          <div className="flex items-center gap-2">
                              <Building2 className="h-4 w-4 text-primary" />
-                             <span className="font-medium">{booking.hostelName}</span>
+                             <span className="font-medium">{booking.hostelName || (typeof booking.hostel === 'object' ? booking.hostel.name : booking.hostel)}</span>
                          </div>
                      </div>
                      <div className="space-y-1">
                          <p className="text-sm font-medium text-muted-foreground">Room</p>
-                         <p className="font-medium">Room {booking.roomNumber}</p>
+                         <p className="font-medium">Room {booking.roomNumber || (typeof booking.room === 'object' ? booking.room.number : booking.room)}</p>
                      </div>
                      <div className="space-y-1">
                          <p className="text-sm font-medium text-muted-foreground">Check-in Date</p>
                          <div className="flex items-center gap-2">
                              <Calendar className="h-4 w-4 text-muted-foreground" />
-                             <span className="font-medium">{format(new Date(booking.moveInDate), 'MMMM d, yyyy')}</span>
+                             <span className="font-medium">{format(new Date(booking.check_in_date), 'MMMM d, yyyy')}</span>
                          </div>
                      </div>
                      <div className="space-y-1">
                          <p className="text-sm font-medium text-muted-foreground">Duration</p>
                          <div className="flex items-center gap-2">
                              <Clock className="h-4 w-4 text-muted-foreground" />
-                             <span className="font-medium">{booking.duration} months</span>
+                             <span className="font-medium">{booking.duration_months} months</span>
                          </div>
                      </div>
                  </CardContent>
@@ -177,23 +177,23 @@ export default function Page() {
                      <div className="space-y-4">
                          <div className="flex justify-between items-center text-sm">
                              <span className="text-muted-foreground">Rent Amount (Monthly)</span>
-                             <span className="font-medium">KES {Math.round(booking.amount / booking.durationMonths).toLocaleString()}</span>
+                             <span className="font-medium">KES {booking.monthly_rent?.toLocaleString() || (booking.total_amount / booking.duration_months).toLocaleString()}</span>
                          </div>
                           <div className="flex justify-between items-center text-sm">
                              <span className="text-muted-foreground">Duration</span>
-                             <span className="font-medium">{booking.duration} Months</span>
+                             <span className="font-medium">{booking.duration_months} Months</span>
                          </div>
                          <Separator />
                          <div className="flex justify-between items-center text-base font-bold">
                              <span>Total Amount</span>
-                             <span>KES {booking.amount.toLocaleString()}</span>
+                             <span>KES {booking.total_amount.toLocaleString()}</span>
                          </div>
                          <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <CreditCard className="h-4 w-4" />
-                                Payment Method
+                                Payment Status
                             </div>
-                            <span className="capitalize font-medium">{booking.paymentMethod}</span>
+                            <span className="capitalize font-medium">{booking.payment_status || 'Pending'}</span>
                          </div>
                      </div>
                  </CardContent>
@@ -211,11 +211,13 @@ export default function Page() {
                          <Avatar className="h-12 w-12">
                              {/* <AvatarImage src={booking.studentAvatar} /> */}
                              <AvatarFallback className="bg-primary/10 text-primary">
-                                 {booking.studentName.substring(0,2).toUpperCase()}
+                                 {((typeof booking.student === 'object' ? booking.student.first_name : 'S').substring(0,2).toUpperCase())}
                              </AvatarFallback>
                          </Avatar>
                          <div>
-                             <p className="font-medium leading-none">{booking.studentName}</p>
+                             <p className="font-medium leading-none">
+                                 {typeof booking.student === 'object' ? `${booking.student.first_name} ${booking.student.last_name}` : booking.studentName || 'Student'}
+                             </p>
                              <p className="text-sm text-muted-foreground mt-1">Student</p>
                          </div>
                      </div>
@@ -223,7 +225,9 @@ export default function Page() {
                      <div className="space-y-3 pt-2">
                         <div className="flex items-center gap-3 text-sm">
                             <Mail className="h-4 w-4 text-muted-foreground" />
-                            <a href={`mailto:student@example.com`} className="hover:underline">student@example.com</a>
+                            <a href={`mailto:${typeof booking.student === 'object' ? booking.student.email : '#'}`} className="hover:underline">
+                                {typeof booking.student === 'object' ? booking.student.email : 'No email'}
+                            </a>
                         </div>
                         <div className="flex items-center gap-3 text-sm">
                             <Phone className="h-4 w-4 text-muted-foreground" />
@@ -231,7 +235,7 @@ export default function Page() {
                         </div>
                      </div>
 
-                     <Button variant="outline" className="w-full" onClick={() => router.push(`/admin/users/${booking.studentId}`)}>
+                     <Button variant="outline" className="w-full" onClick={() => router.push(`/admin/users/${typeof booking.student === 'object' ? booking.student.id : booking.student}`)}>
                          View Full Profile
                      </Button>
                  </CardContent>

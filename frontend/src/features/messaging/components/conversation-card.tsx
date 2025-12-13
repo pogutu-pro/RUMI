@@ -110,26 +110,27 @@ export function ConversationCard({
         dragMomentum={false}
         style={{ x }}
         onDragEnd={handleDragEnd}
-        whileTap={{ scale: 0.98 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        whileTap={{ scale: 0.995 }}
+        whileHover={{ backgroundColor: isActive ? undefined : 'rgba(249, 250, 251, 0.8)' }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         className={cn(
-          'relative cursor-pointer border-b border-gray-100 bg-white px-4 py-3 transition-colors active:bg-gray-50',
-          isActive && 'bg-emerald-50'
+          'relative cursor-pointer border-b border-gray-50 bg-white px-4 py-4 transition-all duration-200', // Increased padding
+          isActive && 'bg-emerald-50/60 border-l-4 border-l-emerald-500 pl-3' // Active indicator
         )}
         onClick={onClick}
       >
         {/* Pin Indicator */}
         {conversation.isPinned && (
-          <div className="absolute left-2 top-2">
-            <Pin className="h-3 w-3 text-emerald-600" fill="currentColor" />
+          <div className="absolute right-2 top-2">
+             <Pin className="h-3.5 w-3.5 text-gray-400 rotate-45" />
           </div>
         )}
 
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-4"> {/* Increased gap */}
           {/* Avatar */}
           <div className="relative flex-shrink-0">
             {otherParticipant?.avatar ? (
-              <div className="relative h-14 w-14 overflow-hidden rounded-full bg-gray-200">
+              <div className="relative h-12 w-12 overflow-hidden rounded-full ring-2 ring-gray-50 bg-gray-100 shadow-sm"> {/* Refined Avatar */}
                 <Image
                   src={otherParticipant.avatar}
                   alt={otherParticipant.name}
@@ -139,8 +140,8 @@ export function ConversationCard({
               </div>
             ) : (
               <div className={cn(
-                'flex h-14 w-14 items-center justify-center rounded-full text-sm font-semibold text-white',
-                'bg-gradient-to-br from-purple-400 to-purple-600'
+                'flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold text-white shadow-sm ring-2 ring-white',
+                'bg-gradient-to-tr from-violet-500 to-fuchsia-500' // Premium gradient
               )}>
                 {getInitials(otherParticipant?.name || 'User')}
               </div>
@@ -148,63 +149,62 @@ export function ConversationCard({
 
             {/* Online Status */}
             {otherParticipant?.isOnline && (
-              <div className="absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-white bg-emerald-500" />
+              <div className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500 shadow-sm" />
             )}
           </div>
 
           {/* Content */}
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 py-0.5">
             {/* Name & Time */}
-            <div className="flex items-baseline justify-between gap-2">
-              <h3 className="truncate text-base font-semibold text-gray-900">
+            <div className="flex items-baseline justify-between mb-1">
+              <h3 className={cn(
+                  "truncate text-[15px] font-semibold text-gray-900 transition-colors",
+                  conversation.unreadCount > 0 && "font-bold"
+              )}>
                 {otherParticipant?.name || 'Unknown'}
               </h3>
 
-              <span className="flex-shrink-0 text-xs text-gray-500">
+              <span className={cn(
+                  "flex-shrink-0 text-[11px] font-medium",
+                  conversation.unreadCount > 0 ? "text-emerald-600" : "text-gray-400"
+              )}>
                 {conversation.lastMessage?.createdAt
                   ? formatTimestamp(conversation.lastMessage.createdAt, true)
                   : ''}
               </span>
             </div>
 
-            {/* Role Badge */}
-            {otherParticipant?.role && (
-              <span
-                className={cn(
-                  'mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs font-medium',
-                  getRoleBgColor(otherParticipant.role),
-                  getRoleColor(otherParticipant.role)
-                )}
-              >
-                {otherParticipant.role}
-              </span>
-            )}
-
+            {/* Role Badge (Optional, maybe too noisy for list? Keep small) */}
+            
             {/* Last Message */}
-            <div className="mt-1 flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2">
               <p
                 className={cn(
-                  'truncate text-sm',
-                  conversation.unreadCount > 0 ? 'font-medium text-gray-900' : 'text-gray-600',
-                  isTyping && 'italic text-emerald-600'
+                  'truncate text-sm leading-snug',
+                  conversation.unreadCount > 0 ? 'font-medium text-gray-800' : 'text-gray-500',
+                  isTyping && 'italic text-emerald-600 font-medium'
                 )}
               >
-                {isTyping
-                  ? 'typing...'
-                  : conversation.lastMessage
+                {isTyping ? (
+                    <span className="flex items-center gap-1">
+                        Typing<span className="animate-pulse">...</span>
+                    </span>
+                ) : (
+                    conversation.lastMessage
                     ? formatMessagePreview(conversation.lastMessage.content)
-                    : 'No messages yet'}
+                    : <span className="text-gray-400 italic">No messages yet</span>
+                )}
               </p>
 
               <div className="flex items-center gap-2">
                 {/* Muted Indicator */}
                 {conversation.isMuted && (
-                  <VolumeX className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                  <VolumeX className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
                 )}
 
                 {/* Unread Badge */}
                 {conversation.unreadCount > 0 && (
-                  <div className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-emerald-500 px-1.5 text-xs font-semibold text-white">
+                  <div className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-emerald-500 px-1.5 text-[10px] font-bold text-white shadow-sm shadow-emerald-200">
                     {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
                   </div>
                 )}

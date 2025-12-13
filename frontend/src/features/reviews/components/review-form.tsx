@@ -1,7 +1,7 @@
 // src/components/reviews/review-form.tsx
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { reviewSchema } from '@/lib/validations/review.schema';
 import { Button } from '@/components/ui/button';
@@ -22,12 +22,14 @@ export default function ReviewForm({ hostelId, onSuccess }: ReviewFormProps) {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm<ReviewFormData>({
     resolver: zodResolver(reviewSchema),
     defaultValues: { rating: 0, comment: '', hostelId },
   });
+
+  const rating = useWatch({ control, name: 'rating' });
 
   const mutation = useMutation({
     mutationFn: createReview,
@@ -44,7 +46,7 @@ export default function ReviewForm({ hostelId, onSuccess }: ReviewFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
         <RatingInput
-          value={watch('rating') || 0}
+          value={rating || 0}
           onChange={(r) => setValue('rating', r)}
         />
         {errors.rating && (

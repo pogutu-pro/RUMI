@@ -63,8 +63,10 @@ export function MessageInput({
     <div className="border-t border-gray-200 bg-white p-4">
       <div
         className={cn(
-          'flex items-end gap-2 rounded-full border-2 bg-gray-50 px-4 py-2 transition-all',
-          isFocused ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-gray-200'
+          'flex items-end gap-2 rounded-3xl border-2 bg-gray-50 px-4 py-2 transition-all duration-200 ease-out',
+          isFocused 
+            ? 'border-emerald-500 ring-4 ring-emerald-500/10 bg-white' 
+            : 'border-gray-100 hover:border-gray-200'
         )}
       >
         {/* Attach Button */}
@@ -113,13 +115,13 @@ export function MessageInput({
           onClick={handleSend}
           disabled={!message.trim() || disabled}
           className={cn(
-            'flex-shrink-0 rounded-full p-2 transition-all duration-200',
+            'flex-shrink-0 rounded-full p-2.5 transition-all duration-200 ease-out shadow-sm',
             message.trim()
-              ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md hover:shadow-lg active:scale-95'
-              : 'text-gray-400'
+              ? 'bg-gradient-to-tr from-emerald-500 to-emerald-600 text-white shadow-emerald-200 hover:shadow-lg hover:shadow-emerald-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
           )}
         >
-          <Send className="h-5 w-5" />
+          <Send className="h-5 w-5 ml-0.5" strokeWidth={2.5} />
         </button>
       </div>
     </div>
