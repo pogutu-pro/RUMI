@@ -3,7 +3,7 @@ import { queryKeys } from '@/lib/react-query/query-keys';
 import { getAnalytics, getAnalyticsBreakdown, exportAnalytics } from '@/features/analytics';
 import { toast } from 'sonner';
 
-export type AnalyticsPeriod = '7d' | '30d' | '90d' | '1y' | 'custom';
+import type { AnalyticsPeriod } from '@/features/analytics/types/types';
 
 export interface CustomDateRange {
   startDate: Date;

@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,9 +29,10 @@ import {
   Flag,
   Grid,
 } from 'lucide-react';
-import { useHostelBySlug } from '@/features/hostels';
+import { useHostelBySlug, hostelsApi } from '@/features/hostels';
 import { cn } from '@/lib/utils';
 import { HostelBookingWidget } from '@/features/hostels';
+import type { Room } from '@/types/entities.types';
 
 function ImageGallery({ images }: { images: string[] }) {
   const displayImages = images.slice(0, 5);
@@ -83,81 +85,44 @@ function ImageGallery({ images }: { images: string[] }) {
   );
 }
 
-// Mock rooms data for testing booking flow
-const MOCK_ROOMS = [
-  {
-    id: 'room-001',
-    name: 'Standard Single Room',
-    price: 8500,
-    beds: 0,
-    capacity: 1,
-    images: ['/images/rooms/single-1.jpg'],
-    available: true,
-    bookedDates: [],
-  },
-  {
-    id: 'room-002',
-    name: 'Shared Double Room',
-    price: 6000,
-    beds: 1,
-    capacity: 2,
-    images: ['/images/rooms/double-1.jpg'],
-    available: true,
-    bookedDates: [],
-  },
-  {
-    id: 'room-003',
-    name: 'Premium Single Room',
-    price: 12000,
-    beds: 0,
-    capacity: 1,
-    images: ['/images/rooms/premium-1.jpg'],
-    available: true,
-    bookedDates: [],
-  },
-  {
-    id: 'room-004',
-    name: 'Economy Triple Room',
-    price: 4500,
-    beds: 2,
-    capacity: 3,
-    images: ['/images/rooms/triple-1.jpg'],
-    available: true,
-    bookedDates: [],
-  },
-  {
-    id: 'room-005',
-    name: 'Executive Single (Fully Booked)',
-    price: 15000,
-    beds: 1,
-    capacity: 1,
-    images: ['/images/rooms/executive-1.jpg'],
-    available: false,
-    bookedDates: [],
-  },
-];
-
 export default function HostelDetailPage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
   
-  const { data: rawHostel, isLoading, error } = useHostelBySlug(slug);
+  const { data: rawHostel, isLoading: isLoadingHostel, error } = useHostelBySlug(slug);
   const [isFavorite, setIsFavorite] = React.useState(false);
   const [isFollowing, setIsFollowing] = React.useState(false);
 
-  // Inject mock rooms if the hostel doesn't have rooms from the backend
+  // Fetch rooms for this hostel if not included in hostel response
+  const {
+    data: roomsResponse,
+    isLoading: isLoadingRooms,
+  } = useQuery({
+    queryKey: ['hostel-rooms', rawHostel?.id],
+    queryFn: () => hostelsApi.getRooms({ hostel: rawHostel?.id }),
+    enabled: Boolean(rawHostel?.id) && (!rawHostel?.rooms || rawHostel.rooms.length === 0),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const isLoading = isLoadingHostel || isLoadingRooms;
+
+  // Combine hostel with rooms data
   const hostel = React.useMemo(() => {
     if (!rawHostel) return null;
+    
+    // Use rooms from hostel response if available, otherwise use separately fetched rooms
+    const rooms: Room[] = (rawHostel.rooms && rawHostel.rooms.length > 0)
+      ? rawHostel.rooms
+      : (roomsResponse?.results || []);
+    
     return {
       ...rawHostel,
-      rooms: rawHostel.rooms && rawHostel.rooms.length > 0 
-        ? rawHostel.rooms 
-        : MOCK_ROOMS,
+      rooms,
       // Also set pricePerMonth from base_price if not set
       pricePerMonth: rawHostel.pricePerMonth || parseFloat(rawHostel.base_price) || 8000,
     };
-  }, [rawHostel]);
+  }, [rawHostel, roomsResponse]);
 
   if (isLoading) {
     return (

@@ -69,3 +69,15 @@ export interface RentStatusInfo {
   lastPaymentDate: string | null;
   lastPaymentAmount: number | null;
 }
+
+export interface PaymentStats {
+  totalRevenue: number;
+  availableBalance: number;
+  pendingAmount: number;
+  failedAmount: number;
+  completedCount: number;
+  pendingCount: number;
+  failedCount: number;
+}
+
+

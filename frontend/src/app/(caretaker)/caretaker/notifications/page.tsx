@@ -16,90 +16,55 @@ import {
 import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-  type: 'info' | 'warning' | 'success';
-  timestamp: Date;
+import {
+  useNotifications,
+  useMarkNotificationAsRead,
+  useMarkAllNotificationsAsRead,
+  useDeleteNotification,
+} from '@/features/notifications';
+import type { Notification } from '@/types/auth.types';
+
+// Helper for relative time
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) return 'Just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+  return date.toLocaleDateString();
 }
 
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    title: 'New Visitor Arrival',
-    message: 'Jane Kamau is at the gate to visit John Omondi (Room 204)',
-    time: '5 minutes ago',
-    timestamp: new Date(Date.now() - 5 * 60 * 1000),
-    read: false,
-    type: 'info',
-  },
-  {
-    id: '2',
-    title: 'Maintenance Request',
-    message: 'Room 305 reported broken window - High priority',
-    time: '1 hour ago',
-    timestamp: new Date(Date.now() - 60 * 60 * 1000),
-    read: false,
-    type: 'warning',
-  },
-  {
-    id: '3',
-    title: 'Check-In Completed',
-    message: 'Peter Mwangi successfully checked in to Room 201',
-    time: '2 hours ago',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    read: true,
-    type: 'success',
-  },
-  {
-    id: '4',
-    title: 'Visitor Check-Out',
-    message: 'Sarah Wanjiku has left the building',
-    time: '3 hours ago',
-    timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000),
-    read: true,
-    type: 'info',
-  },
-  {
-    id: '5',
-    title: 'Damage Report Submitted',
-    message: 'New damage report for Room 402 requires your attention',
-    time: '5 hours ago',
-    timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000),
-    read: true,
-    type: 'warning',
-  },
-];
-
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = React.useState<Notification[]>(mockNotifications);
+  const { data: notificationsData, isLoading } = useNotifications(); // Fetch all notifications
+  const notifications = notificationsData?.data || [];             // Extract array from PaginatedResponse
+  
+  const markAsReadMutation = useMarkNotificationAsRead();
+  const markAllReadMutation = useMarkAllNotificationsAsRead();
+  const deleteMutation = useDeleteNotification();
+
   const [filter, setFilter] = React.useState<'all' | 'unread' | 'read'>('all');
 
-  const filteredNotifications = notifications.filter(n => {
-    if (filter === 'unread') return !n.read;
-    if (filter === 'read') return n.read;
+  const filteredNotifications = notifications.filter((n: Notification) => {
+    if (filter === 'unread') return !n.is_read;
+    if (filter === 'read') return n.is_read;
     return true;
   });
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n: Notification) => !n.is_read).length;
 
   const handleMarkAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, read: true } : n))
-    );
+    markAsReadMutation.mutate(id);
   };
 
   const handleMarkAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    toast.success('All notifications marked as read');
+    markAllReadMutation.mutate();
   };
 
   const handleDelete = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-    toast.success('Notification deleted');
+    deleteMutation.mutate(id);
   };
 
   const getTypeIcon = (type: Notification['type']) => {
@@ -210,7 +175,7 @@ export default function NotificationsPage() {
               key={notification.id}
               className={cn(
                 'border-l-4 transition-all',
-                !notification.read && 'bg-muted/30',
+                !notification.is_read && 'bg-muted/30',
                 getTypeBgColor(notification.type)
               )}
             >
@@ -222,7 +187,7 @@ export default function NotificationsPage() {
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <h3 className="font-semibold text-sm">{notification.title}</h3>
                       <div className="flex items-center gap-2">
-                        {!notification.read && (
+                        {!notification.is_read && (
                           <span className="h-2 w-2 rounded-full bg-blue-600 flex-shrink-0" />
                         )}
                       </div>
@@ -235,14 +200,15 @@ export default function NotificationsPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        {notification.time}
+                        {formatRelativeTime(notification.created_at)}
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {!notification.read && (
+                        {!notification.is_read && (
                           <Button
                             size="sm"
                             variant="ghost"
+                            disabled={markAsReadMutation.isPending}
                             onClick={() => handleMarkAsRead(notification.id)}
                           >
                             <Check className="h-3 w-3 mr-1" />

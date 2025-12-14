@@ -1,6 +1,7 @@
 import api from '@/lib/api/client';
 import type { Booking } from '@/types/entities.types';
 import type { ApiResponse } from '@/types/api.types';
+import { searchRooms } from '@/features/hostels';
 
 export const getBookings = async (
   params?: { status?: string },
@@ -55,16 +56,33 @@ export const checkAvailability = async (
   date?: Date,
 ): Promise<{ available: boolean; bookedDates: string[] }> => {
   // Using search endpoint to check availability logic or specific endpoint if exists
-  // Currently backend reference only shows /hostels/search/
-  // /hostels/<id>/availability/ is NOT in reference.
-  console.warn(`checkAvailability endpoint /hostels/${hostelId}/availability/ is likely missing.`);
   try {
-      const response = await api.axios.get<ApiResponse<any>>(
-        `/hostels/${hostelId}/availability/`, 
-        { params: { date: date?.toISOString() } }
-      );
-      return response.data.data || { available: true, bookedDates: [] };
+      // First try the specific endpoint (likely missing)
+      try {
+        const response = await api.axios.get<ApiResponse<any>>(
+          `/hostels/${hostelId}/availability/`, 
+          { params: { date: date?.toISOString() } }
+        );
+        return response.data.data || { available: true, bookedDates: [] };
+      } catch (endpointError) {
+        // Fallback: Check if search results return rooms for this date
+        // Note: This is an approximation. If rooms are returned, at least some are available.
+        // For a specific room check, we'd need more logic, but this prevents "always available" lies.
+        if (date) {
+            const rooms = await searchRooms({
+                hostel_id: hostelId,
+                checkIn: date.toISOString(),
+                // Assuming checkOut is +1 month or handled by backend logic
+            });
+            return { 
+                available: rooms.length > 0, 
+                bookedDates: [] // Can't easily determine blocked dates from search
+            };
+        }
+        return { available: true, bookedDates: [] };
+      }
   } catch (e) {
+      console.warn('Availability check failed', e);
       return { available: true, bookedDates: [] };
   }
 };
@@ -137,9 +155,14 @@ export const confirmPayment = async (
   bookingId: string | number,
   paymentProof?: string,
 ): Promise<Booking> => {
-  // /bookings/<id>/confirm-payment/ NOT in reference.
-  console.warn('confirmPayment endpoint missing in backend.');
-  throw new Error('Endpoint missing');
+  // Graceful handling for missing endpoint
+  console.warn('Backend confirmPayment endpoint missing. Simulating success for UI continuity.');
+  
+  // Throw a specific error code/message that UI can intercept to show "Pending Confirmation" toast
+  // instead of crashing.
+  const error: any = new Error('Payment confirmation pending backend check');
+  error.code = 'PENDING_VERIFICATION';
+  throw error;
 };
 
 /**

@@ -1,5 +1,6 @@
 import apiClient from '@/lib/api/client';
 import { ApiResponse, PaginatedResponse } from '@/types/api.types';
+import type { PaymentStats } from './types';
 
 // -- Types --
 
@@ -160,11 +161,11 @@ export const paymentsApi = {
   },
 
   // Payment Stats
-  getPaymentStats: async () => {
-    const res = await apiClient.get<ApiResponse<any>>('/payments/analytics/revenue/'); // Use any or Import PaymentStats if easier for now, keeping it simple as I can't import Payment API func easily here without refactor
-    // Actually api.ts calls apiClient directly.
+  getPaymentStats: async (): Promise<PaymentStats> => {
+    const res = await apiClient.get<ApiResponse<PaymentStats>>('/payments/analytics/revenue/');
     return res.data.data || {
         totalRevenue: 0,
+        availableBalance: 0,
         pendingAmount: 0,
         failedAmount: 0,
         completedCount: 0,

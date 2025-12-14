@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import * as React from 'react';
 import { 
@@ -6,25 +6,69 @@ import {
   Wallet, 
   ArrowUpRight, 
   History, 
-  Download,
   AlertCircle 
 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { usePayments, usePaymentStats } from '@/features/payments'; // We might need a specific hook for payouts if it exists, otherwise assume mock or generic payments
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLandlordPayouts, usePaymentStats } from '@/features/payments';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { toast } from 'sonner';
+
+const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(value);
+};
 
 export default function PayoutsPage() {
-  // Payouts usually are derived from a 'payouts' endpoint. 
-  // If not available, we'll placeholder the list but make the request UI real-ish.
+  const { 
+    data: payoutsResponse, 
+    isLoading: isLoadingPayouts,
+    isError: isPayoutsError 
+  } = useLandlordPayouts();
+
+  const { 
+    data: stats, 
+    isLoading: isLoadingStats,
+    isError: isStatsError 
+  } = usePaymentStats();
+
+  const handleRequestPayout = () => {
+    toast.info("Payout request feature coming soon");
+  };
+
+  const balance = stats?.availableBalance || 0;
+  // Use .data for PaginatedResponse as defined in shared types
+  const payouts = payoutsResponse?.data || [];
   
-  const balance = 450000; // Mock current balance
-  const payouts = [
-      { id: 'PO-1023', date: '2024-12-01', amount: 150000, status: 'processed', method: 'Bank Transfer' },
-      { id: 'PO-1022', date: '2024-11-01', amount: 120000, status: 'processed', method: 'M-Pesa' },
-      { id: 'PO-1021', date: '2024-10-01', amount: 180000, status: 'processed', method: 'Bank Transfer' },
-  ];
+  const isLoading = isLoadingPayouts || isLoadingStats;
+  const isError = isPayoutsError || isStatsError;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto">
+        <div className="grid gap-6 md:grid-cols-2">
+            <Skeleton className="h-40" />
+            <Skeleton className="h-40" />
+        </div>
+        <Skeleton className="h-64" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            Failed to load payouts data. Please try again later.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -38,7 +82,10 @@ export default function PayoutsPage() {
             View earnings and request withdrawals
           </p>
         </div>
-        <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
+        <Button 
+          className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+          onClick={handleRequestPayout}
+        >
             <ArrowUpRight className="h-4 w-4" />
             Request Payout
         </Button>
@@ -91,25 +138,35 @@ export default function PayoutsPage() {
          </CardHeader>
          <CardContent>
              <div className="space-y-4">
-                 {payouts.map((payout, i) => (
-                     <div key={i} className="flex items-center justify-between p-4 rounded-lg bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 transition-colors">
-                         <div className="flex items-center gap-4">
-                             <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
-                                <ArrowUpRight className="h-5 w-5" />
-                             </div>
-                             <div>
-                                 <p className="font-semibold text-slate-900">Withdrawal to {payout.method}</p>
-                                 <p className="text-sm text-slate-500">{payout.date} • ID: {payout.id}</p>
-                             </div>
-                         </div>
-                         <div className="text-right">
-                             <p className="font-bold text-slate-900">- KES {payout.amount.toLocaleString()}</p>
-                             <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 capitalize">
-                                {payout.status}
-                             </Badge>
-                         </div>
-                     </div>
-                 ))}
+                 {payouts.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground">No payout history found</div>
+                 ) : (
+                    payouts.map((payout) => (
+                      <div key={payout.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 transition-colors">
+                          <div className="flex items-center gap-4">
+                              <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                 <ArrowUpRight className="h-5 w-5" />
+                              </div>
+                              <div>
+                                  <p className="font-semibold text-slate-900">Withdrawal to {payout.recipient || 'Bank'}</p>
+                                  <p className="text-sm text-slate-500">
+                                    {new Date(payout.createdAt).toLocaleDateString()} • ID: {payout.id.slice(0, 8)}
+                                  </p>
+                              </div>
+                          </div>
+                          <div className="text-right">
+                              <p className="font-bold text-slate-900">- {formatCurrency(payout.amount)}</p>
+                              <Badge variant="outline" className={`capitalize ${
+                                payout.status === 'completed' ? 'text-emerald-600 border-emerald-200 bg-emerald-50' :
+                                payout.status === 'pending' ? 'text-yellow-600 border-yellow-200 bg-yellow-50' :
+                                'text-slate-600 border-slate-200 bg-slate-50'
+                              }`}>
+                                 {payout.status}
+                              </Badge>
+                          </div>
+                      </div>
+                  ))
+                 )}
              </div>
          </CardContent>
       </Card>

@@ -37,6 +37,10 @@ export const getAnalytics = async (
     bookingGrowth: { current: 0, previous: 0, percentage: 0 },
     revenueGrowth: { current: 0, previous: 0, percentage: 0 },
     period: period as any,
+    trends: [],
+    propertyPerformance: [],
+    platformMetrics: [],
+    revenueDistribution: [],
   };
 };
 

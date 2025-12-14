@@ -3,9 +3,11 @@
 import * as React from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { Bell, Clock, User, Settings } from 'lucide-react';
+import { Bell, Clock, User, Settings, AlertTriangle, CheckCircle, Info, type LucideIcon } from 'lucide-react';
 
 import { useAuth } from '@/features/auth';
+import { useNotifications } from '@/features/notifications';
+import type { Notification } from '@/features/notifications';
 import { CaretakerSidebar } from '@/components/layouts/caretaker-sidebar';
 import { CaretakerBottomNav } from '@/components/layouts/caretaker-bottom-nav';
 import { DashboardThemeProvider } from '@/components/providers/dashboard-theme-provider';
@@ -13,6 +15,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,55 +37,49 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { useCaretakerStore } from '@/features/caretaker';
 import { useAppStore } from '@/stores/app.store';
 
+// Helper functions for notification display
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) return 'Just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+  return date.toLocaleDateString();
+}
+
+function getNotificationStyle(type?: string): { icon: LucideIcon; borderClass: string } {
+  switch (type) {
+    case 'warning':
+    case 'alert':
+      return { icon: AlertTriangle, borderClass: 'border-l-amber-500' };
+    case 'success':
+    case 'booking':
+    case 'payment':
+      return { icon: CheckCircle, borderClass: 'border-l-green-500' };
+    default:
+      return { icon: Info, borderClass: 'border-l-blue-500' };
+  }
+}
+
 interface CaretakerLayoutProps {
   children: ReactNode;
 }
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-  type: 'info' | 'warning' | 'success';
-}
-
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    title: 'New Visitor Arrival',
-    message: 'Jane Kamau is at the gate to visit John Omondi (Room 204)',
-    time: '5 minutes ago',
-    read: false,
-    type: 'info',
-  },
-  {
-    id: '2',
-    title: 'Maintenance Request',
-    message: 'Room 305 reported broken window - High priority',
-    time: '1 hour ago',
-    read: false,
-    type: 'warning',
-  },
-  {
-    id: '3',
-    title: 'Check-In Completed',
-    message: 'Peter Mwangi successfully checked in to Room 201',
-    time: '2 hours ago',
-    read: true,
-    type: 'success',
-  },
-];
 
 export default function Layout({ children }: CaretakerLayoutProps) {
   const { user, logout } = useAuth();
   const isMobile = useMediaQuery('(max-width: 768px)');
   
+  // Real notifications from API
+  const { data: notificationsData, isLoading: notificationsLoading } = useNotifications();
+  const notifications = notificationsData?.slice(0, 5) || [];
+  const unreadCount = notifications.filter((n: Notification) => !n.is_read).length;
+  
   // Connect to Global UI Store
   const isSidebarOpen = useAppStore((state) => state.isSidebarOpen);
   const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
-  
-  const [notifications, setNotifications] = React.useState<Notification[]>(mockNotifications);
 
   const displayName = React.useMemo(() => {
     if (!user) return 'Caretaker';
@@ -101,8 +98,6 @@ export default function Layout({ children }: CaretakerLayoutProps) {
     return src ? sanitizeImageUrl(src) : undefined;
   }, [user?.profile_picture, user?.avatar]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
-
   const handleSignOut = React.useCallback(async () => {
     try {
       await logout();
@@ -110,17 +105,6 @@ export default function Layout({ children }: CaretakerLayoutProps) {
       console.error('Sign out failed', error);
     }
   }, [logout]);
-
-  const getNotificationColor = (type: Notification['type']) => {
-    switch (type) {
-      case 'warning':
-        return 'border-l-amber-500';
-      case 'success':
-        return 'border-l-green-500';
-      default:
-        return 'border-l-blue-500';
-    }
-  };
 
   return (
     <DashboardThemeProvider>
@@ -180,37 +164,50 @@ export default function Layout({ children }: CaretakerLayoutProps) {
                       )}
                     </div>
                     <ScrollArea className="h-[400px]">
-                      {notifications.length === 0 ? (
+                      {notificationsLoading ? (
+                        <div className="p-4 space-y-3">
+                          {[...Array(3)].map((_, i) => (
+                            <div key={i} className="space-y-2">
+                              <Skeleton className="h-4 w-3/4" />
+                              <Skeleton className="h-3 w-full" />
+                              <Skeleton className="h-3 w-1/4" />
+                            </div>
+                          ))}
+                        </div>
+                      ) : notifications.length === 0 ? (
                         <div className="p-8 text-center text-sm text-muted-foreground">
                           <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
                           <p>No notifications</p>
                         </div>
                       ) : (
                         <div className="divide-y">
-                          {notifications.map((notification) => (
-                            <div
-                              key={notification.id}
-                              className={cn(
-                                "p-4 hover:bg-muted/50 transition-colors cursor-pointer border-l-4",
-                                !notification.read && "bg-muted/30",
-                                getNotificationColor(notification.type)
-                              )}
-                            >
-                              <div className="flex items-start justify-between gap-2 mb-1">
-                                <h4 className="font-medium text-sm">{notification.title}</h4>
-                                {!notification.read && (
-                                  <span className="h-2 w-2 rounded-full bg-blue-600 flex-shrink-0 mt-1" />
+                          {notifications.map((notification: Notification) => {
+                            const style = getNotificationStyle(notification.type);
+                            return (
+                              <div
+                                key={notification.id}
+                                className={cn(
+                                  "p-4 hover:bg-muted/50 transition-colors cursor-pointer border-l-4",
+                                  !notification.is_read && "bg-muted/30",
+                                  style.borderClass
                                 )}
+                              >
+                                <div className="flex items-start justify-between gap-2 mb-1">
+                                  <h4 className="font-medium text-sm">{notification.title}</h4>
+                                  {!notification.is_read && (
+                                    <span className="h-2 w-2 rounded-full bg-blue-600 flex-shrink-0 mt-1" />
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  {notification.message}
+                                </p>
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Clock className="h-3 w-3" />
+                                  {formatRelativeTime(notification.created_at)}
+                                </div>
                               </div>
-                              <p className="text-sm text-muted-foreground mb-2">
-                                {notification.message}
-                              </p>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Clock className="h-3 w-3" />
-                                {notification.time}
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </ScrollArea>

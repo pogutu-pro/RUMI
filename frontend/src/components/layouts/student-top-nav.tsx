@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Info,
   X,
+  type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,47 +29,50 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/features/auth';
+import { useNotifications } from '@/features/notifications';
 import { getUserInitials } from '@/lib/utils/user';
 import { sanitizeImageUrl } from '@/lib/utils/security';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Helper function to format relative time
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  return date.toLocaleDateString();
+}
+
+// Helper function to get notification icon and colors based on type
+function getNotificationStyle(type: string): { icon: LucideIcon; color: string; bgColor: string } {
+  switch (type) {
+    case 'success':
+      return { icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-500', bgColor: 'bg-emerald-500/10' };
+    case 'warning':
+      return { icon: AlertCircle, color: 'text-amber-600 dark:text-amber-500', bgColor: 'bg-amber-500/10' };
+    case 'error':
+      return { icon: X, color: 'text-red-600 dark:text-red-500', bgColor: 'bg-red-500/10' };
+    case 'info':
+    default:
+      return { icon: Info, color: 'text-blue-600 dark:text-blue-500', bgColor: 'bg-blue-500/10' };
+  }
+}
 
 interface StudentTopNavProps {
   onMenuClick: () => void;
   isSidebarOpen: boolean;
   isMobile: boolean;
 }
-
-const dummyNotifications = [
-  {
-    id: 1,
-    title: 'Rent Payment Due',
-    message: 'Your rent for December is due in 3 days.',
-    time: '2 hours ago',
-    icon: AlertCircle,
-    color: 'text-amber-600 dark:text-amber-500',
-    bgColor: 'bg-amber-500/10',
-  },
-  {
-    id: 2,
-    title: 'New Roommate Request',
-    message: 'John Doe sent you a roommate request.',
-    time: '5 hours ago',
-    icon: User,
-    color: 'text-blue-600 dark:text-blue-500',
-    bgColor: 'bg-blue-500/10',
-  },
-  {
-    id: 3,
-    title: 'Maintenance Completed',
-    message: 'The issue with the WiFi has been resolved.',
-    time: '1 day ago',
-    icon: CheckCircle2,
-    color: 'text-emerald-600 dark:text-emerald-500',
-    bgColor: 'bg-emerald-500/10',
-  },
-];
 
 export function StudentTopNav({
   onMenuClick,
@@ -80,6 +84,11 @@ export function StudentTopNav({
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isSearchExpanded, setIsSearchExpanded] = React.useState(false);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Fetch real notifications from API
+  const { data: notificationsData, isLoading: isLoadingNotifications } = useNotifications({ page: 1 });
+  const notifications = notificationsData?.results || [];
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const displayName = React.useMemo(() => {
     if (!user) return 'Student';
@@ -183,14 +192,16 @@ export function StudentTopNav({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
-              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-950" />
+              {unreadCount > 0 && (
+                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-950" />
+              )}
               <span className="sr-only">Notifications</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-80" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold">Notifications</p>
+                <p className="text-sm font-semibold">Notifications {unreadCount > 0 && `(${unreadCount})`}</p>
                 <Link href="/student/notifications" className="text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">
                   View all
                 </Link>
@@ -199,23 +210,49 @@ export function StudentTopNav({
             <DropdownMenuSeparator />
             <ScrollArea className="h-[300px]">
               <div className="flex flex-col gap-1 p-1">
-                {dummyNotifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className="flex items-start gap-3 rounded-md p-2 hover:bg-muted transition-colors cursor-pointer"
-                  >
-                    <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", notification.bgColor)}>
-                      <notification.icon className={cn("h-4 w-4", notification.color)} />
+                {isLoadingNotifications ? (
+                  // Loading skeleton
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="flex items-start gap-3 rounded-md p-2">
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-full" />
+                        <Skeleton className="h-2 w-1/4" />
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm font-medium leading-none">{notification.title}</p>
-                      <p className="text-xs text-muted-foreground line-clamp-2">
-                        {notification.message}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">{notification.time}</p>
-                    </div>
+                  ))
+                ) : notifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                    <Bell className="h-8 w-8 mb-2 opacity-50" />
+                    <p className="text-sm">No notifications yet</p>
                   </div>
-                ))}
+                ) : (
+                  notifications.slice(0, 5).map((notification) => {
+                    const style = getNotificationStyle(notification.type);
+                    const IconComponent = style.icon;
+                    return (
+                      <div
+                        key={notification.id}
+                        className={cn(
+                          "flex items-start gap-3 rounded-md p-2 hover:bg-muted transition-colors cursor-pointer",
+                          !notification.isRead && "bg-muted/50"
+                        )}
+                      >
+                        <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", style.bgColor)}>
+                          <IconComponent className={cn("h-4 w-4", style.color)} />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <p className="text-sm font-medium leading-none">{notification.title}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {notification.message}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">{formatRelativeTime(notification.createdAt)}</p>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </ScrollArea>
             <DropdownMenuSeparator />

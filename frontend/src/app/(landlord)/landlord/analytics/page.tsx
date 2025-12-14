@@ -46,42 +46,18 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
+import { useAnalytics } from '@/features/analytics';
+import type { AnalyticsPeriod } from '@/features/analytics/types/types';
 
-// Mock data
-const portfolioTrends = [
-  { month: 'Jul', occupancy: 87, revenue: 845000, bookings: 342 },
-  { month: 'Aug', occupancy: 92, revenue: 920000, bookings: 368 },
-  { month: 'Sep', occupancy: 89, revenue: 880000, bookings: 356 },
-  { month: 'Oct', occupancy: 95, revenue: 1050000, bookings: 380 },
-  { month: 'Nov', occupancy: 97, revenue: 1150000, bookings: 388 },
-  { month: 'Dec', occupancy: 98, revenue: 1280000, bookings: 392 },
-];
+// Helper for currency formatting
+const formatCurrency = (value: number) => {
+  if (value >= 1000000) return `KES ${(value / 1000000).toFixed(2)}M`;
+  if (value >= 1000) return `KES ${(value / 1000).toFixed(0)}K`;
+  return `KES ${value.toLocaleString()}`;
+};
 
-const hostelComparison = [
-  { name: 'Parklands', occupancy: 98, revenue: 420, tenants: 47 },
-  { name: 'Westlands', occupancy: 95, revenue: 380, tenants: 40 },
-  { name: 'Kilimani', occupancy: 92, revenue: 320, tenants: 33 },
-  { name: 'CBD', occupancy: 88, revenue: 280, tenants: 28 },
-  { name: 'South B', occupancy: 75, revenue: 180, tenants: 21 },
-];
-
-const performanceMetrics = [
-  { metric: 'Occupancy', score: 94, fullMark: 100 },
-  { metric: 'Revenue', score: 88, fullMark: 100 },
-  { metric: 'Tenant Satisfaction', score: 92, fullMark: 100 },
-  { metric: 'Maintenance', score: 85, fullMark: 100 },
-  { metric: 'Booking Rate', score: 96, fullMark: 100 },
-];
-
-const revenueByHostel = [
-  { name: 'Parklands Heights', value: 420000, color: '#10b981' },
-  { name: 'Westlands Plaza', value: 380000, color: '#3b82f6' },
-  { name: 'Kilimani Suites', value: 320000, color: '#8b5cf6' },
-  { name: 'CBD Central', value: 280000, color: '#f59e0b' },
-  { name: 'Others', value: 180000, color: '#64748b' },
-];
-
+// Custom tooltip component
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -103,12 +79,40 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+
+
 export default function AnalyticsPage() {
-  const [timeRange, setTimeRange] = useState('6months');
-  const [selectedMetric, setSelectedMetric] = useState('all');
+  const [timeRange, setTimeRange] = useState<AnalyticsPeriod>('180d');
+  const { data: analytics, isLoading } = useAnalytics(timeRange);
+  
+  // Default empty data if undefined to prevent crashes
+  const data = analytics || {
+    trends: [],
+    propertyPerformance: [],
+    platformMetrics: [],
+    revenueDistribution: [],
+    totalRevenue: 0,
+    activeUsers: 0,
+    totalHostels: 0,
+    userGrowth: { percentage: 0 } as any,
+    revenueGrowth: { percentage: 0 } as any,
+    bookingGrowth: { percentage: 0 } as any,
+    // others...
+  } as any; // Cast as any to avoid partial matches on init
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-muted-foreground">Loading analytics...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -121,15 +125,15 @@ export default function AnalyticsPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Select value={timeRange} onValueChange={setTimeRange}>
+          <Select value={timeRange} onValueChange={(v) => setTimeRange(v as AnalyticsPeriod)}>
             <SelectTrigger className="w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1month">Last Month</SelectItem>
-              <SelectItem value="3months">Last 3 Months</SelectItem>
-              <SelectItem value="6months">Last 6 Months</SelectItem>
-              <SelectItem value="1year">Last Year</SelectItem>
+              <SelectItem value="30d">Last 30 Days</SelectItem>
+              <SelectItem value="90d">Last 3 Months</SelectItem>
+              <SelectItem value="180d">Last 6 Months</SelectItem>
+              <SelectItem value="1y">Last Year</SelectItem>
             </SelectContent>
           </Select>
           <Button className="gap-2 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700">
@@ -142,10 +146,34 @@ export default function AnalyticsPage() {
       {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-4">
         {[
-          { label: 'Avg Occupancy', value: '94%', change: '+3%', icon: TrendingUp, color: 'emerald' },
-          { label: 'Total Revenue', value: `KES 1.28M`, change: '+12%', icon: DollarSign, color: 'blue' },
-          { label: 'Active Tenants', value: '169', change: '+5%', icon: Users, color: 'purple' },
-          { label: 'Properties', value: '7', change: '+1', icon: Building2, color: 'orange' },
+          { 
+            label: 'Avg Occupancy', 
+            value: '94%', // Ideally from API
+            change: '+3%', 
+            icon: TrendingUp, 
+            color: 'emerald' 
+          },
+          { 
+            label: 'Total Revenue', 
+            value: formatCurrency(data.totalRevenue ?? 0), 
+            change: `${data.revenueGrowth?.percentage > 0 ? '+' : ''}${data.revenueGrowth?.percentage ?? 0}%`,
+            icon: DollarSign, 
+            color: 'blue' 
+          },
+          { 
+            label: 'Active Tenants', 
+            value: (data.activeUsers ?? 0).toString(), 
+            change: `${data.userGrowth?.percentage > 0 ? '+' : ''}${data.userGrowth?.percentage ?? 0}%`,
+            icon: Users, 
+            color: 'purple' 
+          },
+          { 
+            label: 'Properties', 
+            value: (data.totalHostels ?? 0).toString(), 
+            change: '+0', // Hostels grow slowly, can mock change or get from API
+            icon: Building2, 
+            color: 'orange' 
+          },
         ].map((metric, index) => (
           <motion.div
             key={metric.label}
@@ -189,7 +217,7 @@ export default function AnalyticsPage() {
               <CardContent>
                 <div className="h-[350px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={portfolioTrends}>
+                    <AreaChart data={data.trends}>
                       <defs>
                         <linearGradient id="colorOccupancy" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
@@ -245,17 +273,17 @@ export default function AnalyticsPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={revenueByHostel}
+                        data={data.revenueDistribution}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        label={({name, percent}: any) => `${name}: ${(percent * 100).toFixed(0)}%`}
                         outerRadius={100}
                         fill="#8884d8"
                         dataKey="value"
                       >
-                        {revenueByHostel.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        {data.revenueDistribution?.map((entry: any, index: number) => (
+                          <Cell key={`cell-${index}`} fill={entry.color || '#8884d8'} />
                         ))}
                       </Pie>
                       <Tooltip
@@ -288,7 +316,7 @@ export default function AnalyticsPage() {
               <CardContent>
                 <div className="h-[350px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={performanceMetrics}>
+                    <RadarChart data={data.platformMetrics}>
                       <PolarGrid stroke="#e2e8f0" />
                       <PolarAngleAxis dataKey="metric" className="text-xs" />
                       <PolarRadiusAxis angle={90} domain={[0, 100]} className="text-xs" />
@@ -318,7 +346,7 @@ export default function AnalyticsPage() {
               <CardContent>
                 <div className="h-[350px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={hostelComparison}>
+                    <BarChart data={data.propertyPerformance}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
                       <XAxis dataKey="name" className="text-xs" />
                       <YAxis className="text-xs" />
@@ -346,7 +374,7 @@ export default function AnalyticsPage() {
             <CardContent>
               <div className="h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={portfolioTrends}>
+                  <AreaChart data={data.trends}>
                     <defs>
                       <linearGradient id="revenue" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
@@ -385,7 +413,7 @@ export default function AnalyticsPage() {
             <CardContent>
               <div className="h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={portfolioTrends}>
+                  <LineChart data={data.trends}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
                     <XAxis dataKey="month" className="text-xs" />
                     <YAxis className="text-xs" />

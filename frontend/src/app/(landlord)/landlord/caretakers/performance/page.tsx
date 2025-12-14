@@ -57,16 +57,9 @@ export default function CaretakerPerformancePage() {
   const { data: caretakersData, isLoading } = useCaretakers();
   const caretakers = caretakersData || [];
 
-  // Derived metrics from caretakers data
-  // Since API might not return granular performance data, we simulate some or derive from available fields
-  const performanceData = caretakers.map(caretaker => ({
-    ...caretaker,
-    // Simulate performance metrics if not available
-    rating: (Math.random() * (5 - 4) + 4).toFixed(1), // Mock rating 4.0-5.0
-    tasksCompleted: Math.floor(Math.random() * 50) + 10,
-    responseTime: Math.floor(Math.random() * 60) + 15, // Minutes
-    occupancyRate: Math.floor(Math.random() * 20) + 80, // %
-  }));
+  // Use API data directly
+  // Backend should provide performance metrics
+  const performanceData = caretakers;
 
   const filteredCaretakers = performanceData.filter(caretaker =>
     caretaker.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -75,9 +68,9 @@ export default function CaretakerPerformancePage() {
   );
 
   const sortedCaretakers = [...filteredCaretakers].sort((a, b) => {
-    if (sortBy === 'rating') return parseFloat(b.rating) - parseFloat(a.rating);
-    if (sortBy === 'tasks') return b.tasksCompleted - a.tasksCompleted;
-    if (sortBy === 'occupancy') return b.occupancyRate - a.occupancyRate;
+    if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+    if (sortBy === 'tasks') return (b.tasksCompleted || 0) - (a.tasksCompleted || 0);
+    if (sortBy === 'occupancy') return (b.occupancyRate || 0) - (a.occupancyRate || 0);
     return 0;
   });
 
@@ -143,7 +136,7 @@ export default function CaretakerPerformancePage() {
                     </div>
                     <div className="flex items-center gap-1 text-yellow-500 text-sm font-medium mt-1">
                         <Star className="h-4 w-4 fill-current" />
-                        <span>{caretaker.rating} Rating</span>
+                        <span>{caretaker.rating?.toFixed(1) || 'N/A'} Rating</span>
                     </div>
                     </div>
                 </CardContent>
@@ -224,21 +217,21 @@ export default function CaretakerPerformancePage() {
                         <div className="space-y-1">
                         <p className="text-xs text-slate-500">Performance Rating</p>
                         <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900 dark:text-slate-100">{caretaker.rating}</span>
-                            <Progress value={parseFloat(caretaker.rating) * 20} className="h-2 w-20" />
+                            <span className="font-bold text-slate-900 dark:text-slate-100">{caretaker.rating?.toFixed(1) || '-'}</span>
+                            <Progress value={(caretaker.rating || 0) * 20} className="h-2 w-20" />
                         </div>
                         </div>
                         <div className="space-y-1">
                         <p className="text-xs text-slate-500">Tasks Completed</p>
-                        <p className="font-bold text-slate-900 dark:text-slate-100">{caretaker.tasksCompleted}</p>
+                        <p className="font-bold text-slate-900 dark:text-slate-100">{caretaker.tasksCompleted || 0}</p>
                         </div>
                         <div className="space-y-1">
                         <p className="text-xs text-slate-500">Avg Response Time</p>
-                        <p className="font-bold text-slate-900 dark:text-slate-100">{caretaker.responseTime} mins</p>
+                        <p className="font-bold text-slate-900 dark:text-slate-100">{caretaker.responseTime ? `${caretaker.responseTime} mins` : '-'}</p>
                         </div>
                         <div className="space-y-1">
                         <p className="text-xs text-slate-500">Occupancy Rate</p>
-                        <p className="font-bold text-emerald-600">{caretaker.occupancyRate}%</p>
+                        <p className="font-bold text-emerald-600">{caretaker.occupancyRate ? `${caretaker.occupancyRate}%` : '-'}</p>
                         </div>
                     </div>
 

@@ -29,6 +29,11 @@ export interface LandlordCaretaker {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  // Performance Metrics
+  rating?: number;
+  tasksCompleted?: number;
+  responseTime?: number; // in minutes
+  occupancyRate?: number; // percentage
 }
 
 /**

@@ -32,6 +32,12 @@ import {
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
+
+
+import { useMyVisitorInvitations, useCreateVisitorInvitation } from '@/features/student';
+import type { VisitorInvitation } from '@/features/student';
+
+// Form schema stays same
 const visitorInviteSchema = z.object({
   visitorName: z.string().min(2, 'Visitor name is required'),
   visitorPhone: z.string().optional(),
@@ -43,71 +49,12 @@ const visitorInviteSchema = z.object({
 
 type VisitorInviteFormData = z.infer<typeof visitorInviteSchema>;
 
-interface VisitorInvitation {
-  id: string;
-  visitorName: string;
-  visitorPhone?: string;
-  visitorIdNumber: string;
-  expectedArrivalTime: string;
-  purpose: string;
-  durationHours: number;
-  status: 'pending' | 'checked_in' | 'checked_out' | 'expired';
-  studentName: string;
-  roomNumber: string;
-  createdAt: string;
-  checkedInAt?: string;
-  checkedOutAt?: string;
-}
-
-const mockInvitations: VisitorInvitation[] = [
-  {
-    id: '1',
-    visitorName: 'Jane Kamau',
-    visitorPhone: '+254712345678',
-    visitorIdNumber: '34567890',
-    expectedArrivalTime: new Date(Date.now() + 3 * 60 * 60 *1000).toISOString(),
-    purpose: 'Family visit - Birthday celebration',
-    durationHours: 4,
-    status: 'pending',
-    studentName: 'John Omondi',
-    roomNumber: '204',
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '2',
-    visitorName: 'Peter Mwangi',
-    visitorPhone: '+254723456789',
-    visitorIdNumber: 'A123456',
-    expectedArrivalTime: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    purpose: 'Delivery - Books and study materials',
-    durationHours: 1,
-    status: 'checked_in',
-    studentName: 'John Omondi',
-    roomNumber: '204',
-    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    checkedInAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '3',
-    visitorName: 'Sarah Wanjiku',
-    visitorIdNumber: '45678901',
-    expectedArrivalTime: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    purpose: 'Study group session',
-    durationHours: 3,
-    status: 'checked_out',
-    studentName: 'John Omondi',
-    roomNumber: '204',
-    createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-    checkedInAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    checkedOutAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-  },
-];
-
 export default function VisitorInvitationsPage() {
-  const [invitations, setInvitations] = React.useState<VisitorInvitation[]>(mockInvitations);
+  const { data: invitations = [], isLoading: isListLoading } = useMyVisitorInvitations();
+  const createMutation = useCreateVisitorInvitation();
+  
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(false);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<VisitorInviteFormData>({
     resolver: zodResolver(visitorInviteSchema),
@@ -117,29 +64,16 @@ export default function VisitorInvitationsPage() {
   });
 
   const onSubmit = async (data: VisitorInviteFormData) => {
-    setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const newInvitation: VisitorInvitation = {
-      id: Date.now().toString(),
-      ...data,
-      status: 'pending',
-      studentName: 'John Omondi', // From auth context
-      roomNumber: '204', // From user profile
-      createdAt: new Date().toISOString(),
-    };
-    
-    setInvitations(prev => [newInvitation, ...prev]);
-    setIsDialogOpen(false);
-    reset();
-    setIsLoading(false);
-    
-    toast.success('Visitor invitation sent successfully', {
-      description: 'Caretaker will check them in when they arrive',
-    });
+    try {
+      await createMutation.mutateAsync(data);
+      setIsDialogOpen(false);
+      reset();
+    } catch (error) {
+      // Error handled by mutation
+    }
   };
+
+  const isLoading = createMutation.isPending;
 
   const filteredInvitations = invitations.filter(inv =>
     searchQuery === '' ||

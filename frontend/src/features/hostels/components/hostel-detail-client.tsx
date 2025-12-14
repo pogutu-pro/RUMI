@@ -8,66 +8,12 @@ import { HostelBookingWidget } from './hostel-booking-widget';
 import HostelHero from './hostel-hero';
 import HostelGallery from './hostel-gallery';
 import RelatedHostels from './related-hostels';
-import { getHostelBySlug } from '@/features/hostels';
-import type { Hostel } from '@/types/entities.types';
+import { getHostelBySlug, hostelsApi } from '@/features/hostels';
+import type { Hostel, Room } from '@/types/entities.types';
 
 interface HostelDetailClientProps {
   slug: string;
 }
-
-// Mock rooms data for testing booking flow
-const MOCK_ROOMS = [
-  {
-    id: 'room-001',
-    name: 'Standard Single Room',
-    price: 8500,
-    beds: 0,
-    capacity: 1,
-    images: ['/images/rooms/single-1.jpg'],
-    available: true,
-    bookedDates: [],
-  },
-  {
-    id: 'room-002',
-    name: 'Shared Double Room',
-    price: 6000,
-    beds: 1,
-    capacity: 2,
-    images: ['/images/rooms/double-1.jpg'],
-    available: true,
-    bookedDates: [],
-  },
-  {
-    id: 'room-003',
-    name: 'Premium Single Room',
-    price: 12000,
-    beds: 0,
-    capacity: 1,
-    images: ['/images/rooms/premium-1.jpg'],
-    available: true,
-    bookedDates: [],
-  },
-  {
-    id: 'room-004',
-    name: 'Economy Triple Room',
-    price: 4500,
-    beds: 2,
-    capacity: 3,
-    images: ['/images/rooms/triple-1.jpg'],
-    available: true,
-    bookedDates: [],
-  },
-  {
-    id: 'room-005',
-    name: 'Executive Single (Fully Booked)',
-    price: 15000,
-    beds: 1,
-    capacity: 1,
-    images: ['/images/rooms/executive-1.jpg'],
-    available: false,
-    bookedDates: [],
-  },
-];
 
 function LoadingRelated() {
   return (
@@ -80,10 +26,11 @@ function LoadingRelated() {
 }
 
 export function HostelDetailClient({ slug }: HostelDetailClientProps) {
+  // Fetch the hostel
   const {
     data: rawHostel,
-    isLoading,
-    error,
+    isLoading: isLoadingHostel,
+    error: hostelError,
   } = useQuery<Hostel>({
     queryKey: ['hostel', slug],
     queryFn: () => getHostelBySlug(slug),
@@ -91,20 +38,38 @@ export function HostelDetailClient({ slug }: HostelDetailClientProps) {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Inject mock rooms if the hostel doesn't have rooms from the backend
+  // Fetch rooms for this hostel if not included in hostel response
+  const {
+    data: roomsResponse,
+    isLoading: isLoadingRooms,
+  } = useQuery({
+    queryKey: ['hostel-rooms', rawHostel?.id],
+    queryFn: () => hostelsApi.getRooms({ hostel: rawHostel?.id }),
+    enabled: Boolean(rawHostel?.id) && (!rawHostel?.rooms || rawHostel.rooms.length === 0),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const isLoading = isLoadingHostel || isLoadingRooms;
+  const error = hostelError;
+
+  // Combine hostel with rooms data
   const hostel = useMemo(() => {
     if (!rawHostel) return null;
+    
+    // Use rooms from hostel response if available, otherwise use separately fetched rooms
+    const rooms: Room[] = (rawHostel?.rooms && rawHostel.rooms.length > 0)
+      ? rawHostel.rooms
+      : (roomsResponse?.results || []);
+    
     return {
       ...rawHostel,
-      rooms: rawHostel?.rooms && rawHostel.rooms.length > 0 
-        ? rawHostel.rooms 
-        : MOCK_ROOMS,
+      rooms,
       // Also set pricePerMonth from base_price if not set
       pricePerMonth: rawHostel?.pricePerMonth || (rawHostel?.base_price ? parseFloat(rawHostel.base_price) : 8000),
       // Ensure reviews is defined
       reviews: rawHostel?.reviews || [],
     } as Hostel;
-  }, [rawHostel]);
+  }, [rawHostel, roomsResponse]);
 
 
   if (isLoading) {

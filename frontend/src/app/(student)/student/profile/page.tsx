@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth';
+import { useStudentDashboard } from '@/features/student/hooks/use-student-dashboard';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -39,10 +40,11 @@ import { motion } from 'framer-motion';
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
+  const { data: dashboardData } = useStudentDashboard();
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
 
-  // Mock data - replace with actual data fetching
-  const profileCompletion = 75;
+  // Use real profile completion from dashboard API, fallback to 0
+  const profileCompletion = dashboardData?.profileCompletion ?? 0;
 
   const handleLogout = () => {
     logout();

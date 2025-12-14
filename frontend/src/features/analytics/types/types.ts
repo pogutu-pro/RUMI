@@ -4,7 +4,33 @@ export interface GrowthMetrics {
   percentage: number;
 }
 
-export type AnalyticsPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type AnalyticsPeriod = '7d' | '30d' | '90d' | '180d' | '1y' | 'custom';
+
+export interface AnalyticsTrend {
+  month: string;
+  occupancy: number;
+  revenue: number;
+  bookings: number;
+}
+
+export interface HostelPerformance {
+  name: string;
+  occupancy: number;
+  revenue: number;
+  tenants: number;
+}
+
+export interface PerformanceMetric {
+  metric: string;
+  score: number;
+  fullMark: number;
+}
+
+export interface RevenueDistribution {
+  name: string;
+  value: number;
+  color?: string;
+}
 
 export interface PlatformAnalytics {
   totalUsers: number;
@@ -16,4 +42,9 @@ export interface PlatformAnalytics {
   bookingGrowth: GrowthMetrics;
   revenueGrowth: GrowthMetrics;
   period: AnalyticsPeriod;
+  // Chart data
+  trends: AnalyticsTrend[];
+  propertyPerformance: HostelPerformance[];
+  platformMetrics: PerformanceMetric[];
+  revenueDistribution: RevenueDistribution[];
 }

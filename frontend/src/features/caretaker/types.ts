@@ -1,4 +1,4 @@
-import type { ID, Timestamp } from './auth.types';
+import type { ID, Timestamp } from '@/features/auth/types/types';
 
 // ==================== Dashboard & Overview ====================
 

@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -27,186 +28,65 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils/cn';
+import { useRooms } from '@/features/caretaker';
+import type { RoomStatus } from '@/types/caretaker.types';
 
-interface Tenant {
-  id: string;
-  name: string;
-  studentId: string;
-  email: string;
-  phone: string;
-  avatar?: string;
-  course: string;
-  checkInDate: string;
-  paymentStatus: 'paid' | 'pending' | 'overdue';
-}
-
-interface Room {
+// Map RoomStatus to display format
+type DisplayRoom = {
   id: string;
   roomNumber: string;
   floor: number;
   capacity: number;
   currentOccupancy: number;
-  roomType: 'single' | 'double' | 'triple' | 'quad';
+  roomType: RoomStatus['roomType'];
   status: 'full' | 'partial' | 'empty' | 'maintenance';
-  tenants: Tenant[];
-  monthlyRent: number;
+  tenants: {
+    id: string;
+    name: string;
+    bedNumber?: string;
+    checkInDate: string;
+  }[];
+  basePrice: number;
+};
+
+function mapRoomStatusToDisplay(room: RoomStatus): DisplayRoom {
+  let status: DisplayRoom['status'] = 'empty';
+  if (room.status === 'maintenance') {
+    status = 'maintenance';
+  } else if (room.currentOccupancy >= room.capacity) {
+    status = 'full';
+  } else if (room.currentOccupancy > 0) {
+    status = 'partial';
+  }
+
+  return {
+    id: room.id,
+    roomNumber: room.roomNumber,
+    floor: room.floor ?? 1,
+    capacity: room.capacity,
+    currentOccupancy: room.currentOccupancy,
+    roomType: room.roomType,
+    status,
+    tenants: room.tenants,
+    basePrice: room.basePrice,
+  };
 }
 
-const mockRooms: Room[] = [
-  {
-    id: '1',
-    roomNumber: '201',
-    floor: 2,
-    capacity: 2,
-    currentOccupancy: 2,
-    roomType: 'double',
-    status: 'full',
-    monthlyRent: 12000,
-    tenants: [
-      {
-        id: 't1',
-        name: 'John Omondi',
-        studentId: 'STU2024001',
-        email: 'john.omondi@student.ac.ke',
-        phone: '+254712345678',
-        course: 'Computer Science',
-        checkInDate: '2024-09-01',
-        paymentStatus: 'paid',
-      },
-      {
-        id: 't2',
-        name: 'Peter Mwangi',
-        studentId: 'STU2024002',
-        email: 'peter.mwangi@student.ac.ke',
-        phone: '+254723456789',
-        course: 'Engineering',
-        checkInDate: '2024-09-01',
-        paymentStatus: 'paid',
-      },
-    ],
-  },
-  {
-    id: '2',
-    roomNumber: '202',
-    floor: 2,
-    capacity: 2,
-    currentOccupancy: 1,
-    roomType: 'double',
-    status: 'partial',
-    monthlyRent: 12000,
-    tenants: [
-      {
-        id: 't3',
-        name: 'Sarah Wanjiku',
-        studentId: 'STU2024003',
-        email: 'sarah.wanjiku@student.ac.ke',
-        phone: '+254734567890',
-        course: 'Medicine',
-        checkInDate: '2024-09-15',
-        paymentStatus: 'paid',
-      },
-    ],
-  },
-  {
-    id: '3',
-    roomNumber: '203',
-    floor: 2,
-    capacity: 1,
-    currentOccupancy: 1,
-    roomType: 'single',
-    status: 'full',
-    monthlyRent: 15000,
-    tenants: [
-      {
-        id: 't4',
-        name: 'Grace Akinyi',
-        studentId: 'STU2024004',
-        email: 'grace.akinyi@student.ac.ke',
-        phone: '+254745678901',
-        course: 'Medicine',
-        checkInDate: '2024-09-01',
-        paymentStatus: 'pending',
-      },
-    ],
-  },
-  {
-    id: '4',
-    roomNumber: '204',
-    floor: 2,
-    capacity: 2,
-    currentOccupancy: 0,
-    roomType: 'double',
-    status: 'empty',
-    monthlyRent: 12000,
-    tenants: [],
-  },
-  {
-    id: '5',
-    roomNumber: '205',
-    floor: 2,
-    capacity: 3,
-    currentOccupancy: 3,
-    roomType: 'triple',
-    status: 'full',
-    monthlyRent: 10000,
-    tenants: [
-      {
-        id: 't5',
-        name: 'David Kipchoge',
-        studentId: 'STU2024005',
-        email: 'david.kipchoge@student.ac.ke',
-        phone: '+254756789012',
-        course: 'Business',
-        checkInDate: '2024-09-01',
-        paymentStatus: 'paid',
-      },
-      {
-        id: 't6',
-        name: 'Brian Otieno',
-        studentId: 'STU2024006',
-        email: 'brian.otieno@student.ac.ke',
-        phone: '+254767890123',
-        course: 'Accounting',
-        checkInDate: '2024-09-05',
-        paymentStatus: 'paid',
-      },
-      {
-        id: 't7',
-        name: 'Michael Njoroge',
-        studentId: 'STU2024007',
-        email: 'michael.njoroge@student.ac.ke',
-        phone: '+254778901234',
-        course: 'Economics',
-        checkInDate: '2024-09-10',
-        paymentStatus: 'overdue',
-      },
-    ],
-  },
-  {
-    id: '6',
-    roomNumber: '206',
-    floor: 2,
-    capacity: 2,
-    currentOccupancy: 0,
-    roomType: 'double',
-    status: 'maintenance',
-    monthlyRent: 12000,
-    tenants: [],
-  },
-];
-
 export default function RoommatesManagementPage() {
-  const [rooms, setRooms] = React.useState<Room[]>(mockRooms);
+  const { data: roomsData, isLoading } = useRooms();
+  const rooms = React.useMemo(() => 
+    (roomsData || []).map(mapRoomStatusToDisplay),
+    [roomsData]
+  );
   const [searchQuery, setSearchQuery] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
-  const [selectedRoom, setSelectedRoom] = React.useState<Room | null>(null);
+  const [selectedRoom, setSelectedRoom] = React.useState<DisplayRoom | null>(null);
 
   const filteredRooms = rooms.filter(room => {
     const matchesSearch = searchQuery === '' ||
       room.roomNumber.includes(searchQuery) ||
       room.tenants.some(t => 
-        t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.studentId.includes(searchQuery)
+        t.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
     const matchesStatus = statusFilter === 'all' || room.status === statusFilter;
@@ -226,7 +106,7 @@ export default function RoommatesManagementPage() {
       .reduce((sum, r) => sum + (r.capacity - r.currentOccupancy), 0),
   };
 
-  const getStatusBadge = (status: Room['status']) => {
+  const getStatusBadge = (status: DisplayRoom['status']) => {
     const variants = {
       full: { label: 'Full', icon: CheckCircle, className: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
       partial: { label: 'Needs Roommate', icon: AlertCircle, className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400' },
@@ -245,15 +125,35 @@ export default function RoommatesManagementPage() {
     );
   };
 
-  const getPaymentBadge = (status: Tenant['paymentStatus']) => {
-    const variants = {
-      paid: { label: 'Paid', className: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
-      pending: { label: 'Pending', className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400' },
-      overdue: { label: 'Overdue', className: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' },
-    };
-    
-    return <Badge className={`${variants[status].className} text-xs`}>{variants[status].label}</Badge>;
-  };
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-500">
+        <div>
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-5 w-96 mt-2" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <Skeleton className="h-12 w-12 mb-4" />
+                <Skeleton className="h-6 w-20" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <Skeleton className="h-48 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -392,16 +292,16 @@ export default function RoommatesManagementPage() {
                   {room.tenants.map((tenant) => (
                     <div key={tenant.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={tenant.avatar} />
                         <AvatarFallback className="text-xs">
                           {tenant.name.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{tenant.name}</p>
-                        <p className="text-xs text-muted-foreground">{tenant.studentId}</p>
+                        {tenant.bedNumber && (
+                          <p className="text-xs text-muted-foreground">Bed {tenant.bedNumber}</p>
+                        )}
                       </div>
-                      {getPaymentBadge(tenant.paymentStatus)}
                     </div>
                   ))}
                 </div>
@@ -456,7 +356,7 @@ export default function RoommatesManagementPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-xl">Room {selectedRoom.roomNumber} Details</CardTitle>
-                  <CardDescription>Floor {selectedRoom.floor} • {selectedRoom.roomType} • KES {selectedRoom.monthlyRent.toLocaleString()}/month</CardDescription>
+                  <CardDescription>Floor {selectedRoom.floor} • {selectedRoom.roomType} • KES {selectedRoom.basePrice.toLocaleString()}/month</CardDescription>
                 </div>
                 {getStatusBadge(selectedRoom.status)}
               </div>
@@ -490,7 +390,6 @@ export default function RoommatesManagementPage() {
                       <div key={tenant.id} className="p-4 rounded-lg border">
                         <div className="flex items-start gap-4">
                           <Avatar className="h-12 w-12">
-                            <AvatarImage src={tenant.avatar} />
                             <AvatarFallback>
                               {tenant.name.split(' ').map(n => n[0]).join('')}
                             </AvatarFallback>
@@ -499,25 +398,14 @@ export default function RoommatesManagementPage() {
                             <div className="flex items-start justify-between mb-2">
                               <div>
                                 <p className="font-semibold">{tenant.name}</p>
-                                <p className="text-sm text-muted-foreground">{tenant.studentId}</p>
-                              </div>
-                              {getPaymentBadge(tenant.paymentStatus)}
-                            </div>
-                            <div className="grid grid-cols-2 gap-2 text-sm">
-                              <div className="flex items-center gap-2">
-                                <Mail className="h-3 w-3 text-muted-foreground" />
-                                <span className="text-muted-foreground truncate">{tenant.email}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Phone className="h-3 w-3 text-muted-foreground" />
-                                <span className="text-muted-foreground">{tenant.phone}</span>
+                                {tenant.bedNumber && (
+                                  <p className="text-sm text-muted-foreground">Bed {tenant.bedNumber}</p>
+                                )}
                               </div>
                             </div>
-                            <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-                              <span>{tenant.course}</span>
-                              <span>•</span>
-                              <span>Checked in: {new Date(tenant.checkInDate).toLocaleDateString()}</span>
-                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Checked in: {new Date(tenant.checkInDate).toLocaleDateString()}
+                            </p>
                           </div>
                         </div>
                       </div>

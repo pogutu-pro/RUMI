@@ -9,56 +9,18 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils/cn';
 
-interface LateEntryReport {
-  id: string;
-  date: string;
-  entryTime: string;
-  reportedBy: string;
-  reason: string;
-  status: 'acknowledged' | 'pending';
-  notes?: string;
-}
-
-const mockLateEntries: LateEntryReport[] = [
-  {
-    id: '1',
-    date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    entryTime: '23:45',
-    reportedBy: 'Caretaker James',
-    reason: 'Late return from university event',
-    status: 'pending',
-    notes: 'Student provided event documentation',
-  },
-  {
-    id: '2',
-    date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    entryTime: '23:55',
-    reportedBy: 'Caretaker James',
-    reason: 'Medical appointment ran late',
-    status: 'pending',
-  },
-  {
-    id: '3',
-    date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    entryTime: '00:15',
-    reportedBy: 'Caretaker James',
-    reason: 'Medical emergency - hospital visit',
-    status: 'acknowledged',
-    notes: 'Hospital documentation provided',
-  },
-];
+import { useMyLateEntries, useAcknowledgeLateEntry } from '@/features/student';
 
 export default function StudentSecurityPage() {
-  const [lateEntries, setLateEntries] = React.useState<LateEntryReport[]>(mockLateEntries);
+  const { data: lateEntries = [], isLoading } = useMyLateEntries();
+  const acknowledgeMutation = useAcknowledgeLateEntry();
   const [selectedTab, setSelectedTab] = React.useState('visitor-invitations');
 
   const pendingEntries = lateEntries.filter(e => e.status === 'pending');
   const acknowledgedEntries = lateEntries.filter(e => e.status === 'acknowledged');
 
   const handleAcknowledge = (id: string) => {
-    setLateEntries(prev => prev.map(entry =>
-      entry.id === id ? { ...entry, status: 'acknowledged' as const } : entry
-    ));
+    acknowledgeMutation.mutate(id);
   };
 
   return (
@@ -175,7 +137,12 @@ export default function StudentSecurityPage() {
           </Card>
 
           {/* Late Entries List */}
-          {lateEntries.length === 0 ? (
+          {isLoading ? (
+             <div className="p-8 text-center text-sm text-muted-foreground">
+               <span className="loading loading-spinner loading-lg"></span>
+               <p>Loading reports...</p>
+             </div>
+          ) : lateEntries.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
                 <CheckCircle className="h-12 w-12 mx-auto text-green-600 dark:text-green-400 mb-4" />
@@ -216,10 +183,10 @@ export default function StudentSecurityPage() {
                             </div>
                             <div>
                               <p className="font-semibold">
-                                Late Entry - {new Date(entry.date).toLocaleDateString()}
+                                Late Entry - {new Date(entry.createdAt).toLocaleDateString()}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                Reported by {entry.reportedBy}
+                                Reported by {entry.loggedByName}
                               </p>
                             </div>
                           </div>
@@ -236,12 +203,14 @@ export default function StudentSecurityPage() {
                         <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-muted">
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Entry Time</p>
-                            <p className="font-semibold">{entry.entryTime}</p>
+                            <p className="font-semibold">
+                              {new Date(entry.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Date</p>
                             <p className="font-semibold">
-                              {new Date(entry.date).toLocaleDateString()}
+                              {new Date(entry.entryTime).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
@@ -266,10 +235,11 @@ export default function StudentSecurityPage() {
                         <Button
                           onClick={() => handleAcknowledge(entry.id)}
                           size="sm"
+                          disabled={acknowledgeMutation.isPending}
                           className="bg-green-600 hover:bg-green-700 text-white"
                         >
                           <CheckCircle className="h-4 w-4 mr-2" />
-                          Acknowledge
+                          {acknowledgeMutation.isPending ? 'Saving...' : 'Acknowledge'}
                         </Button>
                       )}
                     </div>
@@ -294,7 +264,7 @@ export default function StudentSecurityPage() {
                   <p className="text-sm text-muted-foreground mb-1">This Month</p>
                   <p className="text-2xl font-bold">
                     {lateEntries.filter(e => {
-                      const entryDate = new Date(e.date);
+                      const entryDate = new Date(e.entryTime);
                       const now = new Date();
                       return entryDate.getMonth() === now.getMonth() &&
                              entryDate.getFullYear() === now.getFullYear();
