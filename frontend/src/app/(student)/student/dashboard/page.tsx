@@ -196,19 +196,19 @@ export default function Page() {
                   <div className="flex-1 space-y-4">
                     <div>
                       <h3 className="text-xl font-bold">{currentBooking.hostel.name}</h3>
-                      <p className="text-muted-foreground">Room {currentBooking.room.name}</p>
+                      <p className="text-muted-foreground">Room {currentBooking.room.number}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Check-in Date</p>
                         <p className="font-medium flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-primary" />
-                          {new Date(currentBooking.moveInDate).toLocaleDateString()}
+                          {currentBooking.check_in_date ? new Date(currentBooking.check_in_date).toLocaleDateString() : 'Pending'}
                         </p>
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Duration</p>
-                        <p className="font-medium">{currentBooking.durationMonths} Months</p>
+                        <p className="font-medium">{currentBooking.duration_months} Months</p>
                       </div>
                     </div>
                     <div className="pt-2">
