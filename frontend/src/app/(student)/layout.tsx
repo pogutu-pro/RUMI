@@ -39,8 +39,8 @@ export default function Layout({ children }: StudentLayoutProps) {
         />
       </div>
 
-      {/* Mobile Sidebar Sheet */}
-      <div className="md:hidden">
+      {/* Mobile Sidebar Sheet - Hidden because we use BottomNav on mobile */}
+      <div className="hidden">
         <StudentSidebar
           isOpen={isMobileOpen}
           setIsOpen={setIsMobileOpen}
@@ -53,9 +53,8 @@ export default function Layout({ children }: StudentLayoutProps) {
         onMenuClick={() => {
           if (isDesktop) {
             setSidebarOpen(!isSidebarOpen);
-          } else {
-            setIsMobileOpen(!isMobileOpen);
           }
+          // Mobile menu disabled in favor of bottom nav
         }}
         isSidebarOpen={isSidebarOpen}
         isMobile={!isDesktop}
@@ -66,7 +65,7 @@ export default function Layout({ children }: StudentLayoutProps) {
         className={cn(
           "relative z-0 transition-all duration-300 ease-in-out min-h-screen",
           // Mobile: edge-to-edge, minimal top padding
-          "px-3 pt-16 pb-4 sm:px-4",
+          "px-3 pt-16 pb-24 sm:px-4",
           // Desktop: more padding and left margin for sidebar
           "md:px-6 md:pt-20 lg:px-10 lg:py-8",
           isDesktop && isSidebarOpen && "md:ml-64"

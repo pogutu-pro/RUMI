@@ -68,7 +68,7 @@ export default function TechSupportDashboard() {
   }, [user]);
   
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-6">
       {/* Header Section */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
@@ -96,7 +96,7 @@ export default function TechSupportDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-sm border-l-4 border-l-amber-500/80 hover:shadow-md transition-all duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Pending Verifications</CardTitle>
@@ -154,7 +154,7 @@ export default function TechSupportDashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-7">
         
         {/* Recent Activity / Tasks */}
         <Card className="col-span-4 shadow-sm border-border/50">

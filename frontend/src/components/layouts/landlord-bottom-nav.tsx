@@ -111,9 +111,10 @@ export function LandlordBottomNav() {
       
       {/* Bottom Navigation - Mobile Only */}
       <nav 
-        className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background border-t border-border shadow-[0_-1px_3px_rgba(0,0,0,0.05)]"
+        className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background border-t border-border transform-gpu will-change-transform"
         style={{
           paddingBottom: 'max(env(safe-area-inset-bottom), 0.5rem)',
+          contain: 'paint layout'
         }}
       >
         <div className="flex items-center justify-around px-2 py-2">
@@ -126,15 +127,15 @@ export function LandlordBottomNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 transition-all duration-200 min-w-[64px]",
-                  "active:scale-95 touch-manipulation",
+                  "flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 transition-transform duration-100 min-w-[64px]",
+                  "active:scale-95 touch-manipulation transform-gpu",
                   active && "bg-primary/10"
                 )}
               >
-                <div className="relative">
+                <div className="relative will-change-transform">
                   <Icon 
                     className={cn(
-                      "h-6 w-6 transition-all duration-200",
+                      "h-6 w-6 transition-transform duration-200",
                       active 
                         ? "text-primary scale-110" 
                         : "text-muted-foreground"
@@ -151,7 +152,7 @@ export function LandlordBottomNav() {
                 </div>
                 <span 
                   className={cn(
-                    "text-[10px] font-medium transition-all duration-200",
+                    "text-[10px] font-medium",
                     active 
                       ? "text-primary" 
                       : "text-muted-foreground"

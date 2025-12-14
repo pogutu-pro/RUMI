@@ -226,7 +226,7 @@ export default function Page() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
@@ -245,7 +245,7 @@ export default function Page() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -361,7 +361,7 @@ export default function Page() {
       </div>
 
       {/* Charts Layer */}
-      <div className="grid gap-6 lg:grid-cols-7">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
         <Card className="col-span-4 border-border/50 shadow-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -403,7 +403,7 @@ export default function Page() {
       </div>
 
       {/* Bottom Section */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         <Card className="border-border/50 shadow-sm lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-lg font-semibold">User Distribution</CardTitle>

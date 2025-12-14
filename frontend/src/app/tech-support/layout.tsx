@@ -5,9 +5,10 @@ import type { ReactNode } from 'react';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { TechSupportSidebar } from '@/components/layouts/tech-support-sidebar';
 import { TechSupportTopNav } from '@/components/layouts/tech-support-top-nav';
+import { TechSupportBottomNav } from '@/components/layouts/tech-support-bottom-nav';
 import { DashboardThemeProvider } from '@/components/providers/dashboard-theme-provider';
 import { cn } from '@/lib/utils/cn';
-import { useAdminStore } from '@/features/admin';
+import { useAppStore } from '@/stores/app.store';
 
 interface TechSupportLayoutProps {
   children: ReactNode;
@@ -15,7 +16,8 @@ interface TechSupportLayoutProps {
 
 export default function Layout({ children }: TechSupportLayoutProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const { isSidebarOpen, setSidebarOpen } = useAdminStore();
+  const isSidebarOpen = useAppStore((state) => state.isSidebarOpen);
+  const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
 
   return (
@@ -30,8 +32,8 @@ export default function Layout({ children }: TechSupportLayoutProps) {
           />
         </div>
 
-        {/* Mobile Sidebar Sheet */}
-        <div className="md:hidden">
+        {/* Mobile Sidebar Sheet - Hidden in favor of Bottom Nav */}
+        <div className="hidden">
           <TechSupportSidebar
             isOpen={isMobileOpen}
             setIsOpen={setIsMobileOpen}
@@ -39,14 +41,16 @@ export default function Layout({ children }: TechSupportLayoutProps) {
           />
         </div>
 
+        {/* Bottom Navigation - Mobile Only */}
+        <TechSupportBottomNav />
+
         {/* Top Navigation */}
         <TechSupportTopNav
           onMenuClick={() => {
             if (isDesktop) {
               setSidebarOpen(!isSidebarOpen);
-            } else {
-              setIsMobileOpen(!isMobileOpen);
             }
+            // Mobile menu click disabled
           }}
           isSidebarOpen={isSidebarOpen}
           isMobile={!isDesktop}
@@ -56,8 +60,8 @@ export default function Layout({ children }: TechSupportLayoutProps) {
         <main
           className={cn(
             "relative z-0 transition-all duration-300 ease-in-out min-h-screen",
-            // Mobile: edge-to-edge, minimal top padding
-            "px-3 pt-20 pb-4 sm:px-4",
+            // Mobile: edge-to-edge, minimal top padding, added bottom padding
+            "px-3 pt-20 pb-24 sm:px-4",
             // Desktop: more padding, always leave space for collapsed sidebar only
             "md:px-6 md:pt-24 lg:px-10 lg:py-8",
             isSidebarOpen ? "md:ml-72" : "md:ml-20" // Adjust margin based on sidebar state

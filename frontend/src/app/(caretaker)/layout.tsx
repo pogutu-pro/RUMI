@@ -34,7 +34,6 @@ import { cn } from '@/lib/utils/cn';
 import { getUserInitials } from '@/lib/utils/user';
 import { sanitizeImageUrl } from '@/lib/utils/security';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { useCaretakerStore } from '@/features/caretaker';
 import { useAppStore } from '@/stores/app.store';
 
 // Helper functions for notification display
@@ -74,8 +73,8 @@ export default function Layout({ children }: CaretakerLayoutProps) {
   
   // Real notifications from API
   const { data: notificationsData, isLoading: notificationsLoading } = useNotifications();
-  const notifications = notificationsData?.slice(0, 5) || [];
-  const unreadCount = notifications.filter((n: Notification) => !n.is_read).length;
+  const notifications = notificationsData?.data?.slice(0, 5) || [];
+  const unreadCount = notifications.filter((n: Notification) => !n.isRead).length;
   
   // Connect to Global UI Store
   const isSidebarOpen = useAppStore((state) => state.isSidebarOpen);
@@ -184,17 +183,17 @@ export default function Layout({ children }: CaretakerLayoutProps) {
                           {notifications.map((notification: Notification) => {
                             const style = getNotificationStyle(notification.type);
                             return (
-                              <div
+                                <div
                                 key={notification.id}
                                 className={cn(
                                   "p-4 hover:bg-muted/50 transition-colors cursor-pointer border-l-4",
-                                  !notification.is_read && "bg-muted/30",
+                                  !notification.isRead && "bg-muted/30",
                                   style.borderClass
                                 )}
                               >
                                 <div className="flex items-start justify-between gap-2 mb-1">
                                   <h4 className="font-medium text-sm">{notification.title}</h4>
-                                  {!notification.is_read && (
+                                  {!notification.isRead && (
                                     <span className="h-2 w-2 rounded-full bg-blue-600 flex-shrink-0 mt-1" />
                                   )}
                                 </div>
@@ -203,7 +202,7 @@ export default function Layout({ children }: CaretakerLayoutProps) {
                                 </p>
                                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                   <Clock className="h-3 w-3" />
-                                  {formatRelativeTime(notification.created_at)}
+                                  {formatRelativeTime(notification.createdAt)}
                                 </div>
                               </div>
                             );
@@ -274,7 +273,7 @@ export default function Layout({ children }: CaretakerLayoutProps) {
             id="main-content"
             className={cn(
               "relative z-0 transition-all duration-300 ease-in-out min-h-screen",
-              "px-3 pt-4 pb-20 sm:px-4",
+              "px-3 pt-4 pb-24 sm:px-4",
               "md:px-6 md:pt-8 md:pb-8 lg:px-8"
             )}
           >

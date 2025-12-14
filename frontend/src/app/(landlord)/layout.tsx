@@ -65,7 +65,7 @@ export default function Layout({ children }: LandlordLayoutProps) {
             className={cn(
               "relative z-0 transition-all duration-300 ease-in-out min-h-screen",
               // Mobile: edge-to-edge, minimal top padding since Header is sticky
-              "px-3 pt-4 pb-20 sm:px-4", // Added pb-20 for bottom nav space on mobile
+              "px-3 pt-4 pb-24 sm:px-4", // Added pb-24 for bottom nav space on mobile
               // Desktop: more padding and left margin for sidebar
               "md:px-6 md:pt-10 lg:px-10 lg:py-8",
               isDesktop && isSidebarOpen && "md:ml-64"

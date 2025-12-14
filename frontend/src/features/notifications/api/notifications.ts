@@ -1,6 +1,7 @@
 import apiClient from '@/lib/api/client';
 import type { ApiResponse, PaginatedResponse, PaginationParams } from '@/types/api.types';
 import type { Notification, NotificationPreferences } from '@/types/auth.types';
+export type { Notification, NotificationPreferences };
 
 export interface GetNotificationsParams extends PaginationParams {
   status?: 'pending' | 'sent' | 'failed' | 'read' | 'unread';

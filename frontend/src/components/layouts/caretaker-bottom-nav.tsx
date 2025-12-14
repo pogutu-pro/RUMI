@@ -91,9 +91,10 @@ export function CaretakerBottomNav() {
       
       {/* Bottom Navigation - Mobile Only */}
       <nav 
-        className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/95 backdrop-blur-lg border-t border-border"
+        className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background border-t border-border transform-gpu will-change-transform"
         style={{
           paddingBottom: 'max(env(safe-area-inset-bottom), 0.5rem)',
+          contain: 'paint layout'
         }}
       >
         <div className="flex items-center justify-around px-2 py-2">
@@ -105,16 +106,16 @@ export function CaretakerBottomNav() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 rounded-xl px-4 py-2 transition-all duration-200 min-w-[64px]",
-                  "active:scale-95 touch-manipulation",
+              className={cn(
+                  "flex flex-col items-center justify-center gap-1 rounded-xl px-4 py-2 transition-transform duration-100 min-w-[64px]",
+                  "active:scale-95 touch-manipulation transform-gpu",
                   active && "bg-emerald-50 dark:bg-emerald-900/20"
                 )}
               >
-                <div className="relative">
+                <div className="relative will-change-transform">
                   <Icon 
                     className={cn(
-                      "h-6 w-6 transition-all duration-200",
+                      "h-6 w-6 transition-transform duration-200",
                       active 
                         ? "text-emerald-600 dark:text-emerald-400 scale-110" 
                         : "text-muted-foreground"
@@ -131,7 +132,7 @@ export function CaretakerBottomNav() {
                 </div>
                 <span 
                   className={cn(
-                    "text-[11px] font-medium transition-all duration-200",
+                    "text-[11px] font-medium",
                     active 
                       ? "text-emerald-600 dark:text-emerald-400" 
                       : "text-muted-foreground"
