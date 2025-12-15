@@ -55,7 +55,12 @@ INSTALLED_APPS = [
     'hostels',
     'home',
     'payments',
-    'notifications'
+    'notifications',
+    'admin_api',
+    'admin_endpoints',
+    'analytics',
+    'caretaker_operations',
+    'roommate_system'
 ]
 
 # Custom User Model (matches schema: email as unique identifier)

@@ -20,6 +20,7 @@ urlpatterns = [
 
     # Profile management
     path('profile/', views.UserProfileView.as_view(), name='user_profile'),
+    path('profile/completion/', views.ProfileCompletionView.as_view(), name='profile_completion'),
     path('profile/picture/', views.ProfilePictureUploadView.as_view(), name='profile_picture_upload'),
 
     # Caretaker management (Landlord)

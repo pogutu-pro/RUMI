@@ -105,18 +105,25 @@ function useAuthSuccess() {
     login({
       user: response.user,
       profile: response.profile || undefined, // Adapt nullable to optional if needed
-      accessToken: response.access,
-      refreshToken: response.refresh,
+      accessToken: response.access_token,
+      refreshToken: response.refresh_token,
     });
 
-    // 2. Invalidate Queries
+    // 2. Set user role cookie for middleware
+    if (response.user?.role) {
+      import('@/lib/auth/token').then(({ setUserRole }) => {
+        setUserRole(response.user.role);
+      });
+    }
+
+    // 3. Invalidate Queries
     queryClient.invalidateQueries({ queryKey: ['user'] });
     queryClient.invalidateQueries({ queryKey: ['profile'] });
 
-    // 3. Redirect
+    // 4. Redirect
     redirectUser(response.user?.role);
 
-    // 4. Toast
+    // 5. Toast
     toast.success(successMessage);
   };
 }

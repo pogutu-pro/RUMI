@@ -708,6 +708,72 @@ class ProfilePictureUploadView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class ProfileCompletionView(APIView):
+    """Get detailed profile completion information"""
+
+    def get(self, request):
+        """Get profile completion status and details"""
+        user = request.user
+        
+        if user.role != 'student':
+            return Response({
+                'error': 'Profile completion endpoint is only available for students'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            student_profile = user.student_profile
+        except:
+            return Response({
+                'error': 'Student profile not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Define required fields for completion
+        required_fields = [
+            ('university', student_profile.university, 'University'),
+            ('student_id_number', student_profile.student_id_number, 'Student ID Number'),
+            ('year_of_study', student_profile.year_of_study, 'Year of Study'),
+            ('course', student_profile.course, 'Course/Program'),
+            ('phone_number', user.phone_number, 'Phone Number'),
+            ('emergency_contact_name', student_profile.emergency_contact_name, 'Emergency Contact Name'),
+            ('emergency_contact_phone', student_profile.emergency_contact_phone, 'Emergency Contact Phone'),
+        ]
+
+        completed_fields = []
+        missing_fields = []
+        completion_percentage = 0
+
+        for field_name, field_value, display_name in required_fields:
+            if field_value:
+                completed_fields.append({
+                    'field': field_name,
+                    'label': display_name,
+                    'completed': True,
+                    'value': str(field_value)
+                })
+            else:
+                missing_fields.append({
+                    'field': field_name,
+                    'label': display_name,
+                    'completed': False,
+                    'required': True
+                })
+
+        completion_percentage = int((len(completed_fields) / len(required_fields)) * 100)
+
+        return Response({
+            'completion_percentage': completion_percentage,
+            'is_complete': student_profile.is_profile_complete,
+            'completed_fields': completed_fields,
+            'missing_fields': missing_fields,
+            'total_required_fields': len(required_fields),
+            'completed_count': len(completed_fields),
+            'missing_count': len(missing_fields),
+            'next_steps': [
+                field['label'] for field in missing_fields
+            ] if missing_fields else []
+        }, status=status.HTTP_200_OK)
+
+
 class CaretakerListCreateView(APIView):
     """List and create caretakers (Landlord only)"""
 
@@ -1394,14 +1460,20 @@ class StudentDashboardView(APIView):
 
     def _calculate_profile_completion(self, student_profile):
         """Calculate profile completion percentage"""
+        # Check actual fields that exist in StudentProfile model
         required_fields = [
-            'university', 'course_of_study', 'year_of_study',
-            'phone_number', 'gender', 'date_of_birth'
+            ('university', student_profile.university),
+            ('student_id_number', student_profile.student_id_number),
+            ('year_of_study', student_profile.year_of_study),
+            ('course', student_profile.course),
+            ('phone_number', student_profile.user.phone_number),  # From User model
+            ('emergency_contact_name', student_profile.emergency_contact_name),
+            ('emergency_contact_phone', student_profile.emergency_contact_phone),
         ]
 
         completed = 0
-        for field in required_fields:
-            if getattr(student_profile, field, None):
+        for field_name, field_value in required_fields:
+            if field_value:
                 completed += 1
 
         return int((completed / len(required_fields)) * 100)

@@ -47,7 +47,7 @@ class Hostel(models.Model):
     base_price = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default='KES')
     
-    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=Decimal('0.0'))
     review_count = models.IntegerField(default=0)
     
     is_verified = models.BooleanField(default=False)
@@ -713,3 +713,388 @@ class VisitorCheckIn(models.Model):
 
     def __str__(self):
         return f"Visitor: {self.visitor_name} at {self.room} ({self.check_in_time.date()})"
+
+
+class RoomRequest(models.Model):
+    """Room requests submitted by students before booking"""
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('converted_to_booking', 'Converted to Booking'),
+    ]
+
+    student = models.ForeignKey(
+        'accounts.StudentProfile',
+        on_delete=models.CASCADE,
+        related_name='room_requests'
+    )
+    hostel = models.ForeignKey(
+        Hostel,
+        on_delete=models.CASCADE,
+        related_name='room_requests'
+    )
+    preferred_room_type = models.CharField(
+        max_length=20,
+        choices=Room.ROOM_TYPE_CHOICES,
+        help_text="Type of room student is requesting"
+    )
+    preferred_floor = models.IntegerField(blank=True, null=True)
+    max_price_range = models.DecimalField(max_digits=10, decimal_places=2)
+    move_in_date = models.DateField()
+    duration_months = models.IntegerField(default=12)
+    special_requirements = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Any special requirements or preferences"
+    )
+    roommate_preferences = models.JSONField(
+        blank=True,
+        null=True,
+        help_text="Preferred roommate characteristics"
+    )
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending')
+    priority_level = models.CharField(
+        max_length=20,
+        choices=[
+            ('low', 'Low'),
+            ('medium', 'Medium'),
+            ('high', 'High'),
+            ('urgent', 'Urgent')
+        ],
+        default='medium'
+    )
+    requested_at = models.DateTimeField(default=timezone.now)
+    reviewed_at = models.DateTimeField(blank=True, null=True)
+    reviewed_by = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='reviewed_room_requests'
+    )
+    rejection_reason = models.TextField(blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'hostels_roomrequest'
+        indexes = [
+            models.Index(fields=['student'], name='idx_roomrequest_student'),
+            models.Index(fields=['hostel'], name='idx_roomrequest_hostel'),
+            models.Index(fields=['status'], name='idx_roomrequest_status'),
+            models.Index(fields=['move_in_date'], name='idx_roomrequest_movein'),
+            models.Index(fields=['priority_level'], name='idx_roomrequest_priority'),
+        ]
+        ordering = ['-priority_level', 'requested_at']
+
+    def __str__(self):
+        return f"Room request by {self.student.user.get_full_name()} - {self.hostel.name}"
+
+
+class MaintenanceLog(models.Model):
+    """Detailed maintenance activity logs for hostels and rooms"""
+
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('emergency', 'Emergency'),
+    ]
+
+    STATUS_CHOICES = [
+        ('scheduled', 'Scheduled'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+        ('on_hold', 'On Hold'),
+    ]
+
+    CATEGORY_CHOICES = [
+        ('plumbing', 'Plumbing'),
+        ('electrical', 'Electrical'),
+        ('hvac', 'HVAC/Climate Control'),
+        ('security', 'Security/Locks'),
+        ('cleaning', 'Cleaning'),
+        ('appliances', 'Appliances'),
+        ('furniture', 'Furniture'),
+        ('pest_control', 'Pest Control'),
+        ('landscaping', 'Landscaping'),
+        ('other', 'Other'),
+    ]
+
+    hostel = models.ForeignKey(
+        Hostel,
+        on_delete=models.CASCADE,
+        related_name='maintenance_logs'
+    )
+    room = models.ForeignKey(
+        Room,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='maintenance_logs'
+    )
+    requested_by = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.CASCADE,
+        related_name='maintenance_requests'
+    )
+    assigned_to = models.ForeignKey(
+        'accounts.CaretakerProfile',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='assigned_maintenance'
+    )
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
+    
+    # Scheduling
+    scheduled_date = models.DateTimeField(blank=True, null=True)
+    estimated_duration_hours = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        blank=True,
+        null=True
+    )
+    actual_start_time = models.DateTimeField(blank=True, null=True)
+    actual_end_time = models.DateTimeField(blank=True, null=True)
+    
+    # Costs and resources
+    estimated_cost = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    actual_cost = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    materials_used = models.JSONField(blank=True, null=True)
+    external_contractor = models.CharField(max_length=255, blank=True, null=True)
+    
+    # Documentation
+    images = models.JSONField(blank=True, null=True, help_text="Array of image URLs")
+    before_images = models.JSONField(blank=True, null=True)
+    after_images = models.JSONField(blank=True, null=True)
+    work_performed = models.TextField(blank=True, null=True)
+    recommendations = models.TextField(blank=True, null=True)
+    
+    # Recurring maintenance
+    is_recurring = models.BooleanField(default=False)
+    recurring_frequency = models.CharField(
+        max_length=20,
+        choices=[
+            ('weekly', 'Weekly'),
+            ('monthly', 'Monthly'),
+            ('quarterly', 'Quarterly'),
+            ('semi_annually', 'Semi-Annually'),
+            ('annually', 'Annually'),
+        ],
+        blank=True,
+        null=True
+    )
+    next_due_date = models.DateField(blank=True, null=True)
+    
+    # Student impact
+    affects_students = models.BooleanField(default=False)
+    students_notified = models.BooleanField(default=False)
+    alternative_accommodation_provided = models.BooleanField(default=False)
+    
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'hostels_maintenancelog'
+        indexes = [
+            models.Index(fields=['hostel'], name='idx_maintenance_hostel'),
+            models.Index(fields=['room'], name='idx_maintenance_room'),
+            models.Index(fields=['status'], name='idx_maintenance_status'),
+            models.Index(fields=['priority'], name='idx_maintenance_priority'),
+            models.Index(fields=['category'], name='idx_maintenance_category'),
+            models.Index(fields=['scheduled_date'], name='idx_maintenance_scheduled'),
+            models.Index(fields=['is_recurring'], name='idx_maintenance_recurring'),
+        ]
+        ordering = ['-priority', 'scheduled_date', 'created_at']
+
+    def __str__(self):
+        location = f"{self.hostel.name}"
+        if self.room:
+            location += f" - Room {self.room.room_number}"
+        return f"Maintenance: {self.title} at {location}"
+
+    @property
+    def duration_hours(self):
+        """Calculate actual duration in hours"""
+        if self.actual_start_time and self.actual_end_time:
+            duration = self.actual_end_time - self.actual_start_time
+            return round(duration.total_seconds() / 3600, 2)
+        return None
+
+    @property
+    def is_overdue(self):
+        """Check if maintenance is overdue"""
+        if self.status in ['scheduled', 'in_progress'] and self.scheduled_date:
+            return timezone.now() > self.scheduled_date
+        return False
+
+
+class IncidentReport(models.Model):
+    """Security and incident reports for hostels"""
+
+    INCIDENT_TYPE_CHOICES = [
+        ('theft', 'Theft/Burglary'),
+        ('vandalism', 'Vandalism'),
+        ('assault', 'Assault/Physical Altercation'),
+        ('harassment', 'Harassment'),
+        ('drugs', 'Drug-Related'),
+        ('alcohol', 'Alcohol-Related'),
+        ('noise_complaint', 'Noise Complaint'),
+        ('unauthorized_visitor', 'Unauthorized Visitor'),
+        ('property_damage', 'Property Damage'),
+        ('fire', 'Fire Hazard'),
+        ('medical_emergency', 'Medical Emergency'),
+        ('safety_violation', 'Safety Violation'),
+        ('other', 'Other'),
+    ]
+
+    SEVERITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('critical', 'Critical'),
+    ]
+
+    STATUS_CHOICES = [
+        ('reported', 'Reported'),
+        ('investigating', 'Investigating'),
+        ('resolved', 'Resolved'),
+        ('escalated', 'Escalated'),
+        ('closed', 'Closed'),
+    ]
+
+    hostel = models.ForeignKey(
+        Hostel,
+        on_delete=models.CASCADE,
+        related_name='incident_reports'
+    )
+    room = models.ForeignKey(
+        Room,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='incident_reports'
+    )
+    reported_by = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.CASCADE,
+        related_name='reported_incidents'
+    )
+    incident_type = models.CharField(max_length=30, choices=INCIDENT_TYPE_CHOICES)
+    severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='medium')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='reported')
+    
+    # Incident details
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    location_details = models.TextField(blank=True, null=True)
+    incident_date = models.DateTimeField()
+    reported_date = models.DateTimeField(default=timezone.now)
+    
+    # People involved
+    victims = models.JSONField(
+        blank=True,
+        null=True,
+        help_text="Array of victim information"
+    )
+    suspects = models.JSONField(
+        blank=True,
+        null=True,
+        help_text="Array of suspect information"
+    )
+    witnesses = models.JSONField(
+        blank=True,
+        null=True,
+        help_text="Array of witness information"
+    )
+    
+    # Actions taken
+    immediate_action = models.TextField(blank=True, null=True)
+    police_reported = models.BooleanField(default=False)
+    police_report_number = models.CharField(max_length=50, blank=True, null=True)
+    medical_attention_required = models.BooleanField(default=False)
+    medical_attention_provided = models.BooleanField(default=False)
+    
+    # Investigation
+    assigned_investigator = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='assigned_incidents'
+    )
+    investigation_notes = models.TextField(blank=True, null=True)
+    evidence_collected = models.JSONField(blank=True, null=True)
+    images = models.JSONField(blank=True, null=True)
+    
+    # Resolution
+    resolution = models.TextField(blank=True, null=True)
+    disciplinary_action = models.TextField(blank=True, null=True)
+    preventive_measures = models.TextField(blank=True, null=True)
+    follow_up_required = models.BooleanField(default=False)
+    follow_up_date = models.DateField(blank=True, null=True)
+    
+    # Financial impact
+    estimated_damage_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True
+    )
+    actual_repair_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True
+    )
+    
+    # Notifications
+    landlord_notified = models.BooleanField(default=False)
+    caretaker_notified = models.BooleanField(default=False)
+    authorities_notified = models.BooleanField(default=False)
+    
+    updated_at = models.DateTimeField(auto_now=True)
+    resolved_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'hostels_incidentreport'
+        indexes = [
+            models.Index(fields=['hostel'], name='idx_incident_hostel'),
+            models.Index(fields=['room'], name='idx_incident_room'),
+            models.Index(fields=['incident_type'], name='idx_incident_type'),
+            models.Index(fields=['severity'], name='idx_incident_severity'),
+            models.Index(fields=['status'], name='idx_incident_status'),
+            models.Index(fields=['incident_date'], name='idx_incident_date'),
+            models.Index(fields=['reported_by'], name='idx_incident_reported_by'),
+        ]
+        ordering = ['-severity', '-incident_date']
+
+    def __str__(self):
+        location = f"{self.hostel.name}"
+        if self.room:
+            location += f" - Room {self.room.room_number}"
+        return f"{self.get_incident_type_display()}: {self.title} at {location}"
+
+    @property
+    def time_to_report(self):
+        """Calculate time between incident and report in hours"""
+        if self.incident_date and self.reported_date:
+            duration = self.reported_date - self.incident_date
+            return round(duration.total_seconds() / 3600, 2)
+        return None
+
+    @property
+    def resolution_time(self):
+        """Calculate time to resolve incident in hours"""
+        if self.reported_date and self.resolved_at:
+            duration = self.resolved_at - self.reported_date
+            return round(duration.total_seconds() / 3600, 2)
+        return None

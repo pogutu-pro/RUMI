@@ -52,8 +52,18 @@ urlpatterns = [
         path('notifications/', include('notifications.urls')),
         path('payments/', include('payments.urls')),
         path('home/', include('home.urls')),
+        path('admin/', include('admin_api.urls')),
+        
+        # New advanced endpoints
+        path('analytics/', include('analytics.urls')),
+        path('caretaker-operations/', include('caretaker_operations.urls')),
+        path('roommates/', include('roommate_system.urls')),
+        path('admin-endpoints/', include('admin_endpoints.urls')),
 
     ])),
+    
+    # Direct caretaker routes to match frontend expectations
+    path('api/v1/caretaker/', include('caretaker_operations.urls')),
 ]
 
 # Debug toolbar URLs
