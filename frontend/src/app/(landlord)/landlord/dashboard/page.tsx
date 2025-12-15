@@ -46,69 +46,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth';
 import { useHostels } from '@/features/hostels';
 import { usePaymentStats } from '@/features/payments';
-
-// Mock data - replace with API calls
-const monthlyRevenueData = [
-  { month: 'Jul', revenue: 845000, occupancy: 87 },
-  { month: 'Aug', revenue: 920000, occupancy: 92 },
-  { month: 'Sep', revenue: 880000, occupancy: 89 },
-  { month: 'Oct', revenue: 1050000, occupancy: 95 },
-  { month: 'Nov', revenue: 1150000, occupancy: 97 },
-  { month: 'Dec', revenue: 1280000, occupancy: 98 },
-];
-
-const hostelPerformanceData = [
-  { name: 'Parklands Heights', occupancy: 98, revenue: 420000, trend: '+12%' },
-  { name: 'Westlands Plaza', occupancy: 95, revenue: 380000, trend: '+8%' },
-  { name: 'Kilimani Suites', occupancy: 92, revenue: 320000, trend: '+5%' },
-  { name: 'CBD Central', occupancy: 88, revenue: 280000, trend: '+3%' },
-  { name: 'South B Residence', occupancy: 75, revenue: 180000, trend: '-2%' },
-];
-
-const bookingStatusData = [
-  { name: 'Confirmed', value: 142, color: '#10b981' },
-  { name: 'Pending', value: 28, color: '#f59e0b' },
-  { name: 'Cancelled', value: 12, color: '#ef4444' },
-];
-
-const recentActivities = [
-  {
-    id: 1,
-    type: 'booking',
-    title: 'New booking confirmed',
-    description: 'Sarah Kimani - Parklands Heights, Room 204',
-    time: '5 minutes ago',
-    icon: CheckCircle2,
-    color: 'text-green-600',
-  },
-  {
-    id: 2,
-    type: 'payment',
-    title: 'Payment received',
-    description: 'KES 45,000 from Michael Odhiambo',
-    time: '1 hour ago',
-    icon: DollarSign,
-    color: 'text-blue-600',
-  },
-  {
-    id: 3,
-    type: 'alert',
-    title: 'Maintenance required',
-    description: 'Water heater issue - Kilimani Suites, Room 12',
-    time: '3 hours ago',
-    icon: AlertCircle,
-    color: 'text-orange-600',
-  },
-  {
-    id: 4,
-    type: 'cancellation',
-    title: 'Booking cancelled',
-    description: 'Jane Mwangi - Requested refund',
-    time: '5 hours ago',
-    icon: XCircle,
-    color: 'text-red-600',
-  },
-];
+import { useLandlordDashboard, useLandlordActivityFeed } from '@/features/landlord';
 
 interface KPICardProps {
   title: string;
@@ -205,15 +143,41 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+// Helper function to get activity icon based on type - DRY principle
+function getActivityIcon(type: string): React.ElementType {
+  const iconMap: Record<string, React.ElementType> = {
+    booking: CheckCircle2,
+    payment: DollarSign,
+    alert: AlertCircle,
+    maintenance: AlertCircle,
+    cancellation: XCircle,
+  };
+  return iconMap[type] || Activity;
+}
+
+// Helper function to get activity color based on type - DRY principle
+function getActivityColor(type: string): string {
+  const colorMap: Record<string, string> = {
+    booking: 'text-green-600',
+    payment: 'text-blue-600',
+    alert: 'text-orange-600',
+    maintenance: 'text-orange-600',
+    cancellation: 'text-red-600',
+  };
+  return colorMap[type] || 'text-slate-600';
+}
+
 export default function LandlordDashboard() {
   const { user } = useAuth();
   const { data: hostelsData, isLoading: hostelsLoading } = useHostels();
   const { data: paymentStats, isLoading: statsLoading } = usePaymentStats();
+  const { data: dashboardData, isLoading: dashboardLoading } = useLandlordDashboard();
+  const { data: activities = [], isLoading: activitiesLoading } = useLandlordActivityFeed(4);
 
-  const loading = hostelsLoading || statsLoading;
+  const loading = hostelsLoading || statsLoading || dashboardLoading;
 
   const hostels = hostelsData?.results || [];
-  const activeHostelsCount = hostels.length; // Or filter by status 'active'
+  const activeHostelsCount = hostels.length;
   
   const totalRooms = hostels.reduce((sum, h) => sum + h.total_rooms, 0);
   const totalOccupied = hostels.reduce((sum, h) => sum + (h.total_rooms - h.available_rooms), 0);
@@ -221,9 +185,26 @@ export default function LandlordDashboard() {
   
   const totalRevenue = paymentStats?.totalRevenue || 0;
   
-  // Pending actions could be unread messages + pending bookings + support tickets
-  // For now, hardcode or fetch if possible. Keeping as 12 for demo or 0.
-  const pendingActions = 0; // TODO: Implement pending actions aggregation
+  // Use dashboard data for pending actions, fallback to 0
+  const pendingActions = dashboardData?.stats?.pendingActions || 0;
+
+  // Use dashboard data for charts with fallbacks
+  const monthlyRevenueData = dashboardData?.monthlyRevenue || [];
+  const hostelPerformanceData = dashboardData?.hostelPerformance || [];
+  const bookingStatusData = dashboardData?.bookingStatus 
+    ? [
+        { name: 'Confirmed', value: dashboardData.bookingStatus.confirmed, color: '#10b981' },
+        { name: 'Pending', value: dashboardData.bookingStatus.pending, color: '#f59e0b' },
+        { name: 'Cancelled', value: dashboardData.bookingStatus.cancelled, color: '#ef4444' },
+      ]
+    : [];
+
+  // Map activities to the required format with icon
+  const recentActivities = activities.map(activity => ({
+    ...activity,
+    icon: getActivityIcon(activity.type),
+    color: getActivityColor(activity.type),
+  }));
 
   const displayName = React.useMemo(() => {
     if (!user) return 'Landlord';

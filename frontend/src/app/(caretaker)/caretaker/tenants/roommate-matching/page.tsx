@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils/cn';
+import { useRoommateRequests, useApproveRoommateRequest, useRejectRoommateRequest } from '@/features/caretaker';
 
 interface Student {
   id: string;
@@ -56,117 +57,52 @@ interface RoommateMatchRequest {
   };
 }
 
-const mockRequests: RoommateMatchRequest[] = [
-  {
-    id: '1',
-    requester: {
-      id: 's1',
-      name: 'John Omondi',
-      studentId: 'STU2024001',
-      email: 'john.omondi@student.ac.ke',
-      phone: '+254712345678',
-      course: 'Computer Science',
-      year: 2,
-      university: 'University of Nairobi',
-    },
-    requestedRoommate: {
-      id: 's2',
-      name: 'Peter Mwangi',
-      studentId: 'STU2024002',
-      email: 'peter.mwangi@student.ac.ke',
-      phone: '+254723456789',
-      course: 'Engineering',
-      year: 2,
-      university: 'University of Nairobi',
-    },
-    compatibilityScore: 92,
-    requestDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'pending',
-    reason: 'Both are in engineering fields, share similar study schedules, and have common interests in sports',
-    sharedInterests: ['Football', 'Technology', 'Music'],
-    lifestyleCompatibility: {
-      sleepSchedule: 90,
-      cleanliness: 95,
-      noiseTolerance: 88,
-      studyHabits: 92,
-    },
-  },
-  {
-    id: '2',
-    requester: {
-      id: 's3',
-      name: 'Sarah Wanjiku',
-      studentId: 'STU2024003',
-      email: 'sarah.wanjiku@student.ac.ke',
-      phone: '+254734567890',
-      course: 'Medicine',
-      year: 3,
-      university: 'University of Nairobi',
-    },
-    requestedRoommate: {
-      id: 's4',
-      name: 'Grace Akinyi',
-      studentId: 'STU2024004',
-      email: 'grace.akinyi@student.ac.ke',
-      phone: '+254745678901',
-      course: 'Medicine',
-      year: 3,
-      university: 'University of Nairobi',
-    },
-    compatibilityScore: 88,
-    requestDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'pending',
-    reason: 'Same course (Medicine), similar study schedules, both prefer quiet environment',
-    sharedInterests: ['Reading', 'Yoga', 'Cooking'],
-    lifestyleCompatibility: {
-      sleepSchedule: 92,
-      cleanliness: 90,
-      noiseTolerance: 75,
-      studyHabits: 95,
-    },
-  },
-  {
-    id: '3',
-    requester: {
-      id: 's5',
-      name: 'David Kipchoge',
-      studentId: 'STU2024005',
-      email: 'david.kipchoge@student.ac.ke',
-      phone: '+254756789012',
-      course: 'Business',
-      year: 1,
-      university: 'Strathmore University',
-    },
-    requestedRoommate: {
-      id: 's6',
-      name: 'Brian Otieno',
-      studentId: 'STU2024006',
-      email: 'brian.otieno@student.ac.ke',
-      phone: '+254767890123',
-      course: 'Accounting',
-      year: 1,
-      university: 'Strathmore University',
-    },
-    compatibilityScore: 78,
-    requestDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'pending',
-    reason: 'Related fields (business), both first-years, similar social preferences',
-    sharedInterests: ['Basketball', 'Entrepreneurship'],
-    lifestyleCompatibility: {
-      sleepSchedule: 80,
-      cleanliness: 75,
-      noiseTolerance: 82,
-      studyHabits: 78,
-    },
-  },
-];
 
 export default function RoommateMatchingPage() {
-  const [requests, setRequests] = React.useState<RoommateMatchRequest[]>(mockRequests);
+  // Use real API hooks
+  const { data: apiRequests = [], isLoading: isLoadingRequests } = useRoommateRequests();
+  const approveRequest = useApproveRoommateRequest();
+  const rejectRequest = useRejectRoommateRequest();
+  
   const [searchQuery, setSearchQuery] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
-  const [selectedRequest, setSelectedRequest] = React.useState<RoommateMatchRequest | null>(null);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [selectedRequest, setSelectedRequest] = React.useState<RoommateRequest | null>(null);
+  
+  // Map API data to component format
+  const requests: RoommateMatchRequest[] = apiRequests.map(req => ({
+    id: req.id,
+    requester: {
+      id: req.requesterId,
+      name: req.requesterName,
+      studentId: req.requesterId,
+      email: '',
+      phone: '',
+      course: '',
+      year: 0,
+      university: '',
+    },
+    requestedRoommate: {
+      id: req.requesteeId,
+      name: req.requesteeName,
+      studentId: req.requesteeId,
+      email: '',
+      phone: '',
+      course: '',
+      year: 0,
+      university: '',
+    },
+    compatibilityScore: req.matchScore,
+    requestDate: req.createdAt,
+    status: req.status,
+    reason: req.requestReason,
+    sharedInterests: [],
+    lifestyleCompatibility: {
+      sleepSchedule: 0,
+      cleanliness: 0,
+      noiseTolerance: 0,
+      studyHabits: 0,
+    },
+  }));
 
   const filteredRequests = requests.filter(req => {
     const matchesSearch = searchQuery === '' ||
@@ -190,43 +126,41 @@ export default function RoommateMatchingPage() {
     ),
   };
 
+
   const handleApprove = async (request: RoommateMatchRequest) => {
-    setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setRequests(prev => prev.map(r =>
-      r.id === request.id
-        ? { ...r, status: 'approved' as const }
-        : r
-    ));
-    
-    setSelectedRequest(null);
-    setIsLoading(false);
-    
-    toast.success('Roommate match approved', {
-      description: `${request.requester.name} and ${request.requestedRoommate.name} can now be assigned to the same room`,
+    approveRequest.mutate(request.id, {
+      onSuccess: () => {
+        setSelectedRequest(null);
+        toast.success('Roommate match approved', {
+          description: `${request.requester.name} and ${request.requestedRoommate.name} can now be assigned to the same room`,
+        });
+      },
+      onError: (error: any) => {
+        toast.error('Failed to approve request', {
+          description: error.message || 'Please try again',
+        });
+      },
     });
   };
 
+
   const handleReject = async (request: RoommateMatchRequest) => {
-    setIsLoading(true);
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setRequests(prev => prev.map(r =>
-      r.id === request.id
-        ? { ...r, status: 'rejected' as const }
-        : r
-    ));
-    
-    setSelectedRequest(null);
-    setIsLoading(false);
-    
-    toast.error('Roommate match rejected', {
-      description: 'Students will be notified of the decision',
-    });
+    rejectRequest.mutate(
+      { id: request.id, reason: 'Rejected by caretaker' },
+      {
+        onSuccess: () => {
+          setSelectedRequest(null);
+          toast.error('Roommate match rejected', {
+            description: 'Students will be notified of the decision',
+          });
+        },
+        onError: (error: any) => {
+          toast.error('Failed to reject request', {
+            description: error.message || 'Please try again',
+          });
+        },
+      }
+    );
   };
 
   const getStatusBadge = (status: RoommateMatchRequest['status']) => {

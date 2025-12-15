@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { usePaymentDisputes, useDisputeStats, useUpdateDisputeStatus } from "@/features/analytics";
 import {
   Table,
   TableBody,
@@ -32,15 +33,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Mock data
-const MOCK_DISPUTES = [
-  { id: 'DSP-892', type: 'refund', user: 'Alice Wonder', amount: 5000, reason: 'Double charged', status: 'open', date: '2023-12-01' },
-  { id: 'DSP-893', type: 'dispute', user: 'Bob Builder', amount: 0, reason: 'Landlord not responding', status: 'investigating', date: '2023-12-02' },
-  { id: 'DSP-894', type: 'refund', user: 'Charlie Day', amount: 15000, reason: 'Booking cancelled by host', status: 'resolved', date: '2023-11-28' },
-];
-
 export default function Page() {
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Use real API hooks
+  const { data: disputes = [], isLoading } = usePaymentDisputes();
+  const { data: stats, isLoading: statsLoading } = useDisputeStats();
+  
+  // Filter disputes based on search
+  const filteredDisputes = disputes.filter(dispute =>
+    searchTerm === '' ||
+    dispute.disputeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    dispute.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    dispute.reason.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -73,7 +79,9 @@ export default function Page() {
                 <AlertTriangle className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">12</div>
+                <div className="text-2xl font-bold">
+                  {statsLoading ? '...' : stats?.openCount || 0}
+                </div>
                 <p className="text-xs text-muted-foreground text-blue-600/80">Needs attention</p>
             </CardContent>
         </Card>
@@ -83,8 +91,10 @@ export default function Page() {
                 <RotateCcw className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">4</div>
-                <p className="text-xs text-muted-foreground">Pending approval</p>
+                <div className="text-2xl font-bold">
+                  {statsLoading ? '...' : stats?.investigatingCount || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">Under investigation</p>
             </CardContent>
         </Card>
         <Card className="border-border/50 shadow-sm">
@@ -93,8 +103,10 @@ export default function Page() {
                 <CheckCircle className="h-4 w-4 text-emerald-500" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">24h</div>
-                <p className="text-xs text-muted-foreground text-emerald-600">Within SLA</p>
+                <div className="text-2xl font-bold">
+                  {statsLoading ? '...' : stats ? `${Math.round(stats.avgResolutionTime)}h` : 'N/A'}
+                </div>
+                <p className="text-xs text-muted-foreground text-emerald-600">Avg resolution time</p>
             </CardContent>
         </Card>
       </div>
@@ -138,19 +150,32 @@ export default function Page() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {MOCK_DISPUTES.map((item) => (
-                    <TableRow key={item.id} className="hover:bg-muted/50">
-                      <TableCell className="font-medium">{item.id}</TableCell>
-                      <TableCell>
-                          <div className="flex items-center gap-2">
-                              {item.type === 'refund' ? <RotateCcw className="w-3 h-3 text-muted-foreground" /> : <ShieldAlert className="w-3 h-3 text-destructive" />}
-                              <span className="capitalize">{item.type}</span>
-                          </div>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8">
+                        Loading disputes...
                       </TableCell>
-                      <TableCell>{item.user}</TableCell>
-                      <TableCell className="max-w-[200px] truncate" title={item.reason}>{item.reason}</TableCell>
-                      <TableCell>{item.amount > 0 ? `KES ${item.amount.toLocaleString()}` : 'N/A'}</TableCell>
-                      <TableCell>{getStatusBadge(item.status)}</TableCell>
+                    </TableRow>
+                  ) : filteredDisputes.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        No disputes found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredDisputes.map((dispute) => (
+                      <TableRow key={dispute.id} className="hover:bg-muted/50">
+                        <TableCell className="font-medium">{dispute.disputeId}</TableCell>
+                        <TableCell>
+                            <div className="flex items-center gap-2">
+                                <ShieldAlert className="w-3 h-3 text-destructive" />
+                                <span className="capitalize">Dispute</span>
+                            </div>
+                        </TableCell>
+                        <TableCell>{dispute.userName}</TableCell>
+                        <TableCell className="max-w-[200px] truncate" title={dispute.reason}>{dispute.reason}</TableCell>
+                        <TableCell>KES {dispute.amount.toLocaleString()}</TableCell>
+                        <TableCell>{getStatusBadge(dispute.status)}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -168,9 +193,10 @@ export default function Page() {
                             <DropdownMenuItem className="text-emerald-600 dark:text-emerald-400">Resolve Case</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
           </div>

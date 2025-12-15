@@ -11,7 +11,7 @@ export const useConversations = () => {
       const response = await messagesApi.getConversations();
       return response.data;
     },
-    staleTime: 1000 * 60, // 1 minute
+    staleTime: 1000 * 60,
   });
 };
 
@@ -24,7 +24,7 @@ export const useMessages = (conversationId: string | null) => {
       return response.data;
     },
     enabled: !!conversationId,
-    staleTime: 1000 * 30, // 30 seconds
+    staleTime: 1000 * 30,
   });
 };
 
@@ -51,9 +51,9 @@ export const useSendMessage = () => {
         id: `temp-${Date.now()}`,
         conversationId,
         content,
-        senderId: 'current-user', // Should match actual user ID in a real app
+        senderId: 'current-user',
         senderName: 'You',
-        senderRole: 'student', // Dynamic?
+        senderRole: 'student',
         status: 'sending',
         createdAt: new Date().toISOString(),
         isOwnMessage: true,
@@ -96,10 +96,7 @@ export const useMarkAsRead = () => {
 export const usePinConversation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => { 
-        // Mock for now until endpoint exists
-        return Promise.resolve(id); 
-    },
+    mutationFn: (id: string) => messagesApi.pinConversation(id),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.messaging.conversations });
       const previous = queryClient.getQueryData<Conversation[]>(queryKeys.messaging.conversations);
@@ -120,7 +117,7 @@ export const usePinConversation = () => {
 export const useUnpinConversation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => { return Promise.resolve(id); },
+    mutationFn: (id: string) => messagesApi.unpinConversation(id),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.messaging.conversations });
       const previous = queryClient.getQueryData<Conversation[]>(queryKeys.messaging.conversations);
@@ -141,7 +138,7 @@ export const useUnpinConversation = () => {
 export const useMuteConversation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-     mutationFn: async (id: string) => { return Promise.resolve(id); },
+     mutationFn: (id: string) => messagesApi.muteConversation(id),
      onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.messaging.conversations });
       const previous = queryClient.getQueryData<Conversation[]>(queryKeys.messaging.conversations);
@@ -158,7 +155,7 @@ export const useMuteConversation = () => {
 export const useUnmuteConversation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-     mutationFn: async (id: string) => { return Promise.resolve(id); },
+     mutationFn: (id: string) => messagesApi.unmuteConversation(id),
      onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.messaging.conversations });
       const previous = queryClient.getQueryData<Conversation[]>(queryKeys.messaging.conversations);

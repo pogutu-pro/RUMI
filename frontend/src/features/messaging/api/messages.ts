@@ -20,9 +20,8 @@ export interface GetConversationsParams {
 
 /**
  * Get all conversations for the current user
- * Endpoint: GET /api/v1/accounts/chat/conversations/
+ * Endpoint: GET /api/v1/chat/conversations/
  */
-// Endpoints updated to follow standard REST patterns
 export const getConversations = async (
   params?: GetConversationsParams
 ): Promise<PaginatedResponse<Conversation>> => {
@@ -109,6 +108,42 @@ export const getUnreadCount = async (): Promise<ApiResponse<{ count: number }>> 
   return response.data;
 };
 
+export const pinConversation = async (
+  conversationId: string
+): Promise<ApiResponse<void>> => {
+  const response = await apiClient.axios.post<ApiResponse<void>>(
+    `/chat/conversations/${conversationId}/pin/`
+  );
+  return response.data;
+};
+
+export const unpinConversation = async (
+  conversationId: string
+): Promise<ApiResponse<void>> => {
+  const response = await apiClient.axios.delete<ApiResponse<void>>(
+    `/chat/conversations/${conversationId}/pin/`
+  );
+  return response.data;
+};
+
+export const muteConversation = async (
+  conversationId: string
+): Promise<ApiResponse<void>> => {
+  const response = await apiClient.axios.post<ApiResponse<void>>(
+    `/chat/conversations/${conversationId}/mute/`
+  );
+  return response.data;
+};
+
+export const unmuteConversation = async (
+  conversationId: string
+): Promise<ApiResponse<void>> => {
+  const response = await apiClient.axios.delete<ApiResponse<void>>(
+    `/chat/conversations/${conversationId}/mute/`
+  );
+  return response.data;
+};
+
 export const messagesApi = {
   getConversations,
   getConversation,
@@ -119,5 +154,9 @@ export const messagesApi = {
   createConversation,
   deleteConversation,
   getUnreadCount,
+  pinConversation,
+  unpinConversation,
+  muteConversation,
+  unmuteConversation,
 };
 

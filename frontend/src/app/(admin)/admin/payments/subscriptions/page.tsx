@@ -31,17 +31,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils/cn";
-
-// Mock data until API is ready
-const MOCK_SUBSCRIPTIONS = [
-  { id: 'SUB-001', user: 'John Doe', plan: 'Premium Landlord', status: 'active', amount: 2500, nextBilling: '2024-01-15', method: 'M-Pesa' },
-  { id: 'SUB-002', user: 'Jane Smith', plan: 'Basic Landlord', status: 'active', amount: 1000, nextBilling: '2024-01-20', method: 'Card' },
-  { id: 'SUB-003', user: 'Michael Brown', plan: 'Premium Landlord', status: 'past_due', amount: 2500, nextBilling: '2023-12-15', method: 'M-Pesa' },
-  { id: 'SUB-004', user: 'Sarah Wilson', plan: 'Basic Landlord', status: 'cancelled', amount: 1000, nextBilling: 'N/A', method: 'Bank' },
-];
+import { useAdminSubscriptions, useSubscriptionStats, type AdminSubscription } from "@/features/analytics";
 
 export default function Page() {
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Use real API hooks
+  const { data: subscriptions = [], isLoading } = useAdminSubscriptions();
+  const { data: stats, isLoading: statsLoading } = useSubscriptionStats();
+
+  // Filter subscriptions based on search
+  const filteredSubscriptions = subscriptions.filter(sub =>
+    sub.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sub.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sub.planName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -51,9 +55,19 @@ export default function Page() {
         return <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-red-200 dark:bg-red-900/20 dark:text-red-400 capitalize">Past Due</Badge>;
       case "cancelled":
         return <Badge variant="secondary" className="capitalize">Cancelled</Badge>;
+      case "trialing":
+        return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 capitalize">Trial</Badge>;
       default:
         return <Badge variant="outline" className="capitalize">{status}</Badge>;
     }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-KE', {
+      style: 'currency',
+      currency: 'KES',
+      minimumFractionDigits: 0,
+    }).format(amount);
   };
 
   return (
@@ -78,8 +92,10 @@ export default function Page() {
                 <CheckCircle className="h-4 w-4 text-emerald-500" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">142</div>
-                <p className="text-xs text-muted-foreground">+2% from last month</p>
+                <div className="text-2xl font-bold">
+                  {statsLoading ? '...' : stats?.activeCount || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">Currently active</p>
             </CardContent>
         </Card>
         <Card className="border-border/50 shadow-sm">
@@ -88,8 +104,10 @@ export default function Page() {
                 <CreditCard className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">KES 320,000</div>
-                <p className="text-xs text-muted-foreground">+12% from last month</p>
+                <div className="text-2xl font-bold">
+                  {statsLoading ? '...' : formatCurrency(stats?.monthlyRecurringRevenue || 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">Total MRR</p>
             </CardContent>
         </Card>
         <Card className="border-border/50 shadow-sm">
@@ -98,8 +116,10 @@ export default function Page() {
                 <AlertCircle className="h-4 w-4 text-destructive" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">5</div>
-                <p className="text-xs text-muted-foreground">Action required</p>
+                <div className="text-2xl font-bold text-destructive">
+                  {statsLoading ? '...' : stats?.pastDueCount || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">Needs attention</p>
             </CardContent>
         </Card>
       </div>
@@ -136,40 +156,56 @@ export default function Page() {
                     <TableHead>Subscription ID</TableHead>
                     <TableHead>User</TableHead>
                     <TableHead>Plan</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Next Billing</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Payment Method</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {MOCK_SUBSCRIPTIONS.map((sub) => (
-                    <TableRow key={sub.id} className="hover:bg-muted/50">
-                      <TableCell className="font-medium">{sub.id}</TableCell>
-                      <TableCell>
-                          <span className="font-medium text-foreground">{sub.user}</span>
-                      </TableCell>
-                      <TableCell>{sub.plan}</TableCell>
-                      <TableCell>KES {sub.amount.toLocaleString()}</TableCell>
-                      <TableCell>{sub.nextBilling}</TableCell>
-                      <TableCell>{getStatusBadge(sub.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit Plan</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">Cancel Subscription</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8">
+                        Loading subscriptions...
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : filteredSubscriptions.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        No subscriptions found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredSubscriptions.map((sub) => (
+                      <TableRow key={sub.id} className="hover:bg-muted/50">
+                        <TableCell className="font-medium">{sub.id}</TableCell>
+                        <TableCell>
+                          <span className="font-medium text-foreground">{sub.userName}</span>
+                        </TableCell>
+                        <TableCell>{sub.planName}</TableCell>
+                        <TableCell>{getStatusBadge(sub.status)}</TableCell>
+                        <TableCell>{formatCurrency(sub.amount)}</TableCell>
+                        <TableCell>{sub.nextBillingDate || 'N/A'}</TableCell>
+                        <TableCell>{sub.paymentMethod}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem>View Details</DropdownMenuItem>
+                              <DropdownMenuItem>Edit Plan</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive">Cancel Subscription</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
           </div>

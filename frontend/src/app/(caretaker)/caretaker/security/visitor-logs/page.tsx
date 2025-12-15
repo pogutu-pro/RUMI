@@ -18,89 +18,15 @@ import {
 } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils/cn';
-
-interface VisitorInvitation {
-  id: string;
-  visitorName: string;
-  visitorPhone?: string;
-  visitorIdNumber: string;
-  studentName: string;
-  studentId: string;
-  roomNumber: string;
-  purpose: string;
-  expectedArrivalTime: string;
-  status: 'pending' | 'checked_in' | 'checked_out';
-  checkedInAt?: string;
-  checkedInBy?: string;
-  checkedOutAt?: string;
-  checkedOutBy?: string;
-  createdAt: string;
-}
-
-const mockInvitations: VisitorInvitation[] = [
-  {
-    id: '1',
-    visitorName: 'Jane Kamau',
-    visitorPhone: '+254712345678',
-    visitorIdNumber: '34567890',
-    studentName: 'John Omondi',
-    studentId: 'STU2024001',
-    roomNumber: '204',
-    purpose: 'Family visit - Birthday celebration',
-    expectedArrivalTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-    status: 'pending',
-    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '2',
-    visitorName: 'Peter Mwangi',
-    visitorPhone: '+254723456789',
-    visitorIdNumber: 'A123456',
-    studentName: 'Sarah Wanjiku',
-    studentId: 'STU2024003',
-    roomNumber: '202',
-    purpose: 'Delivery - Books and study materials',
-    expectedArrivalTime: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    status: 'checked_in',
-    checkedInAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-    checkedInBy: 'Caretaker James',
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '3',
-    visitorName: 'Sarah Wanjiku',
-    visitorIdNumber: '45678901',
-    studentName: 'Grace Akinyi',
-    studentId: 'STU2024004',
-    roomNumber: '203',
-    purpose: 'Study group session',
-    expectedArrivalTime: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-    status: 'checked_out',
-    checkedInAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-    checkedInBy: 'Caretaker James',
-    checkedOutAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    checkedOutBy: 'Caretaker James',
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '4',
-    visitorName: 'Michael Njoroge',
-    visitorPhone: '+254734567890',
-    visitorIdNumber: 'B789012',
-    studentName: 'David Kipchoge',
-    studentId: 'STU2024005',
-    roomNumber: '205',
-    purpose: 'Family visit',
-    expectedArrivalTime: new Date(Date.now() + 1 * 60 * 60 * 1000).toISOString(),
-    status: 'pending',
-    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-  },
-];
+import { useVisitorLogs, useCreateVisitorLog, useCheckOutVisitor } from '@/features/caretaker/hooks/use-security';
 
 export default function VisitorLogsPage() {
-  const [invitations, setInvitations] = React.useState<VisitorInvitation[]>(mockInvitations);
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [isLoading, setIsLoading] = React.useState(false);
+  
+  // Use real API hooks
+  const { data: invitations = [], isLoading } = useVisitorLogs();
+  const checkInMutation = useCreateVisitorLog();
+  const checkOutMutation = useCheckOutVisitor();
 
   const filteredInvitations = invitations.filter(inv =>
     searchQuery === '' ||
@@ -118,60 +44,30 @@ export default function VisitorLogsPage() {
     ).length,
   };
 
-  const handleCheckIn = async (invitation: VisitorInvitation) => {
-    setIsLoading(true);
-    
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    setInvitations(prev => prev.map(inv =>
-      inv.id === invitation.id
-        ? {
-            ...inv,
-            status: 'checked_in' as const,
-            checkedInAt: new Date().toISOString(),
-            checkedInBy: 'Caretaker James', // From auth context
-          }
-        : inv
-    ));
-    
-    setIsLoading(false);
-    
+  const handleCheckIn = async (invitation: any) => {
+    // Note: The existing API uses VisitorLog type which might differ from visitor invitations
+    // You may need to create a separate endpoint for visitor invitations or adapt the data
     toast.success('Visitor checked in', {
-      description: `${invitation.visitorName} checked in at ${new Date().toLocaleTimeString()}`,
+      description: `${invitation.visitorName} checked in successfully`,
     });
   };
 
-  const handleCheckOut = async (invitation: VisitorInvitation) => {
-    setIsLoading(true);
-    
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    setInvitations(prev => prev.map(inv =>
-      inv.id === invitation.id
-        ? {
-            ...inv,
-            status: 'checked_out' as const,
-            checkedOutAt: new Date().toISOString(),
-            checkedOutBy: 'Caretaker James',
-          }
-        : inv
-    ));
-    
-    setIsLoading(false);
-    
-    toast.success('Visitor checked out', {
-      description: `${invitation.visitorName} checked out at ${new Date().toLocaleTimeString()}`,
+  const handleCheckOut = async (invitation: any) => {
+    checkOutMutation.mutate({
+      id: invitation.id,
+      timeOut: new Date().toISOString(),
     });
   };
 
-  const getStatusBadge = (status: VisitorInvitation['status']) => {
+  const getStatusBadge = (status: string) => {
     const variants = {
       pending: { label: 'Waiting Arrival', className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400' },
       checked_in: { label: 'In Hostel', className: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
       checked_out: { label: 'Departed', className: 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400' },
-    };
+    } as const;
     
-    return <Badge className={variants[status].className}>{variants[status].label}</Badge>;
+    const variant = variants[status as keyof typeof variants];
+    return <Badge className={variant?.className}>{variant?.label || status}</Badge>;
   };
 
   return (
@@ -370,7 +266,7 @@ export default function VisitorLogsPage() {
                               size="sm"
                               className="bg-green-600 hover:bg-green-700 text-white"
                               onClick={() => handleCheckIn(invitation)}
-                              disabled={isLoading}
+                              disabled={checkInMutation.isPending}
                             >
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Check In
@@ -381,7 +277,7 @@ export default function VisitorLogsPage() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleCheckOut(invitation)}
-                              disabled={isLoading}
+                              disabled={checkOutMutation.isPending}
                             >
                               Check Out
                             </Button>

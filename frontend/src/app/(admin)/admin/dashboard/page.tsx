@@ -23,7 +23,11 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   MoreVertical,
-  Calendar
+  Calendar,
+  Wrench,
+  Settings,
+  ShieldCheck,
+  FileCheck
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -35,8 +39,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAnalytics, useAnalyticsBreakdown } from "@/features/analytics";
+import { useAnalytics, useAnalyticsBreakdown, useAdminActivityFeed } from "@/features/analytics";
 import { cn } from "@/lib/utils/cn";
+import { formatDistanceToNow } from "date-fns";
 
 ChartJS.register(
   CategoryScale,
@@ -50,10 +55,30 @@ ChartJS.register(
   Filler
 );
 
+const getActivityIconAndColor = (type: string) => {
+  switch (type) {
+    case 'booking':
+      return { icon: <Home className="w-4 h-4 text-primary" />, color: "bg-primary/10" };
+    case 'payment':
+      return { icon: <DollarSign className="w-4 h-4 text-emerald-600" />, color: "bg-emerald-500/10" };
+    case 'user_registration':
+      return { icon: <Users className="w-4 h-4 text-blue-600" />, color: "bg-blue-500/10" };
+    case 'verification_request':
+      return { icon: <ShieldCheck className="w-4 h-4 text-amber-600" />, color: "bg-amber-500/10" };
+    case 'maintenance':
+      return { icon: <Wrench className="w-4 h-4 text-orange-600" />, color: "bg-orange-500/10" };
+    case 'system':
+      return { icon: <Settings className="w-4 h-4 text-gray-600" />, color: "bg-gray-500/10" };
+    default:
+      return { icon: <Activity className="w-4 h-4 text-primary" />, color: "bg-primary/10" };
+  }
+};
+
 export default function Page() {
   const { data: analytics, isLoading } = useAnalytics('30d');
   const { data: userStats } = useAnalyticsBreakdown('users', '30d');
   const { data: revenueStats } = useAnalyticsBreakdown('revenue', '30d');
+  const { data: activityFeed, isLoading: activityLoading, error: activityError } = useAdminActivityFeed(5);
 
   const resolvedColors = useMemo(() => {
     if (typeof window === 'undefined') {
@@ -97,6 +122,7 @@ export default function Page() {
       chart2,
       chart2Soft: soft(chart2, 0.1),
       chart3,
+      chart3Soft: soft(chart3, 0.1),
     };
   }, []);
 
@@ -230,7 +256,7 @@ export default function Page() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
-          <p className="mt-1 text-muted-foreground">Welcome back, here's what's happening today.</p>
+          <p className="mt-1 text-muted-foreground">Welcome back, here&apos;s what&apos;s happening today.</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" className="gap-2">
@@ -433,25 +459,43 @@ export default function Page() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {[
-                { title: 'New Booking', desc: 'John Doe booked room A101 at Sunshine Hostel', time: '2 mins ago', icon: <Home className="w-4 h-4 text-primary" />, color: "bg-primary/10" },
-                { title: 'Payment Received', desc: 'Secure payment of KES 15,000 from Sarah', time: '15 mins ago', icon: <DollarSign className="w-4 h-4 text-emerald-600" />, color: "bg-emerald-500/10" },
-                { title: 'New User', desc: 'Michael registered as a Landlord', time: '1 hour ago', icon: <Users className="w-4 h-4 text-blue-600" />, color: "bg-blue-500/10" },
-                { title: 'Verification Request', desc: 'Hostel "Green View" submitted for approval', time: '3 hours ago', icon: <Activity className="w-4 h-4 text-amber-600" />, color: "bg-amber-500/10" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-4">
-                  <div className={cn("mt-1 p-2 rounded-full", item.color)}>
-                    {item.icon}
+              {activityLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-start gap-4">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                       <Skeleton className="h-4 w-3/4" />
+                       <Skeleton className="h-3 w-1/2" />
+                    </div>
                   </div>
-                  <div className="flex-1 space-y-1">
-                     <p className="text-sm font-medium text-foreground">{item.title}</p>
-                     <p className="text-sm text-muted-foreground">{item.desc}</p>
-                  </div>
-                  <div className="text-xs text-muted-foreground whitespace-nowrap">
-                    {item.time}
-                  </div>
+                ))
+              ) : activityError ? (
+                <div className="text-center py-6 text-muted-foreground text-sm">
+                  Failed to load activity feed.
                 </div>
-              ))}
+              ) : activityFeed?.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground text-sm">
+                  No recent activity.
+                </div>
+              ) : (
+                activityFeed?.map((item) => {
+                  const { icon, color } = getActivityIconAndColor(item.type);
+                  return (
+                    <div key={item.id} className="flex items-start gap-4">
+                      <div className={cn("mt-1 p-2 rounded-full", color)}>
+                        {icon}
+                      </div>
+                      <div className="flex-1 space-y-1">
+                         <p className="text-sm font-medium text-foreground">{item.title}</p>
+                         <p className="text-sm text-muted-foreground">{item.description}</p>
+                      </div>
+                      <div className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </CardContent>
         </Card>
