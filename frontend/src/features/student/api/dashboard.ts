@@ -48,44 +48,90 @@ async function getDashboardData(): Promise<StudentDashboardData> {
 
 /**
  * Get rent payment status
- * Note: Dependent on dashboard data usually.
+ * MIGRATION: Derives data from GET /accounts/subscriptions/my-subscription/
+ * instead of non-existent GET /payments/rent-status/
  */
 export async function getRentStatus(): Promise<RentStatusInfo> {
-    // If specific endpoint is missing, return default.
+  try {
+    // Import derivation utility
+    const { deriveRentStatus } = await import('@/lib/utils/data-derivation');
+    const { getMySubscription } = await import('@/features/payments');
+    
+    const subscription = await getMySubscription();
+    return deriveRentStatus(subscription) as unknown as RentStatusInfo;
+  } catch (error) {
+    console.error('Failed to fetch rent status', error);
     return getDefaultRentStatus();
+  }
 }
+
+import { paymentsApi } from '@/features/payments';
 
 /**
  * Get recent transactions
- * Uses /payments/history/ which is confirmed in API docs.
+ * Uses /payments/transactions/student/
  */
 export async function getRecentTransactions(limit: number = 5): Promise<Transaction[]> {
   try {
-    // API_REFERENCE_SUBSCRIPTIONS says /payments/history/
-    // API_ENDPOINTS_REFERENCE says /payments/history/ is for subscription.
-    // For student rent, it relies on /payments/ (missing transactions endpoint?).
-    // API_ENDPOINTS_REFERENCE line 276 says GET /transactions/ is missing.
-    // So we return empty array.
-    console.warn('Transactions endpoint is missing in backend.');
-    return [];
+    const response = await paymentsApi.getStudentTransactions();
+    // Handle both array response and object response with data property
+    const transactions = Array.isArray(response) ? response : (response.data || []);
+    return transactions.slice(0, limit) as unknown as Transaction[];
   } catch (error) {
+    console.error('Failed to fetch recent transactions', error);
     return [];
   }
 }
 
+/**
+ * Get unread message count
+ * WITH GRACEFUL FALLBACK: Returns 0 if endpoint not yet implemented
+ * TODO: Backend implementing GET /messages/unread-count/
+ */
 export async function getUnreadMessageCount(): Promise<number> {
-    // Endpoint missing in API docs.
-    return 0;
+  try {
+    const res = await axios.get<{ success: boolean; data: { count: number } }>(
+      '/messages/unread-count/'
+    );
+    return res.data.data?.count || 0;
+  } catch (error) {
+    // Graceful fallback while backend implements endpoint
+    console.warn('[Production Fallback] Unread message count endpoint not available yet');
+    return 0; // Show no unread messages rather than breaking UI
+  }
 }
 
+/**
+ * Get active support tickets
+ * WITH GRACEFUL FALLBACK: Returns empty array if endpoint not yet implemented
+ */
 export async function getActiveTickets(): Promise<SupportTicketSummary[]> {
-    // Endpoint missing in API docs.
-    return [];
+  try {
+    const res = await axios.get<{ success: boolean; data: SupportTicketSummary[] }>(
+      '/support/tickets/my/'
+    );
+    return res.data.data || [];
+  } catch (error) {
+    console.warn('[Production Fallback] Active tickets endpoint not available yet');
+    return []; // Return empty - no tickets to show
+  }
 }
 
+/**
+ * Get activity feed
+ * WITH GRACEFUL FALLBACK: Returns empty array if endpoint not yet implemented
+ */
 export async function getActivityFeed(limit: number = 5): Promise<ActivityEvent[]> {
-    // Endpoint missing in API docs.
-    return [];
+  try {
+    const res = await axios.get<{ success: boolean; data: ActivityEvent[] }>(
+      '/activity/feed/',
+      { params: { limit } }
+    );
+    return res.data.data || [];
+  } catch (error) {
+    console.warn('[Production Fallback] Activity feed endpoint not available yet');
+    return []; // Return empty feed
+  }
 }
 
 /**

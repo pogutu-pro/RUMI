@@ -43,63 +43,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { useLandlordTransactions, usePaymentStats } from '@/features/payments';
 
-const paymentData = [
-  { month: 'Jul', collected: 1200000, pending: 180000, completed: 94 },
-  { month: 'Aug', collected: 1350000, pending: 150000, completed: 96 },
-  { month: 'Sep', collected: 1280000, pending: 220000, completed: 92 },
-  { month: 'Oct', collected: 1580000, pending: 140000, completed: 97 },
-  { month: 'Nov', collected: 1680000, pending: 120000, completed: 98 },
-  { month: 'Dec', collected: 1850000, pending: 95000, completed: 99 },
-];
-
-const recentTransactions = [
-  {
-    id: 'TXN-001',
-    student: 'Sarah Kimani',
-    hostel: 'Parklands Heights',
-    amount: 45000,
-    status: 'completed',
-    date: '2024-12-01T10:30:00',
-    method: 'M-Pesa',
-  },
-  {
-    id: 'TXN-002',
-    student: 'Michael Odhiambo',
-    hostel: 'Westlands Plaza',
-    amount: 42000,
-    status: 'completed',
-    date: '2024-12-01T09:15:00',
-    method: 'Bank Transfer',
-  },
-  {
-    id: 'TXN-003',
-    student: 'Jane Mwangi',
-    hostel: 'Kilimani Suites',
-    amount: 38000,
-    status: 'pending',
-    date: '2024-12-01T08:45:00',
-    method: 'M-Pesa',
-  },
-  {
-    id: 'TXN-004',
-    student: 'Peter Njoroge',
-    hostel: 'CBD Central',
-    amount: 40000,
-    status: 'completed',
-    date: '2024-11-30T16:20:00',
-    method: 'Card',
-  },
-  {
-    id: 'TXN-005',
-    student: 'Mary Waithera',
-    hostel: 'South B Residence',
-    amount: 35000,
-    status: 'failed',
-    date: '2024-11-30T14:10:00',
-    method: 'M-Pesa',
-  },
-];
+// Mock data removed. Using real API data.
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -120,11 +66,24 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function PaymentsPage() {
   const [timeRange, setTimeRange] = useState('6months');
+  const { data: transactions = [] } = useLandlordTransactions();
+  const { data: stats } = usePaymentStats();
 
-  const totalCollected = paymentData.reduce((sum, item) => sum + item.collected, 0);
-  const avgCollectionRate = (paymentData.reduce((sum, item) => sum + item.completed, 0) / paymentData.length).toFixed(1);
-  const pendingPayments = paymentData[paymentData.length - 1].pending;
-  const completedTransactions = recentTransactions.filter(t => t.status === 'completed').length;
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
+  
+  // Create paymentData for charts structure based on safeTransactions if needed.
+  // For now, if the chart expects `paymentData` format, we might need a transform function.
+  // Since the API.md suggests `GET /payments/analytics/revenue/`, we should use that for charts if `usePaymentStats` provides it.
+  // But `usePaymentStats` returns specific Stats object.
+  // The charts rely on `paymentData` array with month, collected, pending, completed.
+  // If the API doesn't provide this yet, we should use empty or defensive placeholders instead of crashing.
+  
+  const paymentData: any[] = []; // Placeholder until analytics endpoint provides chart data structure
+
+  const totalCollected = stats?.totalRevenue || 0;
+  const avgCollectionRate = stats?.completedCount ? ((stats.completedCount / (stats.completedCount + stats.failedCount)) * 100).toFixed(1) : '0.0';
+  const pendingPayments = stats?.pendingAmount || 0;
+  const completedTransactions = stats?.completedCount || 0;
 
   return (
     <div className="space-y-6">
@@ -349,7 +308,7 @@ export default function PaymentsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {recentTransactions.map((transaction, index) => (
+            {safeTransactions.map((transaction, index) => (
               <motion.div
                 key={transaction.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -373,8 +332,8 @@ export default function PaymentsPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground">{transaction.student}</p>
-                    <p className="text-xs text-muted-foreground">{transaction.hostel} • {transaction.method}</p>
+                    <p className="text-sm font-semibold text-foreground">{transaction.user?.name || 'Unknown Student'}</p>
+                    <p className="text-xs text-muted-foreground">{transaction.reference || 'No Ref'} • {transaction.method}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -395,6 +354,11 @@ export default function PaymentsPage() {
                 </div>
               </motion.div>
             ))}
+            {safeTransactions.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                    No recent transactions found
+                </div>
+            )}
           </div>
         </CardContent>
       </Card>

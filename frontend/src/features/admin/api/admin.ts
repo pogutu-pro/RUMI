@@ -24,12 +24,12 @@ export const getUsers = async (filters?: AdminUserFilters) => {
 };
 
 export const deactivateUser = async (userId: string) => {
-  const response = await api.axios.post<ApiResponse<any>>(`/accounts/users/${userId}/deactivate/`);
+  const response = await api.axios.put<ApiResponse<any>>(`/accounts/users/${userId}/deactivate/`);
   return response.data.data;
 };
 
 export const reactivateUser = async (userId: string) => {
-  const response = await api.axios.post<ApiResponse<any>>(`/accounts/users/${userId}/reactivate/`);
+  const response = await api.axios.put<ApiResponse<any>>(`/accounts/users/${userId}/reactivate/`);
   return response.data.data;
 };
 

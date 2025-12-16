@@ -90,21 +90,9 @@ export const getUsers = async (params?: any) => {
 };
 
 export const getUserById = async (id: string): Promise<User> => {
-    // There isn't a direct GET /accounts/users/{id} specified in the NEW list,
-    // but typically it exists. Or we use /accounts/profile endpoint if it's "me".
-    // For admin viewing others, we might rely on the list or a detail endpoint not explicitly listed but implied.
-    // However, existing code uses it.
-    // Let's assume GET /accounts/users/{id}/ exists or default to legacy behavior (warn).
-    // Actually, `GET /accounts/users/` usually returns list. 
-    // I will implementation a fetch from the list endpoint filtering by ID or try direct ID if standard.
-    // Generally REST has GET /resource/:id
-    try {
-        const res = await apiClient.get<ApiResponse<User>>(`/accounts/users/${id}/`);
-        return res.data.data!;
-    } catch (e) {
-        console.warn('getUserById endpoint might be missing or limited to admin.');
-        throw e;
-    }
+    // Relying on standard REST endpoint /accounts/users/{id}/
+    const res = await apiClient.get<ApiResponse<User>>(`/accounts/users/${id}/`);
+    return res.data.data!;
 };
 
 export const getUser = getUserById;

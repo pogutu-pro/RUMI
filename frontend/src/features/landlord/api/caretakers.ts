@@ -63,24 +63,25 @@ export interface UpdateCaretakerRequest {
 
 /**
  * Get all caretakers for the logged-in landlord
- * Endpoint: GET /api/v1/landlord/caretakers/
+ * Endpoint: GET /api/v1/accounts/caretakers/
+ * NOTE: Backend automatically filters by logged-in landlord
  */
 export const getMyCaretakers = async (): Promise<LandlordCaretaker[]> => {
   const res = await axios.get<ApiResponse<LandlordCaretaker[]>>(
-    '/landlord/caretakers/'
+    '/accounts/caretakers/'
   );
   return res.data.data || [];
 };
 
 /**
  * Create a new caretaker account
- * Endpoint: POST /api/v1/landlord/caretakers/
+ * Endpoint: POST /api/v1/accounts/caretakers/
  */
 export const createCaretaker = async (
   data: CreateCaretakerRequest
 ): Promise<LandlordCaretaker> => {
   const res = await axios.post<ApiResponse<LandlordCaretaker>>(
-    '/landlord/caretakers/',
+    '/accounts/caretakers/',
     data,
     { headers: csrf.getHeader() }
   );
@@ -92,11 +93,11 @@ export const createCaretaker = async (
 
 /**
  * Get a specific caretaker by ID
- * Endpoint: GET /api/v1/landlord/caretakers/:id/
+ * Endpoint: GET /api/v1/accounts/caretakers/:id/
  */
 export const getCaretaker = async (id: string): Promise<LandlordCaretaker> => {
   const res = await axios.get<ApiResponse<LandlordCaretaker>>(
-    `/landlord/caretakers/${id}/`
+    `/accounts/caretakers/${id}/`
   );
   if (!res.data.data) {
     throw new Error('Caretaker not found');
@@ -106,14 +107,15 @@ export const getCaretaker = async (id: string): Promise<LandlordCaretaker> => {
 
 /**
  * Update caretaker details
- * Endpoint: PATCH /api/v1/landlord/caretakers/:id/
+ * Endpoint: PUT /api/v1/accounts/caretakers/:id/
+ * NOTE: Backend uses PUT (full replacement) not PATCH. Send complete object.
  */
 export const updateCaretaker = async (
   id: string,
   data: UpdateCaretakerRequest
 ): Promise<LandlordCaretaker> => {
-  const res = await axios.patch<ApiResponse<LandlordCaretaker>>(
-    `/landlord/caretakers/${id}/`,
+  const res = await axios.put<ApiResponse<LandlordCaretaker>>(
+    `/accounts/caretakers/${id}/`,
     data,
     { headers: csrf.getHeader() }
   );
@@ -125,10 +127,10 @@ export const updateCaretaker = async (
 
 /**
  * Delete/deactivate a caretaker
- * Endpoint: DELETE /api/v1/landlord/caretakers/:id/
+ * Endpoint: DELETE /api/v1/accounts/caretakers/:id/
  */
 export const deleteCaretaker = async (id: string): Promise<void> => {
-  await axios.delete(`/landlord/caretakers/${id}/`, {
+  await axios.delete(`/accounts/caretakers/${id}/`, {
     headers: csrf.getHeader(),
   });
 };

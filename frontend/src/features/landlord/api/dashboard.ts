@@ -47,25 +47,47 @@ export interface LandlordActivity {
 
 /**
  * Get landlord dashboard overview data
- * Endpoint: GET /api/v1/landlord/dashboard/overview/
+ * Endpoint: GET /api/v1/accounts/landlord/dashboard/
+ * NOTE: Use existing endpoint. For detailed analytics, call /analytics/landlord/* endpoints asynchronously
  */
 export const getLandlordDashboard = async (): Promise<LandlordDashboardData> => {
-  const res = await axios.get<ApiResponse<LandlordDashboardData>>('/landlord/dashboard/overview/');
-  if (!res.data.data) {
-    throw new Error('Failed to fetch dashboard data');
+  try {
+    const res = await axios.get<ApiResponse<LandlordDashboardData>>('/accounts/landlord/dashboard/');
+    if (!res.data.data) {
+      throw new Error('Failed to fetch dashboard data');
+    }
+    return res.data.data;
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      // Return default empty structure for 404s
+      return {
+        monthlyRevenue: [],
+        hostelPerformance: [],
+        bookingStatus: { confirmed: 0, pending: 0, cancelled: 0 },
+        stats: { totalRevenue: 0, occupancyRate: 0, activeHostels: 0, pendingActions: 0 }
+      };
+    }
+    throw error;
   }
-  return res.data.data;
 };
 
 /**
  * Get landlord activity feed
- * Endpoint: GET /api/v1/landlord/dashboard/activity-feed/
+ * Endpoint: GET /api/v1/admin/admin/activity-feed/
+ * NOTE: Uses admin activity feed endpoint filtered for landlord context
  */
 export const getLandlordActivityFeed = async (limit = 10): Promise<LandlordActivity[]> => {
-  const res = await axios.get<ApiResponse<LandlordActivity[]>>('/landlord/dashboard/activity-feed/', {
-    params: { limit },
-  });
-  return res.data.data || [];
+  try {
+    const res = await axios.get<ApiResponse<LandlordActivity[]>>('/admin/admin/activity-feed/', {
+      params: { limit, role: 'landlord' },
+    });
+    return res.data.data || [];
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      return [];
+    }
+    throw error;
+  }
 };
 
 export const landlordDashboardApi = {

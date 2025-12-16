@@ -25,17 +25,31 @@ export default function PaymentsPage() {
   const { data: payments, isLoading } = usePayments();
 
   const stats = React.useMemo(() => {
-    if (!payments) return { total: 0, pending: 0, completed: 0 };
+    // Defensive: ensure payments is actually an array
+    const safePayments = Array.isArray(payments) ? (payments as unknown as any[]) : [];
     
-    return {
-      total: payments.reduce((sum, p) => sum + p.amount, 0),
-      pending: payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0),
-      completed: payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0),
-    };
+    if (safePayments.length === 0) {
+      return { total: 0, pending: 0, completed: 0 };
+    }
+    
+    return safePayments.reduce((acc, payment) => {
+      const amount = payment?.amount || 0;
+      const status = payment?.status;
+
+      acc.total += amount;
+
+      if (status === 'pending') {
+        acc.pending += amount;
+      } else if (status === 'completed') {
+        acc.completed += amount;
+      }
+
+      return acc;
+    }, { total: 0, pending: 0, completed: 0 });
   }, [payments]);
 
   const recentPayments = React.useMemo(() => {
-    return payments?.slice(0, 10) || [];
+    return Array.isArray(payments) ? (payments as unknown as any[]).slice(0, 10) : [];
   }, [payments]);
 
   return (
@@ -102,7 +116,7 @@ export default function PaymentsPage() {
               <div>
                 <p className="text-xs md:text-sm font-medium text-muted-foreground">Transactions</p>
                 <p className="text-2xl md:text-3xl font-bold mt-1">
-                  {payments?.length || 0}
+                  {Array.isArray(payments) ? (payments as unknown as any[]).length : 0}
                 </p>
               </div>
               <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
@@ -183,7 +197,7 @@ export default function PaymentsPage() {
             </div>
           ) : recentPayments.length > 0 ? (
             <div className="divide-y">
-              {recentPayments.map((payment, index) => (
+              {recentPayments.map((payment: any, index: number) => (
                 <div
                   key={payment.id}
                   className="flex items-center gap-3 p-3 md:p-4 hover:bg-muted/50 transition-colors active:bg-muted"

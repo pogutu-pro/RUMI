@@ -6,6 +6,7 @@ import { getApiUrl } from '@/lib/utils/env';
 import '@/styles/globals.css';
 import PWAInstallPrompt from '@/components/pwa/PWAInstallPrompt';
 import NetworkStatus from '@/components/pwa/NetworkStatus';
+import DevServiceWorkerCleaner from '@/components/pwa/DevServiceWorkerCleaner';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 const inter = Inter({
@@ -185,6 +186,7 @@ export default function RootLayout({
             {children}
             <PWAInstallPrompt />
             <NetworkStatus />
+            <DevServiceWorkerCleaner />
           </Providers>
         </ErrorBoundary>
 

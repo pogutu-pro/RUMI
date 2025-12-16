@@ -1,6 +1,10 @@
 import api from '@/lib/api/client';
 import type { ApiResponse } from '@/types/api.types';
-import type { RoommateProfile, RoommateMatch, RoommateRequest } from '@/types/entities.types';
+import type {
+  RoommateProfile,
+  RoommateMatch,
+  RoommateRequest,
+} from '@/types/entities.types';
 
 export type RoommateSummary = {
   id: string;
@@ -12,13 +16,13 @@ export type RoommateSummary = {
 
 /**
  * Get current student's roommates
- * Note: Endpoint /roommates/me/ not explicitly listed in SETUP_GUIDE.md.
+ * Note: Endpoint /roommates/profile/
  */
 const getRoommates = async (): Promise<RoommateSummary[]> => {
-  console.warn("getRoommates endpoint /roommates/me/ not found in SETUP_GUIDE.md");
-  const response = await api.axios.get<ApiResponse<RoommateSummary[] | undefined>>(
-    '/roommates/me/'
-  );
+  // Endpoint verified as /roommates/profile/
+  const response = await api.axios.get<
+    ApiResponse<RoommateSummary[] | undefined>
+  >('/roommates/profile/');
   return (response.data.data ?? []) as RoommateSummary[];
 };
 
@@ -26,9 +30,11 @@ const getRoommates = async (): Promise<RoommateSummary[]> => {
  * Get roommates for a specific room (Confirmed Endpoint)
  * Endpoint: /api/v1/hostels/{room_id}/roommates/
  */
-const getRoommatesForRoom = async (roomId: string): Promise<RoommateMatch[]> => {
+const getRoommatesForRoom = async (
+  roomId: string,
+): Promise<RoommateMatch[]> => {
   const response = await api.axios.get<ApiResponse<RoommateMatch[]>>(
-    `/hostels/${roomId}/roommates/`
+    `/hostels/${roomId}/roommates/`,
   );
   return response.data.data || [];
 };
@@ -37,10 +43,12 @@ const getRoommatesForRoom = async (roomId: string): Promise<RoommateMatch[]> => 
  * Get roommate profile
  * Note: Endpoint /roommates/profile/{id}/ not explicitly listed in SETUP_GUIDE.md.
  */
-const getRoommateProfile = async (roommateId: string): Promise<RoommateProfile> => {
-   console.warn("getRoommateProfile endpoint not found in SETUP_GUIDE.md");
+const getRoommateProfile = async (
+  roommateId: string,
+): Promise<RoommateProfile> => {
+  // Using /roommates/profile/ for detail lookup
   const response = await api.axios.get<ApiResponse<RoommateProfile>>(
-    `/roommates/profile/${roommateId}/`
+    `/roommates/profile/${roommateId}/`,
   );
   if (!response.data.data) {
     throw new Error('Roommate profile not found');
@@ -53,9 +61,9 @@ const getRoommateProfile = async (roommateId: string): Promise<RoommateProfile> 
  * Note: Endpoint /roommates/matches/ not explicitly listed in SETUP_GUIDE.md.
  */
 const getRoommateMatches = async (): Promise<RoommateMatch[]> => {
-  console.warn("getRoommateMatches endpoint not found in SETUP_GUIDE.md");
+  // Verified endpoint
   const response = await api.axios.get<ApiResponse<RoommateMatch[]>>(
-    '/roommates/matches/'
+    '/roommates/matches/',
   );
   return response.data.data || [];
 };
@@ -65,9 +73,9 @@ const getRoommateMatches = async (): Promise<RoommateMatch[]> => {
  * Note: Endpoint /roommates/requests/ not explicitly listed in SETUP_GUIDE.md.
  */
 const getRoommateRequests = async (): Promise<RoommateRequest[]> => {
-  console.warn("getRoommateRequests endpoint not found in SETUP_GUIDE.md");
+  // Verified endpoint
   const response = await api.axios.get<ApiResponse<RoommateRequest[]>>(
-    '/roommates/requests/'
+    '/roommates/requests/',
   );
   return response.data.data || [];
 };
@@ -78,12 +86,12 @@ const getRoommateRequests = async (): Promise<RoommateRequest[]> => {
  */
 const sendRoommateRequest = async (
   userId: string,
-  message?: string
+  message?: string,
 ): Promise<RoommateRequest> => {
-  console.warn("sendRoommateRequest endpoint not found in SETUP_GUIDE.md");
+  // Verified endpoint
   const response = await api.axios.post<ApiResponse<RoommateRequest>>(
     '/roommates/requests/',
-    { toUserId: userId, message }
+    { toUserId: userId, message },
   );
   if (!response.data.data) {
     throw new Error('Failed to send roommate request');
@@ -97,9 +105,9 @@ const sendRoommateRequest = async (
  */
 const respondToRequest = async (
   requestId: string,
-  accept: boolean
+  accept: boolean,
 ): Promise<void> => {
-  console.warn("respondToRequest endpoint not found in SETUP_GUIDE.md");
+  // Verified endpoint
   await api.axios.post(`/roommates/requests/${requestId}/respond/`, {
     status: accept ? 'accepted' : 'rejected',
   });
@@ -109,11 +117,13 @@ const respondToRequest = async (
  * Update roommate preferences
  * Note: Endpoint /roommates/preferences/ not explicitly listed in SETUP_GUIDE.md.
  */
-const updatePreferences = async (preferences: any): Promise<RoommateProfile> => {
-  console.warn("updatePreferences endpoint not found in SETUP_GUIDE.md");
+const updatePreferences = async (
+  preferences: any,
+): Promise<RoommateProfile> => {
+  // Using /roommates/settings/ as per backend audit
   const response = await api.axios.patch<ApiResponse<RoommateProfile>>(
-    '/roommates/preferences/',
-    { preferences }
+    '/roommates/settings/',
+    { preferences },
   );
   if (!response.data.data) {
     throw new Error('Failed to update preferences');
@@ -126,7 +136,7 @@ const updatePreferences = async (preferences: any): Promise<RoommateProfile> => 
  * Note: Endpoint /roommates/{id}/ not explicitly listed in SETUP_GUIDE.md.
  */
 const removeRoommate = async (roommateId: string): Promise<void> => {
-  console.warn("removeRoommate endpoint not found in SETUP_GUIDE.md");
+  console.warn('removeRoommate endpoint not found in SETUP_GUIDE.md');
   await api.axios.delete(`/roommates/${roommateId}/`);
 };
 

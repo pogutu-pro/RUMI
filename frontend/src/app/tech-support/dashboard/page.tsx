@@ -28,6 +28,7 @@ import {
   useSupportHostels 
 } from '@/features/support/hooks/use-support';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 export default function TechSupportDashboard() {
   const { user } = useAuth();
@@ -44,11 +45,15 @@ export default function TechSupportDashboard() {
   const transactions = transactionsRes?.data || [];
   const hostels = hostelsRes?.data || [];
 
-  // Metrics (Derived from data arrays)
+  // Metrics (Derived from data arrays with safety checks)
+  const activeTicketsCount = Array.isArray(tickets) ? tickets.filter((t: any) => t.status === 'open' || t.status === 'in_progress').length : 0;
+  const pendingVerificationsCount = Array.isArray(users) ? users.filter((u: any) => !u.is_verified).length : 0;
+  const paymentDisputesCount = Array.isArray(transactions) ? transactions.filter((t: any) => t.status === 'failed').length : 0;
+
   const stats = [
-    { label: "Active Tickets", value: tickets.filter((t: any) => t.status === 'open' || t.status === 'in_progress').length, icon: AlertCircle, color: "text-amber-500", bg: "bg-amber-500/10", change: "+12%" },
-    { label: "Pending Verifications", value: users.filter((u: any) => !u.is_verified).length, icon: ShieldCheck, color: "text-blue-500", bg: "bg-blue-500/10", change: "-5%" },
-    { label: "Payment Disputes", value: transactions.filter((t: any) => t.status === 'failed').length, icon: Activity, color: "text-red-500", bg: "bg-red-500/10", change: "+2%" },
+    { label: "Active Tickets", value: activeTicketsCount, icon: AlertCircle, color: "text-amber-500", bg: "bg-amber-500/10", change: "+12%" },
+    { label: "Pending Verifications", value: pendingVerificationsCount, icon: ShieldCheck, color: "text-blue-500", bg: "bg-blue-500/10", change: "-5%" },
+    { label: "Payment Disputes", value: paymentDisputesCount, icon: Activity, color: "text-red-500", bg: "bg-red-500/10", change: "+2%" },
     { label: "Avg. Response Time", value: "2.4 hrs", icon: Clock, color: "text-emerald-500", bg: "bg-emerald-500/10", change: "-15%" }
   ];
   
@@ -167,25 +172,36 @@ export default function TechSupportDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { title: "Verify Landlord: John Doe", type: "Verification", time: "10m ago", priority: "High", colorClass: "bg-amber-500" },
-                { title: "Refund Request: TXN-12345", type: "Payment", time: "30m ago", priority: "Medium", colorClass: "bg-blue-500" },
-                { title: "Hostel Flagged: Sunshine Apts", type: "Safety", time: "1h ago", priority: "Critical", colorClass: "bg-destructive" },
-                { title: "User Complaint: Login Issue", type: "Support", time: "2h ago", priority: "Low", colorClass: "bg-slate-500" },
-              ].map((task, i) => (
-                <div key={i} className="flex items-center justify-between p-4 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors group">
-                  <div className="flex items-center gap-4">
-                    <div className={`h-2.5 w-2.5 rounded-full ${task.colorClass} ring-2 ring-background`} />
-                    <div>
-                      <p className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">{task.title}</p>
-                      <p className="text-xs text-muted-foreground">{task.type} • {task.time}</p>
+              {isLoadingTickets ? (
+                <div className="p-4 text-center text-muted-foreground">Loading tasks...</div>
+              ) : !Array.isArray(tickets) ? (
+                 <div className="p-4 text-center text-destructive">
+                    <p>Failed to load tasks.</p>
+                    <p className="text-xs mt-1">Please try refreshing the page.</p>
+                 </div>
+              ) : tickets.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground">No priority tasks available.</div>
+              ) : (
+                tickets.slice(0, 5).map((ticket: any) => (
+                  <div key={ticket.id} className="flex items-center justify-between p-4 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors group">
+                    <div className="flex items-center gap-4">
+                      <div className={cn(
+                        "h-2.5 w-2.5 rounded-full ring-2 ring-background",
+                        ticket.priority === 'critical' ? 'bg-destructive' :
+                        ticket.priority === 'high' ? 'bg-amber-500' :
+                        ticket.priority === 'medium' ? 'bg-blue-500' : 'bg-slate-500'
+                      )} />
+                      <div>
+                        <p className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">{ticket.subject}</p>
+                        <p className="text-xs text-muted-foreground">{ticket.category} • {new Date(ticket.created_at).toLocaleDateString()}</p>
+                      </div>
                     </div>
+                    <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      View
+                    </Button>
                   </div>
-                  <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    View
-                  </Button>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

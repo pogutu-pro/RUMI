@@ -26,7 +26,7 @@ export const getConversations = async (
   params?: GetConversationsParams
 ): Promise<PaginatedResponse<Conversation>> => {
   const response = await apiClient.axios.get<PaginatedResponse<Conversation>>(
-    '/chat/conversations/',
+    '/accounts/chat/conversations/',
     { params }
   );
   return response.data;
@@ -36,7 +36,7 @@ export const getConversation = async (
   conversationId: string
 ): Promise<ApiResponse<Conversation>> => {
   const response = await apiClient.axios.get<ApiResponse<Conversation>>(
-    `/chat/conversations/${conversationId}/`
+    `/accounts/chat/conversations/${conversationId}/`
   );
   return response.data;
 };
@@ -46,7 +46,7 @@ export const getMessages = async (
   params?: GetMessagesParams
 ): Promise<PaginatedResponse<Message>> => {
   const response = await apiClient.axios.get<PaginatedResponse<Message>>(
-    `/chat/conversations/${conversationId}/messages/`,
+    `/accounts/chat/conversations/${conversationId}/messages/`,
     { params }
   );
   return response.data;
@@ -57,7 +57,7 @@ export const sendMessage = async (
   data: SendMessageRequest
 ): Promise<ApiResponse<Message>> => {
   const response = await apiClient.axios.post<ApiResponse<Message>>(
-    `/chat/conversations/${conversationId}/messages/`,
+    `/accounts/chat/conversations/${conversationId}/messages/`,
     data
   );
   return response.data;
@@ -68,7 +68,7 @@ export const markMessageAsRead = async (
   messageId: string
 ): Promise<ApiResponse<void>> => {
   const response = await apiClient.axios.put<ApiResponse<void>>(
-    `/chat/conversations/${conversationId}/messages/${messageId}/read/`
+    `/accounts/chat/conversations/${conversationId}/messages/${messageId}/read/`,
   );
   return response.data;
 };
@@ -77,7 +77,7 @@ export const markConversationAsRead = async (
   conversationId: string
 ): Promise<ApiResponse<void>> => {
   const response = await apiClient.axios.put<ApiResponse<void>>(
-    `/chat/conversations/${conversationId}/read/`
+    `/accounts/chat/conversations/${conversationId}/read/`,
   );
   return response.data;
 };
@@ -86,7 +86,7 @@ export const createConversation = async (
   data: CreateConversationRequest
 ): Promise<ApiResponse<Conversation>> => {
   const response = await apiClient.axios.post<ApiResponse<Conversation>>(
-    '/chat/conversations/',
+    '/accounts/chat/send/',
     data
   );
   return response.data;
@@ -96,14 +96,14 @@ export const deleteConversation = async (
   conversationId: string
 ): Promise<ApiResponse<void>> => {
   const response = await apiClient.axios.delete<ApiResponse<void>>(
-    `/chat/conversations/${conversationId}/`
+    `/accounts/chat/conversations/${conversationId}/`
   );
   return response.data;
 };
 
 export const getUnreadCount = async (): Promise<ApiResponse<{ count: number }>> => {
   const response = await apiClient.axios.get<ApiResponse<{ count: number }>>(
-    '/chat/unread-count/'
+    '/accounts/chat/unread-count/',
   );
   return response.data;
 };
@@ -112,7 +112,7 @@ export const pinConversation = async (
   conversationId: string
 ): Promise<ApiResponse<void>> => {
   const response = await apiClient.axios.post<ApiResponse<void>>(
-    `/chat/conversations/${conversationId}/pin/`
+    `/accounts/chat/conversations/${conversationId}/pin/`
   );
   return response.data;
 };
@@ -121,7 +121,7 @@ export const unpinConversation = async (
   conversationId: string
 ): Promise<ApiResponse<void>> => {
   const response = await apiClient.axios.delete<ApiResponse<void>>(
-    `/chat/conversations/${conversationId}/pin/`
+    `/accounts/chat/conversations/${conversationId}/pin/`
   );
   return response.data;
 };
@@ -130,7 +130,7 @@ export const muteConversation = async (
   conversationId: string
 ): Promise<ApiResponse<void>> => {
   const response = await apiClient.axios.post<ApiResponse<void>>(
-    `/chat/conversations/${conversationId}/mute/`
+    `/accounts/chat/conversations/${conversationId}/mute/`
   );
   return response.data;
 };
@@ -139,7 +139,7 @@ export const unmuteConversation = async (
   conversationId: string
 ): Promise<ApiResponse<void>> => {
   const response = await apiClient.axios.delete<ApiResponse<void>>(
-    `/chat/conversations/${conversationId}/mute/`
+    `/accounts/chat/conversations/${conversationId}/mute/`
   );
   return response.data;
 };

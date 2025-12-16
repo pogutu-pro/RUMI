@@ -21,14 +21,15 @@ export interface GetPaymentsFilters {
  */
 /**
  * Get student transaction history
- * Confirmed Endpoint: /payments/transactions/student/
+ * Confirmed Endpoint: /payments/history/
  */
 export const getPayments = async (filters?: GetPaymentsFilters): Promise<Payment[]> => {
   try {
     const response = await apiClient.axios.get<ApiResponse<Payment[]>>('/payments/history/', {
       params: filters,
     });
-    return response.data.data || [];
+    const data = response.data.data;
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.warn("Fetching student payments failed", error);
     return [];
@@ -44,7 +45,8 @@ export const getLandlordPayments = async (filters?: GetPaymentsFilters): Promise
     const response = await apiClient.axios.get<ApiResponse<Payment[]>>('/payments/transactions/landlord/', {
         params: filters
     });
-    return response.data.data || [];
+    const data = response.data.data;
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.warn("Fetching landlord payments failed", error);
     return [];
@@ -60,7 +62,8 @@ export const getAdminPayments = async (filters?: GetPaymentsFilters): Promise<Pa
     const response = await apiClient.axios.get<ApiResponse<Payment[]>>('/payments/transactions/admin/', {
         params: filters
     });
-    return response.data.data || [];
+    const data = response.data.data;
+    return Array.isArray(data) ? data : [];
    } catch (error) {
      console.warn("Fetching admin payments failed", error);
      return [];
@@ -75,6 +78,7 @@ export const getPaymentStats = async (): Promise<PaymentStats> => {
   
   return response.data.data || {
     totalRevenue: 0,
+    availableBalance: 0,
     pendingAmount: 0,
     failedAmount: 0,
     completedCount: 0,
@@ -185,3 +189,23 @@ export const downloadTaxReport = async (id: string) => {
   return response.data.data;
 };
 
+
+export const paymentsApi = {
+  getStudentTransactions: getPayments,
+  getLandlordPayments,
+  getAdminPayments,
+  getPaymentStats,
+  initiatePayment,
+  verifyPayment,
+  enableRecurringPayment,
+  pauseRecurringPayment,
+  resumeRecurringPayment,
+  cancelRecurringPayment,
+  getPaymentMethods,
+  setDefaultPaymentMethod,
+  deletePaymentMethod,
+  getLateFees,
+  payLateFee,
+  getTaxReports,
+  downloadTaxReport,
+};

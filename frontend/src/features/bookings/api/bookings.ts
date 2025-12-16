@@ -6,10 +6,17 @@ import { searchRooms } from '@/features/hostels';
 export const getBookings = async (
   params?: { status?: string },
 ): Promise<Booking[]> => {
-  const response = await api.axios.get<ApiResponse<Booking[]>>('/bookings/', {
-    params,
-  });
-  return response.data.data || [];
+  try {
+    const response = await api.axios.get<ApiResponse<Booking[]>>('/bookings/', {
+      params,
+    });
+    return response.data.data || [];
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      return [];
+    }
+    throw error;
+  }
 };
 
 export const getBookingById = async (id: string): Promise<Booking> => {
@@ -171,8 +178,9 @@ export const confirmPayment = async (
 export const getStudentBookings = async (
   status?: Booking['status'],
 ): Promise<Booking[]> => {
-  // /bookings/student/ NOT in reference.
-  // We should probably rely on /accounts/dashboard/ for this, which we stubbed out partly.
-  console.warn('getStudentBookings (via /bookings/student/) missing in backend.');
-  return [];
+  // Use the standard listings endpoint, backend should filter by current user
+  const response = await api.axios.get<ApiResponse<Booking[]>>('/bookings/', {
+    params: { status }
+  });
+  return response.data.data || [];
 };
