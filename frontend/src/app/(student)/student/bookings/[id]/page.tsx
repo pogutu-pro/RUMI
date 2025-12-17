@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { BrandedLoader } from '@/components/ui/branded-loader';
 import { useBooking } from '@/features/bookings';
 
 export default function Page() {
@@ -16,7 +16,7 @@ export default function Page() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-10">
-        <LoadingSpinner className="h-5 w-5 text-emerald-600" />
+        <BrandedLoader size={20} text="" className="p-0" />
       </div>
     );
   }

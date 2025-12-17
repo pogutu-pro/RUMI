@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { RatingInput } from '@/features/reviews';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { BrandedLoader } from '@/components/ui/branded-loader';
 import { useHostel } from '@/features/hostels';
 import { useCreateReview } from '@/features/reviews';
 
@@ -87,7 +87,7 @@ export default function Page() {
               >
                 {createReview.isPending ? (
                   <span className="flex items-center gap-1">
-                    <LoadingSpinner className="h-3 w-3 text-white" />{' '}
+                    <BrandedLoader size={12} text="" className="p-0" />{' '}
                     Submitting…
                   </span>
                 ) : submitted ? (

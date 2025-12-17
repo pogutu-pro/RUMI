@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { HostelList } from '@/features/hostels';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { BrandedLoader } from '@/components/ui/branded-loader';
 import { useHostels } from '@/features/hostels';
 
 export default function Page() {
@@ -47,7 +47,7 @@ export default function Page() {
           />
           {isLoading && (
             <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-              <LoadingSpinner className="h-3 w-3 text-emerald-600" />
+              <BrandedLoader size={12} text="" className="p-0" />
               <span>Searching hostels…</span>
             </div>
           )}

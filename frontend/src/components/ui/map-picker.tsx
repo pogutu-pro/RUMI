@@ -4,7 +4,7 @@ import * as React from 'react';
 import maplibregl from 'maplibre-gl';
 import { Map, Marker } from 'react-map-gl'; // React wrapper for MapLibre GL
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { BrandedLoader } from '@/components/ui/branded-loader';
 import { cn } from '@/lib/utils/cn';
 
 interface LatLng {
@@ -62,7 +62,7 @@ export function MapPicker({
     >
       {!loaded && (
         <div className="flex items-center justify-center h-full w-full bg-muted rounded-xl">
-          <LoadingSpinner text="Loading Map" />
+          <BrandedLoader text="Loading Map" />
         </div>
       )}
       <Map

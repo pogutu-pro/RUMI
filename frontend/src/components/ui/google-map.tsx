@@ -4,7 +4,7 @@ import * as React from 'react';
 import dynamic from 'next/dynamic';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { BrandedLoader } from '@/components/ui/branded-loader';
 import { cn } from '@/lib/utils/cn';
 
 // Dynamically import react-map-gl/maplibre to avoid SSR issues
@@ -14,7 +14,7 @@ const Map = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex items-center justify-center h-full w-full bg-muted">
-        <LoadingSpinner text="Loading Map" />
+        <BrandedLoader text="Loading Map" />
       </div>
     ),
   },
@@ -69,7 +69,7 @@ export function MapLibreMap({
     >
       {!loaded && (
         <div className="flex items-center justify-center h-full w-full bg-muted">
-          <LoadingSpinner text="Loading Map" />
+          <BrandedLoader text="Loading Map" />
         </div>
       )}
 
@@ -98,7 +98,7 @@ export function MapLibreMap({
             color="#007aff"
           >
             <div className="relative">
-             <LoadingSpinner size="lg" className="h-full w-full" />
+             <BrandedLoader size={40} text="" className="p-0" />
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap">
                 {title}
               </div>

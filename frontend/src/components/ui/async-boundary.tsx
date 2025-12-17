@@ -1,7 +1,6 @@
 import React from 'react';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { BrandedLoader } from '@/components/ui/branded-loader';
 import { ErrorState } from '@/components/ui/error-state';
-import { LogoLoader } from '@/components/ui/logo-loader';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface AsyncBoundaryProps {
@@ -34,7 +33,7 @@ export function AsyncBoundary({
     if (mode === 'page') {
         return (
             <div className="flex items-center justify-center min-h-[50vh] w-full">
-                <LogoLoader />
+                <BrandedLoader />
             </div>
         )
     }
@@ -55,7 +54,7 @@ export function AsyncBoundary({
 
     return (
         <div className="flex items-center justify-center p-8 w-full min-h-[100px]">
-            <LoadingSpinner size={compact ? 16 : 32} />
+            <BrandedLoader size={compact ? 40 : 80} text={compact ? '' : undefined} className={compact ? 'p-0' : ''} />
         </div>
     );
   }
