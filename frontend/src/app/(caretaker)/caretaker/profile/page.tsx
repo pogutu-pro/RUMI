@@ -20,7 +20,9 @@ import {
   Wrench,
   Users,
   Bell,
-  Lock
+  Lock,
+  AlertTriangle,
+  UserX
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getUserInitials } from '@/lib/utils/user';
@@ -105,17 +107,17 @@ export default function CaretakerProfilePage() {
             <div>
               <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-                  {displayName}
+                  {displayName || "Loading..."}
                 </h1>
                 <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/50 hover:bg-emerald-500/30">
                   Active Status
                 </Badge>
               </div>
               <p className="text-slate-300 text-lg flex items-center justify-center md:justify-start gap-2">
-                <Mail className="h-4 w-4" /> {user?.email}
+                <Mail className="h-4 w-4" /> {user?.email || "No email provided"}
               </p>
               <p className="text-slate-400 text-sm flex items-center justify-center md:justify-start gap-2 mt-1">
-                <Phone className="h-3 w-3" /> {user?.phone_number || '+254 700 000 000'}
+                <Phone className="h-3 w-3" /> {user?.phone_number || "No phone number"}
               </p>
             </div>
 
@@ -240,22 +242,31 @@ export default function CaretakerProfilePage() {
       <Card className="border-red-100 dark:border-red-900/30 bg-red-50/30 dark:bg-red-900/10">
         <CardHeader>
           <CardTitle className="text-red-600 dark:text-red-400 flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Session Management
+            <AlertTriangle className="h-5 w-5" />
+            Danger Zone
           </CardTitle>
           <CardDescription>
-            Manage your active session and account access
+            Manage your active session and sensitive account actions
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button 
-            variant="destructive" 
-            className="w-full sm:w-auto"
-            onClick={handleSignOut}
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out of Dashboard
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button 
+              variant="outline" 
+              className="w-full sm:w-auto border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-900/20"
+              onClick={handleSignOut}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+            <Button 
+              variant="destructive" 
+              className="w-full sm:w-auto"
+            >
+              <UserX className="h-4 w-4 mr-2" />
+              Delete Account
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

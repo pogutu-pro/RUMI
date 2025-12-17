@@ -128,10 +128,10 @@ export default function Layout({ children }: CaretakerLayoutProps) {
             <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
               <div className="flex items-center gap-4">
                 <div className="flex flex-col">
-                  <span className="text-xs font-medium uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-400">
+                  <span className="text-xs font-bold uppercase tracking-[0.18em] text-foreground">
                     RUMI · Caretaker
                   </span>
-                  <span className="text-sm text-muted-foreground hidden sm:block">
+                  <span className="text-sm font-medium text-muted-foreground hidden sm:block">
                     Manage daily operations and student needs
                   </span>
                 </div>

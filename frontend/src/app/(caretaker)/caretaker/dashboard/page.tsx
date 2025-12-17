@@ -14,22 +14,16 @@ import {
 import { Bar } from "react-chartjs-2";
 import { 
   Users,
-  Home,
   Wrench,
-  AlertCircle,
   CheckCircle2,
-  Clock,
-  TrendingUp,
   UserPlus,
   UserX,
   ClipboardList,
-  Shield,
   ArrowRight,
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils/cn";
 import { useCaretakerDashboard } from "@/features/caretaker";
@@ -41,41 +35,30 @@ const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export default function Page() {
   const { data: dashboardData, isLoading } = useCaretakerDashboard();
 
-  const ticketsData = React.useMemo(() => {
-    if (dashboardData?.maintenanceStats?.weeklyData) {
-      return dashboardData.maintenanceStats.weeklyData.map(d => d.new);
-    }
-    return days.map((_, index) => 4 + (index % 3));
-  }, [dashboardData]);
-
-  const resolvedData = React.useMemo(() => {
-    if (dashboardData?.maintenanceStats?.weeklyData) {
-      return dashboardData.maintenanceStats.weeklyData.map(d => d.resolved);
-    }
-    return ticketsData.map((value) => Math.max(0, value - 1));
-  }, [dashboardData, ticketsData]);
-
+  // Real Data for Charts
+  const weeklyStats = dashboardData?.maintenanceStats?.weeklyData || [];
+  
   const barChartData = React.useMemo(
     () => ({
       labels: days,
       datasets: [
         {
-          label: "New issues",
-          data: ticketsData,
-          backgroundColor: "rgba(14, 165, 233, 0.8)",
-          borderRadius: 6,
-          barThickness: 22,
+          label: "New Issues",
+          data: weeklyStats.map(d => d.new) || [],
+          backgroundColor: "#0ea5e9", // Sky 500
+          borderRadius: 4,
+          barThickness: 24,
         },
         {
           label: "Resolved",
-          data: resolvedData,
-          backgroundColor: "rgba(5, 150, 105, 0.8)",
-          borderRadius: 6,
-          barThickness: 22,
+          data: weeklyStats.map(d => d.resolved) || [],
+          backgroundColor: "#10b981", // Emerald 500
+          borderRadius: 4,
+          barThickness: 24,
         },
       ],
     }),
-    [ticketsData, resolvedData],
+    [weeklyStats],
   );
 
   const barChartOptions = React.useMemo(
@@ -87,16 +70,47 @@ export default function Page() {
           position: "bottom" as const,
           labels: {
             usePointStyle: true,
+            font: {
+              family: 'inherit',
+              size: 12
+            }
           },
         },
+        tooltip: {
+          backgroundColor: '#1e293b',
+          padding: 12,
+          cornerRadius: 8,
+        }
       },
       scales: {
         y: {
           beginAtZero: true,
+          grid: {
+            color: 'rgba(0, 0, 0, 0.05)',
+          },
+          border: {
+            display: false
+          },
           ticks: {
             stepSize: 1,
+            font: {
+              family: 'inherit',
+            }
           },
         },
+        x: {
+          grid: {
+            display: false,
+          },
+          border: {
+            display: false
+          },
+          ticks: {
+            font: {
+              family: 'inherit',
+            }
+          }
+        }
       },
     }),
     [],
@@ -104,245 +118,227 @@ export default function Page() {
 
   const kpiCards = [
     {
+      label: "Pending Approvals",
+      value: dashboardData?.todayOverview.pendingApprovals || 0,
+      description: "Require attention",
+      icon: ClipboardList,
+      href: "/caretaker/approvals"
+    },
+    {
       label: "Check-Ins Today",
       value: dashboardData?.todayOverview.checkInsToday || 0,
       description: "Expected arrivals",
       icon: UserPlus,
-      color: "text-blue-600 dark:text-blue-400",
-      bgColor: "bg-blue-50 dark:bg-blue-900/20",
+      href: "/caretaker/check-in"
     },
     {
       label: "Check-Outs Today",
       value: dashboardData?.todayOverview.checkOutsToday || 0,
       description: "Departures scheduled",
       icon: UserX,
-      color: "text-purple-600 dark:text-purple-400",
-      bgColor: "bg-purple-50 dark:bg-purple-900/20",
-    },
-    {
-      label: "Pending Approvals",
-      value: dashboardData?.todayOverview.pendingApprovals || 0,
-      description: "Require your attention",
-      icon: ClipboardList,
-      color: "text-amber-600 dark:text-amber-400",
-      bgColor: "bg-amber-50 dark:bg-amber-900/20",
+      href: "/caretaker/check-out"
     },
     {
       label: "Open Maintenance",
       value: dashboardData?.todayOverview.unresolvedIssues || 0,
       description: `${dashboardData?.maintenanceStats.highPriority || 0} high priority`,
       icon: Wrench,
-      color: "text-red-600 dark:text-red-400",
-      bgColor: "bg-red-50 dark:bg-red-900/20",
+      href: "/caretaker/maintenance"
     },
   ] as const;
 
   const quickActions = [
     {
       title: "Check In Student",
-      description: "Process new arrival",
       href: "/caretaker/check-in",
       icon: UserPlus,
-      color: "bg-blue-500 hover:bg-blue-600",
+      variant: "default",
     },
     {
       title: "Check Out Student",
-      description: "Process departure",
       href: "/caretaker/check-out",
       icon: UserX,
-      color: "bg-purple-500 hover:bg-purple-600",
+      variant: "outline",
     },
     {
-      title: "Report Issue",
-      description: "Log maintenance request",
+      title: "Log Issue",
       href: "/caretaker/maintenance",
       icon: Wrench,
-      color: "bg-orange-500 hover:bg-orange-600",
+      variant: "outline",
     },
     {
       title: "View Tenants",
-      description: "Manage students",
       href: "/caretaker/tenants",
       icon: Users,
-      color: "bg-emerald-500 hover:bg-emerald-600",
+      variant: "ghost",
     },
   ];
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-20 w-full" />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="space-y-8 p-1">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32" />
+            <Skeleton key={i} className="h-32 rounded-xl" />
           ))}
         </div>
-        <Skeleton className="h-96 w-full" />
+        <Skeleton className="h-96 w-full rounded-xl" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-          Caretaker Dashboard
+      <div className="flex flex-col gap-1">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          Dashboard
         </h1>
-        <p className="mt-1 text-sm md:text-base text-muted-foreground">
-          Stay on top of check-ins, maintenance, and tenant needs for your hostel.
+        <p className="text-base text-muted-foreground">
+          Welcome back. Here's what's happening in your hostel today.
         </p>
       </div>
 
       {/* KPI Cards */}
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {kpiCards.map((card) => {
           const Icon = card.icon;
           return (
-            <Card
-              key={card.label}
-              className={cn("border-none shadow-sm transition-all hover:shadow-md", card.bgColor)}
-            >
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xs font-medium text-muted-foreground">
+            <Link key={card.label} href={card.href}>
+              <Card className="hover:shadow-md transition-all active:scale-95 duration-200 border shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-bold text-muted-foreground">
                     {card.label}
                   </CardTitle>
-                  <div className={cn("p-2 rounded-lg", card.bgColor)}>
-                    <Icon className={cn("h-4 w-4", card.color)} />
+                  <Icon className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-foreground">
+                    {card.value.toLocaleString()}
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl md:text-3xl font-bold">
-                  {card.value.toLocaleString()}
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {card.description}
-                </p>
-              </CardContent>
-            </Card>
+                  <p className="text-xs font-medium text-muted-foreground mt-1">
+                    {card.description}
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
           );
         })}
       </section>
 
-      {/* Quick Actions */}
-      <section>
-        <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Link key={action.title} href={action.href}>
-                <Card className="h-full hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary">
-                  <CardContent className="p-6">
-                    <div className={cn("inline-flex p-3 rounded-lg text-white mb-4", action.color)}>
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <h3 className="font-semibold mb-1">{action.title}</h3>
-                    <p className="text-sm text-muted-foreground">{action.description}</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
+      {/* Main Content Grid */}
+      <div className="grid gap-6 lg:grid-cols-7">
+        
+        {/* Left Column: Charts & Quick Actions */}
+        <div className="space-y-6 lg:col-span-5">
+          {/* Quick Actions - Simplified & UX Focused */}
+          <Card className="border-none shadow-none bg-transparent">
+             <CardHeader className="px-0 pt-0">
+              <CardTitle className="text-lg font-bold">Quick Actions</CardTitle>
+            </CardHeader>
+             <CardContent className="px-0 flex flex-wrap gap-3">
+              {quickActions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <Button
+                    key={action.title}
+                    variant={action.variant as any}
+                    size="lg"
+                    className="h-14 gap-2 text-base font-bold shadow-sm"
+                    asChild
+                  >
+                    <Link href={action.href}>
+                      <Icon className="h-5 w-5" />
+                      {action.title}
+                    </Link>
+                  </Button>
+                )
+              })}
+             </CardContent>
+          </Card>
+
+          {/* Maintenance Chart */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">Weekly Maintenance</CardTitle>
+              <CardDescription>Overview of reported and resolved issues</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[350px] pl-0">
+              <Bar data={barChartData} options={barChartOptions} />
+            </CardContent>
+          </Card>
         </div>
-      </section>
 
-      {/* Statistics Section */}
-      <section className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        {/* Maintenance Chart */}
-        <Card className="border-none shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">
-              Maintenance & Issue Volume
-            </CardTitle>
-            <CardDescription>Weekly overview of maintenance requests</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[280px]">
-            <Bar data={barChartData} options={barChartOptions} />
-          </CardContent>
-        </Card>
+        {/* Right Column: Occupancy & Focus */}
+        <div className="space-y-6 lg:col-span-2">
+           {/* Today's Focus */}
+           <Card className="bg-primary/5 border-primary/20 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-bold flex items-center gap-2 text-primary">
+                <CheckCircle2 className="h-5 w-5" />
+                Today's Focus
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              <div className="p-3 bg-background rounded-lg border shadow-sm">
+                <p className="font-medium text-foreground">Check-ins Pending</p>
+                 <p className="text-muted-foreground mt-1">
+                    You have <span className="font-bold text-foreground">{dashboardData?.todayOverview.checkInsToday}</span> students arriving today.
+                 </p>
+                 <Button variant="link" className="px-0 h-auto mt-2 text-primary" asChild>
+                    <Link href="/caretaker/check-in">View Arrivals →</Link>
+                 </Button>
+              </div>
+              
+              <div className="p-3 bg-background rounded-lg border shadow-sm">
+                <p className="font-medium text-foreground">Pending Approvals</p>
+                 <p className="text-muted-foreground mt-1">
+                    <span className="font-bold text-foreground">{dashboardData?.todayOverview.pendingApprovals}</span> requests need your review.
+                 </p>
+                 <Button variant="link" className="px-0 h-auto mt-2 text-primary" asChild>
+                    <Link href="/caretaker/approvals">Process Requests →</Link>
+                 </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Room Occupancy */}
-        <Card className="border-none shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Room Occupancy</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Occupied</span>
-                <span className="font-semibold">
-                  {dashboardData?.roomOccupancy.occupied || 0}/{dashboardData?.roomOccupancy.total || 0}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div
-                  className="bg-emerald-600 h-2 rounded-full transition-all"
-                  style={{
-                    width: `${dashboardData?.roomOccupancy.occupancyRate || 0}%`,
-                  }}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {dashboardData?.roomOccupancy.occupancyRate || 0}% occupancy rate
-              </p>
-            </div>
-
-            <div className="space-y-3 pt-4 border-t">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                  <span className="text-sm">Occupied</span>
-                </div>
-                <span className="font-semibold">{dashboardData?.roomOccupancy.occupied || 0}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600" />
-                  <span className="text-sm">Available</span>
-                </div>
-                <span className="font-semibold">{dashboardData?.roomOccupancy.available || 0}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-amber-500" />
-                  <span className="text-sm">Maintenance</span>
-                </div>
-                <span className="font-semibold">{dashboardData?.roomOccupancy.underMaintenance || 0}</span>
-              </div>
-            </div>
-
-            <Button variant="outline" className="wfull mt-4" asChild>
-              <Link href="/caretaker/room-management">
-                View All Rooms <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* Today's Focus */}
-      <Card className="border-none shadow-sm bg-gradient-to-br from-emerald-50 to-blue-50 dark:from-emerald-900/20 dark:to-blue-900/20">
-        <CardHeader>
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-            Today's Focus
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <p className="text-foreground">
-            Prioritize high-severity maintenance tasks and check-out inspections to avoid deposit disputes and negative reviews.
-          </p>
-          <p className="text-foreground">
-            Use the damage reports and maintenance sections to update statuses in real time so landlords and students stay aligned.
-          </p>
-          <p className="text-muted-foreground">
-            Remember to log all visitor entries and complete night checks for today.
-          </p>
-        </CardContent>
-      </Card>
+          {/* Occupancy Donut/Stats simplified */}
+          <Card className="shadow-sm">
+             <CardHeader>
+              <CardTitle className="text-lg font-bold">Occupancy</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+               <div className="flex items-end justify-between">
+                  <span className="text-4xl font-bold">{dashboardData?.roomOccupancy.occupancyRate}%</span>
+                  <span className="text-sm font-medium text-muted-foreground mb-1">Total Capacity</span>
+               </div>
+               <div className="w-full bg-secondary h-3 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-primary h-full rounded-full transition-all duration-1000" 
+                    style={{ width: `${dashboardData?.roomOccupancy.occupancyRate || 0}%` }}
+                  />
+               </div>
+               <div className="grid grid-cols-2 gap-4 pt-2">
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Occupied</p>
+                    <p className="text-xl font-bold">{dashboardData?.roomOccupancy.occupied}</p>
+                  </div>
+                   <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Available</p>
+                    <p className="text-xl font-bold">{dashboardData?.roomOccupancy.available}</p>
+                  </div>
+               </div>
+               <Button variant="outline" className="w-full" asChild>
+                 <Link href="/caretaker/room-management">Manage Rooms</Link>
+               </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -52,7 +52,7 @@ export const getDamageReports = async (
   params?: DamageReportListParams,
 ): Promise<DamageReport[]> => {
   const response = await api.axios.get<ApiResponse<DamageReport[]>>(
-    '/damage-reports/',
+    '/caretaker/damage-reports/',
     { params },
   );
   return response.data.data ?? [];
@@ -60,7 +60,7 @@ export const getDamageReports = async (
 
 export const getDamageReport = async (id: string): Promise<DamageReport> => {
   const response = await api.axios.get<ApiResponse<DamageReport>>(
-    `/damage-reports/${id}/`,
+    `/caretaker/damage-reports/${id}/`,
   );
   return response.data.data as DamageReport;
 };
@@ -69,7 +69,7 @@ export const createDamageReport = async (
   payload: CreateDamageReportPayload,
 ): Promise<DamageReport> => {
   const response = await api.axios.post<ApiResponse<DamageReport>>(
-    '/damage-reports/',
+    '/caretaker/damage-reports/',
     payload,
   );
   return response.data.data as DamageReport;

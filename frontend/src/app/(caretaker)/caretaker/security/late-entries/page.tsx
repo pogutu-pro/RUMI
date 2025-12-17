@@ -27,6 +27,7 @@ import { getInitials } from '@/lib/utils/caretaker-helpers';
 import { useLateEntryLogs, useCreateLateEntryLog } from '@/features/caretaker';
 
 const lateEntrySchema = z.object({
+  tenantId: z.string().min(1, 'Student ID is required'),
   tenantName: z.string().min(2, 'Student name is required'),
   roomNumber: z.string().min(1, 'Room number is required'),
   entryTime: z.string().min(1, 'Entry time is required'),
@@ -55,7 +56,7 @@ export default function Page() {
     const entryDateTime = new Date(`${today}T${data.entryTime}`).toISOString();
 
     createEntryMutation.mutate({
-      tenantId: 'mock-tenant-id', // In real app, would search/select tenant
+      tenantId: data.tenantId, 
       tenantName: data.tenantName,
       roomNumber: data.roomNumber,
       entryTime: entryDateTime,
@@ -74,10 +75,15 @@ export default function Page() {
     entry.roomNumber.includes(searchQuery)
   );
 
+  // Use entries length for stats
   const stats = {
     today: entries.filter(e => new Date(e.entryTime).toDateString() === new Date().toDateString()).length,
-    week: entries.length, // Mock for now, would filter by week
-    frequent: 2, // Mock calculation
+    week: entries.length, 
+    // real frequent calculation
+    frequent: Object.values(entries.reduce((acc, curr) => {
+      acc[curr.tenantId] = (acc[curr.tenantId] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>)).filter(count => count >= 3).length,
   };
 
   if (isLoading) {
@@ -86,14 +92,10 @@ export default function Page() {
         <Skeleton className="h-20 w-full" />
         <div className="grid gap-4 sm:grid-cols-3">
           {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-32" />
+             <Skeleton key={i} className="h-32" />
           ))}
         </div>
-        <div className="grid gap-4">
-          {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-40" />
-          ))}
-        </div>
+        <Skeleton className="h-[400px] w-full" />
       </div>
     );
   }

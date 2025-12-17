@@ -8,6 +8,7 @@ export * from './api/workflows';
 export * from './hooks/use-caretaker-dashboard';
 export * from './hooks/use-security';
 export * from './hooks/use-workflows';
+export * from './hooks/use-messaging';
 
 // Stores
 export * from './stores/caretaker.store';

@@ -16,6 +16,8 @@ import {
   Search
 } from 'lucide-react';
 
+import { useAuth } from '@/features/auth';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -65,7 +67,11 @@ export default function Page({ params }: { params: Promise<{ bookingId: string }
     }
   });
 
-  // Mock tenant search/fetch
+  const { user } = useAuth();
+  
+  // (existing code)
+
+  // Fetch tenant details
   const { data: tenant, isLoading: isLoadingTenant } = useQuery({
     queryKey: ['tenant', watch('tenantId')],
     queryFn: () => getTenant(watch('tenantId')),
@@ -82,14 +88,14 @@ export default function Page({ params }: { params: Promise<{ bookingId: string }
       
       await processCheckOut({
         tenantId: data.tenantId,
-        roomId: tenant?.roomId || 'unknown', // Should come from tenant data
+        roomId: tenant?.roomId || 'unknown',
         actualCheckOutDate: new Date().toISOString(),
         reason: data.reason,
         reasonDetails: data.reasonDetails,
         roomCondition: data.roomCondition,
         photoProof: photoUrls,
         notes: data.notes,
-        processedBy: 'current-user-id',
+        processedBy: user?.id || 'unknown',
         processedAt: new Date().toISOString(),
       });
     },

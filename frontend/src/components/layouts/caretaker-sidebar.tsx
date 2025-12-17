@@ -67,12 +67,12 @@ const navItems: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
-    title: 'Tasks',
-    icon: ClipboardCheck,
+    title: 'Operations',
+    icon: ClipboardList,
     items: [
       { title: 'Check-Ins', href: '/caretaker/check-in', icon: UserPlus },
       { title: 'Check-Outs', href: '/caretaker/check-out', icon: UserX },
-      { title: 'Pending Approvals', href: '/caretaker/approvals', icon: ClipboardList },
+      { title: 'Pending Approvals', href: '/caretaker/approvals', icon: ClipboardCheck },
     ],
   },
   {
@@ -85,28 +85,22 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    title: 'Rooms',
-    href: '/caretaker/room-management',
+    title: 'Property',
     icon: Home,
-  },
-  {
-    title: 'Maintenance',
-    href: '/caretaker/maintenance',
-    icon: Wrench,
+    items: [
+      { title: 'Rooms', href: '/caretaker/room-management', icon: LayoutDashboard },
+      { title: 'Maintenance', href: '/caretaker/maintenance', icon: Wrench },
+      { title: 'Damage Reports', href: '/caretaker/damage-reports', icon: FileWarning },
+    ],
   },
   {
     title: 'Security',
     icon: Shield,
     items: [
-      { title: 'Visitor Logs', href: '/caretaker/security/visitor-logs', icon: ClipboardList },
-      { title: 'Night Checks', href: '/caretaker/security/night-checks', icon: Moon },
+      { title: 'Visitor Logs', href: '/caretaker/security/visitor-logs', icon: Users },
       { title: 'Late Entries', href: '/caretaker/security/late-entries', icon: Clock },
+      { title: 'Night Checks', href: '/caretaker/security/night-checks', icon: Moon },
     ],
-  },
-  {
-    title: 'Damage Reports',
-    href: '/caretaker/damage-reports',
-    icon: FileWarning,
   },
   {
     title: 'Messages',
@@ -114,19 +108,13 @@ const navItems: NavItem[] = [
     icon: MessageSquare,
   },
   {
-    title: 'Support',
-    href: '/caretaker/support',
-    icon: LifeBuoy,
-  },
-  {
     title: 'Settings',
-    href: '/caretaker/settings',
     icon: Settings,
-  },
-  {
-    title: 'Profile',
-    href: '/caretaker/profile',
-    icon: UserCheck,
+    items: [
+      { title: 'General', href: '/caretaker/settings', icon: Settings },
+      { title: 'My Profile', href: '/caretaker/profile', icon: UserCheck },
+      { title: 'Support', href: '/caretaker/support', icon: LifeBuoy },
+    ]
   },
 ];
 
@@ -205,8 +193,8 @@ export function CaretakerSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) 
                     <Button
                       variant="ghost"
                       className={cn(
-                        "w-full justify-between font-bold text-slate-900 dark:text-slate-400 hover:bg-muted hover:text-foreground transition-all duration-200",
-                        is_active && "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+                        "w-full justify-between h-10 px-3 hover:bg-accent hover:text-accent-foreground font-medium",
+                        is_active && "text-primary font-semibold"
                       )}
                     >
                       <div className="flex items-center gap-3">
@@ -230,7 +218,7 @@ export function CaretakerSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) 
                           "flex items-center gap-2 px-4 py-2 text-base transition-colors duration-200 border-l-2 -ml-[2px]",
                           pathname === subItem.href
                             ? "border-primary text-primary font-bold bg-primary/10"
-                            : "border-transparent text-slate-900 dark:text-slate-400 font-bold hover:text-foreground hover:bg-muted"
+                            : "border-transparent text-muted-foreground hover:text-foreground hover:bg-accent/30"
                         )}
                       >
                         {subItem.icon && <subItem.icon className="h-3.5 w-3.5 opacity-70" />}
@@ -269,8 +257,8 @@ export function CaretakerSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) 
                 asChild
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start font-bold text-slate-900 dark:text-slate-400 hover:bg-muted hover:text-foreground transition-all duration-200",
-                  is_active && "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+                  "w-full justify-start h-10 px-3 hover:bg-accent hover:text-accent-foreground font-medium",
+                  is_active && "bg-accent text-accent-foreground font-semibold"
                 )}
               >
                 <Link href={item.href!}>

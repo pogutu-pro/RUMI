@@ -45,10 +45,27 @@ export default function VisitorLogsPage() {
   };
 
   const handleCheckIn = async (invitation: any) => {
-    // Note: The existing API uses VisitorLog type which might differ from visitor invitations
-    // You may need to create a separate endpoint for visitor invitations or adapt the data
-    toast.success('Visitor checked in', {
-      description: `${invitation.visitorName} checked in successfully`,
+    checkInMutation.mutate({
+      visitorName: invitation.visitorName,
+      visitorPhone: invitation.visitorPhone,
+      visitorIdNumber: invitation.visitorIdNumber,
+      tenantId: invitation.tenantId || invitation.studentId, // fallback
+      tenantName: invitation.studentName,
+      roomNumber: invitation.roomNumber,
+      purpose: invitation.purpose,
+      timeIn: new Date().toISOString(),
+      // Backend handles loggedBy/loggedByName from token
+    }, {
+      onSuccess: () => {
+        toast.success("Visitor Checked In", {
+          description: `${invitation.visitorName} has been marked as present.`
+        });
+      },
+      onError: () => {
+        toast.error("Check-in Failed", {
+          description: "Please try again or contact support."
+        });
+      }
     });
   };
 
@@ -56,6 +73,17 @@ export default function VisitorLogsPage() {
     checkOutMutation.mutate({
       id: invitation.id,
       timeOut: new Date().toISOString(),
+    }, {
+        onSuccess: () => {
+          toast.success("Visitor Checked Out", {
+            description: `${invitation.visitorName} has departed.`
+          });
+        },
+        onError: () => {
+          toast.error("Check-out Failed", {
+             description: "Could not update visitor record."
+          });
+        }
     });
   };
 
