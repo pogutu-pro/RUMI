@@ -1,0 +1,1 @@
+# Monitoring app for RUMI platform

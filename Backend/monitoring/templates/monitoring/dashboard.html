@@ -1,0 +1,105 @@
+likw<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RUMI Platform - System Monitoring Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 10px; margin-bottom: 2rem; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .header p { opacity: 0.9; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+        .card { background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .card h3 { color: #333; margin-bottom: 1rem; font-size: 1.2rem; }
+        .metric { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; padding: 0.5rem; background: #f8f9fa; border-radius: 5px; }
+        .metric-name { font-weight: 500; color: #555; }
+        .metric-value { font-weight: bold; color: #333; }
+        .status-healthy { color: #28a745; }
+        .status-unhealthy { color: #dc3545; }
+        .refresh-btn { background: #007bff; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 5px; cursor: pointer; font-size: 1rem; margin-bottom: 1rem; }
+        .refresh-btn:hover { background: #0056b3; }
+        .endpoint { background: #e9ecef; padding: 0.8rem; border-radius: 5px; margin: 0.5rem 0; font-family: monospace; }
+        .endpoint a { color: #007bff; text-decoration: none; }
+        .endpoint a:hover { text-decoration: underline; }
+        .timestamp { color: #6c757d; font-size: 0.9rem; margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏠 RUMI Platform Monitoring</h1>
+            <p>Real-time system health and performance metrics</p>
+        </div>
+
+        <button class="refresh-btn" onclick="refreshDashboard()">🔄 Refresh Dashboard</button>
+
+        <div class="grid">
+            <div class="card">
+                <h3>🏥 System Health</h3>
+                <div id="health-status">
+                    <div class="metric">
+                        <span class="metric-name">Overall Status</span>
+                        <span class="metric-value status-healthy" id="overall-status">Loading...</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-name">Database</span>
+                        <span class="metric-value" id="db-status">Loading...</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-name">Redis</span>
+                        <span class="metric-value" id="redis-status">Loading...</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-name">Celery</span>
+                        <span class="metric-value" id="celery-status">Loading...</span>
+                    </div>
+                    <div class="timestamp" id="health-timestamp"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>💻 System Resources</h3>
+                <div id="system-resources">
+                    <div class="metric">
+                        <span class="metric-name">CPU Usage</span>
+                        <span class="metric-value" id="cpu-usage">Loading...</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-name">Memory Usage</span>
+                        <span class="metric-value" id="memory-usage">Loading...</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-name">Disk Usage</span>
+                        <span class="metric-value" id="disk-usage">Loading...</span>
+                    </div>
+                    <div class="timestamp" id="system-timestamp"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📊 Monitoring Endpoints</h3>
+                <div class="endpoint">
+                    <a href="/health/" target="_blank">Health Check</a>
+                </div>
+                <div class="endpoint">
+                    <a href="/health/info/" target="_blank">Metrics Info</a>
+                </div>
+                <div class="endpoint">
+                    <a href="/health/system/" target="_blank">System Metrics (JSON)</a>
+                </div>
+                <div class="endpoint">
+                    <a href="/metrics/" target="_blank">Prometheus Metrics</a>
+                </div>
+                <div class="endpoint">
+                    <a href="/admin/" target="_blank">Django Admin</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3> Process Information</h3>
+                <div id="process-info">
+                    <div class="metric">
+                        <span class="metric-name">Process ID</span>
