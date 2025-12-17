@@ -29,45 +29,7 @@ const MORE_MENU_ITEMS = [
   { icon: Settings, label: 'Settings', href: '/student/settings' },
 ];
 
-export function StudentBottomNav() {
-  const pathname = usePathname();
-  const [isVisible, setIsVisible] = React.useState(true);
-  const [lastScrollY, setLastScrollY] = React.useState(0);
-  
-  // State for sheets
-  const [isHostelOpen, setIsHostelOpen] = React.useState(false);
-  const [isMoreOpen, setIsMoreOpen] = React.useState(false);
-
-  // Auto-hide on scroll down, show on scroll up
-  React.useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      if (currentScrollY < 50) {
-        setIsVisible(true);
-        setLastScrollY(currentScrollY);
-        return;
-      }
-      
-      if (currentScrollY < lastScrollY) {
-        setIsVisible(true);
-      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setIsVisible(false);
-      }
-      
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
-
-  const is_active = (href: string) => {
-    if (href === '/student/dashboard') return pathname === href;
-    return pathname?.startsWith(href);
-  };
-
-  const NavLink = ({ item, active }: { item: any, active: boolean }) => (
+const NavLink = ({ item, active }: { item: any, active: boolean }) => (
     <Link
       href={item.href}
       className={cn(
@@ -119,7 +81,7 @@ export function StudentBottomNav() {
     </button>
   );
 
-  const MenuSheet = ({ title, items, isOpen, onOpenChange }: { title: string, items: any[], isOpen: boolean, onOpenChange: (open: boolean) => void }) => (
+  const MenuSheet = ({ title, items, isOpen, onOpenChange, pathname }: { title: string, items: any[], isOpen: boolean, onOpenChange: (open: boolean) => void, pathname: string | null }) => (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="h-[60vh] rounded-t-3xl p-0 ring-0 focus:ring-0 outline-none">
         <SheetHeader className="sr-only">
@@ -158,6 +120,54 @@ export function StudentBottomNav() {
     </Sheet>
   );
 
+export function StudentBottomNav() {
+  const pathname = usePathname();
+  const [isVisible, setIsVisible] = React.useState(true);
+  const scrollYRef = React.useRef(0);
+  
+  // State for sheets
+  const [isHostelOpen, setIsHostelOpen] = React.useState(false);
+  const [isMoreOpen, setIsMoreOpen] = React.useState(false);
+
+  // Auto-hide on scroll down, show on scroll up
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const lastScrollY = scrollYRef.current;
+      
+      // Always show if near top
+      if (currentScrollY < 50) {
+        setIsVisible(true);
+        scrollYRef.current = currentScrollY;
+        return;
+      }
+      
+      // Determine direction
+      const isScrollingDown = currentScrollY > lastScrollY;
+      const scrollDiff = Math.abs(currentScrollY - lastScrollY);
+
+      // Only toggle visibility if we've scrolled enough to matter
+      if (scrollDiff > 10) {
+        if (isScrollingDown && currentScrollY > 100) {
+           setIsVisible(false);
+        } else if (!isScrollingDown) {
+           setIsVisible(true);
+        }
+        scrollYRef.current = currentScrollY;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const is_active = (href: string) => {
+    if (href === '/student/dashboard') return pathname === href;
+    return pathname?.startsWith(href);
+  };
+
+
+
   return (
     <>
       {/* Spacer */}
@@ -194,6 +204,7 @@ export function StudentBottomNav() {
               items={HOSTEL_MENU_ITEMS} 
               isOpen={isHostelOpen} 
               onOpenChange={setIsHostelOpen} 
+              pathname={pathname}
             />
           </div>
 
@@ -216,6 +227,7 @@ export function StudentBottomNav() {
               items={MORE_MENU_ITEMS} 
               isOpen={isMoreOpen} 
               onOpenChange={setIsMoreOpen} 
+              pathname={pathname}
             />
           </div>
         </div>

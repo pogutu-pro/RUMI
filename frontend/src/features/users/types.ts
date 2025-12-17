@@ -1,4 +1,4 @@
-import { Timestamp, UserRole } from '@/features/auth/types/types';
+import { UserRole } from '@/features/auth/types/types';
 
 export interface User {
   id: string;
@@ -16,4 +16,9 @@ export interface User {
   created_at?: Date | string;
   lastActiveAt?: Date;
   is_verified?: boolean;
+  bio?: string;
+  urls?: {
+    linkedin?: string;
+    twitter?: string;
+  };
 }

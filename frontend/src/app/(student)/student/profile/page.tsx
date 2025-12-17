@@ -217,6 +217,7 @@ export default function ProfilePage() {
             </Button>
           </div>
         </div>
+        </div>
       </motion.div>
 
       <div className="grid gap-8 md:grid-cols-3">

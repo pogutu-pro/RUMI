@@ -64,10 +64,10 @@ export default function EditProfilePage() {
     last_name: user?.last_name || '',
     email: user?.email || '',
     phone_number: user?.phone_number || '',
-    bio: (user as any)?.bio || '',
+    bio: user?.bio || '',
     urls: {
-      linkedin: (user as any)?.urls?.linkedin || '',
-      twitter: (user as any)?.urls?.twitter || '',
+      linkedin: user?.urls?.linkedin || '',
+      twitter: user?.urls?.twitter || '',
     },
   };
 
@@ -114,9 +114,7 @@ export default function EditProfilePage() {
         });
         router.refresh();
       } else {
-        // Fallback for demo
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        toast.success('Profile updated (Demo)', { description: 'Mock update successful' });
+         throw new Error("Update profile function not available");
       }
     } catch (error) {
       toast.error('Something went wrong', {
