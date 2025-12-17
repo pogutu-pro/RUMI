@@ -47,4 +47,10 @@ urlpatterns = [
     path('chat/conversations/', views.ConversationListView.as_view(), name='conversation_list'),
     path('chat/conversations/<int:conversation_id>/messages/', views.ConversationMessagesView.as_view(), name='conversation_messages'),
     path('chat/send/', views.SendMessageView.as_view(), name='send_message'),
+    path('messages/unread-count/', views.UnreadMessageCountView.as_view(), name='unread_message_count'),
+    
+    # Security endpoints
+    path('student/security/late-entries/', views.StudentSecurityLateEntriesView.as_view(), name='student_security_late_entries'),
+    path('student/security/visitor-invitations/', views.StudentSecurityVisitorInvitationsView.as_view(), name='student_security_visitor_invitations'),
+    path('student/security/visitor-invitations/<int:invitation_id>/', views.StudentSecurityVisitorInvitationsView.as_view(), name='student_security_visitor_invitation_action'),
 ]

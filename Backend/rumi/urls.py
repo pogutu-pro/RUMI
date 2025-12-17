@@ -37,6 +37,12 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
+    # Prometheus metrics endpoints
+    path('metrics/', include('django_prometheus.urls')),
+
+    # Health check endpoint
+    path('health/', include('monitoring.urls')),
+
     # Admin dashboard
     path('admin/', admin.site.urls),
 

@@ -24,6 +24,16 @@ from .models import (
     OTPVerification, PasswordResetToken, UserActivityLog,
     Conversation, Message
 )
+
+# Import security models from hostels app
+from hostels.models import LateEntryLog, VisitorInvitation
+
+# Import security models
+try:
+    from hostels.models import LateEntryLog, VisitorInvitation
+except ImportError:
+    LateEntryLog = None
+    VisitorInvitation = None
 from .serializers import (
     UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer,
     CaretakerCreateSerializer, CaretakerUpdateSerializer, UserActivityLogSerializer,
@@ -1833,3 +1843,358 @@ class SendMessageView(APIView):
             'conversation': conversation_serializer.data,
             'message_data': message_serializer.data
         }, status=status.HTTP_201_CREATED)
+
+
+class UnreadMessageCountView(APIView):
+    """Get unread message count for authenticated user"""
+    
+    def get(self, request):
+        """Get unread message count"""
+        # Count unread messages across all conversations for this user
+        unread_count = Message.objects.filter(
+            conversation__participants=request.user,
+            is_read=False
+        ).exclude(
+            sender=request.user  # Exclude messages sent by the user
+        ).count()
+        
+        # Get breakdown by conversation for dashboard widgets
+        conversations_with_unread = Message.objects.filter(
+            conversation__participants=request.user,
+            is_read=False
+        ).exclude(
+            sender=request.user
+        ).values('conversation').annotate(
+            unread_count=models.Count('id')
+        )
+        
+        # Create conversation breakdown
+        conversation_breakdown = []
+        for conv in conversations_with_unread:
+            try:
+                conversation = Conversation.objects.get(id=conv['conversation'])
+                other_participant = conversation.get_other_participant(request.user)
+                conversation_breakdown.append({
+                    'conversation_id': conv['conversation'],
+                    'other_participant_name': other_participant.get_full_name() if other_participant else 'Unknown',
+                    'unread_count': conv['unread_count']
+                })
+            except Conversation.DoesNotExist:
+                continue
+        
+        return Response({
+            'unread_count': unread_count,
+            'conversations_with_unread': len(conversation_breakdown),
+            'conversation_breakdown': conversation_breakdown
+        }, status=status.HTTP_200_OK)
+
+
+class StudentSecurityLateEntriesView(APIView):
+    """Get late entry logs for students"""
+    
+    permission_classes = [IsStudent]
+    
+    def get(self, request):
+        """Get late entries for the authenticated student"""
+        if request.user.role != 'student':
+            return Response({
+                'error': 'Only students can access this endpoint'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            student_profile = request.user.student_profile
+        except:
+            return Response({
+                'error': 'Student profile not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get late entry logs for this student
+        late_entries = LateEntryLog.objects.filter(
+            student=student_profile
+        ).select_related('hostel', 'room', 'reviewed_by').order_by('-entry_time')
+        
+        # Apply filters
+        status_filter = request.query_params.get('status', 'all')
+        if status_filter != 'all':
+            late_entries = late_entries.filter(status=status_filter)
+        
+        date_from = request.query_params.get('date_from')
+        if date_from:
+            late_entries = late_entries(entry_time__date__gte=date_from)
+        
+        date_to = request.query_params.get('date_to')
+        if date_to:
+            late_entries = late_entries(entry_time__date__lte=date_to)
+        
+        # Pagination
+        page = int(request.query_params.get('page', 1))
+        per_page = int(request.query_params.get('per_page', 10))
+        start = (page - 1) * per_page
+        end = start + per_page
+        
+        total_entries = late_entries.count()
+        entries_page = late_entries[start:end]
+        
+        # Format response data
+        entries_data = []
+        for entry in entries_page:
+            entries_data.append({
+                'entry_id': entry.id,
+                'hostel_name': entry.hostel.name,
+                'room_number': entry.room.room_number,
+                'entry_time': entry.entry_time.isoformat(),
+                'expected_curfew': entry.expected_curfew.strftime('%H:%M'),
+                'delay_minutes': entry.delay_minutes,
+                'reason': entry.reason,
+                'reason_details': entry.reason_details,
+                'status': entry.status,
+                'is_violation': entry.is_violation,
+                'reviewed_by': entry.reviewed_by.user.get_full_name() if entry.reviewed_by else None,
+                'reviewed_at': entry.reviewed_at.isoformat() if entry.reviewed_at else None,
+                'review_notes': entry.review_notes,
+                'entry_location': entry.entry_location,
+                'violation_count': entry.violation_count,
+                'created_at': entry.created_at.isoformat()
+            })
+        
+        return Response({
+            'late_entries': entries_data,
+            'pagination': {
+                'current_page': page,
+                'total_pages': (total_entries + per_page - 1) // per_page,
+                'total_entries': total_entries,
+                'per_page': per_page,
+                'has_next': page * per_page < total_entries,
+                'has_previous': page > 1
+            },
+            'filters': {
+                'status': status_filter,
+                'date_from': date_from,
+                'date_to': date_to
+            }
+        }, status=status.HTTP_200_OK)
+
+
+class StudentSecurityVisitorInvitationsView(APIView):
+    """Create and manage visitor invitations for students"""
+    
+    permission_classes = [IsStudent]
+    
+    def get(self, request):
+        """Get visitor invitations for the authenticated student"""
+        if request.user.role != 'student':
+            return Response({
+                'error': 'Only students can access this endpoint'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            student_profile = request.user.student_profile
+        except:
+            return Response({
+                'error': 'Student profile not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get visitor invitations for this student
+        invitations = VisitorInvitation.objects.filter(
+            student=student_profile
+        ).select_related('hostel', 'room', 'approved_by').order_by('-expected_arrival')
+        
+        # Apply filters
+        status_filter = request.query_params.get('status', 'all')
+        if status_filter != 'all':
+            invitations = invitations.filter(status=status_filter)
+        
+        # Pagination
+        page = int(request.query_params.get('page', 1))
+        per_page = int(request.query_params.get('per_page', 10))
+        start = (page - 1) * per_page
+        end = start + per_page
+        
+        total_invitations = invitations.count()
+        invitations_page = invitations[start:end]
+        
+        # Format response data
+        invitations_data = []
+        for invitation in invitations_page:
+            invitations_data.append({
+                'invitation_id': invitation.id,
+                'visitor_name': invitation.visitor_name,
+                'visitor_phone': invitation.visitor_phone,
+                'visitor_id_number': invitation.visitor_id_number,
+                'visitor_relationship': invitation.visitor_relationship,
+                'purpose': invitation.purpose,
+                'expected_arrival': invitation.expected_arrival.isoformat(),
+                'expected_departure': invitation.expected_departure.isoformat(),
+                'status': invitation.status,
+                'approved_by': invitation.approved_by.user.get_full_name() if invitation.approved_by else None,
+                'approved_at': invitation.approved_at.isoformat() if invitation.approved_at else None,
+                'rejection_reason': invitation.rejection_reason,
+                'caretaker_notes': invitation.caretaker_notes,
+                'actual_check_in': invitation.actual_check_in.isoformat() if invitation.actual_check_in else None,
+                'actual_check_out': invitation.actual_check_out.isoformat() if invitation.actual_check_out else None,
+                'requires_escort': invitation.requires_escort,
+                'escorted_by': invitation.escorted_by,
+                'invitation_token': str(invitation.invitation_token),
+                'is_expired': invitation.is_expired,
+                'can_check_in': invitation.can_check_in,
+                'visit_duration_hours': invitation.visit_duration_hours,
+                'created_at': invitation.created_at.isoformat()
+            })
+        
+        return Response({
+            'visitor_invitations': invitations_data,
+            'pagination': {
+                'current_page': page,
+                'total_pages': (total_invitations + per_page - 1) // per_page,
+                'total_invitations': total_invitations,
+                'per_page': per_page,
+                'has_next': page * per_page < total_invitations,
+                'has_previous': page > 1
+            },
+            'filters': {
+                'status': status_filter
+            }
+        }, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        """Create a new visitor invitation"""
+        if request.user.role != 'student':
+            return Response({
+                'error': 'Only students can access this endpoint'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            student_profile = request.user.student_profile
+        except:
+            return Response({
+                'error': 'Student profile not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get invitation data
+        visitor_name = request.data.get('visitor_name')
+        visitor_phone = request.data.get('visitor_phone')
+        visitor_id_number = request.data.get('visitor_id_number')
+        visitor_relationship = request.data.get('visitor_relationship')
+        purpose = request.data.get('purpose')
+        expected_arrival = request.data.get('expected_arrival')
+        expected_departure = request.data.get('expected_departure')
+        special_instructions = request.data.get('special_instructions', '')
+        requires_escort = request.data.get('requires_escort', False)
+        
+        # Validate required fields
+        if not all([visitor_name, visitor_phone, visitor_id_number, visitor_relationship, purpose, expected_arrival, expected_departure]):
+            return Response({
+                'error': 'All visitor details and timing information are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Get student's current room and hostel
+            current_occupancy = RoomOccupant.objects.filter(
+                student=student_profile,
+                is_active=True
+            ).select_related('room__hostel').first()
+            
+            if not current_occupancy:
+                return Response({
+                    'error': 'No active room assignment found'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Create visitor invitation
+            invitation = VisitorInvitation.objects.create(
+                student=student_profile,
+                hostel=current_occupancy.room.hostel,
+                room=current_occupancy.room,
+                visitor_name=visitor_name,
+                visitor_phone=visitor_phone,
+                visitor_id_number=visitor_id_number,
+                visitor_relationship=visitor_relationship,
+                purpose=purpose,
+                expected_arrival=expected_arrival,
+                expected_departure=expected_departure,
+                special_instructions=special_instructions,
+                requires_escort=requires_escort,
+                status='pending'
+            )
+            
+            return Response({
+                'message': 'Visitor invitation created successfully',
+                'invitation_id': invitation.id,
+                'invitation_token': str(invitation.invitation_token),
+                'status': invitation.status,
+                'expected_arrival': invitation.expected_arrival.isoformat(),
+                'needs_approval': invitation.caretaker_approval_required
+            }, status=status.HTTP_201_CREATED)
+        
+        except Exception as e:
+            return Response({
+                'error': 'Failed to create visitor invitation',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def put(self, request, invitation_id):
+        """Update visitor invitation (cancel or modify)"""
+        if request.user.role != 'student':
+            return Response({
+                'error': 'Only students can access this endpoint'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            student_profile = request.user.student_profile
+        except:
+            return Response({
+                'error': 'Student profile not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        action = request.data.get('action')  # 'cancel', 'modify'
+        
+        try:
+            invitation = VisitorInvitation.objects.get(
+                id=invitation_id,
+                student=student_profile
+            )
+        except VisitorInvitation.DoesNotExist:
+            return Response({
+                'error': 'Visitor invitation not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if action == 'cancel':
+            if invitation.status in ['checked_in', 'checked_out']:
+                return Response({
+                    'error': 'Cannot cancel invitation that has been checked in'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            invitation.status = 'cancelled'
+            invitation.save()
+            
+            return Response({
+                'message': 'Visitor invitation cancelled successfully',
+                'invitation_id': invitation.id,
+                'status': invitation.status
+            }, status=status.HTTP_200_OK)
+        
+        elif action == 'modify':
+            # Allow modification of timing or instructions
+            expected_arrival = request.data.get('expected_arrival')
+            expected_departure = request.data.get('expected_departure')
+            special_instructions = request.data.get('special_instructions')
+            
+            if expected_arrival:
+                invitation.expected_arrival = expected_arrival
+            if expected_departure:
+                invitation.expected_departure = expected_departure
+            if special_instructions is not None:
+                invitation.special_instructions = special_instructions
+            
+            invitation.save()
+            
+            return Response({
+                'message': 'Visitor invitation updated successfully',
+                'invitation_id': invitation.id,
+                'expected_arrival': invitation.expected_arrival.isoformat(),
+                'expected_departure': invitation.expected_departure.isoformat()
+            }, status=status.HTTP_200_OK)
+        
+        else:
+            return Response({
+                'error': 'Invalid action. Must be "cancel" or "modify"'
+            }, status=status.HTTP_400_BAD_REQUEST)

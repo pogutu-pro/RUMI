@@ -26,7 +26,7 @@ from .models import (
 from .serializers import (
     TransactionSerializer, SavedPaymentMethodSerializer, RecurringPaymentSerializer,
     LateFeeChargeSerializer, TaxReportSerializer, PaystackSubaccountSerializer,
-    PayoutSerializer, RefundRequestSerializer, RevenueAnalyticsSerializer
+    PayoutSerializer, RefundRequestSerializer, RevenueAnalyticsSerializer, ReceiptSerializer
 )
 from .tasks import charge_saved_payment_method
 
@@ -692,6 +692,15 @@ def _handle_charge_success(data):
                 }
             )
 
+            # Generate and send receipt
+            try:
+                from .receipt_service import ReceiptService
+                receipt_result = ReceiptService.generate_and_send_receipt(transaction)
+                if receipt_result['receipt']:
+                    print(f"Receipt generated and sent for transaction {transaction.transaction_reference}")
+            except Exception as e:
+                print(f"Error in receipt generation workflow: {str(e)}")
+
         return Response({'status': 'success'}, status=status.HTTP_200_OK)
 
     except Transaction.DoesNotExist:
@@ -766,8 +775,25 @@ class PaymentReceiptView(APIView):
                     'error': 'Unauthorized to view this receipt'
                 }, status=status.HTTP_403_FORBIDDEN)
 
-        # Generate receipt data
-        receipt_data = {
+        # Check if receipt exists, if not generate it
+        if not hasattr(transaction, 'receipt'):
+            try:
+                from .receipt_service import ReceiptService
+                receipt = ReceiptService.generate_receipt(transaction)
+            except Exception as e:
+                return Response({
+                    'error': 'Failed to generate receipt',
+                    'details': str(e)
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            receipt = transaction.receipt
+
+        # Serialize receipt data
+        serializer = ReceiptSerializer(receipt)
+        receipt_data = serializer.data
+
+        # Add detailed transaction information
+        receipt_data['transaction_details'] = {
             'transaction_reference': transaction.transaction_reference,
             'paystack_reference': transaction.paystack_reference,
             'student': {

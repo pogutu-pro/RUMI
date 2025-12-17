@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'drf_yasg',
     'debug_toolbar',
     'channels',
+    'django_prometheus',
+    'monitoring',
     # Custom apps
     'accounts',
     'hostels',

@@ -9,10 +9,17 @@ from decimal import Decimal
 
 from accounts.permissions import IsCaretaker, IsLandlord
 from hostels.models import (
-    Booking, Room, Hostel, InventoryCheckIn, InventoryCheckOut, 
+    Booking, Room, Hostel, InventoryCheckIn, InventoryCheckOut,
     DamageReport, VisitorCheckIn, RoomInventory, RoomOccupant
 )
 from accounts.models import CaretakerProfile, StudentProfile
+
+# Import roommate models
+try:
+    from accounts.roommate_models import RoommateRequest, RoommateMatch
+except ImportError:
+    RoommateRequest = None
+    RoommateMatch = None
 
 
 class CaretakerDashboardView(APIView):
@@ -1236,3 +1243,288 @@ class CaretakerTaskManagementView(APIView):
             'task_id': task_id,
             'action': action
         }, status=status.HTTP_200_OK)
+
+
+class CaretakerRoommateRequestApprovalView(APIView):
+    """Handle caretaker approval of roommate requests"""
+    
+    permission_classes = [IsCaretaker]
+    
+    def get(self, request):
+        """Get pending roommate requests for caretaker's hostel"""
+        if not RoommateRequest:
+            return Response({
+                'error': 'Roommate request system not available'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        caretaker = request.user.caretaker_profile
+        
+        # Get pending roommate requests that need caretaker approval
+        pending_requests = RoommateRequest.objects.filter(
+            preferred_hostel=caretaker.hostel,
+            caretaker_approval_required=True,
+            caretaker_approved=False,
+            status='pending',
+            expires_at__gt=timezone.now()
+        ).select_related(
+            'requester__user', 'recipient__user'
+        ).order_by('-priority', '-created_at')
+        
+        data = []
+        for req in pending_requests:
+            data.append({
+                'request_id': req.id,
+                'requester_name': req.requester.user.get_full_name(),
+                'requester_email': req.requester.user.email,
+                'recipient_name': req.recipient.user.get_full_name(),
+                'recipient_email': req.recipient.user.email,
+                'preferred_room_type': req.preferred_room_type,
+                'move_in_date': req.move_in_date.isoformat(),
+                'budget_range': {
+                    'min': float(req.budget_min),
+                    'max': float(req.budget_max)
+                },
+                'message': req.message,
+                'priority': req.priority,
+                'created_at': req.created_at.isoformat(),
+                'expires_at': req.expires_at.isoformat() if req.expires_at else None,
+                'days_pending': (timezone.now() - req.created_at).days
+            })
+        
+        return Response({
+            'pending_requests': data,
+            'total_pending': len(data)
+        }, status=status.HTTP_200_OK)
+    
+    def post(self, request, request_id):
+        """Approve or reject a roommate request"""
+        if not RoommateRequest:
+            return Response({
+                'error': 'Roommate request system not available'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        caretaker = request.user.caretaker_profile
+        action = request.data.get('action')  # 'approve' or 'reject'
+        notes = request.data.get('notes', '')
+        
+        if action not in ['approve', 'reject']:
+            return Response({
+                'error': 'Action must be either "approve" or "reject"'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            roommate_request = RoommateRequest.objects.get(
+                id=request_id,
+                preferred_hostel=caretaker.hostel,
+                caretaker_approval_required=True,
+                caretaker_approved=False,
+                status='pending'
+            )
+        except RoommateRequest.DoesNotExist:
+            return Response({
+                'error': 'Roommate request not found or already processed'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if action == 'approve':
+            roommate_request.approve_by_caretaker(caretaker, notes)
+            return Response({
+                'message': 'Roommate request approved successfully',
+                'request_id': roommate_request.id,
+                'status': 'approved',
+                'requester_name': roommate_request.requester.user.get_full_name(),
+                'recipient_name': roommate_request.recipient.user.get_full_name()
+            }, status=status.HTTP_200_OK)
+        
+        else:  # reject
+            rejection_reason = request.data.get('rejection_reason', 'Rejected by caretaker')
+            roommate_request.reject_by_caretaker(caretaker, rejection_reason)
+            return Response({
+                'message': 'Roommate request rejected',
+                'request_id': roommate_request.id,
+                'status': 'rejected',
+                'rejection_reason': rejection_reason,
+                'requester_name': roommate_request.requester.user.get_full_name(),
+                'recipient_name': roommate_request.recipient.user.get_full_name()
+            }, status=status.HTTP_200_OK)
+
+
+class CaretakerRoommateMatchManagementView(APIView):
+    """Handle caretaker management of roommate matches"""
+    
+    permission_classes = [IsCaretaker]
+    
+    def get(self, request):
+        """Get roommate matches for caretaker's hostel"""
+        if not RoommateMatch:
+            return Response({
+                'error': 'Roommate matching system not available'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        caretaker = request.user.caretaker_profile
+        
+        # Get roommate matches for caretaker's hostel
+        matches = RoommateMatch.objects.filter(
+            assigned_hostel=caretaker.hostel,
+            status__in=['active', 'pending_review']
+        ).select_related('assigned_room').prefetch_related('students__user')
+        
+        data = []
+        for match in matches:
+            students_data = []
+            for student in match.students.all():
+                students_data.append({
+                    'student_id': student.id,
+                    'name': student.user.get_full_name(),
+                    'email': student.user.email
+                })
+            
+            data.append({
+                'match_id': match.id,
+                'students': students_data,
+                'primary_student': match.primary_student.user.get_full_name(),
+                'assigned_room': match.assigned_room.room_number if match.assigned_room else None,
+                'compatibility_score': match.compatibility_score,
+                'move_in_date': match.move_in_date.isoformat(),
+                'lease_start_date': match.lease_start_date.isoformat(),
+                'lease_end_date': match.lease_end_date.isoformat(),
+                'status': match.status,
+                'approved_by_caretaker': match.approved_by_caretaker,
+                'review_date': match.review_date.isoformat() if match.review_date else None,
+                'notes': match.notes,
+                'created_at': match.created_at.isoformat()
+            })
+        
+        return Response({
+            'matches': data,
+            'total_matches': len(data),
+            'pending_approval': len([m for m in data if not m['approved_by_caretaker']])
+        }, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        """Create or update roommate match"""
+        if not RoommateMatch:
+            return Response({
+                'error': 'Roommate matching system not available'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        caretaker = request.user.caretaker_profile
+        
+        # Get match data
+        student_ids = request.data.get('student_ids', [])
+        primary_student_id = request.data.get('primary_student_id')
+        room_id = request.data.get('room_id')
+        compatibility_score = request.data.get('compatibility_score')
+        move_in_date = request.data.get('move_in_date')
+        lease_start_date = request.data.get('lease_start_date')
+        lease_end_date = request.data.get('lease_end_date')
+        
+        if not all([student_ids, primary_student_id, compatibility_score, move_in_date, lease_start_date, lease_end_date]):
+            return Response({
+                'error': 'Student IDs, primary student ID, compatibility score, and dates are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Get students
+            students = StudentProfile.objects.filter(id__in=student_ids)
+            primary_student = StudentProfile.objects.get(id=primary_student_id)
+            assigned_room = Room.objects.get(id=room_id) if room_id else None
+            
+            # Validate room belongs to caretaker's hostel
+            if assigned_room and assigned_room.hostel != caretaker.hostel:
+                return Response({
+                    'error': 'Room does not belong to your hostel'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except (StudentProfile.DoesNotExist, Room.DoesNotExist) as e:
+            return Response({
+                'error': f'Student or room not found: {str(e)}'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Create roommate match
+        match = RoommateMatch.objects.create(
+            primary_student=primary_student,
+            assigned_room=assigned_room,
+            assigned_hostel=caretaker.hostel,
+            compatibility_score=compatibility_score,
+            move_in_date=move_in_date,
+            lease_start_date=lease_start_date,
+            lease_end_date=lease_end_date,
+            match_factors={
+                'caretaker_notes': request.data.get('notes', ''),
+                'created_by': caretaker.user.get_full_name()
+            }
+        )
+        
+        # Add students to match
+        for student in students:
+            match.add_student(student)
+        
+        return Response({
+            'message': 'Roommate match created successfully',
+            'match_id': match.id,
+            'student_count': match.student_count,
+            'assigned_room': assigned_room.room_number if assigned_room else None
+        }, status=status.HTTP_201_CREATED)
+    
+    def put(self, request, match_id):
+        """Update roommate match status"""
+        if not RoommateMatch:
+            return Response({
+                'error': 'Roommate matching system not available'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        caretaker = request.user.caretaker_profile
+        action = request.data.get('action')  # 'approve', 'dissolve', 'update'
+        notes = request.data.get('notes', '')
+        
+        try:
+            match = RoommateMatch.objects.get(
+                id=match_id,
+                assigned_hostel=caretaker.hostel
+            )
+        except RoommateMatch.DoesNotExist:
+            return Response({
+                'error': 'Roommate match not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if action == 'approve':
+            match.approved_by_caretaker = True
+            match.caretaker = caretaker
+            match.approved_at = timezone.now()
+            if notes:
+                match.notes = f"{match.notes}\nApproval notes: {notes}" if match.notes else notes
+            match.save()
+            
+            return Response({
+                'message': 'Roommate match approved successfully',
+                'match_id': match.id,
+                'status': 'active'
+            }, status=status.HTTP_200_OK)
+        
+        elif action == 'dissolve':
+            reason = request.data.get('reason', 'Dissolved by caretaker')
+            match.dissolve_match(reason)
+            
+            return Response({
+                'message': 'Roommate match dissolved',
+                'match_id': match.id,
+                'status': 'dissolved'
+            }, status=status.HTTP_200_OK)
+        
+        elif action == 'update':
+            review_date = request.data.get('review_date')
+            if review_date:
+                match.review_date = review_date
+            if notes:
+                match.notes = notes
+            match.save()
+            
+            return Response({
+                'message': 'Roommate match updated successfully',
+                'match_id': match.id
+            }, status=status.HTTP_200_OK)
+        
+        else:
+            return Response({
+                'error': 'Invalid action. Must be approve, dissolve, or update'
+            }, status=status.HTTP_400_BAD_REQUEST)

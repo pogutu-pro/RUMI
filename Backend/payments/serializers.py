@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     Transaction, SavedPaymentMethod, RecurringPayment, LateFeeCharge,
-    TaxReport, PaystackSubaccount, Payout, RefundRequest, RevenueAnalytics
+    TaxReport, PaystackSubaccount, Payout, RefundRequest, RevenueAnalytics, Receipt
 )
 from hostels.models import Booking
 from accounts.models import StudentProfile, LandlordProfile
@@ -20,7 +20,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     def get_booking_details(self, obj):
         return {
             'id': obj.booking.id,
-            'room': obj.booking.room.name,
+            'room': obj.booking.room.room_number,
             'hostel': obj.booking.room.hostel.name,
             'check_in_date': obj.booking.check_in_date,
             'check_out_date': obj.booking.check_out_date,
@@ -67,7 +67,7 @@ class RecurringPaymentSerializer(serializers.ModelSerializer):
     def get_booking_details(self, obj):
         return {
             'id': obj.booking.id,
-            'room': obj.booking.room.name,
+            'room': obj.booking.room.room_number,
             'hostel': obj.booking.room.hostel.name,
         }
 
@@ -211,3 +211,20 @@ class RevenueAnalyticsSerializer(serializers.ModelSerializer):
         model = RevenueAnalytics
         fields = '__all__'
         read_only_fields = ['created_at']
+
+
+class ReceiptSerializer(serializers.ModelSerializer):
+    transaction_details = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Receipt
+        fields = '__all__'
+        read_only_fields = ['generated_at', 'emailed_at']
+
+    def get_transaction_details(self, obj):
+        return {
+            'id': obj.transaction.id,
+            'reference': obj.transaction.transaction_reference,
+            'amount': float(obj.transaction.total_charged_amount),
+            'paid_at': obj.transaction.paid_at.isoformat() if obj.transaction.paid_at else None
+        }

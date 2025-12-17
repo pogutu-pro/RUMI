@@ -13,4 +13,10 @@ urlpatterns = [
     path('students/', views.CaretakerStudentManagementView.as_view(), name='caretaker_student_management'),
     path('notifications/', views.CaretakerNotificationView.as_view(), name='caretaker_notifications'),
     path('tasks/', views.CaretakerTaskManagementView.as_view(), name='caretaker_task_management'),
+    
+    # Roommate Management (2 new endpoints)
+    path('roommates/match-requests/', views.CaretakerRoommateRequestApprovalView.as_view(), name='caretaker_roommate_requests'),
+    path('roommates/match-requests/<int:request_id>/', views.CaretakerRoommateRequestApprovalView.as_view(), name='caretaker_roommate_request_action'),
+    path('roommates/matches/', views.CaretakerRoommateMatchManagementView.as_view(), name='caretaker_roommate_matches'),
+    path('roommates/matches/<int:match_id>/', views.CaretakerRoommateMatchManagementView.as_view(), name='caretaker_roommate_match_action'),
 ]

@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
+import uuid
 
 
 class Hostel(models.Model):
@@ -1098,3 +1099,275 @@ class IncidentReport(models.Model):
             duration = self.resolved_at - self.reported_date
             return round(duration.total_seconds() / 3600, 2)
         return None
+
+
+class LateEntryLog(models.Model):
+    """Track late entries for students returning to hostels"""
+    
+    REASON_CHOICES = [
+        ('library_study', 'Library Study'),
+        ('class_extended', 'Extended Classes'),
+        ('medical_visit', 'Medical Visit'),
+        ('family_emergency', 'Family Emergency'),
+        ('part_time_job', 'Part-time Job'),
+        ('social_event', 'Social Event'),
+        ('transport_delay', 'Transport Delay'),
+        ('other', 'Other'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('approved', 'Approved'),
+        ('warning_issued', 'Warning Issued'),
+        ('violation_recorded', 'Violation Recorded'),
+    ]
+    
+    student = models.ForeignKey(
+        'accounts.StudentProfile',
+        on_delete=models.CASCADE,
+        related_name='late_entries'
+    )
+    hostel = models.ForeignKey(
+        Hostel,
+        on_delete=models.CASCADE,
+        related_name='late_entries'
+    )
+    room = models.ForeignKey(
+        Room,
+        on_delete=models.CASCADE,
+        related_name='late_entries'
+    )
+    
+    entry_time = models.DateTimeField(help_text="Actual time student entered")
+    expected_curfew = models.TimeField(help_text="Expected curfew time for the day")
+    reason = models.CharField(max_length=50, choices=REASON_CHOICES)
+    reason_details = models.TextField(blank=True, null=True, help_text="Additional details about the reason")
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    reviewed_by = models.ForeignKey(
+        'accounts.CaretakerProfile',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='reviewed_late_entries'
+    )
+    reviewed_at = models.DateTimeField(blank=True, null=True)
+    review_notes = models.TextField(blank=True, null=True)
+    
+    # Violation tracking
+    is_violation = models.BooleanField(default=False, help_text="Whether this constitutes a curfew violation")
+    warning_issued = models.BooleanField(default=False)
+    violation_count = models.IntegerField(default=0, help_text="Number of violations for this student")
+    
+    # Location tracking
+    entry_location = models.CharField(
+        max_length=100,
+        default='main_gate',
+        help_text="Where student entered (main_gate, side_door, etc.)"
+    )
+    
+    witness_name = models.CharField(max_length=255, blank=True, null=True)
+    witness_contact = models.CharField(max_length=15, blank=True, null=True)
+    
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'hostels_lateentrylog'
+        indexes = [
+            models.Index(fields=['student'], name='idx_late_entry_student'),
+            models.Index(fields=['hostel'], name='idx_late_entry_hostel'),
+            models.Index(fields=['entry_time'], name='idx_late_entry_time'),
+            models.Index(fields=['status'], name='idx_late_entry_status'),
+            models.Index(fields=['is_violation'], name='idx_late_entry_violation'),
+        ]
+        ordering = ['-entry_time']
+    
+    @property
+    def delay_minutes(self):
+        """Calculate delay in minutes"""
+        from datetime import datetime, time
+        entry_datetime = datetime.combine(self.entry_time.date(), self.expected_curfew)
+        if self.entry_time.time() > self.expected_curfew:
+            delay = self.entry_time - entry_datetime
+            return int(delay.total_seconds() / 60)
+        return 0
+    
+    @property
+    def is_repeated_violation(self):
+        """Check if this is a repeated violation"""
+        recent_violations = LateEntryLog.objects.filter(
+            student=self.student,
+            is_violation=True,
+            entry_time__gte=timezone.now() - timezone.timedelta(days=30)
+        ).count()
+        return recent_violations > 1
+    
+    def __str__(self):
+        return f"Late entry: {self.student.user.get_full_name()} at {self.entry_time}"
+
+
+class VisitorInvitation(models.Model):
+    """Pre-registered visitor invitations from students"""
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending Approval'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('expired', 'Expired'),
+        ('checked_in', 'Checked In'),
+        ('checked_out', 'Checked Out'),
+    ]
+    
+    RELATIONSHIP_CHOICES = [
+        ('family', 'Family Member'),
+        ('friend', 'Friend'),
+        ('classmate', 'Classmate'),
+        ('boyfriend', 'Boyfriend'),
+        ('girlfriend', 'Girlfriend'),
+        ('relative', 'Relative'),
+        ('professional', 'Professional Visit'),
+        ('other', 'Other'),
+    ]
+    
+    student = models.ForeignKey(
+        'accounts.StudentProfile',
+        on_delete=models.CASCADE,
+        related_name='visitor_invitations'
+    )
+    hostel = models.ForeignKey(
+        Hostel,
+        on_delete=models.CASCADE,
+        related_name='visitor_invitations'
+    )
+    room = models.ForeignKey(
+        Room,
+        on_delete=models.CASCADE,
+        related_name='visitor_invitations'
+    )
+    
+    # Visitor details
+    visitor_name = models.CharField(max_length=255, help_text="Full name of visitor")
+    visitor_phone = models.CharField(max_length=15, help_text="Visitor phone number")
+    visitor_id_number = models.CharField(max_length=50, help_text="National ID or student ID")
+    visitor_relationship = models.CharField(max_length=20, choices=RELATIONSHIP_CHOICES)
+    visitor_photo = models.URLField(blank=True, null=True, help_text="URL to visitor photo")
+    
+    # Visit details
+    purpose = models.CharField(max_length=255, help_text="Purpose of visit")
+    expected_arrival = models.DateTimeField(help_text="Expected arrival time")
+    expected_departure = models.DateTimeField(help_text="Expected departure time")
+    special_instructions = models.TextField(blank=True, null=True, help_text="Special instructions for caretaker")
+    
+    # Approval workflow
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    approved_by = models.ForeignKey(
+        'accounts.CaretakerProfile',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='approved_visitors'
+    )
+    approved_at = models.DateTimeField(blank=True, null=True)
+    rejection_reason = models.TextField(blank=True, null=True)
+    caretaker_notes = models.TextField(blank=True, null=True)
+    
+    # Check-in/out tracking
+    actual_check_in = models.DateTimeField(blank=True, null=True)
+    actual_check_out = models.DateTimeField(blank=True, null=True)
+    checked_in_by = models.ForeignKey(
+        'accounts.CaretakerProfile',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='checked_in_visitors_invitation'
+    )
+    checked_out_by = models.ForeignKey(
+        'accounts.CaretakerProfile',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='checked_out_visitors_invitation'
+    )
+    
+    # Security features
+    requires_escort = models.BooleanField(default=False, help_text="Whether visitor needs escort")
+    escorted_by = models.CharField(max_length=255, blank=True, null=True, help_text="Name of escort")
+    security_alert = models.BooleanField(default=False, help_text="Security alert triggered")
+    blacklist_check = models.BooleanField(default=False, help_text="Whether visitor was checked against blacklist")
+    
+    # Metadata
+    invitation_token = models.UUIDField(default=uuid.uuid4, unique=True, help_text="Unique token for visitor check-in")
+    max_visitors = models.IntegerField(default=1, help_text="Maximum number of visitors in group")
+    current_visitor_count = models.IntegerField(default=1, help_text="Current number of visitors")
+    
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'hostels_visitorinvitation'
+        indexes = [
+            models.Index(fields=['student'], name='idx_visitor_invitation_student'),
+            models.Index(fields=['hostel'], name='idx_visitor_invitation_hostel'),
+            models.Index(fields=['status'], name='idx_visitor_invitation_status'),
+            models.Index(fields=['expected_arrival'], name='idx_visitor_invitation_arrival'),
+            models.Index(fields=['invitation_token'], name='idx_visitor_invitation_token'),
+        ]
+        ordering = ['-expected_arrival']
+    
+    @property
+    def is_expired(self):
+        """Check if invitation has expired"""
+        return timezone.now() > self.expected_arrival + timezone.timedelta(hours=2)
+    
+    @property
+    def visit_duration_hours(self):
+        """Calculate expected visit duration in hours"""
+        if self.expected_arrival and self.expected_departure:
+            duration = self.expected_departure - self.expected_arrival
+            return round(duration.total_seconds() / 3600, 2)
+        return None
+    
+    @property
+    def can_check_in(self):
+        """Check if visitor can check in"""
+        now = timezone.now()
+        return (
+            self.status == 'approved' and
+            not self.is_expired and
+            now >= self.expected_arrival - timezone.timedelta(minutes=30) and
+            now <= self.expected_arrival + timezone.timedelta(hours=2)
+        )
+    
+    def approve(self, caretaker, notes=''):
+        """Approve the invitation"""
+        self.status = 'approved'
+        self.approved_by = caretaker
+        self.approved_at = timezone.now()
+        self.caretaker_notes = notes
+        self.save()
+    
+    def reject(self, caretaker, reason):
+        """Reject the invitation"""
+        self.status = 'rejected'
+        self.approved_by = caretaker
+        self.approved_at = timezone.now()
+        self.rejection_reason = reason
+        self.save()
+    
+    def check_in(self, caretaker):
+        """Check in the visitor"""
+        self.status = 'checked_in'
+        self.actual_check_in = timezone.now()
+        self.checked_in_by = caretaker
+        self.save()
+    
+    def check_out(self, caretaker):
+        """Check out the visitor"""
+        self.status = 'checked_out'
+        self.actual_check_out = timezone.now()
+        self.checked_out_by = caretaker
+        self.save()
+    
+    def __str__(self):
+        return f"Visitor invitation: {self.visitor_name} for {self.student.user.get_full_name()}"

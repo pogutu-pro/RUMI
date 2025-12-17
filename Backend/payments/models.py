@@ -536,3 +536,28 @@ class RevenueAnalytics(models.Model):
 
     def __str__(self):
         return f"{self.period_type.title()} analytics for {self.date}"
+
+
+class Receipt(models.Model):
+    """Store generated payment receipts"""
+    
+    transaction = models.OneToOneField(
+        Transaction,
+        on_delete=models.CASCADE,
+        related_name='receipt'
+    )
+    receipt_number = models.CharField(max_length=50, unique=True)
+    pdf_file = models.FileField(upload_to='receipts/pdf/', blank=True, null=True)
+    generated_at = models.DateTimeField(default=timezone.now)
+    emailed_at = models.DateTimeField(blank=True, null=True)
+    email_sent = models.BooleanField(default=False)
+    
+    class Meta:
+        db_table = 'payments_receipt'
+        indexes = [
+            models.Index(fields=['transaction'], name='idx_receipt_transaction'),
+            models.Index(fields=['receipt_number'], name='idx_receipt_number'),
+        ]
+
+    def __str__(self):
+        return f"Receipt {self.receipt_number}"
