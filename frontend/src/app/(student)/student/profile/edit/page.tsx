@@ -54,8 +54,9 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function EditProfilePage() {
   const router = useRouter();
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, uploadPhoto } = useAuth();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isUploading, setIsUploading] = React.useState(false);
 
   // Default values for the form
   const defaultValues: Partial<ProfileFormValues> = {
@@ -63,10 +64,10 @@ export default function EditProfilePage() {
     last_name: user?.last_name || '',
     email: user?.email || '',
     phone_number: user?.phone_number || '',
-    bio: 'I am a student at RUMI University.',
+    bio: (user as any)?.bio || '',
     urls: {
-      linkedin: '',
-      twitter: '',
+      linkedin: (user as any)?.urls?.linkedin || '',
+      twitter: (user as any)?.urls?.twitter || '',
     },
   };
 
@@ -76,22 +77,47 @@ export default function EditProfilePage() {
     mode: 'onChange',
   });
 
+  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('File too large', { description: 'Image must be smaller than 2MB' });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      if (uploadPhoto) {
+          await uploadPhoto(file);
+          toast.success('Photo updated', { description: 'Your profile picture has been updated.' });
+          router.refresh();
+      } else {
+          toast.error('Upload feature not available');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Upload failed', { description: 'Could not upload profile picture.' });
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
   async function onSubmit(data: ProfileFormValues) {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      // In a real app, we would call the updateProfile function from useAuth
-      // await updateProfile(data);
-      
-      toast.success('Profile updated successfully', {
-        description: 'Your personal information has been saved.',
-      });
-      
-      // Refresh to show new data
-      router.refresh();
+      if (updateProfile) {
+        await updateProfile(data);
+        toast.success('Profile updated successfully', {
+            description: 'Your personal information has been saved.',
+        });
+        router.refresh();
+      } else {
+        // Fallback for demo
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        toast.success('Profile updated (Demo)', { description: 'Mock update successful' });
+      }
     } catch (error) {
       toast.error('Something went wrong', {
         description: 'Your profile could not be updated. Please try again.',
@@ -136,12 +162,24 @@ export default function EditProfilePage() {
               </Avatar>
               <div className="flex flex-col gap-2 w-full sm:w-auto">
                 <div className="flex gap-2">
-                  <Button type="button" variant="outline" size="sm" className="w-full sm:w-auto">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Change Picture
-                  </Button>
-                  <Button type="button" variant="ghost" size="sm" className="text-destructive hover:text-destructive w-full sm:w-auto">
-                    Remove
+                  <Input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    id="avatar-upload"
+                    onChange={handleFileChange}
+                    disabled={isUploading}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full sm:w-auto"
+                    onClick={() => document.getElementById('avatar-upload')?.click()}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+                    {isUploading ? 'Uploading...' : 'Change Picture'}
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">

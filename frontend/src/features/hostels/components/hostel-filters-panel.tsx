@@ -121,18 +121,18 @@ export function HostelFiltersPanel({
   const otherAmenities = AMENITIES.filter(a => !a.popular);
 
   return (
-    <div className={cn("flex flex-col h-full bg-white", className)}>
+    <div className={cn("flex flex-col h-full bg-background", className)}>
       {/* Header - Sticky */}
-      <div className="sticky top-0 z-10 bg-white border-b px-6 py-4">
+      <div className="sticky top-0 z-10 bg-background border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-50">
-              <SlidersHorizontal className="h-5 w-5 text-emerald-600" />
+            <div className="p-2 rounded-lg bg-primary/10">
+              <SlidersHorizontal className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="font-bold text-lg">Filters</h2>
+              <h2 className="font-bold text-lg text-foreground">Filters</h2>
               {hasActiveFilters && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {activeFiltersCount} active filter{activeFiltersCount !== 1 ? 's' : ''}
                 </p>
               )}
@@ -143,7 +143,7 @@ export function HostelFiltersPanel({
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="rounded-full hover:bg-gray-100"
+              className="rounded-full hover:bg-muted"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -155,21 +155,21 @@ export function HostelFiltersPanel({
       <div className="flex-1 overflow-y-auto p-6 space-y-8">
         {/* Location Section */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-            <MapPin className="h-4 w-4 text-emerald-600" />
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <MapPin className="h-4 w-4 text-primary" />
             <span>Location</span>
           </div>
           
           {/* University */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-gray-700">University</Label>
+            <Label className="text-sm font-medium text-foreground">University</Label>
             <Select
               value={filters.university}
               onValueChange={(value) =>
                 onFiltersChange({ ...filters, university: value })
               }
             >
-              <SelectTrigger className="h-11 border-gray-200 focus:border-emerald-500 focus:ring-emerald-500">
+              <SelectTrigger className="h-11 border-border focus:border-primary focus:ring-primary">
                 <SelectValue placeholder="Select your university" />
               </SelectTrigger>
               <SelectContent>
@@ -189,14 +189,14 @@ export function HostelFiltersPanel({
 
           {/* City */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-gray-700">City</Label>
+            <Label className="text-sm font-medium text-foreground">City</Label>
             <Select
               value={filters.city}
               onValueChange={(value) =>
                 onFiltersChange({ ...filters, city: value })
               }
             >
-              <SelectTrigger className="h-11 border-gray-200 focus:border-emerald-500 focus:ring-emerald-500">
+              <SelectTrigger className="h-11 border-border focus:border-primary focus:ring-primary">
                 <SelectValue placeholder="Select city" />
               </SelectTrigger>
               <SelectContent>
@@ -217,24 +217,24 @@ export function HostelFiltersPanel({
 
         {/* Price Range Section */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-            <Wallet className="h-4 w-4 text-emerald-600" />
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Wallet className="h-4 w-4 text-primary" />
             <span>Price Range</span>
           </div>
           
           <div className="space-y-4">
             {/* Range Display */}
             <div className="flex items-center justify-between">
-              <div className="px-4 py-2 rounded-lg bg-emerald-50 border border-emerald-200">
-                <div className="text-xs text-emerald-700 font-medium">Min</div>
-                <div className="font-bold text-emerald-900">
+              <div className="px-4 py-2 rounded-lg bg-muted border border-border">
+                <div className="text-xs text-primary font-medium">Min</div>
+                <div className="font-bold text-foreground">
                   KES {priceRange[0].toLocaleString()}
                 </div>
               </div>
-              <div className="h-px w-8 bg-gray-300" />
-              <div className="px-4 py-2 rounded-lg bg-emerald-50 border border-emerald-200">
-                <div className="text-xs text-emerald-700 font-medium">Max</div>
-                <div className="font-bold text-emerald-900">
+              <div className="h-px w-8 bg-border" />
+              <div className="px-4 py-2 rounded-lg bg-muted border border-border">
+                <div className="text-xs text-primary font-medium">Max</div>
+                <div className="font-bold text-foreground">
                   KES {priceRange[1].toLocaleString()}
                 </div>
               </div>
@@ -253,7 +253,7 @@ export function HostelFiltersPanel({
                 aria-label="Price range slider"
               />
             </div>
-            <p className="text-xs text-gray-500 text-center">
+            <p className="text-xs text-muted-foreground text-center">
               Average: KES {Math.round((priceRange[0] + priceRange[1]) / 2).toLocaleString()} / month
             </p>
           </div>
@@ -263,14 +263,14 @@ export function HostelFiltersPanel({
 
         {/* Hostel Type & Gender Policy */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-            <Building2 className="h-4 w-4 text-emerald-600" />
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Building2 className="h-4 w-4 text-primary" />
             <span>Hostel Preferences</span>
           </div>
 
           {/* Hostel Type */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-gray-700">Room Type</Label>
+            <Label className="text-sm font-medium text-foreground">Room Type</Label>
             <div className="grid grid-cols-3 gap-2">
               {['single_rooms', 'shared_rooms', 'mixed'].map((type) => (
                 <button
@@ -282,10 +282,10 @@ export function HostelFiltersPanel({
                     })
                   }
                   className={cn(
-                    'px-3 py-2.5 rounded-lg border-2 text-xs font-medium transition-all',
+                    'px-3 py-2.5 rounded-lg border-2 text-xs font-medium transition-all flex items-center justify-center',
                     filters.hostel_type === type
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                      ? 'border-primary bg-primary/10 text-primary font-bold'
+                      : 'border-border bg-card text-muted-foreground hover:border-primary/50'
                   )}
                 >
                   {type === 'single_rooms' && '🏠 Single'}
@@ -301,7 +301,7 @@ export function HostelFiltersPanel({
 
           {/* Gender Policy */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-gray-700">Gender Policy</Label>
+            <Label className="text-sm font-medium text-foreground">Gender Policy</Label>
             <div className="grid grid-cols-3 gap-2">
               {['male_only', 'female_only', 'mixed'].map((policy) => (
                 <button
@@ -313,10 +313,10 @@ export function HostelFiltersPanel({
                     })
                   }
                   className={cn(
-                    'px-3 py-2.5 rounded-lg border-2 text-xs font-medium transition-all',
+                    'px-3 py-2.5 rounded-lg border-2 text-xs font-medium transition-all flex items-center justify-center',
                     filters.gender_policy === policy
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                      ? 'border-primary bg-primary/10 text-primary font-bold'
+                      : 'border-border bg-card text-muted-foreground hover:border-primary/50'
                   )}
                 >
                   {policy === 'male_only' && '♂️ Male'}
@@ -335,14 +335,14 @@ export function HostelFiltersPanel({
 
         {/* Amenities Section */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-            <Sparkles className="h-4 w-4 text-emerald-600" />
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Sparkles className="h-4 w-4 text-primary" />
             <span>Amenities</span>
           </div>
 
           {/* Popular Amenities */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Most Popular
             </Label>
             <div className="grid grid-cols-2 gap-2">
@@ -352,8 +352,8 @@ export function HostelFiltersPanel({
                   className={cn(
                     'flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all',
                     filters.amenities?.includes(amenity.id)
-                      ? 'border-emerald-500 bg-emerald-50'
-                      : 'border-gray-200 hover:border-emerald-200 bg-white'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/30 bg-card'
                   )}
                 >
                   <Checkbox
@@ -362,10 +362,10 @@ export function HostelFiltersPanel({
                     onCheckedChange={(checked) =>
                       handleAmenityToggle(amenity.id, checked as boolean)
                     }
-                    className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                   />
                   <span className="text-lg">{amenity.icon}</span>
-                  <span className="text-sm font-medium flex-1">{amenity.label}</span>
+                  <span className="text-sm font-medium flex-1 text-foreground">{amenity.label}</span>
                 </label>
               ))}
             </div>
@@ -374,14 +374,14 @@ export function HostelFiltersPanel({
           {/* Other Amenities */}
           {otherAmenities.length > 0 && (
             <div className="space-y-2">
-              <Label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 More Options
               </Label>
               <div className="space-y-2">
                 {otherAmenities.map((amenity) => (
                   <label
                     key={amenity.id}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer group"
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer group"
                   >
                     <Checkbox
                       id={`amenity-${amenity.id}`}
@@ -389,10 +389,10 @@ export function HostelFiltersPanel({
                       onCheckedChange={(checked) =>
                         handleAmenityToggle(amenity.id, checked as boolean)
                       }
-                      className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                      className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                     />
                     <span className="text-base">{amenity.icon}</span>
-                    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                    <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground">
                       {amenity.label}
                     </span>
                   </label>
@@ -404,13 +404,13 @@ export function HostelFiltersPanel({
       </div>
 
       {/* Footer - Sticky */}
-      <div className="sticky bottom-0 bg-white border-t px-6 py-4">
+      <div className="sticky bottom-0 bg-background border-t px-6 py-4">
         <div className="flex items-center gap-3">
           {hasActiveFilters && (
             <Button
               variant="outline"
               onClick={onClearFilters}
-              className="flex-1 h-11 font-semibold border-gray-300 hover:bg-gray-50"
+              className="flex-1 h-11 font-semibold border-border hover:bg-muted"
             >
               Clear all
             </Button>
@@ -418,7 +418,7 @@ export function HostelFiltersPanel({
           <Button
             onClick={onClose}
             className={cn(
-              "h-11 font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md",
+              "h-11 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md",
               hasActiveFilters ? "flex-1" : "w-full"
             )}
           >

@@ -1,16 +1,34 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { techSupportApi } from '@/features/support/api/tech-support';
+import * as supportApi from '@/features/support/api/support'; // Import student-facing API
 import { queryKeys } from '@/lib/react-query/query-keys';
-import type { 
-  TechSupportUser, 
-  TechSupportHostel, 
-  TechSupportTicket,
-  TechSupportTransaction,
-  TechSupportMessage,
-  TechSupportLog
-} from '@/features/support/api/tech-support'; // Import types from API file where they are defined
+import { toast } from 'sonner';
 
-// --- HOOKS ---
+// --- STUDENT HOOKS ---
+
+export const useMySupportTickets = (filters?: any) => {
+  return useQuery({
+    queryKey: ['support', 'my-tickets', filters],
+    queryFn: () => supportApi.getTickets(filters),
+    staleTime: 1000 * 60 * 2,
+  });
+};
+
+export const useCreateTicket = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: supportApi.createTicket,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['support', 'my-tickets'] });
+            toast.success('Ticket created successfully');
+        },
+        onError: () => {
+            toast.error('Failed to create ticket');
+        }
+    });
+};
+
+// --- TECH SUPPORT HOOKS ---
 
 export const useSupportUsers = (params?: any) => {
   return useQuery({
@@ -63,13 +81,7 @@ export const useSupportLogs = (params?: any) => {
 export const useTicketReplies = (ticketId: string) => {
   return useQuery({
     queryKey: ['support', 'tickets', ticketId, 'replies'],
-    queryFn: async () => {
-        // Importing dynamically or assuming it's available via relative import to support.ts 
-        // But support.ts is in ../api/support.ts while tech-support.ts is ../api/tech-support.ts
-        // Let's import from the module we modified.
-        const { getTicketReplies } = await import('../api/support'); 
-        return getTicketReplies(ticketId);
-    },
+    queryFn: () => supportApi.getTicketReplies(ticketId),
     enabled: !!ticketId,
   });
 };
@@ -78,8 +90,7 @@ export const useAddTicketReply = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ ticketId, message }: { ticketId: string; message: string }) => {
-        const { addTicketReply } = await import('../api/support');
-        return addTicketReply(ticketId, message, true); // isInternal defaults to true for support agents? Or false if it's a reply TO user. Let's assume false (public reply).
+        return supportApi.addTicketReply(ticketId, message, false);
     },
     onSuccess: (_, variables) => {
        queryClient.invalidateQueries({ queryKey: ['support', 'tickets', variables.ticketId, 'replies'] });
@@ -91,15 +102,10 @@ export const useAddTicketReply = () => {
   });
 };
 
-import { toast } from 'sonner';
-
 export const useSupportTicket = (ticketId: string) => {
-   // Assuming a getTicketById exists or reusing useSupportTickets with filter
-   // Or better, fetching single ticket.
-   // Let's implement a quick query for it.
    return useQuery({
-     queryKey: ['tech-support', 'tickets', ticketId],
-     queryFn: () => techSupportApi.getLogs({ ticket_id: ticketId }).then(res => res?.data ? res.data[0] : null), // Safely access data
+     queryKey: ['support', 'tickets', ticketId],
+     queryFn: () => supportApi.getTicket(ticketId),
      enabled: !!ticketId
    });
 };
@@ -107,14 +113,12 @@ export const useSupportTicket = (ticketId: string) => {
 export const useUpdateTicketStatus = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async ({ ticketId, status }: { ticketId: string; status: string }) => {
-            // Placeholder: implement update status API call
-            // await techSupportApi.updateTicketStatus(ticketId, status);
-            console.log('Update ticket status', ticketId, status);
-            return Promise.resolve({ success: true });
+        mutationFn: async ({ ticketId, status }: { ticketId: string; status: any }) => {
+            await supportApi.updateTicketStatus(ticketId, status);
         },
         onSuccess: () => {
              queryClient.invalidateQueries({ queryKey: ['tech-support', 'tickets'] });
+             queryClient.invalidateQueries({ queryKey: ['support', 'my-tickets'] });
              toast.success('Ticket status updated');
         }
     });

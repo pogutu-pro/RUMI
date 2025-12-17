@@ -86,7 +86,34 @@ export function useAuth() {
     isAuthenticated, 
     login,
     logout,
-    setProfile: storeSetProfile
+    setProfile: storeSetProfile,
+    uploadPhoto: async (file: File) => {
+        const response = await authApi.uploadProfilePicture(file);
+        // Safely access avatar from profile
+        const newAvatar = (response.profile as any)?.avatar || response.user?.avatar;
+        
+        // Update user state with new avatar
+        storeLogin({
+            user: { ...user!, avatar: newAvatar },
+             profile: response.profile,
+             accessToken: getAccessToken() || '', 
+             refreshToken: '', 
+        });
+        // Also invalidate queries
+        queryClient.invalidateQueries({ queryKey: ['profile'] });
+        queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
+    updateProfile: async (data: any) => {
+         const response = await authApi.updateProfile(data);
+          storeLogin({
+            user: { ...user!, ...data }, // Optimistic update or waiting for response
+            profile: response.profile,
+            accessToken: getAccessToken() || '',
+            refreshToken: '',
+        });
+        queryClient.invalidateQueries({ queryKey: ['profile'] });
+        queryClient.invalidateQueries({ queryKey: ['user'] });
+    }
   };
 }
 
@@ -104,9 +131,9 @@ function useAuthSuccess() {
     // 1. Update Store
     login({
       user: response.user,
-      profile: response.profile || undefined, // Adapt nullable to optional if needed
-      accessToken: response.access_token,
-      refreshToken: response.refresh_token,
+      profile: response.profile || undefined, 
+      accessToken: response.access,
+      refreshToken: response.refresh,
     });
 
     // 2. Set user role cookie for middleware

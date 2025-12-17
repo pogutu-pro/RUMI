@@ -8,8 +8,20 @@ export const useConversations = () => {
   return useQuery({
     queryKey: queryKeys.messaging.conversations(),
     queryFn: async () => {
-      const response = await messagesApi.getConversations();
-      return response.data;
+      try {
+        const response = await messagesApi.getConversations();
+        return response.data;
+      } catch (error) {
+        console.warn('Failed to fetch conversations (Endpoint might be missing)', error);
+        return { 
+          data: [], 
+          current_page: 1, 
+          total_pages: 1, 
+          count: 0, 
+          next: null, 
+          previous: null 
+        };
+      }
     },
     staleTime: 1000 * 60,
   });
@@ -19,9 +31,14 @@ export const useMessages = (conversationId: string | null) => {
   return useQuery({
     queryKey: queryKeys.messaging.detail(conversationId || ''),
     queryFn: async () => {
-      if (!conversationId) return [];
-      const response = await messagesApi.getMessages(conversationId);
-      return response.data;
+      if (!conversationId) return { data: [], current_page: 1, total_pages: 1, count: 0 };
+      try {
+        const response = await messagesApi.getMessages(conversationId);
+        return response.data;
+      } catch (error) {
+        console.warn('Failed to fetch messages (Endpoint might be missing)', error);
+        return { data: [], current_page: 1, total_pages: 1, count: 0 };
+      }
     },
     enabled: !!conversationId,
     staleTime: 1000 * 30,

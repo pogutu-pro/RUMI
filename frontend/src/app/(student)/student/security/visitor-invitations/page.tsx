@@ -5,6 +5,7 @@ import { UserPlus, Calendar, Clock, User, Phone, IdCard, Search, CheckCircle, XC
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { cn } from '@/lib/utils';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -90,14 +91,14 @@ export default function VisitorInvitationsPage() {
 
   const getStatusBadge = (status: VisitorInvitation['status']) => {
     const variants = {
-      pending: { label: 'Pending Arrival', className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400' },
-      checked_in: { label: 'In Hostel', className: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
-      checked_out: { label: 'Checked Out', className: 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400' },
-      expired: { label: 'Expired', className: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' },
+      pending: { label: 'Pending Arrival', className: 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800' },
+      checked_in: { label: 'In Hostel', className: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' },
+      checked_out: { label: 'Checked Out', className: 'bg-muted text-muted-foreground border-border' },
+      expired: { label: 'Expired', className: 'bg-destructive/15 text-destructive border-destructive/20' },
     };
     
     const variant = variants[status];
-    return <Badge className={variant.className}>{variant.label}</Badge>;
+    return <Badge variant="outline" className={cn("border", variant.className)}>{variant.label}</Badge>;
   };
 
   return (
@@ -226,32 +227,32 @@ export default function VisitorInvitationsPage() {
 
       {/* Statistics Cards */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
+        <Card className="bg-gradient-to-br from-background to-muted/50 border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Pending Arrivals</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-amber-600 dark:text-amber-400">{stats.pending}</div>
+            <div className="text-3xl font-bold text-foreground">{stats.pending}</div>
             <p className="text-xs text-muted-foreground mt-1">Waiting for check-in</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-background to-muted/50 border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Currently Visiting</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.active}</div>
+            <div className="text-3xl font-bold text-primary">{stats.active}</div>
             <p className="text-xs text-muted-foreground mt-1">In the hostel now</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-background to-muted/50 border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Invitations</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats.total}</div>
+            <div className="text-3xl font-bold text-foreground">{stats.total}</div>
             <p className="text-xs text-muted-foreground mt-1">All time</p>
           </CardContent>
         </Card>
@@ -348,17 +349,17 @@ export default function VisitorInvitationsPage() {
       </Card>
 
       {/* Info Card */}
-      <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
+      <Card className="border-primary/20 bg-primary/5">
         <CardContent className="pt-6">
           <div className="flex gap-3">
             <div className="mt-0.5">
-              <IdCard className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <IdCard className="h-5 w-5 text-primary" />
             </div>
             <div className="space-y-2 text-sm">
-              <p className="font-semibold text-blue-900 dark:text-blue-100">
+              <p className="font-semibold text-foreground">
                 How Visitor Invitations Work
               </p>
-              <ul className="space-y-1 text-blue-800 dark:text-blue-200">
+              <ul className="space-y-1 text-muted-foreground">
                 <li>• Fill in visitor details including ID number and expected arrival time</li>
                 <li>• Caretaker will check them in when they arrive at the gate</li>
                 <li>• Caretaker will check them out when they leave</li>

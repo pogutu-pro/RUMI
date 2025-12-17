@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Building2, MessageSquare, User, Menu, Bell, CreditCard, Settings, Star, Users, ArrowRightLeft } from 'lucide-react';
+import { Home, Building2, MessageSquare, User, Menu, Bell, CreditCard, Settings, Star, Users, ArrowRightLeft, CalendarCheck, UserCheck, LifeBuoy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -11,27 +11,21 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-interface NavItem {
-  icon: React.ElementType;
-  label: string;
-  href: string;
-  badge?: number;
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { icon: Home, label: 'Dashboard', href: '/student/dashboard' },
-  { icon: Building2, label: 'My Hostel', href: '/student/bookings/active' },
-  { icon: MessageSquare, label: 'Messages', href: '/student/messages' },
-  { icon: User, label: 'Profile', href: '/student/profile' },
+const HOSTEL_MENU_ITEMS = [
+  { icon: CalendarCheck, label: 'Current Booking', href: '/student/bookings/active' },
+  { icon: Users, label: 'My Roommates', href: '/student/roommates' },
+  { icon: UserCheck, label: 'Check-In/Out', href: '/student/check-in' },
+  { icon: Building2, label: 'Browse Hostels', href: '/student/hostels' },
+  { icon: Star, label: 'Favorites', href: '/student/hostels/favorites' },
+  { icon: ArrowRightLeft, label: 'Transfers', href: '/student/transfers' },
 ];
 
-const SECONDARY_MENU_ITEMS = [
+const MORE_MENU_ITEMS = [
+  { icon: MessageSquare, label: 'Messages', href: '/student/messages' },
+  { icon: User, label: 'Profile', href: '/student/profile' },
   { icon: Bell, label: 'Notifications', href: '/student/notifications' },
-  { icon: CreditCard, label: 'Payments', href: '/student/payments' },
   { icon: Star, label: 'Reviews', href: '/student/reviews' },
-  { icon: MessageSquare, label: 'Support', href: '/student/support' },
-  { icon: Users, label: 'Roommates', href: '/student/roommates' },
-  { icon: ArrowRightLeft, label: 'Transfers', href: '/student/transfers' },
+  { icon: LifeBuoy, label: 'Support', href: '/student/support' },
   { icon: Settings, label: 'Settings', href: '/student/settings' },
 ];
 
@@ -39,7 +33,10 @@ export function StudentBottomNav() {
   const pathname = usePathname();
   const [isVisible, setIsVisible] = React.useState(true);
   const [lastScrollY, setLastScrollY] = React.useState(0);
-  const [isOpen, setIsOpen] = React.useState(false);
+  
+  // State for sheets
+  const [isHostelOpen, setIsHostelOpen] = React.useState(false);
+  const [isMoreOpen, setIsMoreOpen] = React.useState(false);
 
   // Auto-hide on scroll down, show on scroll up
   React.useEffect(() => {
@@ -66,184 +63,161 @@ export function StudentBottomNav() {
   }, [lastScrollY]);
 
   const is_active = (href: string) => {
-    if (href === '/student/dashboard') {
-      return pathname === href;
-    }
+    if (href === '/student/dashboard') return pathname === href;
     return pathname?.startsWith(href);
   };
+
+  const NavLink = ({ item, active }: { item: any, active: boolean }) => (
+    <Link
+      href={item.href}
+      className={cn(
+        'flex flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 transition-transform duration-100 min-w-[64px] h-full w-full',
+        'active:scale-95 touch-manipulation transform-gpu',
+        active && 'bg-primary/10'
+      )}
+    >
+      <div className="relative will-change-transform">
+        <item.icon 
+          className={cn(
+            'h-6 w-6 transition-transform duration-200',
+            active ? 'text-primary scale-110' : 'text-muted-foreground'
+          )}
+          strokeWidth={active ? 2.5 : 2}
+        />
+      </div>
+      <span className={cn(
+        'text-[11px] font-medium',
+        active ? 'text-primary font-semibold' : 'text-muted-foreground'
+      )}>
+        {item.label}
+      </span>
+    </Link>
+  );
+
+  const MenuButton = ({ icon: Icon, label, isOpen, onClick }: { icon: any, label: string, isOpen: boolean, onClick: () => void }) => (
+    <button
+      onClick={onClick}
+      className={cn(
+        'flex flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 transition-all duration-200 min-w-[64px] h-full w-full',
+        'active:scale-95 touch-manipulation',
+        isOpen && 'bg-primary/10'
+      )}
+    >
+      <Icon 
+        className={cn(
+          'h-6 w-6 transition-all duration-200',
+          isOpen ? 'text-primary scale-110' : 'text-muted-foreground'
+        )}
+        strokeWidth={isOpen ? 2.5 : 2}
+      />
+      <span className={cn(
+        'text-[11px] font-medium transition-all duration-200',
+        isOpen ? 'text-primary font-semibold' : 'text-muted-foreground'
+      )}>
+        {label}
+      </span>
+    </button>
+  );
+
+  const MenuSheet = ({ title, items, isOpen, onOpenChange }: { title: string, items: any[], isOpen: boolean, onOpenChange: (open: boolean) => void }) => (
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="h-[60vh] rounded-t-3xl p-0 ring-0 focus:ring-0 outline-none">
+        <SheetHeader className="sr-only">
+          <SheetTitle>{title}</SheetTitle>
+          <SheetDescription>Navigation options</SheetDescription>
+        </SheetHeader>
+        
+        <div className="p-4 border-b border-border flex items-center justify-center bg-muted/20 rounded-t-3xl">
+          <div className="w-12 h-1.5 bg-muted-foreground/20 rounded-full" />
+        </div>
+
+        <ScrollArea className="h-full pb-8">
+          <div className="p-4 grid grid-cols-2 gap-3">
+            {items.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={() => onOpenChange(false)}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border bg-card hover:bg-accent/50 transition-all duration-200 active:scale-95",
+                  pathname?.startsWith(item.href) ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20" : "border-border/50"
+                )}
+              >
+                <div className={cn(
+                  "p-3 rounded-full bg-background shadow-sm",
+                  pathname?.startsWith(item.href) ? "text-primary" : "text-muted-foreground"
+                )}>
+                  <item.icon className="w-6 h-6" />
+                </div>
+                <span className="text-xs font-semibold text-center">{item.label}</span>
+              </Link>
+            ))}
+          </div>
+        </ScrollArea>
+      </SheetContent>
+    </Sheet>
+  );
 
   return (
     <>
       {/* Spacer */}
-      <div className="h-16 md:hidden" aria-hidden="true" />
+      <div className="h-20 md:hidden" aria-hidden="true" />
       
       <nav 
         className={cn(
           'fixed bottom-0 left-0 right-0 z-50 md:hidden',
-          'bg-background border-t border-border',
+          'bg-background/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)]',
           'transition-transform duration-300 ease-in-out transform-gpu will-change-transform',
           isVisible ? 'translate-y-0' : 'translate-y-full'
         )}
         style={{
           paddingBottom: 'max(env(safe-area-inset-bottom), 0.5rem)',
-          contain: 'paint layout'
         }}
       >
-        <div className="flex items-center justify-around px-2 py-2">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const active = is_active(item.href);
-            
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 transition-transform duration-100 min-w-[64px]',
-                  'active:scale-95 touch-manipulation transform-gpu',
-                  active && 'bg-primary/10'
-                )}
-              >
-                <div className="relative will-change-transform">
-                  <Icon 
-                    className={cn(
-                      'h-6 w-6 transition-transform duration-200',
-                      active 
-                        ? 'text-primary scale-110' 
-                        : 'text-muted-foreground'
-                    )}
-                    strokeWidth={active ? 2.5 : 2}
-                  />
-                  {item.badge && item.badge > 0 && (
-                    <Badge 
-                      className="absolute -top-1 -right-1 h-4 min-w-4 p-0 flex items-center justify-center text-[10px] bg-red-500 text-white border-2 border-background"
-                    >
-                      {item.badge > 99 ? '99+' : item.badge}
-                    </Badge>
-                  )}
-                </div>
-                <span 
-                  className={cn(
-                    'text-[11px] font-medium',
-                    active 
-                      ? 'text-primary font-semibold' 
-                      : 'text-muted-foreground'
-                  )}
-                >
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
+        <div className="grid grid-cols-4 h-[68px] items-center px-2">
+          {/* 1. Home */}
+          <NavLink 
+            item={{ label: 'Home', href: '/student/dashboard', icon: Home }} 
+            active={is_active('/student/dashboard')} 
+          />
 
-          {/* More Menu */}
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-              <button
-                className={cn(
-                  'flex flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 transition-all duration-200 min-w-[64px]',
-                  'active:scale-95 touch-manipulation',
-                  isOpen && 'bg-primary/10'
-                )}
-              >
-                <Menu 
-                  className={cn(
-                    'h-6 w-6 transition-all duration-200',
-                    isOpen ? 'text-primary scale-110' : 'text-muted-foreground'
-                  )}
-                  strokeWidth={isOpen ? 2.5 : 2}
-                />
-                <span 
-                  className={cn(
-                    'text-[11px] font-medium transition-all duration-200',
-                    isOpen ? 'text-primary font-semibold' : 'text-muted-foreground'
-                  )}
-                >
-                  More
-                </span>
-              </button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="h-[70vh] rounded-t-3xl p-0">
-              <SheetHeader className="sr-only">
-                <SheetTitle>Student Menu</SheetTitle>
-                <SheetDescription>Additional navigation options</SheetDescription>
-              </SheetHeader>
-              
-              <div className="p-4 border-b border-border flex items-center justify-center">
-                <div className="w-12 h-1.5 bg-muted-foreground/20 rounded-full" />
-              </div>
+          {/* 2. Hostel Menu */}
+          <div>
+            <MenuButton 
+              icon={Building2} 
+              label="Hostel" 
+              isOpen={isHostelOpen} 
+              onClick={() => setIsHostelOpen(true)} 
+            />
+            <MenuSheet 
+              title="Hostel Options" 
+              items={HOSTEL_MENU_ITEMS} 
+              isOpen={isHostelOpen} 
+              onOpenChange={setIsHostelOpen} 
+            />
+          </div>
 
-              <ScrollArea className="h-full pb-20">
-                <div className="p-6 space-y-6">
-                  {/* User Info */}
-                  <div className="flex items-center gap-4 p-4 rounded-lg bg-primary/5 border border-primary/10">
-                    <Avatar className="h-14 w-14">
-                      <AvatarImage src="/images/avatars/default.jpg" />
-                      <AvatarFallback className="bg-primary/10 text-primary font-semibold text-lg">
-                        ST
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold text-base">Student Account</p>
-                      <p className="text-sm text-muted-foreground">Manage your hostel life</p>
-                    </div>
-                  </div>
+          {/* 3. Payments */}
+          <NavLink 
+            item={{ label: 'Payments', href: '/student/payments', icon: CreditCard }} 
+            active={is_active('/student/payments')} 
+          />
 
-                  <Separator />
-
-                  {/* Quick Access */}
-                  <div className="space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-2">
-                      Quick Access
-                    </p>
-                    {SECONDARY_MENU_ITEMS.map((item) => {
-                      const Icon = item.icon;
-                      const active = pathname?.startsWith(item.href);
-                      
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setIsOpen(false)}
-                          className={cn(
-                            'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200',
-                            active
-                              ? 'bg-primary/10 text-primary font-semibold'
-                              : 'hover:bg-muted text-foreground'
-                          )}
-                        >
-                          <Icon className="h-5 w-5" />
-                          <span>{item.label}</span>
-                        </Link>
-                      );
-                    })}
-                  </div>
-
-                  <Separator />
-
-                  {/* Additional Links */}
-                  <div className="space-y-2">
-                    <Link
-                      href="/student/hostels"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors"
-                    >
-                      <Building2 className="h-5 w-5" />
-                      <span>Browse Hostels</span>
-                    </Link>
-                    <Link
-                      href="/student/hostels/favorites"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors"
-                    >
-                      <Star className="h-5 w-5" />
-                      <span>My Favorites</span>
-                    </Link>
-                  </div>
-                </div>
-              </ScrollArea>
-            </SheetContent>
-          </Sheet>
+          {/* 4. More Menu */}
+          <div>
+            <MenuButton 
+              icon={Menu} 
+              label="More" 
+              isOpen={isMoreOpen} 
+              onClick={() => setIsMoreOpen(true)} 
+            />
+            <MenuSheet 
+              title="More Options" 
+              items={MORE_MENU_ITEMS} 
+              isOpen={isMoreOpen} 
+              onOpenChange={setIsMoreOpen} 
+            />
+          </div>
         </div>
       </nav>
     </>

@@ -40,26 +40,52 @@ import { motion } from 'framer-motion';
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
-  const { data: dashboardData } = useStudentDashboard();
+  // const { data: dashboardData } = useStudentDashboard(); // calculate locally instead
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
 
-  // Use real profile completion from dashboard API, fallback to 0
-  const profileCompletion = dashboardData?.profileCompletion ?? 0;
+  // Calculate profile completion dynamically
+  const profileCompletion = React.useMemo(() => {
+    if (!user) return 0;
+    let score = 0;
+    const totalWeight = 100;
+    
+    // Basic Info (40%)
+    if (user.first_name) score += 10;
+    if (user.last_name) score += 10;
+    if (user.email) score += 10;
+    if (user.phone_number) score += 10;
+    
+    // Profile Picture (20%)
+    if (user.avatar || (user as any).profile?.avatar) score += 20;
+
+    // Check for educational details
+    if ((user as any).university) score += 20;
+    if ((user as any).student_id) score += 20;
+
+    // Cap at 100
+    // Simplify for now: Just check basic fields
+    const filledFields = [
+        user.first_name, 
+        user.last_name, 
+        user.email, 
+        user.phone_number,
+        user.avatar
+    ].filter(Boolean).length;
+    
+    return Math.min(Math.round((filledFields / 5) * 100), 100);
+  }, [user]);
 
   const handleLogout = () => {
     logout();
-    // Redirect handled by logout function
     if (typeof window !== 'undefined') {
       window.location.href = '/login';
     }
   };
 
   const handleDeleteAccount = () => {
-    // TODO: Connect to actual delete account API
-    // For now, show confirmation and logout
+    // TODO: Implement account deletion API when available
     console.log('Delete account requested');
     setShowDeleteDialog(false);
-    // After API call succeeds, logout
     logout();
     if (typeof window !== 'undefined') {
       window.location.href = '/';
@@ -72,45 +98,35 @@ export default function ProfilePage() {
       title: 'Personal Information',
       description: 'Update your name, email, and contact details',
       href: '/student/profile/edit',
-      completion: 100,
-      color: 'text-blue-600 dark:text-blue-400',
-      bgColor: 'bg-blue-100 dark:bg-blue-900/20',
+      completion: user?.first_name && user?.last_name && user?.email ? 100 : 50,
     },
     {
       icon: School,
       title: 'Student Details',
       description: 'University, program, and year of study',
       href: '/student/profile/student-info',
-      completion: 80,
-      color: 'text-purple-600 dark:text-purple-400',
-      bgColor: 'bg-purple-100 dark:bg-purple-900/20',
+      completion: (user as any)?.university ? 100 : 0,
     },
     {
       icon: Settings,
       title: 'Preferences',
       description: 'Roommate matching and living preferences',
       href: '/student/profile/preferences',
-      completion: 60,
-      color: 'text-amber-600 dark:text-amber-400',
-      bgColor: 'bg-amber-100 dark:bg-amber-900/20',
+      completion: 0, 
     },
     {
       icon: Bell,
       title: 'Notifications',
       description: 'Manage email, SMS, and push notifications',
-      href: '/student/settings?tab=notifications',
-      completion: 50,
-      color: 'text-pink-600 dark:text-pink-400',
-      bgColor: 'bg-pink-100 dark:bg-pink-900/20',
+      href: '/student/notifications',
+      completion: 100,
     },
     {
       icon: Shield,
       title: 'Privacy & Security',
       description: 'Password, 2FA, and privacy settings',
-      href: '/student/profile/security',
-      completion: 70,
-      color: 'text-emerald-600 dark:text-emerald-400',
-      bgColor: 'bg-emerald-100 dark:bg-emerald-900/20',
+      href: '/student/settings',
+      completion: 100,
     },
     {
       icon: CreditCard,
@@ -118,8 +134,6 @@ export default function ProfilePage() {
       description: 'Manage cards, M-PESA, and billing info',
       href: '/student/payments/methods',
       completion: 100,
-      color: 'text-cyan-600 dark:text-cyan-400',
-      bgColor: 'bg-cyan-100 dark:bg-cyan-900/20',
     },
   ];
 
@@ -146,56 +160,45 @@ export default function ProfilePage() {
       className="space-y-8 pb-10"
     >
       {/* Header Section */}
-      <motion.div variants={item} className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-900 dark:to-teal-900 p-8 text-white shadow-xl">
-        <div className="absolute top-0 right-0 p-4 opacity-10">
-          <User className="w-64 h-64" />
-        </div>
-        
-        <div className="relative z-10 flex flex-col md:flex-row gap-6 items-center md:items-start">
+      <motion.div variants={item} className="relative rounded-3xl overflow-hidden bg-card border shadow-sm p-8">
+        {/* Abstract Background Decoration */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-secondary/5 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center md:items-start">
           <div className="relative">
-            <Avatar className="h-32 w-32 border-4 border-white/20 shadow-2xl">
+            <Avatar className="h-32 w-32 border-4 border-background shadow-xl">
               <AvatarImage src={user?.avatar} className="object-cover" />
-              <AvatarFallback className="bg-white/10 text-white text-4xl font-bold backdrop-blur-sm">
+              <AvatarFallback className="bg-primary/10 text-primary text-4xl font-bold">
                 {user?.first_name?.[0]}
                 {user?.last_name?.[0]}
               </AvatarFallback>
             </Avatar>
-            <div className="absolute bottom-2 right-2 bg-emerald-500 rounded-full p-1.5 border-2 border-white shadow-lg">
+            <div className="absolute bottom-2 right-2 bg-emerald-500 rounded-full p-1.5 border-2 border-background shadow-sm">
               <CheckCircle2 className="w-4 h-4 text-white" />
             </div>
           </div>
           
           <div className="flex-1 text-center md:text-left space-y-2">
             <div className="flex flex-col md:flex-row items-center gap-3">
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
                 {user?.first_name} {user?.last_name}
               </h1>
-              <Badge className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-md">
+              <Badge variant="secondary" className="backdrop-blur-md">
                 <Award className="w-3 h-3 mr-1" />
                 Student
               </Badge>
             </div>
             
-            <p className="text-emerald-100 text-lg font-medium flex items-center justify-center md:justify-start gap-2">
+            <p className="text-muted-foreground text-lg font-medium flex items-center justify-center md:justify-start gap-2">
               <Mail className="w-4 h-4" /> {user?.email}
             </p>
-            
-            <div className="flex flex-wrap justify-center md:justify-start gap-3 pt-2">
-              <div className="flex items-center gap-1.5 text-sm text-emerald-50 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm">
-                <MapPin className="w-3.5 h-3.5" />
-                Nairobi, Kenya
-              </div>
-              <div className="flex items-center gap-1.5 text-sm text-emerald-50 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm">
-                <Calendar className="w-3.5 h-3.5" />
-                Joined {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Recently'}
-              </div>
-            </div>
-          </div>
+
 
           <div className="flex flex-col gap-3 min-w-[200px]">
             <Button 
               asChild 
-              className="bg-white text-emerald-700 hover:bg-emerald-50 border-0 shadow-lg font-semibold"
+              className="font-semibold shadow-md"
             >
               <Link href="/student/profile/edit">
                 <Edit className="w-4 h-4 mr-2" />
@@ -205,7 +208,7 @@ export default function ProfilePage() {
             <Button 
               asChild 
               variant="outline" 
-              className="bg-transparent text-white border-white/30 hover:bg-white/10 hover:text-white"
+              className="bg-background/50 backdrop-blur-sm hover:bg-muted"
             >
               <Link href="/student/settings">
                 <Settings className="w-4 h-4 mr-2" />
@@ -224,7 +227,9 @@ export default function ProfilePage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-semibold flex items-center justify-between">
                 Profile Strength
-                <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{profileCompletion}%</span>
+                <span className={cn("text-2xl font-bold", profileCompletion === 100 ? "text-primary" : "text-amber-500")}>
+                  {profileCompletion}%
+                </span>
               </CardTitle>
               <CardDescription>Complete your profile to get better matches</CardDescription>
             </CardHeader>
@@ -232,7 +237,7 @@ export default function ProfilePage() {
               <Progress value={profileCompletion} className="h-3 mb-4" />
               <div className="space-y-3">
                 {profileCompletion < 100 && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20">
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
                     <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Action Required</p>
@@ -279,7 +284,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">University</p>
-                    <p className="text-xs text-muted-foreground">Not set</p>
+                    <p className="text-xs text-muted-foreground">{(user as any)?.university || 'Not set'}</p>
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0" asChild>
@@ -297,15 +302,15 @@ export default function ProfilePage() {
             <div className="grid gap-4 sm:grid-cols-2">
               {settingsSections.map((section) => (
                 <Link key={section.title} href={section.href}>
-                  <Card className="h-full hover:shadow-lg transition-all duration-300 border-muted hover:border-emerald-200 dark:hover:border-emerald-800 group overflow-hidden relative">
-                    <div className={cn("absolute top-0 left-0 w-1 h-full transition-all duration-300 opacity-0 group-hover:opacity-100", section.bgColor.replace('/20', ''))} />
+                  <Card className="h-full hover:shadow-lg transition-all duration-300 border-muted hover:border-primary/50 group overflow-hidden relative">
+                    <div className="absolute top-0 left-0 w-1 h-full transition-all duration-300 opacity-0 group-hover:opacity-100 bg-primary" />
                     <CardContent className="p-5">
                       <div className="flex items-start justify-between mb-4">
-                        <div className={cn("p-3 rounded-xl transition-transform group-hover:scale-110 duration-300", section.color.replace('text-', 'bg-').replace('600', '100').replace('400', '900/30'))}>
-                          <section.icon className={cn("w-6 h-6", section.color)} />
+                        <div className="p-3 rounded-xl transition-transform group-hover:scale-110 duration-300 bg-primary/5 text-primary">
+                          <section.icon className="w-6 h-6" />
                         </div>
                         {section.completion === 100 ? (
-                          <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                          <Badge variant="secondary" className="bg-primary/10 text-primary">
                             Complete
                           </Badge>
                         ) : (
@@ -315,7 +320,7 @@ export default function ProfilePage() {
                         )}
                       </div>
                       
-                      <h3 className="font-semibold text-lg mb-1 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                      <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">
                         {section.title}
                       </h3>
                       <p className="text-sm text-muted-foreground mb-4 line-clamp-2">

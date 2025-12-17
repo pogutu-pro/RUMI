@@ -58,11 +58,11 @@ function ReviewWritingModal({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="fixed inset-x-4 top-1/2 -translate-y-1/2 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl z-50"
           >
-            <Card className="shadow-2xl border-0 overflow-hidden">
-              <CardHeader className="relative pb-4 bg-gradient-to-br from-emerald-50 to-green-50">
+            <Card className="shadow-2xl border-0 overflow-hidden bg-background">
+              <CardHeader className="relative pb-4 bg-muted/30 border-b border-border/50">
                 <button
                   onClick={onClose}
-                  className="absolute top-4 right-4 p-2 rounded-full hover:bg-background/80 transition-colors"
+                  className="absolute top-4 right-4 p-2 rounded-full hover:bg-muted transition-colors"
                 >
                   <X className="h-5 w-5 text-muted-foreground" />
                 </button>
@@ -114,7 +114,7 @@ function ReviewWritingModal({
                           }}
                           className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all font-medium ${
                             selectedTags.includes(tag.id)
-                              ? 'bg-emerald-50 border-emerald-400 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                              ? 'bg-primary/10 border-primary text-primary'
                               : 'bg-card border-border text-muted-foreground hover:border-primary/50'
                           }`}
                         >
@@ -137,7 +137,7 @@ function ReviewWritingModal({
                       <p className="text-sm font-medium text-foreground">
                         Share more details (optional)
                       </p>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                         {comment.length}/500
                       </span>
                     </div>
@@ -145,9 +145,9 @@ function ReviewWritingModal({
                       value={comment}
                       onChange={(e) => setComment(e.target.value.slice(0, 500))}
                       placeholder="What did you love? What could be improved? Help future students make informed decisions..."
-                      className="w-full min-h-[120px] p-4 border-2 border-border bg-background rounded-xl focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50 transition-all resize-none text-foreground placeholder:text-muted-foreground"
+                      className="w-full min-h-[120px] p-4 border-2 border-border bg-background rounded-xl focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all resize-none text-foreground placeholder:text-muted-foreground"
                     />
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       Tip: Detailed reviews (50+ characters) are most helpful! 💡
                     </p>
                   </motion.div>
@@ -156,7 +156,7 @@ function ReviewWritingModal({
                 {/* Submit */}
                 <Button
                   disabled={rating === 0}
-                  className="w-full h-12 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-semibold rounded-xl shadow-lg"
+                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl shadow-lg"
                 >
                   Post Review ✨
                 </Button>
@@ -210,43 +210,43 @@ export default function ReviewsPage() {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200">
+        <Card className="bg-primary/5 border-primary/20">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-emerald-100 rounded-full">
-                <Star className="h-6 w-6 text-emerald-600 fill-emerald-600" />
+              <div className="p-3 bg-primary/10 rounded-full">
+                <Star className="h-6 w-6 text-primary fill-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-emerald-900">{avgRating}</p>
-                <p className="text-sm text-emerald-700">Average Rating</p>
+                <p className="text-2xl font-bold text-foreground">{avgRating}</p>
+                <p className="text-sm text-muted-foreground">Average Rating</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+        <Card className="bg-secondary/10 border-secondary/20">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-100 rounded-full">
-                <MessageSquare className="h-6 w-6 text-blue-600" />
+              <div className="p-3 bg-secondary/20 rounded-full">
+                <MessageSquare className="h-6 w-6 text-secondary-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-blue-900">{totalReviews}</p>
-                <p className="text-sm text-blue-700">Reviews Written</p>
+                <p className="text-2xl font-bold text-foreground">{totalReviews}</p>
+                <p className="text-sm text-muted-foreground">Reviews Written</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
+        <Card className="bg-muted/30 border-border">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-amber-100 rounded-full">
-                <TrendingUp className="h-6 w-6 text-amber-600" />
+              <div className="p-3 bg-muted rounded-full">
+                <TrendingUp className="h-6 w-6 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-amber-900">{totalHelpful}</p>
-                <p className="text-sm text-amber-700">Helpful Votes</p>
+                <p className="text-2xl font-bold text-foreground">{totalHelpful}</p>
+                <p className="text-sm text-muted-foreground">Helpful Votes</p>
               </div>
             </div>
           </CardContent>
@@ -255,10 +255,10 @@ export default function ReviewsPage() {
 
       {/* Pending Reviews */}
       {pendingReviews.length > 0 && (
-        <Card className="border-2 border-emerald-200 bg-emerald-50/30 dark:bg-emerald-900/10">
+        <Card className="border-2 border-primary/20 bg-primary/5">
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <Award className="h-5 w-5 text-emerald-600" />
+              <Award className="h-5 w-5 text-primary" />
               Ready to Review
             </CardTitle>
           </CardHeader>
@@ -267,7 +267,7 @@ export default function ReviewsPage() {
               <motion.div
                 key={review.hostelId}
                 whileHover={{ scale: 1.01 }}
-                className="flex items-center gap-4 p-4 rounded-xl bg-card border border-emerald-100 dark:border-emerald-900 shadow-sm"
+                className="flex items-center gap-4 p-4 rounded-xl bg-background border border-border shadow-sm"
               >
                 <img
                   src={review.hostelImage}
@@ -282,7 +282,7 @@ export default function ReviewsPage() {
                 </div>
                 <Button
                   onClick={() => setIsModalOpen(true)}
-                  className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-md"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Write Review

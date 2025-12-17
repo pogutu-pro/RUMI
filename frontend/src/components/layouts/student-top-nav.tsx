@@ -79,6 +79,8 @@ export function StudentTopNav({
   isSidebarOpen,
   isMobile,
 }: StudentTopNavProps) {
+  // Use local isDesktop derived from isMobile inverse if needed, or rely on prop
+  const isDesktop = !isMobile;
   const router = useRouter();
   const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -136,13 +138,8 @@ export function StudentTopNav({
         "sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-md transition-all duration-300"
       )}
     >
-      {/* Toggle Button - Positioned at the edge of sidebar */}
-      <div 
-        className={cn(
-          "flex items-center justify-center shrink-0 transition-all duration-300",
-          !isMobile && (isSidebarOpen ? "w-72" : "w-20")
-        )}
-      >
+      {/* Toggle Button - Desktop Only */}
+      <div className="ml-4 hidden md:flex items-center justify-center shrink-0">
         <Button 
           variant="ghost" 
           size="icon" 
@@ -155,7 +152,7 @@ export function StudentTopNav({
       </div>
 
       {/* Zone 1: Branding - Logo + RUMI */}
-      <div className="flex items-center gap-2 mr-4">
+      <div className={cn("flex items-center gap-2 mr-4", !isDesktop && "ml-4")}>
         <Link href="/" className="flex items-center gap-2">
           <div className="relative h-8 w-8">
             <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" />
@@ -164,28 +161,59 @@ export function StudentTopNav({
         </Link>
       </div>
 
-      {/* Zone 2: Global Search */}
-      <div className="flex-1 flex justify-center">
-        <form onSubmit={handleSearch} className="w-full max-w-md">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search hostels, bookings, payments..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-20 bg-muted/50 border-muted-foreground/20 focus-visible:ring-emerald-500"
-            />
-            <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-              <span className="text-xs">⌘</span>K
-            </kbd>
-          </div>
-        </form>
+      {/* Zone 2: Global Search - Desktop: Visible, Mobile: Hidden (toggled) */}
+      <div className={cn(
+        "flex-1 flex justify-center transition-all duration-300",
+        isMobile && !isSearchExpanded ? "hidden" : "flex"
+      )}>
+        {(!isMobile || isSearchExpanded) && (
+          <form onSubmit={handleSearch} className={cn("w-full transition-all duration-300", isMobile ? "absolute left-0 top-0 h-16 bg-background px-4 flex items-center z-50 border-b animate-in fade-in slide-in-from-top-2" : "max-w-md")}>
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-20 bg-muted/50 border-muted-foreground/20 focus-visible:ring-emerald-500 rounded-full"
+              />
+               {isMobile && (
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                  onClick={() => setIsSearchExpanded(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+              {!isMobile && (
+                <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+              )}
+            </div>
+          </form>
+        )}
       </div>
 
       {/* Zone 3: Utilities */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mr-2 md:mr-0">
+         {/* Mobile Search Trigger */}
+         <div className="md:hidden">
+            <Button
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setIsSearchExpanded(true)}
+              className="shrink-0"
+            >
+              <Search className="h-5 w-5" />
+              <span className="sr-only">Search</span>
+            </Button>
+         </div>
+
         <ThemeToggle />
 
         <DropdownMenu>

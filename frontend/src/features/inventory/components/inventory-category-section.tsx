@@ -33,14 +33,14 @@ export function InventoryCategorySection({
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-2">
       <Card className={cn(
         "transition-all duration-200 border-l-4",
-        isComplete ? "border-l-green-500" : "border-l-muted"
+        isComplete ? "border-l-emerald-500" : "border-l-muted"
       )}>
         <CollapsibleTrigger asChild>
           <button className="flex items-center justify-between w-full p-4 hover:bg-muted/50 transition-colors rounded-t-lg">
             <div className="flex items-center gap-3">
               <div className={cn(
                 "p-2 rounded-lg",
-                isComplete ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary"
+                isComplete ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-primary/10 text-primary"
               )}>
                 <Icon className="h-5 w-5" />
               </div>
@@ -53,7 +53,7 @@ export function InventoryCategorySection({
             </div>
             <div className="flex items-center gap-3">
               {isComplete && (
-                <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-200">
+                <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20">
                   Completed
                 </Badge>
               )}

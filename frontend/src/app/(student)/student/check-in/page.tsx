@@ -173,7 +173,7 @@ export default function CheckInPage() {
         </div>
       </div>
 
-      <Alert className="bg-blue-50 text-blue-900 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-900">
+      <Alert className="bg-primary/5 text-primary border-primary/20">
         <CheckCircle2 className="h-4 w-4" />
         <AlertTitle>Important</AlertTitle>
         <AlertDescription>

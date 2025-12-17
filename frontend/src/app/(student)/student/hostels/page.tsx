@@ -20,8 +20,6 @@ export default function StudentHostelsPage() {
   const [debouncedSearch, setDebouncedSearch] = React.useState('');
   const [currentPage, setCurrentPage] = React.useState(1);
   const [filters, setFilters] = React.useState<FiltersState>({});
-  const [favorites, setFavorites] = React.useState<Set<number>>(new Set());
-
   // Debounce search
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -51,18 +49,6 @@ export default function StudentHostelsPage() {
     setCurrentPage(1);
   };
 
-  const toggleFavorite = (id: number) => {
-    setFavorites((prev) => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(id)) {
-        newFavorites.delete(id);
-      } else {
-        newFavorites.add(id);
-      }
-      return newFavorites;
-    });
-  };
-
   const totalPages = data ? Math.ceil(data.count / 20) : 0;
   const hasActiveFilters = Object.values(filters).some(
     (v) => v !== undefined && v !== '',
@@ -71,7 +57,7 @@ export default function StudentHostelsPage() {
   return (
     <div className="min-h-screen space-y-8 animate-in fade-in duration-500">
       {/* Hero Section */}
-      <div className="relative rounded-3xl overflow-hidden bg-card text-foreground p-8 md:p-12 lg:p-16 border">
+      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5 text-foreground p-8 md:p-12 lg:p-16 border border-border/50">
         <div className="relative z-10 max-w-3xl space-y-4">
           <Badge className="bg-primary/10 text-primary border-primary/20">
             <Home className="h-3 w-3 mr-1" />
@@ -195,8 +181,6 @@ export default function StudentHostelsPage() {
               <HostelCard
                 key={hostel.id}
                 hostel={hostel}
-                isFavorite={favorites.has(hostel.id)}
-                onFavoriteToggle={toggleFavorite}
                 basePath="/student/hostels"
               />
             ))}

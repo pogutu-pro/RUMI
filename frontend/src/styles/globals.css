@@ -382,52 +382,44 @@
   .card-base {
     border-radius: 0.75rem;
     border: 1px solid hsl(var(--border));
-    background-color: hsl(var(--card));
+    background-color: transparent; /* Changed from hsl(var(--card)) for better theme blending */
     color: hsl(var(--card-foreground));
-    box-shadow:
-      0 1px 3px 0 rgb(0 0 0 / 0.1),
-      0 1px 2px -1px rgb(0 0 0 / 0.1);
+    box-shadow: none; /* Removed default shadow for cleaner look */
     transition: box-shadow 0.3s ease-in-out;
   }
 
   .card-hover {
     border-radius: 0.75rem;
     border: 1px solid hsl(var(--border));
-    background-color: hsl(var(--card));
+    background-color: transparent;
     color: hsl(var(--card-foreground));
-    box-shadow:
-      0 1px 3px 0 rgb(0 0 0 / 0.1),
-      0 1px 2px -1px rgb(0 0 0 / 0.1);
-    transition: box-shadow 0.3s ease-in-out;
+    box-shadow: none;
+    transition: all 0.3s ease-in-out;
   }
 
   .card-hover:hover {
-    box-shadow:
-      0 4px 6px -1px rgb(0 0 0 / 0.1),
-      0 2px 4px -2px rgb(0 0 0 / 0.1);
+    background-color: hsl(var(--muted)/0.3); /* Subtle hover effect */
+    border-color: hsl(var(--primary)/0.2);
   }
 
   .card-interactive {
     border-radius: 0.75rem;
     border: 1px solid hsl(var(--border));
-    background-color: hsl(var(--card));
+    background-color: transparent;
     color: hsl(var(--card-foreground));
-    box-shadow:
-      0 1px 3px 0 rgb(0 0 0 / 0.1),
-      0 1px 2px -1px rgb(0 0 0 / 0.1);
+    box-shadow: none;
     transition: all 0.3s ease-in-out;
     cursor: pointer;
   }
 
   .card-interactive:hover {
-    box-shadow:
-      0 10px 15px -3px rgb(0 0 0 / 0.1),
-      0 4px 6px -4px rgb(0 0 0 / 0.1);
-    border-color: hsl(var(--primary) / 0.2);
+    background-color: hsl(var(--muted)/0.5);
+    border-color: hsl(var(--primary) / 0.5);
+    transform: translateY(-1px);
   }
 
   .card-interactive:active {
-    transform: scale(0.98);
+    transform: scale(0.99);
   }
 
   @keyframes fadeIn {

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useSupportTickets } from '@/features/support';
+import { useMySupportTickets } from '@/features/support';
 import { useStudentDashboard } from '@/features/student';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function SupportPage() {
-  const { data: tickets, isLoading: isLoadingTickets } = useSupportTickets();
+  const { data: tickets, isLoading: isLoadingTickets } = useMySupportTickets();
   const { data: dashboardData, isLoading: isLoadingDashboard } = useStudentDashboard();
 
   const openTickets = React.useMemo(() => {
@@ -60,14 +60,14 @@ export default function SupportPage() {
         <div className="lg:col-span-2 space-y-8">
           {/* Quick Stats */}
           <div className="grid gap-4 sm:grid-cols-3">
-            <Card className="bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/50">
+            <Card className="bg-primary/5 border-primary/20">
               <CardContent className="p-4 flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                   <AlertCircle className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{openTickets.length}</p>
-                  <p className="text-xs text-emerald-600/80 dark:text-emerald-400/70 font-medium uppercase tracking-wide">Open Tickets</p>
+                  <p className="text-2xl font-bold text-foreground">{openTickets.length}</p>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Open Tickets</p>
                 </div>
               </CardContent>
             </Card>
@@ -84,7 +84,7 @@ export default function SupportPage() {
             </Card>
             <Card>
               <CardContent className="p-4 flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                <div className="h-10 w-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary-foreground">
                   <Clock className="h-5 w-5" />
                 </div>
                 <div>
@@ -151,13 +151,13 @@ export default function SupportPage() {
         {/* Sidebar (1/3) */}
         <div className="space-y-6">
           {/* Caretaker Card */}
-          <Card className="bg-slate-900 text-white border-0 overflow-hidden relative">
+          <Card className="bg-primary text-primary-foreground border-0 overflow-hidden relative">
             <div className="absolute top-0 right-0 p-4 opacity-10">
               <User className="h-32 w-32" />
             </div>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <User className="h-5 w-5 text-emerald-400" />
+                <User className="h-5 w-5 text-primary-foreground" />
                 Your Caretaker
               </CardTitle>
             </CardHeader>
@@ -171,21 +171,21 @@ export default function SupportPage() {
                 <>
                   <div>
                     <p className="text-2xl font-bold">{caretaker.caretakerName || 'Not Assigned'}</p>
-                    <p className="text-slate-400 text-sm">Available 8:00 AM - 6:00 PM</p>
+                    <p className="text-primary-foreground/80 text-sm">Available 8:00 AM - 6:00 PM</p>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white w-full">
+                    <Button size="sm" variant="secondary" className="w-full font-semibold">
                       <Phone className="h-4 w-4 mr-2" />
                       Call
                     </Button>
-                    <Button size="sm" variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-0 w-full">
+                    <Button size="sm" variant="outline" className="bg-transparent border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 w-full">
                       <MessageSquare className="h-4 w-4 mr-2" />
                       Message
                     </Button>
                   </div>
                 </>
               ) : (
-                <p className="text-slate-400">No caretaker information available.</p>
+                <p className="text-primary-foreground/70">No caretaker information available.</p>
               )}
             </CardContent>
           </Card>
@@ -221,11 +221,11 @@ export default function SupportPage() {
 
 function TicketCard({ ticket }: { ticket: any }) {
   return (
-    <Card className="group hover:shadow-md transition-all duration-300 border-l-4 border-l-transparent hover:border-l-emerald-500">
+    <Card className="group hover:shadow-md transition-all duration-300 border-l-4 border-l-transparent hover:border-l-primary">
       <CardContent className="p-4 sm:p-6 flex items-start gap-4">
         <div className={cn(
           "h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0",
-          ticket.status === 'resolved' ? "bg-muted text-muted-foreground" : "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
+          ticket.status === 'resolved' ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
         )}>
           {ticket.status === 'resolved' ? <CheckCircle2 className="h-5 w-5" /> : <LifeBuoy className="h-5 w-5" />}
         </div>
@@ -243,7 +243,7 @@ function TicketCard({ ticket }: { ticket: any }) {
               {formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true })}
             </span>
           </div>
-          <h3 className="font-semibold text-base mb-1 truncate pr-4 group-hover:text-emerald-700 transition-colors">
+          <h3 className="font-semibold text-base mb-1 truncate pr-4 group-hover:text-primary transition-colors">
             {ticket.subject}
           </h3>
           <p className="text-sm text-muted-foreground line-clamp-2">

@@ -29,65 +29,57 @@ export default function Layout({ children }: StudentLayoutProps) {
 
   return (
     <DashboardThemeProvider>
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
-      {/* Desktop/Tablet Sidebar - Hidden on Mobile */}
-      <div className="hidden md:block">
-        <StudentSidebar
-          isOpen={isSidebarOpen}
-          setIsOpen={setSidebarOpen}
-          isMobile={false}
-        />
-      </div>
-
-      {/* Mobile Sidebar Sheet - Hidden because we use BottomNav on mobile */}
-      <div className="hidden">
-        <StudentSidebar
-          isOpen={isMobileOpen}
-          setIsOpen={setIsMobileOpen}
-          isMobile={true}
-        />
-      </div>
-
-      {/* Top Navigation */}
-      <StudentTopNav
-        onMenuClick={() => {
-          if (isDesktop) {
-            setSidebarOpen(!isSidebarOpen);
-          }
-          // Mobile menu disabled in favor of bottom nav
-        }}
-        isSidebarOpen={isSidebarOpen}
-        isMobile={!isDesktop}
-      />
-
-      {/* Main Content - Mobile First Padding */}
-      <main
-        className={cn(
-          "relative z-0 transition-all duration-300 ease-in-out min-h-screen",
-          // Mobile: edge-to-edge, minimal top padding
-          "px-3 pt-16 pb-24 sm:px-4",
-          // Desktop: more padding and left margin for sidebar
-          "md:px-6 md:pt-20 lg:px-10 lg:py-8",
-          isDesktop && isSidebarOpen && "md:ml-64"
-        )}
-      >
-        <div className={cn(
-          "mx-auto",
-          // Mobile: full width
-          "w-full",
-          // Desktop: constrained width
-          "md:max-w-6xl xl:max-w-7xl"
-        )}>
-          {children}
+      <div className="min-h-screen bg-background flex">
+        {/* Desktop Sidebar - Hidden on Mobile */}
+        <div className="hidden md:block">
+          <StudentSidebar
+            isOpen={isSidebarOpen}
+            setIsOpen={setSidebarOpen}
+            isMobile={false}
+          />
         </div>
-      </main>
 
-      {/* Bottom Navigation - Mobile Only */}
-      <StudentBottomNav />
-      
-      {/* Global Comparison Tray */}
-      <CompareTray comparePath="/student/compare" />
-    </div>
+        {/* Mobile Sidebar - Managed via Sheet/BottomNav logic if needed, currently hidden */}
+        
+        <div 
+          className={cn(
+            "flex-1 min-h-screen transition-all duration-300 flex flex-col",
+            isDesktop && (isSidebarOpen ? "md:pl-72" : "md:pl-20")
+          )}
+        >
+          {/* Top Navigation */}
+          <StudentTopNav
+            onMenuClick={() => {
+              if (isDesktop) {
+                setSidebarOpen(!isSidebarOpen);
+              }
+            }}
+            isSidebarOpen={isSidebarOpen}
+            isMobile={!isDesktop}
+          />
+
+          {/* Main Content */}
+          <main
+            className={cn(
+              "flex-1 relative z-0 transition-all duration-300 ease-in-out",
+              // Mobile: edge-to-edge
+              "px-3 pt-4 pb-24 sm:px-4",
+              // Desktop: consistent padding
+              "md:px-6 md:pt-8 md:pb-8 lg:px-8"
+            )}
+          >
+            <div className="mx-auto max-w-6xl xl:max-w-7xl">
+              {children}
+            </div>
+          </main>
+        </div>
+
+        {/* Bottom Navigation - Mobile Only */}
+        <StudentBottomNav />
+        
+        {/* Global Comparison Tray */}
+        <CompareTray comparePath="/student/compare" />
+      </div>
     </DashboardThemeProvider>
   );
 }

@@ -4,13 +4,11 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRoommates } from '@/features/roommates';
-import { getQuizCompletionPercentage } from '@/lib/utils/roommate-compatibility';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Search, 
   UserPlus, 
@@ -19,19 +17,15 @@ import {
   MessageSquare,
   Settings,
   TrendingUp,
-  Calendar,
-  MapPin,
-  CheckCircle,
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 
 export default function RoommatesPage() {
   const { data: roommates, isLoading } = useRoommates();
-  const router = useRouter();
-
   // Calculate quiz completion from user preferences (would come from API)
   const [quizCompleted, setQuizCompleted] = React.useState(false);
   const [quizProgress, setQuizProgress] = React.useState(0);
@@ -60,7 +54,7 @@ export default function RoommatesPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Roommates</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Roommates</h1>
           <p className="text-muted-foreground mt-1">
             Connect with compatible roommates and manage your living community.
           </p>
@@ -72,7 +66,7 @@ export default function RoommatesPage() {
               Preferences
             </Link>
           </Button>
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20" asChild>
+          <Button className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm" asChild>
             <Link href="/student/roommates/matches">
               <Search className="h-4 w-4 mr-2" />
               Find Matches
@@ -83,22 +77,22 @@ export default function RoommatesPage() {
 
       {/* Quiz CTA (if not completed) */}
       {!quizCompleted && quizProgress < 100 && (
-        <Card className="border-2 border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 dark:from-emerald-950/20 dark:via-blue-950/20 dark:to-purple-950/20">
+        <Card className="border border-border bg-muted/20">
           <CardHeader>
             <div className="flex items-start gap-4">
-              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-emerald-400 via-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
-                <Heart className="h-6 w-6 text-white" />
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Heart className="h-6 w-6 text-primary" />
               </div>
               <div className="flex-1">
                 <CardTitle className="text-xl mb-2 flex items-center gap-2">
                   {quizProgress > 0 ? (
                     <>
-                      <AlertCircle className="h-5 w-5 text-amber-600" />
+                      <AlertCircle className="h-5 w-5 text-warning" />
                       Complete Your Personality Quiz
                     </>
                   ) : (
                     <>
-                      <Sparkles className="h-5 w-5 text-emerald-600" />
+                      <Sparkles className="h-5 w-5 text-primary" />
                       Find Your Perfect Roommate Match
                     </>
                   )}
@@ -119,7 +113,7 @@ export default function RoommatesPage() {
                   </div>
                 )}
                 <Button 
-                  className="bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-600 hover:from-emerald-700 hover:via-blue-700 hover:to-purple-700 text-white shadow-lg"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                   asChild
                 >
                   <Link href="/student/roommates/matches">
@@ -135,54 +129,56 @@ export default function RoommatesPage() {
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/10 dark:to-background border-emerald-100 dark:border-emerald-900/50">
+        <Card className="bg-transparent border border-border transition-all hover:bg-muted/10">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Current Roommates</p>
-                <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-400 mt-2">
+                <p className="text-3xl font-black text-foreground mt-2">
                   {currentRoommates.length}
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <Users className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Users className="h-6 w-6 text-primary" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-transparent border border-border transition-all hover:bg-muted/10">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Avg Compatibility</p>
-                <p className="text-3xl font-bold mt-2">
-                  {currentRoommates[0]?.compatibilityScore || 85}%
+                <p className="text-3xl font-black text-foreground mt-2">
+                  {currentRoommates.length > 0 ? currentRoommates[0]?.compatibilityScore || 85 : 0}%
                 </p>
               </div>
               <div className="h-12 w-12 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center">
                 <Heart className="h-6 w-6 text-pink-600 dark:text-pink-400" />
               </div>
             </div>
-            <div className="mt-3 flex items-center text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3 mr-1 text-emerald-600" />
-              <span>+5% from last month</span>
-            </div>
+            {currentRoommates.length > 0 && (
+              <div className="mt-3 flex items-center text-xs text-emerald-600 font-medium">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                <span>Good Match</span>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-transparent border border-border transition-all hover:bg-muted/10">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Pending Requests</p>
-                <p className="text-3xl font-bold mt-2">2</p>
+                <p className="text-3xl font-black text-foreground mt-2">0</p>
               </div>
               <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                 <UserPlus className="h-6 w-6 text-amber-600 dark:text-amber-400" />
               </div>
             </div>
-            <Button variant="link" className="mt-3 h-auto p-0 text-xs" asChild>
+            <Button variant="link" className="mt-3 h-auto p-0 text-xs text-muted-foreground hover:text-primary" asChild>
               <Link href="/student/roommates/requests">View all requests →</Link>
             </Button>
           </CardContent>
@@ -194,8 +190,8 @@ export default function RoommatesPage() {
         {/* Current Roommates (2/3) */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Users className="h-6 w-6 text-emerald-600" />
+            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2 text-foreground">
+              <Users className="h-6 w-6 text-primary" />
               Your Roommates
             </h2>
           </div>
@@ -203,7 +199,7 @@ export default function RoommatesPage() {
           {isLoading ? (
             <div className="grid gap-4 md:grid-cols-2">
               {[1, 2].map((i) => (
-                <Card key={i}>
+                <Card key={i} className="bg-transparent border border-border">
                   <CardHeader>
                     <div className="flex items-center gap-4">
                       <Skeleton className="h-16 w-16 rounded-full" />
@@ -219,19 +215,19 @@ export default function RoommatesPage() {
           ) : currentRoommates.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
               {currentRoommates.map((roommate: any) => (
-                <Card key={roommate.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
+                <Card key={roommate.id} className="bg-transparent border border-border hover:border-primary/50 transition-all duration-300">
                   <CardHeader className="pb-4">
                     <div className="flex items-start gap-4">
-                      <Avatar className="h-16 w-16 border-2 border-background ring-2 ring-emerald-100 dark:ring-emerald-900/50">
+                      <Avatar className="h-16 w-16 border-2 border-background ring-2 ring-border">
                         <AvatarImage src={roommate.avatar} />
-                        <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-blue-500 text-white text-lg font-bold">
+                        <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
                           {roommate.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
                           <div>
-                            <h3 className="font-bold text-lg truncate group-hover:text-emerald-600 transition-colors">
+                            <h3 className="font-bold text-lg truncate group-hover:text-primary transition-colors">
                               {roommate.name}
                             </h3>
                             <p className="text-sm text-muted-foreground">
@@ -239,31 +235,31 @@ export default function RoommatesPage() {
                             </p>
                           </div>
                           {roommate.isPrimaryContact && (
-                            <Badge variant="secondary" className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400">
+                            <Badge variant="secondary" className="text-[10px]">
                               Primary
                             </Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs font-semibold">
                             Year {roommate.year}
                           </Badge>
                           {roommate.compatibilityScore && (
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Heart className="h-3 w-3 text-pink-500 fill-pink-500" />
-                              <span className="font-medium">{roommate.compatibilityScore}%</span>
+                              <span className="font-bold">{roommate.compatibilityScore}%</span>
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardFooter className="bg-muted/30 p-3 flex gap-2">
-                    <Button size="sm" variant="outline" className="flex-1 h-8 text-xs">
+                  <CardFooter className="bg-muted/50 p-3 flex gap-2 border-t border-border">
+                    <Button size="sm" variant="outline" className="flex-1 h-8 text-xs bg-background hover:bg-accent">
                       <MessageSquare className="h-3 w-3 mr-1" />
                       Message
                     </Button>
-                    <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" asChild>
+                    <Button size="sm" variant="outline" className="flex-1 h-8 text-xs bg-background hover:bg-accent" asChild>
                       <Link href={`/student/roommates/${roommate.id}`}>
                         View Profile
                       </Link>
@@ -273,16 +269,16 @@ export default function RoommatesPage() {
               ))}
             </div>
           ) : (
-            <Card className="border-2 border-dashed">
+            <Card className="border border-dashed bg-transparent shadow-none">
               <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
                   <Users className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">No roommates yet</h3>
+                <h3 className="text-lg font-bold mb-2 text-foreground">No roommates yet</h3>
                 <p className="text-muted-foreground max-w-sm mb-6">
                   Start by finding compatible roommates through our matching system.
                 </p>
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" asChild>
+                <Button className="bg-primary text-primary-foreground hover:bg-primary/90" asChild>
                   <Link href="/student/roommates/matches">
                     <Search className="h-4 w-4 mr-2" />
                     Find Roommates
@@ -296,50 +292,50 @@ export default function RoommatesPage() {
         {/* Sidebar Actions (1/3) */}
         <div className="space-y-6">
           {/* Quick Actions */}
-          <Card>
+          <Card className="bg-transparent border border-border">
             <CardHeader>
-              <CardTitle className="text-lg">Quick Actions</CardTitle>
+              <CardTitle className="text-lg font-bold text-foreground">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start h-auto py-3" asChild>
+              <Button variant="outline" className="w-full justify-start h-auto py-3 bg-background hover:bg-accent border-border" asChild>
                 <Link href="/student/roommates/matches">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
                       <Search className="h-4 w-4" />
                     </div>
                     <div className="text-left flex-1">
-                      <div className="font-medium text-sm">Browse Matches</div>
+                      <div className="font-bold text-sm text-foreground">Browse Matches</div>
                       <div className="text-xs text-muted-foreground">Find compatible roommates</div>
                     </div>
                   </div>
                 </Link>
               </Button>
 
-              <Button variant="outline" className="w-full justify-start h-auto py-3" asChild>
+              <Button variant="outline" className="w-full justify-start h-auto py-3 bg-background hover:bg-accent border-border" asChild>
                 <Link href="/student/roommates/requests">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600">
                       <UserPlus className="h-4 w-4" />
                     </div>
                     <div className="text-left flex-1">
-                      <div className="font-medium text-sm">Manage Requests</div>
+                      <div className="font-bold text-sm text-foreground">Manage Requests</div>
                       <div className="text-xs text-muted-foreground">View sent & received</div>
                     </div>
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
-                      2
+                    <Badge variant="secondary" className="bg-muted text-foreground">
+                      0
                     </Badge>
                   </div>
                 </Link>
               </Button>
 
-              <Button variant="outline" className="w-full justify-start h-auto py-3" asChild>
+              <Button variant="outline" className="w-full justify-start h-auto py-3 bg-background hover:bg-accent border-border" asChild>
                 <Link href="/student/profile/preferences">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600">
                       <Settings className="h-4 w-4" />
                     </div>
                     <div className="text-left flex-1">
-                      <div className="font-medium text-sm">Preferences</div>
+                      <div className="font-bold text-sm text-foreground">Preferences</div>
                       <div className="text-xs text-muted-foreground">Update matching criteria</div>
                     </div>
                   </div>
@@ -349,28 +345,28 @@ export default function RoommatesPage() {
           </Card>
 
           {/* Tips Card */}
-          <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-100 dark:border-blue-900/50">
+          <Card className="bg-muted/10 border-border">
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-blue-600" />
+              <CardTitle className="text-lg flex items-center gap-2 font-bold text-foreground">
+                <CheckCircle className="h-5 w-5 text-primary" />
                 Pro Tips
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-1.5 flex-shrink-0" />
+                <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                 <p className="text-muted-foreground">
                   Complete your profile to get better matches
                 </p>
               </div>
               <div className="flex gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-1.5 flex-shrink-0" />
+                <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                 <p className="text-muted-foreground">
                   Update preferences regularly for accurate matching
                 </p>
               </div>
               <div className="flex gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-1.5 flex-shrink-0" />
+                <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                 <p className="text-muted-foreground">
                   Message potential roommates before sending requests
                 </p>

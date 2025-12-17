@@ -12,6 +12,8 @@ export type RoommateSummary = {
   program: string;
   year: string;
   isPrimaryContact: boolean;
+  avatar?: string;
+  compatibilityScore?: number;
 };
 
 /**

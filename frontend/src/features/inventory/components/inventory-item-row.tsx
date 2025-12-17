@@ -27,10 +27,10 @@ interface InventoryItemRowProps {
 }
 
 const CONDITION_OPTIONS: { value: ItemCondition; label: string; icon: React.ElementType; color: string }[] = [
-  { value: 'working', label: 'Working', icon: CheckCircle2, color: 'text-green-600 bg-green-50 border-green-200' },
-  { value: 'not_working', label: 'Not Working', icon: XCircle, color: 'text-red-600 bg-red-50 border-red-200' },
-  { value: 'damaged', label: 'Damaged', icon: AlertTriangle, color: 'text-amber-600 bg-amber-50 border-amber-200' },
-  { value: 'missing', label: 'Missing', icon: HelpCircle, color: 'text-orange-600 bg-orange-50 border-orange-200' },
+  { value: 'working', label: 'Working', icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
+  { value: 'not_working', label: 'Not Working', icon: XCircle, color: 'text-red-600 dark:text-red-500 bg-red-500/10 border-red-500/20' },
+  { value: 'damaged', label: 'Damaged', icon: AlertTriangle, color: 'text-amber-600 dark:text-amber-500 bg-amber-500/10 border-amber-500/20' },
+  { value: 'missing', label: 'Missing', icon: HelpCircle, color: 'text-orange-600 dark:text-orange-500 bg-orange-500/10 border-orange-500/20' },
 ];
 
 export function InventoryItemRow({ 

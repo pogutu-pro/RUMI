@@ -28,19 +28,20 @@ const getActivityIcon = (type: string) => {
 };
 
 const getActivityColor = (type: string) => {
+  // Using theme variables for consistent light/dark mode support
   switch (type) {
     case 'payment':
-      return 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400';
+      return 'bg-primary/10 text-primary border-primary/20';
     case 'booking':
-      return 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400';
+      return 'bg-primary/10 text-primary border-primary/20';
     case 'ticket':
-      return 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400';
+      return 'bg-primary/10 text-primary border-primary/20';
     case 'message':
-      return 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400';
+      return 'bg-primary/10 text-primary border-primary/20';
     case 'profile':
-      return 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400';
+      return 'bg-primary/10 text-primary border-primary/20';
     default:
-      return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
+      return 'bg-muted text-muted-foreground border-border';
   }
 };
 
@@ -75,11 +76,11 @@ export function RecentActivity({ activities, className }: RecentActivityProps) {
               {getActivityIcon(activity.type)}
             </div>
             <div className="flex flex-col gap-1 pt-1">
-              <p className="text-sm font-medium leading-none">{activity.title}</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm font-bold leading-none text-foreground">{activity.title}</p>
+              <p className="text-xs font-medium text-foreground/90">
                 {activity.description}
               </p>
-              <p className="text-xs text-muted-foreground/60">
+              <p className="text-xs font-medium text-muted-foreground">
                 {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
               </p>
             </div>

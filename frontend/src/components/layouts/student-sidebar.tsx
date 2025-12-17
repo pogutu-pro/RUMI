@@ -85,8 +85,8 @@ const navItems: NavItem[] = [
         icon: CalendarCheck,
       },
       { title: 'My Roommates', href: '/student/roommates', icon: Users },
-      { title: 'Transfers', href: '/student/transfers', icon: ArrowRightLeft },
       { title: 'Check-In/Out', href: '/student/check-in', icon: UserCheck },
+      { title: 'Transfers', href: '/student/transfers', icon: ArrowRightLeft },
     ],
   },
   {
@@ -107,12 +107,12 @@ const navItems: NavItem[] = [
     icon: CreditCard,
     items: [
       { title: 'Overview', href: '/student/payments', icon: BarChart },
+      { title: 'History', href: '/student/payments/receipts', icon: FileText },
       {
         title: 'Payment Methods',
         href: '/student/payments/methods',
         icon: CreditCard,
       },
-      { title: 'History', href: '/student/payments/receipts', icon: FileText },
     ],
   },
   {
@@ -124,12 +124,12 @@ const navItems: NavItem[] = [
     title: 'Security',
     icon: Shield,
     items: [
-      { title: 'Overview', href: '/student/security', icon: Shield },
       {
         title: 'Visitor Invitations',
         href: '/student/security/visitor-invitations',
         icon: UserPlus,
       },
+      { title: 'Overview', href: '/student/security', icon: Shield },
     ],
   },
   {
@@ -144,7 +144,6 @@ const navItems: NavItem[] = [
       { title: 'Bookings', href: '/student/bookings', icon: CalendarCheck },
       { title: 'Notifications', href: '/student/notifications', icon: Bell },
       { title: 'Reviews', href: '/student/reviews', icon: Star },
-
       { title: 'Support', href: '/student/support', icon: LifeBuoy },
       { title: 'Settings', href: '/student/settings', icon: Settings },
     ],
@@ -244,7 +243,7 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                     <Button
                       variant="ghost"
                       className={cn(
-                        'w-full justify-between font-bold text-base text-slate-900 dark:text-slate-400 hover:bg-muted hover:text-foreground transition-all duration-200',
+                        'w-full justify-between font-bold text-base text-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200',
                         is_active &&
                           'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary',
                       )}
@@ -267,13 +266,12 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                         key={subIndex}
                         href={subItem.href}
                         className={cn(
-                          'flex items-center gap-2 px-4 py-2 text-base transition-colors duration-200 border-l-2 -ml-[2px]',
+                          'flex items-center gap-2 px-4 py-2 text-base transition-colors duration-200 border-l-2 -ml-[2px] font-semibold',
                           pathname === subItem.href
-                            ? 'border-primary text-primary font-bold bg-primary/10'
-                            : 'border-transparent text-slate-900 dark:text-slate-400 font-bold hover:text-foreground hover:bg-muted',
+                            ? 'border-primary text-primary bg-primary/10'
+                            : 'border-transparent text-foreground/80 hover:text-foreground hover:bg-muted',
                         )}
                       >
-                        {/* {subItem.icon && <subItem.icon className="h-3.5 w-3.5 opacity-70" />} */}
                         <span>{subItem.title}</span>
                       </Link>
                     ))}
@@ -312,7 +310,7 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                 asChild
                 variant="ghost"
                 className={cn(
-                  'w-full justify-start font-bold text-base text-slate-900 dark:text-slate-400 hover:bg-muted hover:text-foreground transition-all duration-200',
+                  'w-full justify-start font-bold text-base text-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200',
                   is_active &&
                     'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary',
                 )}
