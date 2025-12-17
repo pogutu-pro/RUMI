@@ -3,72 +3,58 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, ClipboardList, Menu, X, Shield, LifeBuoy, User, LogOut } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  ClipboardList, 
+  MessageSquare, 
+  Menu, 
+  User, 
+  Shield, 
+  LifeBuoy, 
+  LogOut, 
+  Home, 
+  Wrench,
+  Users
+} from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth';
 
-interface NavItem {
-  icon: React.ElementType;
-  label: string;
-  href: string;
-  badge?: number;
-}
-
-const mainNavItems: NavItem[] = [
-  { icon: Home, label: 'Home', href: '/caretaker/dashboard' },
-  { icon: Users, label: 'Students', href: '/caretaker/tenants' },
-  { icon: ClipboardList, label: 'Tasks', href: '/caretaker/tasks' },
+const mainNavItems = [
+  { 
+    icon: LayoutDashboard, 
+    label: 'Home', 
+    href: '/caretaker/dashboard',
+    match: (path: string) => path === '/caretaker/dashboard' || path === '/caretaker'
+  },
+  { 
+    icon: ClipboardList, 
+    label: 'Ops', 
+    href: '/caretaker/check-in', // Direct access to widely used feature
+    match: (path: string) => path.startsWith('/caretaker/check-in') || path.startsWith('/caretaker/check-out') || path.startsWith('/caretaker/approvals')
+  },
+  { 
+    icon: MessageSquare, 
+    label: 'Chat', 
+    href: '/caretaker/message',
+    match: (path: string) => path.startsWith('/caretaker/message')
+  },
 ];
 
-const taskRoutes = [
-  '/caretaker/tasks',
-  '/caretaker/maintenance',
-  '/caretaker/approvals',
-  '/caretaker/check-in',
-  '/caretaker/check-out',
-  '/caretaker/damage-reports',
-  '/caretaker/room-management',
-];
-
-const moreRoutes = [
-  '/caretaker/profile',
-  '/caretaker/security',
-  '/caretaker/support',
+const menuItems = [
+  { icon: Users, label: 'Tenants & Roommates', href: '/caretaker/tenants' },
+  { icon: Home, label: 'Rooms & Property', href: '/caretaker/room-management' },
+  { icon: Wrench, label: 'Maintenance & Damage', href: '/caretaker/maintenance' },
+  { icon: Shield, label: 'Security Logs', href: '/caretaker/security/visitor-logs' },
+  { icon: User, label: 'My Profile', href: '/caretaker/profile' },
+  { icon: LifeBuoy, label: 'Support', href: '/caretaker/support' },
 ];
 
 export function CaretakerBottomNav() {
   const pathname = usePathname();
-  const [isMoreOpen, setIsMoreOpen] = React.useState(false);
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const { logout } = useAuth();
-
-  const is_active = (href: string) => {
-    if (!pathname) return false;
-
-    // Home
-    if (href === '/caretaker/dashboard') {
-      return pathname === '/caretaker' || pathname === '/caretaker/dashboard';
-    }
-
-    // Tasks Hub & Sub-pages
-    if (href === '/caretaker/tasks') {
-      return taskRoutes.some(route => pathname.startsWith(route));
-    }
-
-    // Students
-    if (href === '/caretaker/tenants') {
-      return pathname.startsWith('/caretaker/tenants');
-    }
-
-    return pathname.startsWith(href);
-  };
-
-  const isMoreActive = React.useMemo(() => {
-    if (!pathname) return false;
-    return moreRoutes.some(route => pathname.startsWith(route));
-  }, [pathname]);
 
   const handleSignOut = async () => {
     try {
@@ -78,148 +64,86 @@ export function CaretakerBottomNav() {
     }
   };
 
-  const moreMenuItems = [
-    { icon: User, label: 'Profile', href: '/caretaker/profile' },
-    { icon: Shield, label: 'Security', href: '/caretaker/security' },
-    { icon: LifeBuoy, label: 'Support', href: '/caretaker/support' },
-  ];
-
   return (
     <>
-      {/* Spacer to prevent content from being hidden behind fixed nav */}
+      {/* Safe Area Spacer */}
       <div className="h-16 md:hidden" aria-hidden="true" />
       
-      {/* Bottom Navigation - Mobile Only */}
+      {/* Premium Fixed Bottom Bar (Airbnb Style) */}
       <nav 
-        className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background border-t border-border transform-gpu will-change-transform"
-        style={{
-          paddingBottom: 'max(env(safe-area-inset-bottom), 0.5rem)',
-          contain: 'paint layout'
-        }}
+        className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/95 backdrop-blur-xl border-t border-border/40 shadow-[0_-1px_3px_rgba(0,0,0,0.05)]"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="flex items-center justify-around px-2 py-2">
+        <div className="flex items-center justify-around h-16 w-full max-w-lg mx-auto px-2">
           {mainNavItems.map((item) => {
             const Icon = item.icon;
-            const active = is_active(item.href);
+            const isActive = item.match(pathname || '');
             
             return (
               <Link
-                key={item.href}
+                key={item.label}
                 href={item.href}
-              className={cn(
-                  "flex flex-col items-center justify-center gap-1 rounded-xl px-4 py-2 transition-transform duration-100 min-w-[64px]",
-                  "active:scale-95 touch-manipulation transform-gpu",
-                  active && "bg-emerald-50 dark:bg-emerald-900/20"
+                className={cn(
+                  "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors duration-200",
+                  isActive 
+                    ? "text-primary" 
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <div className="relative will-change-transform">
-                  <Icon 
-                    className={cn(
-                      "h-6 w-6 transition-transform duration-200",
-                      active 
-                        ? "text-emerald-600 dark:text-emerald-400 scale-110" 
-                        : "text-muted-foreground"
-                    )}
-                    strokeWidth={active ? 2.5 : 2}
-                  />
-                  {item.badge && item.badge > 0 && (
-                    <Badge 
-                      className="absolute -top-1 -right-1 h-4 min-w-4 p-0 flex items-center justify-center text-[10px] bg-red-500 text-white border-2 border-background"
-                    >
-                      {item.badge > 99 ? '99+' : item.badge}
-                    </Badge>
-                  )}
+                <div className={cn("relative transition-transform duration-200", isActive ? "scale-105" : "")}>
+                  <Icon className={cn("h-6 w-6", isActive ? "fill-current" : "fill-none")} strokeWidth={isActive ? 2.5 : 2} />
                 </div>
-                <span 
-                  className={cn(
-                    "text-[11px] font-medium",
-                    active 
-                      ? "text-emerald-600 dark:text-emerald-400" 
-                      : "text-muted-foreground"
-                  )}
-                >
+                <span className={cn("text-[10px] font-medium leading-none", isActive ? "font-semibold" : "")}>
                   {item.label}
                 </span>
               </Link>
             );
           })}
 
-          {/* More Menu */}
-          <Sheet open={isMoreOpen} onOpenChange={setIsMoreOpen}>
+          {/* Menu Trigger */}
+          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
             <SheetTrigger asChild>
               <button
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 rounded-xl px-4 py-2 transition-all duration-200 min-w-[64px]",
-                  "active:scale-95 touch-manipulation",
-                  (isMoreOpen || isMoreActive) && "bg-emerald-50 dark:bg-emerald-900/20"
+                  "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors duration-200",
+                  isMenuOpen 
+                    ? "text-primary" 
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <div className="relative">
-                  <Menu 
-                    className={cn(
-                      "h-6 w-6 transition-all duration-200",
-                      (isMoreOpen || isMoreActive)
-                        ? "text-emerald-600 dark:text-emerald-400 scale-110" 
-                        : "text-muted-foreground"
-                    )}
-                    strokeWidth={(isMoreOpen || isMoreActive) ? 2.5 : 2}
-                  />
-                </div>
-                <span 
-                  className={cn(
-                    "text-[11px] font-medium transition-all duration-200",
-                    (isMoreOpen || isMoreActive)
-                      ? "text-emerald-600 dark:text-emerald-400" 
-                      : "text-muted-foreground"
-                  )}
-                >
-                  More
-                </span>
+                <Menu className="h-6 w-6" strokeWidth={2} />
+                <span className="text-[10px] font-medium leading-none">More</span>
               </button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[80vh] rounded-t-[20px] p-0">
-              <SheetHeader className="p-6 border-b text-left">
-                <SheetTitle>Menu</SheetTitle>
+            <SheetContent side="bottom" className="h-[85vh] rounded-t-[20px] p-0 border-t-0 bg-background/95 backdrop-blur-xl z-[60]">
+              <SheetHeader className="p-6 text-left border-b">
+                <SheetTitle className="text-xl font-bold">Menu</SheetTitle>
               </SheetHeader>
-              <div className="p-4 grid gap-2">
-                {moreMenuItems.map((item) => {
+              
+              <div className="p-4 grid grid-cols-2 gap-3 overflow-y-auto max-h-[calc(85vh-80px)]">
+                {menuItems.map((item) => {
                   const Icon = item.icon;
-                  const active = pathname?.startsWith(item.href);
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
-                      onClick={() => setIsMoreOpen(false)}
-                      className={cn(
-                        "flex items-center gap-4 p-4 rounded-xl transition-colors",
-                        active 
-                          ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-100" 
-                          : "hover:bg-muted/50 active:bg-muted"
-                      )}
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex flex-col gap-3 p-4 rounded-2xl bg-muted/50 hover:bg-muted active:scale-95 transition-all border border-border/50"
                     >
-                      <div className={cn(
-                        "p-2 rounded-full",
-                        active 
-                          ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400" 
-                          : "bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400"
-                      )}>
+                      <div className="h-10 w-10 rounded-full bg-background flex items-center justify-center shadow-sm text-primary">
                         <Icon className="h-5 w-5" />
                       </div>
-                      <span className="font-medium text-base">{item.label}</span>
+                      <span className="font-semibold text-sm">{item.label}</span>
                     </Link>
                   );
                 })}
-                
-                <div className="my-2 border-t" />
-                
+
                 <button
                   onClick={handleSignOut}
-                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-red-50 active:bg-red-100 dark:hover:bg-red-900/10 dark:active:bg-red-900/20 transition-colors text-red-600 dark:text-red-400 w-full text-left"
+                  className="col-span-2 flex items-center gap-3 p-4 rounded-2xl bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 mt-4 active:scale-95 transition-all"
                 >
-                  <div className="p-2 rounded-full bg-red-100/50 dark:bg-red-900/20">
-                    <LogOut className="h-5 w-5" />
-                  </div>
-                  <span className="font-medium text-base">Sign Out</span>
+                  <LogOut className="h-5 w-5" />
+                  <span className="font-semibold">Sign Out</span>
                 </button>
               </div>
             </SheetContent>

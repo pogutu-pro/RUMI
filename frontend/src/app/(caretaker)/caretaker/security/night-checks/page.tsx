@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Moon, Search, Plus, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils/cn';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -274,11 +275,11 @@ export default function Page() {
                     </div>
                     <div className="flex-1 space-y-3">
                       <div>
-                        <div className="flex items-center gap-3 mb-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-1">
                           <h3 className="font-semibold text-lg">
                             Night Check - {new Date(check.checkDate).toLocaleDateString()}
                           </h3>
-                          <Badge className={check.issues.length === 0 ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}>
+                          <Badge className={cn("w-fit", check.issues.length === 0 ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800')}>
                             {check.issues.length === 0 ? (
                               <>
                                 <CheckCircle2 className="mr-1 h-3 w-3" />

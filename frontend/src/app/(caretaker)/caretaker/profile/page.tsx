@@ -26,11 +26,11 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getUserInitials } from '@/lib/utils/user';
+import { useCaretakerDashboard } from "@/features/caretaker";
 
 export default function CaretakerProfilePage() {
   const { user, logout } = useAuth();
-
-  const profileCompletion = 85; // TODO: Calculate from actual data
+  const { data: dashboardData } = useCaretakerDashboard();
 
   const settingsSections = [
     {
@@ -135,19 +135,6 @@ export default function CaretakerProfilePage() {
               </Button>
             </div>
           </div>
-
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 min-w-[200px] border border-white/10">
-            <p className="text-sm font-medium text-slate-300 mb-2">Profile Completion</p>
-            <div className="flex items-end gap-2 mb-2">
-              <span className="text-4xl font-bold">{profileCompletion}%</span>
-            </div>
-            <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-emerald-500 transition-all duration-1000" 
-                style={{ width: `${profileCompletion}%` }}
-              />
-            </div>
-          </div>
         </div>
       </div>
 
@@ -160,8 +147,8 @@ export default function CaretakerProfilePage() {
                 <ClipboardCheck className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground font-medium">Tasks Completed</p>
-                <h3 className="text-2xl font-bold">128</h3>
+                <p className="text-sm text-muted-foreground font-medium">Pending Approvals</p>
+                <h3 className="text-2xl font-bold">{dashboardData?.todayOverview.pendingApprovals || 0}</h3>
               </div>
             </div>
           </CardContent>
@@ -174,8 +161,8 @@ export default function CaretakerProfilePage() {
                 <Users className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground font-medium">Tenants Managed</p>
-                <h3 className="text-2xl font-bold">45</h3>
+                <p className="text-sm text-muted-foreground font-medium">Active Tenants</p>
+                <h3 className="text-2xl font-bold">{dashboardData?.roomOccupancy.occupied || 0}</h3>
               </div>
             </div>
           </CardContent>
@@ -188,8 +175,8 @@ export default function CaretakerProfilePage() {
                 <Wrench className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground font-medium">Pending Repairs</p>
-                <h3 className="text-2xl font-bold">3</h3>
+                <p className="text-sm text-muted-foreground font-medium">Open Issues</p>
+                <h3 className="text-2xl font-bold">{dashboardData?.todayOverview.unresolvedIssues || 0}</h3>
               </div>
             </div>
           </CardContent>

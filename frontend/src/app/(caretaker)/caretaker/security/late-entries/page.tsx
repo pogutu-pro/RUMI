@@ -235,14 +235,14 @@ export default function Page() {
                   </Avatar>
 
                   <div className="flex-1 space-y-3">
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                       <div>
                         <h3 className="font-semibold text-lg">
                           {entry.tenantName}
                         </h3>
                         <p className="text-sm text-muted-foreground">Room {entry.roomNumber}</p>
                       </div>
-                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 w-fit">
                         Late Entry
                       </Badge>
                     </div>
