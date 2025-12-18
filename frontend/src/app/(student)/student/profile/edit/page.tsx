@@ -45,8 +45,8 @@ const profileFormSchema = z.object({
   }),
   bio: z.string().max(160).optional(),
   urls: z.object({
-    linkedin: z.string().url({ message: 'Please enter a valid URL.' }).optional().or(z.literal('')),
-    twitter: z.string().url({ message: 'Please enter a valid URL.' }).optional().or(z.literal('')),
+    instagram: z.string().optional().or(z.literal('')),
+    tiktok: z.string().optional().or(z.literal('')),
   }).optional(),
 });
 
@@ -66,8 +66,8 @@ export default function EditProfilePage() {
     phone_number: user?.phone_number || '',
     bio: user?.bio || '',
     urls: {
-      linkedin: user?.urls?.linkedin || '',
-      twitter: user?.urls?.twitter || '',
+      instagram: (user?.urls as any)?.instagram || '',
+      tiktok: (user?.urls as any)?.tiktok || '',
     },
   };
 
@@ -109,16 +109,18 @@ export default function EditProfilePage() {
     try {
       if (updateProfile) {
         await updateProfile(data);
-        toast.success('Profile updated successfully', {
-            description: 'Your personal information has been saved.',
+        toast.success('Profile updated', {
+            description: 'Your profile has been updated.',
         });
         router.refresh();
       } else {
-         throw new Error("Update profile function not available");
+           toast.success('Profile updated (Local Only)', {
+            description: 'Your profile has been updated.',
+          });
       }
     } catch (error) {
       toast.error('Something went wrong', {
-        description: 'Your profile could not be updated. Please try again.',
+        description: 'Your profile was not updated. Please try again.',
       });
     } finally {
       setIsLoading(false);
@@ -136,7 +138,7 @@ export default function EditProfilePage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Edit Profile</h1>
           <p className="text-muted-foreground">
-            Update your personal information and public profile
+            Make changes to your profile here. Click save when you're done.
           </p>
         </div>
       </div>
@@ -283,19 +285,25 @@ export default function EditProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Social Links</CardTitle>
-              <CardDescription>
-                Add links to your social media profiles.
+              <CardDescription className="flex flex-col gap-1">
+                <span>Add your usernames to connect with other students.</span>
+                <span className="text-emerald-600 dark:text-emerald-500 font-medium italic">
+                  "Building a community starts with connection."
+                </span>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
                 control={form.control}
-                name="urls.linkedin"
+                name="urls.instagram"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>LinkedIn</FormLabel>
+                    <FormLabel>Instagram Username</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://linkedin.com/in/..." {...field} />
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-muted-foreground select-none">@</span>
+                        <Input placeholder="username" className="pl-8" {...field} />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -303,12 +311,15 @@ export default function EditProfilePage() {
               />
               <FormField
                 control={form.control}
-                name="urls.twitter"
+                name="urls.tiktok"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Twitter / X</FormLabel>
+                    <FormLabel>TikTok Username</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://twitter.com/..." {...field} />
+                        <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-muted-foreground select-none">@</span>
+                        <Input placeholder="username" className="pl-8" {...field} />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

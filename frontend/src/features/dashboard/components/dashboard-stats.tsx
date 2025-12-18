@@ -15,15 +15,15 @@ interface DashboardStatProps {
 
 export function DashboardStat({ title, value, icon, trend, className }: DashboardStatProps) {
   return (
-    <div className={cn("rounded-xl border bg-transparent p-6 shadow-none transition-all hover:bg-muted/30", className)}>
+    <div className={cn("rounded-xl border bg-transparent p-4 md:p-6 shadow-none transition-all hover:bg-muted/30", className)}>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-foreground">{title}</h3>
-        <div className="rounded-full bg-primary/10 p-2 text-primary">
+        <h3 className="text-xs md:text-sm font-bold text-foreground truncate mr-2">{title}</h3>
+        <div className="rounded-full bg-primary/10 p-1.5 md:p-2 text-primary shrink-0">
           {icon}
         </div>
       </div>
-      <div className="mt-4">
-        <div className="text-2xl font-black text-foreground">{value}</div>
+      <div className="mt-3 md:mt-4">
+        <div className="text-xl md:text-2xl font-black text-foreground truncate">{value}</div>
         {trend && (
           <div className="mt-1 flex items-center text-xs font-medium">
             {trend.direction === 'up' && <ArrowUpIcon className="mr-1 h-3 w-3 text-emerald-600 dark:text-emerald-500" />}
@@ -39,7 +39,7 @@ export function DashboardStat({ title, value, icon, trend, className }: Dashboar
             >
               {Math.abs(trend.value)}%
             </span>
-            <span className="ml-1 text-muted-foreground/80">{trend.label}</span>
+            <span className="ml-1 text-muted-foreground/80 truncate hidden sm:inline">{trend.label}</span>
           </div>
         )}
       </div>

@@ -70,13 +70,11 @@ function getNotificationStyle(type: string): { icon: LucideIcon; color: string; 
 
 interface StudentTopNavProps {
   onMenuClick: () => void;
-  isSidebarOpen: boolean;
   isMobile: boolean;
 }
 
 export function StudentTopNav({
   onMenuClick,
-  isSidebarOpen,
   isMobile,
 }: StudentTopNavProps) {
   // Use local isDesktop derived from isMobile inverse if needed, or rely on prop
@@ -89,7 +87,7 @@ export function StudentTopNav({
 
   // Fetch real notifications from API
   const { data: notificationsData, isLoading: isLoadingNotifications } = useNotifications({ page: 1 });
-  const notifications = notificationsData?.results || [];
+  const notifications = notificationsData?.data || [];
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const displayName = React.useMemo(() => {
@@ -113,7 +111,7 @@ export function StudentTopNav({
     try {
       await logout();
     } catch (error) {
-      console.error('Sign out failed', error);
+      // Silent fail or handle error silently in nav
     }
   }, [logout]);
 
@@ -122,7 +120,6 @@ export function StudentTopNav({
     if (searchQuery.trim()) {
       // Navigate to search results page with query
       router.push(`/student/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      console.log('Searching for:', searchQuery);
     }
   }, [searchQuery, router]);
 

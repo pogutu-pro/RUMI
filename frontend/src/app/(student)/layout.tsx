@@ -54,7 +54,6 @@ export default function Layout({ children }: StudentLayoutProps) {
                 setSidebarOpen(!isSidebarOpen);
               }
             }}
-            isSidebarOpen={isSidebarOpen}
             isMobile={!isDesktop}
           />
 
