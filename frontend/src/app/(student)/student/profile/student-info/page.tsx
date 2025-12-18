@@ -41,6 +41,7 @@ const studentInfoSchema = z.object({
   program: z.string().min(2, { message: 'Program/Course is required.' }),
   yearOfStudy: z.string().min(1, { message: 'Please select your year of study.' }),
   graduationYear: z.string().min(4, { message: 'Please enter expected graduation year.' }),
+  highSchool: z.string().min(2, { message: 'High School name is required.' }),
 });
 
 type StudentInfoValues = z.infer<typeof studentInfoSchema>;
@@ -57,6 +58,7 @@ export default function StudentInfoPage() {
     program: '',
     yearOfStudy: '',
     graduationYear: '',
+    highSchool: '',
   };
 
   const form = useForm<StudentInfoValues>({
@@ -77,6 +79,8 @@ export default function StudentInfoPage() {
       });
       
       router.refresh();
+      // Optionally redirect back
+      // router.push('/student/profile');
     } catch (error) {
       toast.error('Something went wrong', {
         description: 'Could not update student details.',
@@ -250,6 +254,33 @@ export default function StudentInfoPage() {
                   )}
                 />
               </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <School className="h-5 w-5 text-emerald-600" />
+                Secondary Education
+              </CardTitle>
+              <CardDescription>
+                Your high school information.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="highSchool"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>High School Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Alliance High School" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
           </Card>
 

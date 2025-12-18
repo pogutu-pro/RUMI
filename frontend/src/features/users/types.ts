@@ -18,7 +18,7 @@ export interface User {
   is_verified?: boolean;
   bio?: string;
   urls?: {
-    linkedin?: string;
-    twitter?: string;
+    instagram?: string;
+    tiktok?: string;
   };
 }
