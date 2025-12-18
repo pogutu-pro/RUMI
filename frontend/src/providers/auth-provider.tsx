@@ -6,6 +6,8 @@ import type { Route } from 'next';
 import { getAccessToken } from '@/lib/auth/token';
 import { useProfile } from '@/features/auth';
 import { useAuthStore, hydrateAuthStore, UserRole } from '@/features/auth';
+import { csrf } from '@/lib/security/csrf';
+import { getApiUrl } from '@/lib/utils/env';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -66,6 +68,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     hydrateAuthStore();
+    // Initialize CSRF token for mutations
+    csrf.fetch(getApiUrl());
   }, []);
 
   const shouldFetchProfile = useMemo(() => {

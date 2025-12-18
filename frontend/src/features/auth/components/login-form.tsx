@@ -76,9 +76,18 @@ export function LoginForm({
         onSuccess?.();
       },
       onError: (err: any) => {
-        const msg =
-          err?.message ||
-          'Unable to sign in. Check your credentials and try again.';
+        let msg = 'Unable to sign in. Please check your credentials and try again.';
+        
+        if (err?.statusCode === 401) {
+          msg = 'The email or password you entered is incorrect. Please try again.';
+        } else if (err?.statusCode === 403) {
+          msg = 'Your account might be restricted or you lack permissions. Please contact support.';
+        } else if (err?.statusCode === 429) {
+          msg = 'Too many attempts. Please wait a moment before trying again.';
+        } else if (err?.message && err.message !== 'An error occurred') {
+          msg = err.message;
+        }
+
         setServerError(msg);
         onError?.(err);
       },

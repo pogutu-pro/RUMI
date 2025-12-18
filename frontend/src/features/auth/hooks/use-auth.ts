@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/features/auth';
-import { getAccessToken } from '@/lib/auth/token';
+import { getAccessToken, setUserRole } from '@/lib/auth/token';
 import { useAuthStore } from '../stores/auth.store';
 import { UserRole, LoginPayload } from '../stores/auth.types';
 import {
@@ -18,6 +18,7 @@ import {
   StudentRegisterRequest,
   ResetPasswordRequest,
   AuthResponse,
+  ApiError,
 } from '@/types/api.types';
 import { toast } from 'sonner';
 
@@ -127,20 +128,22 @@ function useAuthSuccess() {
   const { redirectUser } = useAuthRedirect();
   const queryClient = useQueryClient();
 
-  return (response: AuthResponse, successMessage: string) => {
+  return (response: any, successMessage: string) => {
     // 1. Update Store
+    // Support both 'access'/'refresh' and 'access_token'/'refresh_token' formats
+    const accessToken = response.access || response.access_token;
+    const refreshToken = response.refresh || response.refresh_token;
+
     login({
       user: response.user,
       profile: response.profile || undefined, 
-      accessToken: response.access,
-      refreshToken: response.refresh,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
     });
 
     // 2. Set user role cookie for middleware
     if (response.user?.role) {
-      import('@/lib/auth/token').then(({ setUserRole }) => {
-        setUserRole(response.user.role);
-      });
+      setUserRole(response.user.role);
     }
 
     // 3. Invalidate Queries
@@ -185,9 +188,8 @@ export function useRegister() {
     onSuccess: (response: AuthResponse) => {
       handleSuccess(response, 'Registration successful!');
     },
-    onError: (error: any) => {
-      const message = error.response?.data?.message || 'Registration failed';
-      toast.error(message);
+    onError: (error: ApiError) => {
+      toast.error(error.message || 'Registration failed');
     },
   });
 }
@@ -203,12 +205,8 @@ export function useLogin() {
     onSuccess: (response: AuthResponse) => {
       handleSuccess(response, 'Welcome back!');
     },
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Login failed. Please try again.';
-      toast.error(message);
+    onError: (error: ApiError) => {
+      toast.error(error.message || 'Login failed. Please try again.');
     },
   });
 }
@@ -347,10 +345,8 @@ export function useRegisterCaretaker() {
       );
       router.push('/login');
     },
-    onError: (error: any) => {
-      toast.error(
-        error.response?.data?.message || 'Failed to register caretaker',
-      );
+    onError: (error: ApiError) => {
+      toast.error(error.message || 'Failed to register caretaker');
     },
   });
 }
@@ -367,10 +363,8 @@ export function useRegisterLandlord() {
       );
       router.push('/login');
     },
-    onError: (error: any) => {
-      toast.error(
-        error.response?.data?.message || 'Failed to register landlord',
-      );
+    onError: (error: ApiError) => {
+      toast.error(error.message || 'Failed to register landlord');
     },
   });
 }
@@ -386,10 +380,8 @@ export function useRegisterStudent() {
       );
       router.push('/login');
     },
-    onError: (error: any) => {
-      toast.error(
-        error.response?.data?.message || 'Failed to register student',
-      );
+    onError: (error: ApiError) => {
+      toast.error(error.message || 'Failed to register student');
     },
   });
 }
@@ -405,8 +397,8 @@ export function useResetPassword() {
       );
       router.push('/login');
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to reset password');
+    onError: (error: ApiError) => {
+      toast.error(error.message || 'Failed to reset password');
     },
   });
 }

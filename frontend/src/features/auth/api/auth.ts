@@ -1,6 +1,4 @@
 import { axiosInstance as axios } from '@/lib/api/client';
-import { setTokens, clearTokens, setUserRole } from '@/lib/auth/token';
-import { csrf } from '@/lib/security/csrf';
 import type {
   LoginRequest,
   AuthResponse,
@@ -18,11 +16,6 @@ import type {
   TokenResponse,
   PermissionsResponse,
   MessageResponse,
-  StudentProfile,
-  LandlordProfile,
-  User,
-  UserProfile,
-  ApiResponse,
 } from '@/types/api.types';
 import type { UpdateProfileFormData } from '@/lib/validations/auth.schema';
 
@@ -31,18 +24,8 @@ import type { UpdateProfileFormData } from '@/lib/validations/auth.schema';
  * Endpoint: POST /api/v1/accounts/login/
  */
 async function login(data: LoginRequest): Promise<AuthResponse> {
-  const res = await axios.post<AuthResponse>('/accounts/login/', data, {
-    headers: csrf.getHeader(),
-  });
-  const payload = res.data;
-  
-  if (payload.access && payload.refresh) {
-    setTokens(payload.access, payload.refresh);
-  }
-  if (payload.user?.role) {
-    setUserRole(payload.user.role);
-  }
-  return payload;
+  const res = await axios.post<AuthResponse>('/accounts/login/', data);
+  return res.data;
 }
 
 /**
@@ -51,19 +34,8 @@ async function login(data: LoginRequest): Promise<AuthResponse> {
  * Note: This endpoint may need to be implemented on the backend
  */
 async function googleLogin(token: string): Promise<AuthResponse> {
-  const res = await axios.post<AuthResponse>('/accounts/google/', 
-    { token },
-    { headers: csrf.getHeader() }
-  );
-  const payload = res.data;
-
-  if (payload.access && payload.refresh) {
-    setTokens(payload.access, payload.refresh);
-  }
-  if (payload.user?.role) {
-    setUserRole(payload.user.role);
-  }
-  return payload;
+  const res = await axios.post<AuthResponse>('/accounts/google/', { token });
+  return res.data;
 }
 
 /**
@@ -74,20 +46,11 @@ async function registerUser<T>(
   data: T,
   rolePath: 'student' | 'landlord' | 'caretaker',
 ): Promise<AuthResponse> {
-  const res = await axios.post<AuthResponse>(
-    '/accounts/register/', 
-    { ...data, role: rolePath },
-    { headers: csrf.getHeader() }
-  );
-  const payload = res.data;
-  
-  if (payload.access && payload.refresh) {
-    setTokens(payload.access, payload.refresh);
-  }
-  if (payload.user?.role) {
-    setUserRole(payload.user.role);
-  }
-  return payload;
+  const res = await axios.post<AuthResponse>('/accounts/register/', {
+    ...data,
+    role: rolePath,
+  });
+  return res.data;
 }
 
 const registerStudent = (data: StudentRegisterRequest) =>
@@ -102,11 +65,7 @@ const registerCaretaker = (data: CaretakerRegisterRequest) =>
  * Endpoint: POST /api/v1/accounts/logout/
  */
 async function logout(): Promise<void> {
-  try {
-    await axios.post('/accounts/logout/', {}, { headers: csrf.getHeader() });
-  } finally {
-    clearTokens();
-  }
+  await axios.post('/accounts/logout/', {});
 }
 
 /**
@@ -114,9 +73,7 @@ async function logout(): Promise<void> {
  * Endpoint: POST /api/v1/accounts/verify-email/
  */
 async function verifyEmail(data: EmailVerificationRequest): Promise<void> {
-  await axios.post('/accounts/verify-email/', data, {
-    headers: csrf.getHeader(),
-  });
+  await axios.post('/accounts/verify-email/', data);
 }
 
 /**
@@ -124,9 +81,7 @@ async function verifyEmail(data: EmailVerificationRequest): Promise<void> {
  * Endpoint: POST /api/v1/accounts/verify-phone/
  */
 async function verifyPhone(data: PhoneVerificationRequest): Promise<void> {
-  await axios.post('/accounts/verify-phone/', data, {
-    headers: csrf.getHeader(),
-  });
+  await axios.post('/accounts/verify-phone/', data);
 }
 
 /**
@@ -134,15 +89,9 @@ async function verifyPhone(data: PhoneVerificationRequest): Promise<void> {
  * Endpoint: POST /api/v1/accounts/resend-otp/
  */
 async function resendOtp(data: ResendOtpRequest): Promise<void> {
-  await axios.post('/accounts/resend-otp/', data, {
-    headers: csrf.getHeader(),
-  });
+  await axios.post('/accounts/resend-otp/', data);
 }
 
-/**
- * Request password reset
- * Endpoint: POST /api/v1/accounts/password/reset/
- */
 /**
  * Request password reset
  * Endpoint: POST /api/v1/accounts/password/reset/
@@ -153,7 +102,6 @@ async function forgotPassword(
   const res = await axios.post<MessageResponse>(
     '/accounts/password/reset/',
     data,
-    { headers: csrf.getHeader() }
   );
   return res.data;
 }
@@ -168,22 +116,19 @@ async function resetPassword(
   const res = await axios.post<MessageResponse>(
     '/accounts/password/reset/confirm/',
     data,
-    { headers: csrf.getHeader() }
   );
   return res.data;
 }
 
 /**
  * Verify password reset token
- * Endpoint: POST /api/v1/accounts/password/reset/verify/
+ * Endpoint: GET /api/v1/accounts/password/reset/verify/
  */
 async function verifyResetPasswordToken(
   token: string,
 ): Promise<MessageResponse> {
-  const res = await axios.post<MessageResponse>(
-    '/accounts/password/reset/verify/',
-    { token },
-    { headers: csrf.getHeader() },
+  const res = await axios.get<MessageResponse>(
+    `/accounts/password/reset/verify/?token=${token}`,
   );
   return res.data;
 }
@@ -204,11 +149,7 @@ async function getProfile(): Promise<ProfileResponse> {
 async function updateProfile(
   data: UpdateProfileFormData,
 ): Promise<ProfileResponse> {
-  const res = await axios.put<ProfileResponse>(
-    '/accounts/profile/',
-    data,
-    { headers: csrf.getHeader() }
-  );
+  const res = await axios.put<ProfileResponse>('/accounts/profile/', data);
   return res.data;
 }
 
@@ -219,16 +160,15 @@ async function updateProfile(
 async function uploadProfilePicture(file: File): Promise<ProfileResponse> {
   const formData = new FormData();
   formData.append('picture', file);
-  
+
   const res = await axios.post<ProfileResponse>(
     '/accounts/profile/picture/',
     formData,
     {
       headers: {
-        ...csrf.getHeader(),
         'Content-Type': 'multipart/form-data',
       },
-    }
+    },
   );
   return res.data;
 }
@@ -240,11 +180,9 @@ async function uploadProfilePicture(file: File): Promise<ProfileResponse> {
 async function completeStudentProfile(
   data: StudentProfileRequest,
 ): Promise<ProfileResponse> {
-  const res = await axios.put<ProfileResponse>(
-    '/accounts/profile/',
-    { profile: { ...data, type: 'student' } },
-    { headers: csrf.getHeader() }
-  );
+  const res = await axios.put<ProfileResponse>('/accounts/profile/', {
+    profile: { ...data, type: 'student' },
+  });
   return res.data;
 }
 
@@ -255,11 +193,9 @@ async function completeStudentProfile(
 async function completeLandlordProfile(
   data: LandlordProfileRequest,
 ): Promise<ProfileResponse> {
-  const res = await axios.put<ProfileResponse>(
-    '/accounts/profile/',
-    { profile: { ...data, type: 'landlord' } },
-    { headers: csrf.getHeader() }
-  );
+  const res = await axios.put<ProfileResponse>('/accounts/profile/', {
+    profile: { ...data, type: 'landlord' },
+  });
   return res.data;
 }
 
@@ -268,14 +204,10 @@ async function completeLandlordProfile(
  * Endpoint: POST /api/v1/accounts/refresh-token/
  */
 async function refreshToken(refresh: string): Promise<TokenResponse> {
-  const res = await axios.post<TokenResponse>(
-    '/accounts/refresh-token/',
-    { refresh },
-  );
-  const payload = res.data;
-  if (payload.access && payload.refresh)
-    setTokens(payload.access, payload.refresh);
-  return payload;
+  const res = await axios.post<TokenResponse>('/accounts/refresh-token/', {
+    refresh,
+  });
+  return res.data;
 }
 
 /**
@@ -283,9 +215,7 @@ async function refreshToken(refresh: string): Promise<TokenResponse> {
  * Endpoint: GET /api/v1/accounts/permissions/
  */
 async function getPermissions(): Promise<PermissionsResponse> {
-  const res = await axios.get<PermissionsResponse>(
-    '/accounts/permissions/',
-  );
+  const res = await axios.get<PermissionsResponse>('/accounts/permissions/');
   return res.data;
 }
 
@@ -301,6 +231,7 @@ export const authApi = {
   resendOtp,
   forgotPassword,
   resetPassword,
+  verifyResetPasswordToken,
   getProfile,
   completeStudentProfile,
   completeLandlordProfile,
@@ -309,5 +240,3 @@ export const authApi = {
   refreshToken,
   getPermissions,
 };
-
-export default login;

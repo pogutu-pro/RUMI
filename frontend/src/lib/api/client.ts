@@ -13,6 +13,7 @@ import {
   clearTokens,
 } from '@/lib/auth/token';
 import { getApiUrl, isValidApiUrl, logger } from '@/lib/utils/env';
+import { getCsrfHeader } from '@/lib/security/csrf';
 import type { ApiError, TokenResponse, ApiResponse } from '@/types/api.types';
 
 // -- Configuration --
@@ -66,13 +67,21 @@ export const axiosInstance: AxiosInstance = axiosBase.create({
 
 // -- Interceptors --
 
-// Request: Attach Token
+// Request: Attach Token & CSRF
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // 1. Attach Bearer token
     const token = getAccessToken();
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // 2. Attach CSRF token for mutations
+    if (config.method !== 'get' && config.method !== 'head' && config.headers) {
+      const csrfHeaders = getCsrfHeader();
+      Object.assign(config.headers, csrfHeaders);
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

@@ -23,6 +23,7 @@ export type {
   EmailVerificationRequest,
   PhoneVerificationRequest,
   ResendOtpRequest,
+  UserProfile,
 } from '@/features/auth/types/types';
 
 // Some types were not moved yet or matched exactly?
@@ -38,12 +39,16 @@ export type {
 
 export type {
     StudentProfileRequest,
-    LandlordProfileRequest
+    LandlordProfileRequest,
+    StudentProfile,
+    LandlordProfile,
 } from '@/features/profile/types';
 
 // ApiRequestConfig was just AxiosRequestConfig alias.
 import { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { ApiResponse, ApiError } from '@/types/shared';
+export type { User } from '@/features/users/types';
+export type { ApiResponse, ApiError };
 
 export type ApiRequestConfig = AxiosRequestConfig;
 export type ApiAxiosResponse<T> = AxiosResponse<ApiResponse<T>>;
