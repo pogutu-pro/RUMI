@@ -366,16 +366,58 @@ class UserLoginView(APIView):
             }
         )
 
-        # Get profile data
+# Get profile data
         profile_data = self._get_user_profile_data(user)
 
-        return Response({
+        response = Response({
             'access_token': access_token,
             'refresh_token': refresh_token,
             'token_type': 'Bearer',
             'expires_in': 3600,
             'user': profile_data
         }, status=status.HTTP_200_OK)
+
+# Set cookies for frontend access
+        from django.utils.http import http_date
+        from django.conf import settings
+        
+        # Set access token cookie
+        response.set_cookie(
+            key='rumi_access_token',
+            value=access_token,
+            max_age=15 * 60,  # 15 minutes
+            path='/',
+            domain=None,
+            secure=False,  # Set to True in production with HTTPS
+            httponly=True,
+            samesite='Strict'
+        )
+        
+        # Set refresh token cookie
+        response.set_cookie(
+            key='rumi_refresh_token',
+            value=refresh_token,
+            max_age=30 * 24 * 60 * 60,  # 30 days
+            path='/',
+            domain=None,
+            secure=False,  # Set to True in production with HTTPS
+            httponly=True,
+            samesite='Strict'
+        )
+        
+        # Set user role cookie
+        response.set_cookie(
+            key='rumi_user_role',
+            value=user.role,
+            max_age=30 * 24 * 60 * 60,  # 30 days
+            path='/',
+            domain=None,
+            secure=False,  # Set to True in production with HTTPS
+            httponly=False,  # Frontend needs access to role
+            samesite='Strict'
+        )
+
+        return response
 
     def _get_user_profile_data(self, user):
         """Get user profile data based on role"""

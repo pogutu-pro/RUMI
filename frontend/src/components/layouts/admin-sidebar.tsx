@@ -112,6 +112,7 @@ const navItems: NavItem[] = [
     title: 'System',
     icon: Settings,
     items: [
+      { title: 'Monitoring', href: '/admin/monitoring', icon: PieChart },
       { title: 'Settings', href: '/admin/settings', icon: Settings },
       { title: 'Support', href: '/admin/support', icon: LifeBuoy },
     ],

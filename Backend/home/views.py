@@ -1,4 +1,5 @@
 import uuid
+import requests
 from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
@@ -277,7 +278,7 @@ class ContactInquiryView(APIView):
         }, status=status.HTTP_201_CREATED)
 
     def get_client_ip(self, request):
-        """Get client IP address"""
+        """Get client IP"""
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
             ip = x_forwarded_for.split(',')[0]
@@ -603,7 +604,7 @@ class NewsletterSubscribeView(APIView):
         }, status=status.HTTP_201_CREATED)
 
     def get_client_ip(self, request):
-        """Get client IP address"""
+        """Get client IP"""
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
             ip = x_forwarded_for.split(',')[0]
@@ -714,3 +715,31 @@ class StatisticsUpdateView(APIView):
             'stat_label': stat.stat_label,
             'updated_at': stat.updated_at
         }, status=status.HTTP_200_OK)
+
+
+class PrometheusMetricsProxyView(APIView):
+    """Proxy Prometheus metrics to avoid CORS issues"""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """Return Prometheus metrics"""
+        try:
+            # Fetch metrics from Prometheus
+            response = requests.get('http://localhost:8001/metrics', timeout=5)
+            response.raise_for_status()
+            
+            # Return the metrics text directly
+            return Response(
+                response.text,
+                content_type='text/plain',
+                status=status.HTTP_200_OK
+            )
+        except requests.RequestException as e:
+            return Response({
+                'error': f'Failed to fetch metrics: {str(e)}'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except Exception as e:
+            return Response({
+                'error': f'Unexpected error: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

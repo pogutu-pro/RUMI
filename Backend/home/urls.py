@@ -30,4 +30,7 @@ urlpatterns = [
 
     # Admin statistics
     path('statistics/<str:stat_key>/', views.StatisticsUpdateView.as_view(), name='statistics_update'),
+
+    # Prometheus metrics proxy
+    path('metrics/', views.PrometheusMetricsProxyView.as_view(), name='prometheus_metrics'),
 ]

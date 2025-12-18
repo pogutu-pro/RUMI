@@ -98,7 +98,7 @@ class LateFeeChargeSerializer(serializers.ModelSerializer):
     def get_booking_details(self, obj):
         return {
             'id': obj.booking.id,
-            'room': obj.booking.room.name,
+            'room': obj.booking.room.room_number,
         }
 
     def get_student_details(self, obj):
@@ -196,7 +196,7 @@ class RefundRequestSerializer(serializers.ModelSerializer):
     def get_booking_details(self, obj):
         return {
             'id': obj.booking.id,
-            'room': obj.booking.room.name,
+            'room': obj.booking.room.room_number,
         }
 
     def get_student_details(self, obj):

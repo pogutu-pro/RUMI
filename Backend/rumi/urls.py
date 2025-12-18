@@ -40,6 +40,9 @@ urlpatterns = [
     # Prometheus metrics endpoints
     path('metrics/', include('django_prometheus.urls')),
 
+    # Custom metrics proxy endpoint (for frontend CORS fix)
+    path('metrics-proxy/', include('home.urls')),
+
     # Health check endpoint
     path('health/', include('monitoring.urls')),
 
