@@ -206,7 +206,9 @@ export function useLogin() {
       handleSuccess(response, 'Welcome back!');
     },
     onError: (error: ApiError) => {
-      toast.error(error.message || 'Login failed. Please try again.');
+      // We don't toast here because LoginForm handles it via internal state
+      // but we log it for debugging
+      console.error('Login error:', error);
     },
   });
 }

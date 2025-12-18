@@ -15,6 +15,7 @@ import {
 import { getApiUrl, isValidApiUrl, logger } from '@/lib/utils/env';
 import { getCsrfHeader } from '@/lib/security/csrf';
 import type { ApiError, TokenResponse, ApiResponse } from '@/types/api.types';
+import { mapApiError } from './error-mapping';
 
 // -- Configuration --
 const USE_MOCK_API = process.env.NEXT_PUBLIC_USE_MOCK_API === 'true';
@@ -110,7 +111,14 @@ axiosInstance.interceptors.response.use(
     }
 
     const { status, data } = error.response;
-    const errorMessage = (data as any)?.message || 'An error occurred';
+    
+    // Extract the most descriptive error message possible
+    const errorMessage = 
+      (data as any)?.message || 
+      (data as any)?.error || 
+      (data as any)?.detail || 
+      (Array.isArray((data as any)?.non_field_errors) ? (data as any)?.non_field_errors[0] : (data as any)?.non_field_errors) ||
+      'An error occurred';
 
     // 2. Token Refresh Logic (401)
     if (status === 401 && originalRequest && !originalRequest._retry) {
@@ -168,13 +176,22 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    // 3. Normalized Error Return
+    // 3. Unified Error Normalization
+    const mapped = mapApiError(error);
+    
     const apiError: ApiError = {
-      error: (data as any)?.error || 'api_error',
-      message: errorMessage,
-      statusCode: status,
+      error: (data as any)?.error || (data as any)?.code || 'api_error',
+      message: mapped.message,
+      statusCode: mapped.statusCode,
       details: (data as any)?.details || data,
     };
+
+    // Final "Calm" Polish for Auth
+    if (apiError.statusCode === 400 || apiError.statusCode === 401) {
+        if (apiError.message === 'An unexpected error occurred. Please try again.' || apiError.message === 'An error occurred') {
+            apiError.message = 'The email or password you entered is incorrect. Please try again.';
+        }
+    }
 
     return Promise.reject(apiError);
   }

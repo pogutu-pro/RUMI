@@ -76,16 +76,33 @@ export function LoginForm({
         onSuccess?.();
       },
       onError: (err: any) => {
-        let msg = 'Unable to sign in. Please check your credentials and try again.';
+        // 1. Identify status code from multiple possible locations
+        const status = err?.statusCode || err?.status || err?.response?.status;
         
-        if (err?.statusCode === 401) {
+        // 2. Identify message from multiple possible locations
+        const rawMessage = err?.message || err?.response?.data?.message || err?.error;
+
+        // 3. Fallback message (Calm & Tailored)
+        let msg = 'Unable to sign in. Please verify your email and password and try again.';
+        
+        // Use raw message only if it's NOT a technical Axios message
+        const isTechnical = 
+          typeof rawMessage === 'string' && 
+          (rawMessage.includes('status code') || 
+           rawMessage.includes('Network Error') || 
+           rawMessage === 'An error occurred');
+
+        if (rawMessage && !isTechnical) {
+          msg = rawMessage;
+        }
+        
+        // 4. Strong Overrides for calm messaging
+        if (status === 401 || status === 400) {
           msg = 'The email or password you entered is incorrect. Please try again.';
-        } else if (err?.statusCode === 403) {
-          msg = 'Your account might be restricted or you lack permissions. Please contact support.';
-        } else if (err?.statusCode === 429) {
-          msg = 'Too many attempts. Please wait a moment before trying again.';
-        } else if (err?.message && err.message !== 'An error occurred') {
-          msg = err.message;
+        } else if (status === 403) {
+          msg = 'Your account is currently restricted. Please contact support if you believe this is an error.';
+        } else if (status === 429) {
+          msg = 'Too many failed attempts. For your security, please wait a few minutes before trying again.';
         }
 
         setServerError(msg);
