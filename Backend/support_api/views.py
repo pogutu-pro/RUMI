@@ -6,8 +6,6 @@ from django.db import transaction
 from django.utils import timezone
 from django.db.models import Q, Count, Avg
 from django.core.paginator import Paginator
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
 import logging
 
 from .models import SupportTicket, SupportResponse, TechSupportProfile, TicketActivityLog
@@ -29,18 +27,38 @@ logger = logging.getLogger(__name__)
 
 
 class TechSupportDashboardView(APIView):
-    """Tech support dashboard with system overview"""
+    """
+    Tech Support Dashboard API
+    
+    Comprehensive dashboard for tech support and super admin users.
+    
+    GET: Returns dashboard data including:
+    - Ticket statistics (total, by status, by priority)
+    - Recent tickets assigned to the user
+    - Recent responses and activities
+    - Performance metrics
+    
+    Authentication Required: JWT Token
+    Permissions: Tech Support Admin or Super Admin
+    
+    Tech Support users see only their assigned tickets.
+    Super Admin users see all tickets across the system.
+    """
     
     permission_classes = [permissions.IsAuthenticated, CanViewTechSupportDashboard]
     
-    @swagger_auto_schema(
-        operation_summary="Get Tech Support Dashboard",
-        operation_description="Get comprehensive dashboard data for tech support and super admin users",
-        responses={200: 'Dashboard data with stats, recent tickets, and recent responses'}
-    )
-    
     def get(self, request):
-        """Get tech support dashboard data"""
+        """
+        Get Tech Support Dashboard Data
+        
+        Returns comprehensive dashboard data for tech support and super admin users.
+        
+        Returns:
+        - Ticket statistics breakdown by status and priority
+        - Recent tickets assigned to the user
+        - Recent responses and activities
+        - Performance metrics and workload information
+        """
         try:
             # Basic stats
             if request.user.role == 'super_admin':
@@ -90,7 +108,28 @@ class TechSupportDashboardView(APIView):
 
 
 class SupportTicketListView(APIView):
-    """List support tickets based on user role"""
+    """
+    Support Ticket Management API
+    
+    Handles listing and creation of support tickets based on user role and permissions.
+    
+    GET: List tickets with filtering options
+    POST: Create new support ticket (Students, Caretakers, Landlords only)
+    
+    Authentication Required: JWT Token
+    
+    Permissions:
+    - Super Admin: Sees all tickets
+    - Tech Support: Sees assigned tickets only
+    - Students/Caretakers/Landlords: See their own tickets only
+    
+    Query Parameters:
+    - page: Page number for pagination (default: 1)
+    - per_page: Items per page (default: 10, max: 100)
+    - status: Filter by ticket status (open, in_progress, pending, resolved, closed, escalated)
+    - priority: Filter by priority level (low, medium, high, urgent, critical)
+    - category: Filter by category (account, payment, technical, hostel, security, feature_request, bug_report, general)
+    """
     
     def get_permissions(self):
         """Set permissions based on request method"""
@@ -103,7 +142,14 @@ class SupportTicketListView(APIView):
         return [permissions.IsAuthenticated()]
     
     def get(self, request):
-        """List tickets based on user role"""
+        """
+        List Support Tickets
+        
+        List support tickets based on user role and filters.
+        
+        Returns paginated list of tickets with basic information.
+        Each user sees tickets based on their role and permissions.
+        """
         try:
             page = int(request.GET.get('page', 1))
             per_page = int(request.GET.get('per_page', 10))
@@ -157,7 +203,29 @@ class SupportTicketListView(APIView):
             )
     
     def post(self, request):
-        """Create a new support ticket"""
+        """
+        Create Support Ticket
+        
+        Create a new support ticket.
+        
+        This endpoint allows Students, Caretakers, and Landlords to create support tickets
+        that will be assigned to Tech Support staff.
+        
+        Required Fields:
+        - title: Brief description of the issue (max 200 characters)
+        - description: Detailed description of the problem (max 2000 characters)
+        - category: Type of issue (account, payment, technical, hostel, security, feature_request, bug_report, general)
+        - priority: Urgency level (low, medium, high, urgent, critical)
+        
+        Optional Fields:
+        - tags: List of relevant tags for categorization
+        - attachments: List of attachment URLs or file references
+        
+        The ticket will be automatically assigned escalation_level = 1
+        and can be escalated to Super Admin by Tech Support if needed.
+        
+        Returns the complete ticket details with auto-generated ticket_id.
+        """
         try:
             serializer = SupportTicketCreateSerializer(data=request.data)
             if serializer.is_valid():
@@ -188,20 +256,42 @@ class SupportTicketListView(APIView):
 
 
 class SupportTicketDetailView(APIView):
-    """Get support ticket details"""
+    """
+    Support Ticket Detail API
+    
+    Get detailed information for a specific support ticket.
+    
+    GET: Retrieve complete ticket details including responses and activity log
+    
+    Authentication Required: JWT Token
+    
+    Permissions:
+    - Super Admin: Can view all tickets
+    - Tech Support: Can view assigned tickets or escalated tickets
+    - Ticket Creator: Can view their own tickets
+    
+    Path Parameters:
+    - ticket_id: Unique ticket identifier (format: TKT-YYYYMMDD-XXXXXXXX)
+    """
     
     def get_permissions(self):
         """Set permissions based on user role and ticket assignment"""
         return [permissions.IsAuthenticated()]
     
-    @swagger_auto_schema(
-        operation_summary="Get Support Ticket Details",
-        operation_description="Get detailed information for a specific support ticket",
-        responses={200: SupportTicketDetailSerializer, 404: 'Ticket not found', 403: 'Permission denied'}
-    )
-    
     def get(self, request, ticket_id):
-        """Get detailed ticket information"""
+        """
+        Get Support Ticket Details
+        
+        Get detailed information for a specific support ticket.
+        
+        Returns:
+        - Complete ticket information
+        - All responses (internal notes hidden from customers)
+        - Activity log
+        - Assignment information
+        - Escalation details
+        - Resolution information (if resolved)
+        """
         try:
             # Try to find ticket by ID
             try:
@@ -248,10 +338,44 @@ class SupportTicketDetailView(APIView):
 
 
 class SupportTicketResponseView(APIView):
-    """Respond to support ticket"""
+    """
+    Support Ticket Response API
+    
+    Add responses to support tickets.
+    
+    POST: Add response to ticket
+    
+    Authentication Required: JWT Token
+    
+    Permissions:
+    - Super Admin: Can respond to any ticket
+    - Tech Support: Can respond to assigned tickets or escalated tickets
+    - Ticket Creator: Can respond to their own tickets
+    
+    Path Parameters:
+    - ticket_id: Unique ticket identifier
+    
+    Request Body:
+    - response_type: Type of response (initial, update, resolution, escalation, customer_response)
+    - message: Response message content (max 2000 characters)
+    - is_internal: Whether this is an internal note (tech support only)
+    - new_status: Optional status change
+    - new_priority: Optional priority change
+    - new_assignee: Optional assignee change
+    - attachments: Optional list of attachment URLs
+    """
     
     def post(self, request, ticket_id):
-        """Add response to ticket"""
+        """
+        Respond to Support Ticket
+        
+        Add response to a support ticket.
+        
+        This endpoint allows authorized users to add responses to tickets.
+        Internal notes are only visible to tech support and super admin users.
+        
+        The response can also update ticket status, priority, or assignment.
+        """
         try:
             # Get ticket
             try:
@@ -319,10 +443,40 @@ class SupportTicketResponseView(APIView):
 
 
 class SupportTicketEscalateView(APIView):
-    """Escalate ticket to super admin"""
+    """
+    Support Ticket Escalation API
+    
+    Escalate tickets to super admin.
+    
+    POST: Escalate ticket to super admin
+    
+    Authentication Required: JWT Token
+    Permissions: Tech Support only
+    
+    Path Parameters:
+    - ticket_id: Unique ticket identifier
+    
+    Request Body:
+    - reason: Detailed reason for escalation (min 10 characters)
+    
+    This endpoint allows Tech Support to escalate tickets to Super Admin
+    when they require higher-level intervention or authorization.
+    """
     
     def post(self, request, ticket_id):
-        """Escalate ticket to super admin"""
+        """
+        Escalate Ticket to Super Admin
+        
+        Escalate a support ticket to super admin for higher-level handling.
+        
+        This endpoint allows Tech Support to escalate tickets that require:
+        - Higher-level decision making
+        - System-level changes
+        - Policy decisions
+        - Complex technical issues
+        
+        The ticket will be marked as escalated and assigned escalation_level = 2.
+        """
         try:
             # Get ticket
             try:
@@ -385,10 +539,42 @@ class SupportTicketEscalateView(APIView):
 
 
 class SupportTicketResolveView(APIView):
-    """Resolve support ticket"""
+    """
+    Support Ticket Resolution API
+    
+    Mark tickets as resolved.
+    
+    POST: Resolve support ticket
+    
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin
+    
+    Path Parameters:
+    - ticket_id: Unique ticket identifier
+    
+    Request Body:
+    - notes: Resolution notes (optional, min 10 characters if provided)
+    
+    This endpoint marks tickets as resolved and updates performance metrics.
+    """
     
     def post(self, request, ticket_id):
-        """Mark ticket as resolved"""
+        """
+        Resolve Support Ticket
+        
+        Mark a support ticket as resolved.
+        
+        This endpoint can be used by:
+        - Tech Support: To resolve tickets assigned to them
+        - Super Admin: To resolve any ticket in the system
+        
+        Resolving a ticket:
+        - Updates ticket status to 'resolved'
+        - Sets resolved_at timestamp
+        - Records who resolved it
+        - Updates tech support performance metrics
+        - Decrements workload counters
+        """
         try:
             # Get ticket
             try:
@@ -453,12 +639,39 @@ class SupportTicketResolveView(APIView):
 
 
 class TechSupportUserManagementView(APIView):
-    """Tech support user management (Super Admin only)"""
+    """
+    Tech Support User Management API
+    
+    Manage tech support users (Super Admin only).
+    
+    GET: List all tech support users
+    POST: Create new tech support user
+    
+    Authentication Required: JWT Token
+    Permissions: Super Admin only
+    
+    This endpoint allows Super Admin to:
+    - View all tech support profiles
+    - Create new tech support accounts
+    - Assign departments and seniority levels
+    - Set workload limits
+    """
     
     permission_classes = [permissions.IsAuthenticated, CanCreateTechSupportUser]
     
     def get(self, request):
-        """List tech support users"""
+        """
+        List Tech Support Users
+        
+        Get a list of all tech support users with their profiles.
+        
+        Returns comprehensive information about each tech support user including:
+        - Basic user information
+        - Department and seniority level
+        - Current workload and limits
+        - Performance metrics
+        - Online status
+        """
         try:
             tech_support_users = TechSupportProfile.objects.all()
             serializer = TechSupportProfileSerializer(tech_support_users, many=True)
@@ -471,7 +684,26 @@ class TechSupportUserManagementView(APIView):
             )
     
     def post(self, request):
-        """Create new tech support user"""
+        """
+        Create Tech Support User
+        
+        Create a new tech support user account.
+        
+        This endpoint creates both a user account and a tech support profile.
+        The new user will be automatically assigned the 'tech_support' role.
+        
+        Required Fields:
+        - email: Unique email address
+        - first_name: User's first name
+        - last_name: User's last name
+        - password: Temporary password (min 8 characters)
+        - employee_id: Unique employee identifier
+        - department: Support department (general, technical, billing, security, escalations)
+        - seniority_level: Level (junior, senior, lead, manager)
+        
+        Optional Fields:
+        - max_tickets_assigned: Maximum concurrent tickets (default: 50)
+        """
         try:
             serializer = TechSupportProfileCreateSerializer(data=request.data)
             if serializer.is_valid():
@@ -502,7 +734,23 @@ class TechSupportUserManagementView(APIView):
 
 
 class CaretakerManagementView(APIView):
-    """Caretaker management (Landlord only)"""
+    """
+    Caretaker Management API
+    
+    Manage caretaker accounts (Landlord only).
+    
+    GET: List caretakers for landlord
+    POST: Create new caretaker
+    
+    Authentication Required: JWT Token
+    Permissions: Verified Landlord only
+    
+    This endpoint allows verified landlords to:
+    - View their assigned caretakers
+    - Create new caretaker accounts
+    - Assign caretakers to their hostels
+    - Set caretaker permissions
+    """
     
     def get_permissions(self):
         """Set permissions based on request method"""
@@ -513,7 +761,18 @@ class CaretakerManagementView(APIView):
         return [permissions.IsAuthenticated()]
     
     def get(self, request):
-        """List caretakers for landlord"""
+        """
+        List Caretakers
+        
+        Get a list of all caretakers assigned to the landlord's properties.
+        
+        Returns comprehensive information about each caretaker including:
+        - Basic user information
+        - National ID and contact details
+        - Assigned hostel information
+        - Employment details and status
+        - Permissions and access levels
+        """
         try:
             landlord_profile = request.user.landlord_profile
             caretakers = landlord_profile.caretakers.filter(is_active=True)
@@ -551,7 +810,30 @@ class CaretakerManagementView(APIView):
             )
     
     def post(self, request):
-        """Create new caretaker"""
+        """
+        Create Caretaker
+        
+        Create a new caretaker account and assign to a hostel.
+        
+        This endpoint creates both a user account and a caretaker profile.
+        The new caretaker will be automatically assigned the 'caretaker' role
+        and verified status.
+        
+        Required Fields:
+        - email: Unique email address
+        - first_name: Caretaker's first name
+        - last_name: Caretaker's last name
+        - national_id: Unique national ID
+        - phone_number: Contact number
+        - hostel_id: ID of hostel to assign to (must belong to landlord)
+        - emergency_contact_name: Emergency contact name
+        - emergency_contact_phone: Emergency contact phone
+        
+        Optional Fields:
+        - permissions: JSON object with caretaker permissions
+        
+        Returns temporary password for the new caretaker account.
+        """
         try:
             serializer = CaretakerCreateSerializer(
                 data=request.data,
@@ -632,12 +914,44 @@ class CaretakerManagementView(APIView):
 
 
 class SupportTicketStatsView(APIView):
-    """Support ticket statistics"""
+    """
+    Support Ticket Statistics API
+    
+    Get comprehensive support ticket statistics.
+    
+    GET: Get ticket statistics
+    
+    Authentication Required: JWT Token
+    
+    This endpoint provides detailed analytics for support tickets including:
+    - Total ticket counts by status and priority
+    - Category breakdown
+    - Average resolution times
+    - Performance metrics
+    
+    Statistics are filtered based on user role:
+    - Super Admin: All tickets
+    - Tech Support: Assigned tickets only
+    - Others: Own tickets only
+    """
     
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
-        """Get support ticket statistics"""
+        """
+        Get Support Ticket Statistics
+        
+        Get comprehensive support ticket statistics and analytics.
+        
+        Returns detailed breakdown of:
+        - Total tickets by status (open, in_progress, pending, escalated, resolved, closed)
+        - Tickets by priority level
+        - Tickets by category
+        - Average resolution time
+        - Performance metrics
+        
+        Data is filtered based on user permissions and role.
+        """
         try:
             # Base queryset based on user role
             if request.user.role == 'super_admin':
@@ -698,98 +1012,126 @@ class SupportTicketStatsView(APIView):
 
 # Placeholder views for system monitoring (keeping existing structure)
 class SystemHealthView(APIView):
+    """System Health Check API"""
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
+        """Get system health status"""
         return Response({'status': 'healthy', 'timestamp': timezone.now().isoformat()})
 
 
 class SystemLogsView(APIView):
+    """System Logs API"""
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
+        """Get system logs"""
         return Response({'logs': 'System logs endpoint - implement as needed'})
 
 
 class SystemMaintenanceView(APIView):
+    """System Maintenance API"""
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
+        """Get system maintenance status"""
         return Response({'maintenance': 'System maintenance endpoint - implement as needed'})
 
 
 class MaintenanceScheduleView(APIView):
+    """Maintenance Schedule API"""
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
+        """Get maintenance schedule"""
         return Response({'schedule': 'Maintenance schedule endpoint - implement as needed'})
 
 
 class SystemBackupView(APIView):
+    """System Backup API"""
     permission_classes = [permissions.IsAuthenticated]
     
     def post(self, request):
+        """Initiate system backup"""
         return Response({'message': 'System backup initiated'})
 
 
 class UserSupportView(APIView):
+    """User Support API"""
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
+        """Get user support operations"""
         return Response({'users': 'User support endpoint - implement as needed'})
 
 
 class UserSupportDetailView(APIView):
+    """User Support Detail API"""
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request, user_id):
+        """Get user support details"""
         return Response({'user': f'User {user_id} support details'})
 
 
 class UserPasswordResetView(APIView):
+    """User Password Reset API"""
     permission_classes = [permissions.IsAuthenticated]
     
     def post(self, request, user_id):
+        """Reset user password"""
         return Response({'message': f'Password reset initiated for user {user_id}'})
 
 
 class PaymentSupportView(APIView):
+    """Payment Support API"""
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
+        """Get payment support operations"""
         return Response({'payments': 'Payment support endpoint - implement as needed'})
 
 
 class PaymentDisputeSupportView(APIView):
+    """Payment Dispute Support API"""
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
+        """Get payment dispute support"""
         return Response({'disputes': 'Payment dispute support endpoint - implement as needed'})
 
 
 class PaymentRefundSupportView(APIView):
+    """Payment Refund Support API"""
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
+        """Get payment refund support"""
         return Response({'refunds': 'Payment refund support endpoint - implement as needed'})
 
 
 class SystemPerformanceView(APIView):
+    """System Performance API"""
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
+        """Get system performance metrics"""
         return Response({'performance': 'System performance endpoint - implement as needed'})
 
 
 class SystemErrorAnalyticsView(APIView):
+    """System Error Analytics API"""
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
+        """Get system error analytics"""
         return Response({'errors': 'System error analytics endpoint - implement as needed'})
 
 
 class SystemUsageAnalyticsView(APIView):
+    """System Usage Analytics API"""
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
+        """Get system usage analytics"""
         return Response({'usage': 'System usage analytics endpoint - implement as needed'})

@@ -11,11 +11,65 @@ from hostels.models import Hostel, Booking
 from payments.models import Transaction
 
 class LandlordDashboardOverviewView(APIView):
-    """Get comprehensive landlord dashboard data"""
+    """
+    Landlord Dashboard Overview API
+    
+    Provide comprehensive landlord dashboard with business analytics and performance metrics.
+    
+    GET: Retrieve complete landlord dashboard data
+    
+    Authentication Required: JWT Token
+    Permissions: Landlords only
+    
+    This endpoint provides landlords with a comprehensive business dashboard including
+    revenue analytics, occupancy tracking, hostel performance, and recent activities.
+    
+    Dashboard Components:
+    - Monthly revenue trends (last 6 months)
+    - Hostel-by-hostel performance metrics
+    - Booking status summary (confirmed, pending, cancelled)
+    - Overall business statistics
+    - Recent activity feed (last 7 days)
+    - Occupancy rate calculations
+    """
+    
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
-        """Return comprehensive landlord dashboard statistics"""
+        """
+        Get Landlord Dashboard Overview
+        
+        Retrieve comprehensive dashboard data for the authenticated landlord.
+        
+        Returns complete business analytics including:
+        
+        Revenue Analytics:
+        - monthly_revenue: 6-month revenue trend with occupancy data
+        - total_revenue: Lifetime total earnings
+        
+        Property Performance:
+        - hostel_performance: Individual hostel metrics
+          - occupancy rate percentage
+          - revenue for last 30 days
+          - total and occupied room counts
+        
+        Booking Summary:
+        - booking_status: Status breakdown (confirmed, pending, cancelled)
+        - active_hostels: Number of properties
+        - pending_actions: Bookings requiring attention
+        
+        Business Statistics:
+        - occupancy_rate: Overall property occupancy percentage
+        - active_hostels: Count of landlord's properties
+        - total_revenue: Complete earnings summary
+        - pending_actions: Actions requiring landlord attention
+        
+        Activity Feed:
+        - recent_activity: Last 7 days of booking activities
+        - Real-time activity tracking
+        
+        Note: Only accessible by users with 'landlord' role.
+        """
         if request.user.role != 'landlord':
             return Response({
                 'error': 'Access denied. Landlord role required.'
@@ -168,11 +222,68 @@ class LandlordDashboardOverviewView(APIView):
 
 
 class LandlordActivityFeedView(APIView):
-    """Get landlord's recent activities"""
+    """
+    Landlord Activity Feed API
+    
+    Retrieve landlord's recent activities and timeline updates.
+    
+    GET: Get chronological activity feed with booking and payment events
+    
+    Authentication Required: JWT Token
+    Permissions: Landlords only
+    
+    This endpoint provides landlords with a chronological feed of recent activities
+    across their properties, including bookings and payment events.
+    
+    Activity Types:
+    - Booking activities: New bookings, status changes
+    - Payment activities: Successful payments, revenue events
+    - Real-time activity tracking with timestamps
+    """
+    
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
-        """Return landlord's recent activities"""
+        """
+        Get Activity Feed
+        
+        Retrieve chronological activity feed for the authenticated landlord.
+        
+        Query Parameters:
+        - limit: Number of activities to return (default: 10)
+        
+        Returns comprehensive activity feed including:
+        
+        Booking Activities:
+        - id: Unique activity identifier
+        - type: Activity type ('booking')
+        - title: Activity title with property context
+        - description: Detailed activity description
+        - time: Activity timestamp (formatted)
+        - student_name: Associated student name
+        - hostel_name: Property name
+        - room_number: Room details
+        - created_at: ISO timestamp for sorting
+        
+        Payment Activities:
+        - id: Unique activity identifier
+        - type: Activity type ('payment')
+        - title: Payment notification title
+        - description: Payment amount and student details
+        - time: Payment timestamp (formatted)
+        - amount: Payment amount in KES
+        - student_name: Paying student
+        - hostel_name: Property receiving payment
+        - created_at: ISO timestamp for sorting
+        
+        Features:
+        - Chronological sorting by creation time
+        - Mixed activity types in single feed
+        - Configurable activity limit
+        - Real-time activity tracking
+        
+        Note: Only accessible by users with 'landlord' role.
+        """
         if request.user.role != 'landlord':
             return Response({
                 'error': 'Access denied. Landlord role required.'
@@ -236,11 +347,56 @@ class LandlordActivityFeedView(APIView):
 
 
 class LandlordPaymentReportsView(APIView):
-    """Landlord payment reports and analytics"""
+    """
+    Landlord Payment Reports API
+    
+    Generate and manage landlord payment reports and financial analytics.
+    
+    GET: List available payment reports
+    POST: Generate new payment report
+    
+    Authentication Required: JWT Token
+    Permissions: Landlords only
+    
+    This endpoint provides landlords with financial reporting capabilities,
+    allowing them to generate and download detailed payment and occupancy reports.
+    
+    Report Types:
+    - Financial reports: Revenue, earnings, commission details
+    - Occupancy reports: Room utilization, booking patterns
+    - Custom date range reports
+    """
+    
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
-        """Get landlord payment reports"""
+        """
+        List Payment Reports
+        
+        Retrieve available payment and financial reports for download.
+        
+        Returns list of generated reports including:
+        
+        Report Information:
+        - id: Unique report identifier
+        - name: Descriptive report name with date
+        - type: Report category (financial, occupancy)
+        - generated_at: Report creation timestamp
+        - file_size: Report file size
+        - download_url: Secure download link
+        - expires_at: Download link expiration
+        
+        Report Categories:
+        - financial: Revenue and earnings reports
+        - occupancy: Room utilization analytics
+        
+        Security Features:
+        - Time-limited download links
+        - Secure file access
+        - Automatic link expiration
+        
+        Note: Only accessible by users with 'landlord' role.
+        """
         if request.user.role != 'landlord':
             return Response({
                 'error': 'Access denied. Landlord role required.'
@@ -281,7 +437,38 @@ class LandlordPaymentReportsView(APIView):
         }, status=status.HTTP_200_OK)
     
     def post(self, request):
-        """Generate new payment report"""
+        """
+        Generate Payment Report
+        
+        Generate a new payment or financial report with custom parameters.
+        
+        Request Body:
+        - type: Report type ('financial', 'occupancy')
+        - date_from: Start date for report period (optional)
+        - date_to: End date for report period (optional)
+        
+        Process:
+        1. Validate report parameters
+        2. Queue report generation task
+        3. Calculate report data from transactions
+        4. Generate PDF/Excel report file
+        5. Create secure download link
+        6. Schedule automatic expiration
+        
+        Returns generation status and estimated completion time.
+        
+        Report Types:
+        - financial: Complete revenue and payout analysis
+        - occupancy: Room utilization and booking patterns
+        
+        Features:
+        - Custom date range selection
+        - Async report generation
+        - Progress tracking
+        - Email notification on completion
+        
+        Note: Only accessible by users with 'landlord' role.
+        """
         if request.user.role != 'landlord':
             return Response({
                 'error': 'Access denied. Landlord role required.'
@@ -301,11 +488,67 @@ class LandlordPaymentReportsView(APIView):
 
 
 class LandlordPaymentAnalyticsView(APIView):
-    """Get landlord payment analytics"""
+    """
+    Landlord Payment Analytics API
+    
+    Provide detailed payment trends and collection analytics.
+    
+    GET: Retrieve payment analytics with trend analysis
+    
+    Authentication Required: JWT Token
+    Permissions: Landlords only
+    
+    This endpoint provides landlords with detailed payment analytics including
+    collection rates, revenue trends, and payment performance metrics.
+    
+    Analytics Features:
+    - Monthly collection and pending payment tracking
+    - Collection rate calculations
+    - Property-specific payment analytics
+    - Configurable time periods
+    """
+    
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
-        """Get payment trends and statistics"""
+        """
+        Get Payment Analytics
+        
+        Retrieve detailed payment analytics and collection metrics.
+        
+        Query Parameters:
+        - period: Analysis period ('1month', '3months', '6months', '1year')
+        - hostel_id: Specific property ID for targeted analysis (optional)
+        
+        Returns comprehensive payment analytics:
+        
+        Monthly Trends:
+        - monthly_data: Array of monthly payment metrics
+          - month: Month abbreviation
+          - collected: Successfully collected payments
+          - pending: Outstanding payment amounts
+          - collection_rate: Collection efficiency percentage
+        
+        Summary Statistics:
+        - total_collected: Sum of all collected payments
+        - avg_collection_rate: Average collection efficiency
+        - pending_payments: Total outstanding amounts
+        - completed_transactions: Number of successful payments
+        
+        Analysis Features:
+        - Collection rate trend analysis
+        - Revenue growth tracking
+        - Payment performance metrics
+        - Property-specific filtering
+        
+        Performance Metrics:
+        - Collection efficiency percentage
+        - Monthly revenue progression
+        - Outstanding payment tracking
+        - Transaction completion rates
+        
+        Note: Only accessible by users with 'landlord' role.
+        """
         if request.user.role != 'landlord':
             return Response({
                 'error': 'Access denied. Landlord role required.'
@@ -393,11 +636,68 @@ class LandlordPaymentAnalyticsView(APIView):
 
 
 class LandlordRecentTransactionsView(APIView):
-    """Get landlord's recent transactions"""
+    """
+    Landlord Recent Transactions API
+    
+    Retrieve landlord's recent payment transactions with filtering capabilities.
+    
+    GET: Get recent transactions with status and property filtering
+    
+    Authentication Required: JWT Token
+    Permissions: Landlords only
+    
+    This endpoint provides landlords with a filtered view of recent payment
+    transactions across their properties, with comprehensive transaction details.
+    
+    Features:
+    - Configurable result limits
+    - Payment status filtering
+    - Property-specific filtering
+    - Student and property context
+    - Real-time transaction data
+    """
+    
     permission_classes = [permissions.IsAuthenticated]
     
     def get(self, request):
-        """Get recent transactions with filtering"""
+        """
+        Get Recent Transactions
+        
+        Retrieve recent payment transactions with filtering options.
+        
+        Query Parameters:
+        - limit: Number of transactions to return (default: 10)
+        - status: Payment status filter ('all', 'success', 'pending', 'failed')
+        - hostel_id: Specific property ID for targeted transactions (optional)
+        
+        Returns detailed transaction data:
+        
+        Transaction Details:
+        - id: Unique transaction identifier
+        - student: Student information
+          - id: Student user ID
+          - name: Student full name
+        - hostel: Property information
+          - id: Hostel ID
+          - name: Hostel name
+        - amount: Transaction amount in KES
+        - status: Payment status (success, pending, failed)
+        - date: Transaction timestamp (ISO format)
+        - payment_method: Payment method used (e.g., M-Pesa)
+        
+        Filtering Options:
+        - Status-based filtering for payment oversight
+        - Property-specific transaction views
+        - Configurable result limits for performance
+        
+        Use Cases:
+        - Payment verification and tracking
+        - Student payment history review
+        - Property revenue monitoring
+        - Financial reconciliation support
+        
+        Note: Only accessible by users with 'landlord' role.
+        """
         if request.user.role != 'landlord':
             return Response({
                 'error': 'Access denied. Landlord role required.'

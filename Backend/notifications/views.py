@@ -12,12 +12,78 @@ from .models import Notification, NotificationPreference, EmailTemplate, SMSTemp
 
 
 class NotificationListView(APIView):
-    """Get user's in-app notifications"""
+    """
+    Notification List API
+    
+    Retrieve user's in-app notifications with filtering and pagination.
+    
+    GET: List user's notifications with read status filtering
+    
+    Authentication Required: JWT Token
+    Permissions: Authenticated users (any role)
+    
+    This endpoint provides users with comprehensive notification management
+    including read/unread filtering and pagination for large notification sets.
+    
+    Features:
+    - Unread notification filtering
+    - Pagination support
+    - Notification type categorization
+    - Real-time read status tracking
+    - Comprehensive metadata support
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        """List notifications"""
+        """
+        Get User Notifications
+        
+        Retrieve in-app notifications for the authenticated user.
+        
+        Query Parameters:
+        - unread_only: Filter to show only unread notifications (true/false)
+        - limit: Number of notifications per page (default: 20)
+        - offset: Pagination offset for result sets
+        
+        Returns comprehensive notification data:
+        
+        Notification Details:
+        - notification_id: Unique notification identifier
+        - type: Notification category/type
+        - subject: Notification title or subject line
+        - message: Detailed notification message
+        - metadata: Additional notification data (JSON)
+        - created_at: Notification creation timestamp
+        - read_at: Read timestamp (null if unread)
+        
+        Summary Statistics:
+        - unread_count: Number of unread notifications
+        - total_count: Total number of notifications
+        - notifications: Paginated notification list
+        
+        Notification Types:
+        - booking_confirmations: Booking status updates
+        - payment_notifications: Payment and transaction alerts
+        - maintenance_alerts: Property maintenance notifications
+        - security_alerts: Security and safety updates
+        - system_notifications: Platform and system messages
+        - marketing_messages: Promotional and marketing content
+        
+        Usage:
+        - Dashboard notification widgets
+        - Mobile push notification sync
+        - Email notification filtering
+        - Notification history tracking
+        - User engagement analytics
+        
+        Performance Features:
+        - Efficient pagination for large datasets
+        - Optimized unread count queries
+        - Selective field retrieval
+        
+        Note: Only returns in-app notifications, not email or SMS.
+        """
         queryset = Notification.objects.filter(
             recipient=request.user,
             channel='in_app'
@@ -62,12 +128,68 @@ class NotificationListView(APIView):
 
 
 class NotificationMarkReadView(APIView):
-    """Mark notification as read"""
+    """
+    Notification Read Status API
+    
+    Mark individual notifications as read with timestamp tracking.
+    
+    PUT: Mark specific notification as read
+    
+    Authentication Required: JWT Token
+    Permissions: Authenticated users (own notifications only)
+    
+    This endpoint allows users to mark individual notifications as read,
+    updating read timestamps and maintaining notification history.
+    
+    Features:
+    - Individual notification read tracking
+    - Read timestamp recording
+    - Duplicate read prevention
+    - Permission validation
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def put(self, request, notification_id):
-        """Mark single notification as read"""
+        """
+        Mark Notification as Read
+        
+        Mark a specific notification as read with timestamp tracking.
+        
+        Path Parameters:
+        - notification_id: Unique notification identifier
+        
+        Process:
+        1. Validate notification ownership and existence
+        2. Check current read status
+        3. Update read timestamp if not already read
+        4. Return confirmation with read details
+        
+        Returns notification read status:
+        
+        Status Information:
+        - notification_id: Processed notification identifier
+        - status: Read status confirmation
+        - read_at: Timestamp when notification was marked read
+        
+        Error Handling:
+        - 404: Notification not found
+        - 403: Unauthorized access to notification
+        - 500: Read status update failure
+        
+        Security Features:
+        - Ownership validation
+        - Access control enforcement
+        - Audit trail maintenance
+        
+        Usage:
+        - Notification dashboard management
+        - Mobile app read status sync
+        - Email notification linking
+        - User engagement tracking
+        
+        Note: Idempotent operation - safe to call multiple times.
+        """
         try:
             notification = Notification.objects.get(
                 id=notification_id,
@@ -95,12 +217,69 @@ class NotificationMarkReadView(APIView):
 
 
 class NotificationMarkAllReadView(APIView):
-    """Mark all notifications as read"""
+    """
+    Bulk Notification Management API
+    
+    Mark all user notifications as read in a single operation.
+    
+    PUT: Mark all in-app notifications as read
+    
+    Authentication Required: JWT Token
+    Permissions: Authenticated users (own notifications only)
+    
+    This endpoint provides bulk notification management allowing users
+    to mark all their unread notifications as read at once.
+    
+    Features:
+    - Bulk read status update
+    - Efficient batch processing
+    - Read count tracking
+    - Atomic operation support
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def put(self, request):
-        """Mark all in-app notifications as read"""
+        """
+        Mark All Notifications as Read
+        
+        Bulk operation to mark all unread notifications as read.
+        
+        Process:
+        1. Identify all unread notifications for user
+        2. Update read timestamps in single operation
+        3. Return count of updated notifications
+        4. Maintain audit trail
+        
+        Returns bulk operation results:
+        
+        Operation Summary:
+        - message: Confirmation message with updated count
+        - updated_count: Number of notifications marked as read
+        
+        Performance Features:
+        - Single database query for efficiency
+        - Batch update operation
+        - Minimal resource usage
+        - Fast response times
+        
+        Use Cases:
+        - User clearing notification inbox
+        - Mobile app sync operations
+        - Dashboard refresh actions
+        - Email archive management
+        - User experience optimization
+        
+        Error Handling:
+        - 500: Bulk update operation failure
+        
+        Security Features:
+        - User-specific operation scope
+        - Ownership validation
+        - Audit trail maintenance
+        
+        Note: Efficient for users with large notification volumes.
+        """
         updated_count = Notification.objects.filter(
             recipient=request.user,
             channel='in_app',
@@ -114,12 +293,64 @@ class NotificationMarkAllReadView(APIView):
 
 
 class NotificationPreferencesView(APIView):
-    """Manage notification preferences"""
+    """
+    Notification Preferences Management API
+    
+    Manage user notification preferences across all channels.
+    
+    GET: Retrieve current notification preferences
+    PUT: Update notification preference settings
+    
+    Authentication Required: JWT Token
+    Permissions: Authenticated users (own preferences only)
+    
+    This endpoint allows users to customize their notification preferences
+    across different channels and notification types.
+    
+    Preference Categories:
+    - Channel preferences (email, SMS, in-app)
+    - Content preferences (booking, payments, marketing)
+    - Frequency preferences (immediate, digest, weekly)
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        """Get user preferences"""
+        """
+        Get Notification Preferences
+        
+        Retrieve current notification preferences for the authenticated user.
+        
+        Returns comprehensive preference settings:
+        
+        Channel Preferences:
+        - email_enabled: Email notification enable/disable
+        - sms_enabled: SMS notification enable/disable
+        - in_app_enabled: In-app notification preference
+        
+        Content Preferences:
+        - booking_updates: Accommodation booking notifications
+        - payment_notifications: Payment and transaction alerts
+        - maintenance_alerts: Property maintenance updates
+        - security_alerts: Security and safety notifications
+        - marketplace_updates: Property listing updates
+        - roommate_updates: Roommate matching notifications
+        - marketing_emails: Promotional and marketing content
+        
+        Default Values:
+        - New users get sensible defaults
+        - Critical notifications cannot be disabled
+        - Regulatory compliance maintained
+        
+        Usage:
+        - Settings page population
+        - Preference change tracking
+        - Notification delivery optimization
+        - User experience customization
+        - Compliance monitoring
+        
+        Note: Some notifications may be mandatory for service functionality.
+        """
         try:
             prefs = NotificationPreference.objects.get(user=request.user)
         except NotificationPreference.DoesNotExist:
@@ -140,7 +371,59 @@ class NotificationPreferencesView(APIView):
         }, status=status.HTTP_200_OK)
 
     def put(self, request):
-        """Update preferences"""
+        """
+        Update Notification Preferences
+        
+        Update notification preference settings for the authenticated user.
+        
+        Request Body (all optional):
+        - email_enabled: Enable/disable email notifications
+        - sms_enabled: Enable/disable SMS notifications
+        - booking_updates: Booking-related notifications
+        - payment_notifications: Payment and transaction alerts
+        - maintenance_alerts: Property maintenance updates
+        - security_alerts: Security notifications
+        - marketplace_updates: Property listing notifications
+        - roommate_updates: Roommate matching notifications
+        - marketing_emails: Marketing and promotional content
+        
+        Process:
+        1. Retrieve existing preferences or create defaults
+        2. Validate requested changes
+        3. Apply allowed updates
+        4. Save new preference settings
+        5. Return updated preferences
+        
+        Validation Rules:
+        - Only specified fields are updated
+        - Boolean values validated
+        - Critical notifications may be protected
+        - Compliance requirements enforced
+        
+        Returns updated preference configuration:
+        
+        Confirmation Details:
+        - message: Update confirmation
+        - All preference fields with current values
+        - Changes successfully applied
+        
+        Security Features:
+        - User-specific preference updates
+        - Input validation and sanitization
+        - Audit trail for changes
+        - Compliance enforcement
+        
+        Error Handling:
+        - 500: Preference update failure
+        
+        Usage:
+        - Settings page form processing
+        - Mobile app preference sync
+        - Email subscription management
+        - Notification delivery optimization
+        
+        Note: Changes take effect immediately for new notifications.
+        """
         try:
             prefs = NotificationPreference.objects.get(user=request.user)
         except NotificationPreference.DoesNotExist:
@@ -178,12 +461,87 @@ class NotificationPreferencesView(APIView):
 
 # Admin views for managing templates
 class AdminEmailTemplateListView(APIView):
-    """List email templates (Admin only)"""
+    """
+    Admin Email Template Management API
+    
+    Retrieve email templates for administrative management and customization.
+    
+    GET: List all active email templates for admin review
+    
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin only
+    
+    This endpoint provides administrators with comprehensive email template
+    management capabilities for platform communications.
+    
+    Features:
+    - Template inventory management
+    - Variable placeholder tracking
+    - Template version control
+    - Active status filtering
+    - Administrative oversight
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        """List email templates"""
+        """
+        Get Email Templates
+        
+        Retrieve all active email templates for administrative management.
+        
+        Access Control:
+        - Tech Support: Read-only template access
+        - Super Admin: Full template management access
+        - Other roles: Access denied
+        
+        Returns comprehensive template information:
+        
+        Template Details:
+        - template_id: Unique template identifier
+        - name: Template name and identifier
+        - subject: Email subject line template
+        - variables: Available placeholder variables
+        - created_at: Template creation timestamp
+        - updated_at: Last modification timestamp
+        - is_active: Template activation status
+        - version: Template version number
+        
+        Template Categories:
+        - welcome_emails: New user welcome messages
+        - verification_emails: Email verification requests
+        - booking_confirmations: Accommodation booking updates
+        - payment_notifications: Transaction and payment alerts
+        - maintenance_alerts: Property maintenance communications
+        - security_notifications: Security and safety updates
+        - marketing_emails: Promotional and marketing content
+        
+        Variable System:
+        - Dynamic content placeholders
+        - User-specific personalization
+        - System-generated content
+        - Localization support
+        - Conditional content blocks
+        
+        Administrative Features:
+        - Template usage analytics
+        - Delivery performance metrics
+        - A/B testing support
+        - Compliance tracking
+        - Content approval workflow
+        
+        Usage:
+        - Email template management
+        - Content customization
+        - Communication monitoring
+        - Compliance oversight
+        - Platform administration
+        
+        Error Handling:
+        - 403: Insufficient administrative privileges
+        
+        Note: Templates contain sensitive communication content.
+        """
         if request.user.role not in ['tech_support', 'super_admin']:
             return Response({
                 'error': 'Admin access required'
@@ -209,12 +567,93 @@ class AdminEmailTemplateListView(APIView):
 
 
 class AdminSMSTemplateListView(APIView):
-    """List SMS templates (Admin only)"""
+    """
+    Admin SMS Template Management API
+    
+    Retrieve SMS templates for administrative management and mobile communications.
+    
+    GET: List all active SMS templates for admin review
+    
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin only
+    
+    This endpoint provides administrators with comprehensive SMS template
+    management for mobile-first communications and alerts.
+    
+    Features:
+    - SMS template inventory
+    - Character count tracking
+    - Mobile optimization
+    - Compliance management
+    - Delivery tracking
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        """List SMS templates"""
+        """
+        Get SMS Templates
+        
+        Retrieve all active SMS templates for administrative management.
+        
+        Access Control:
+        - Tech Support: Read-only template access
+        - Super Admin: Full template management access
+        - Other roles: Access denied
+        
+        Returns comprehensive SMS template data:
+        
+        Template Details:
+        - template_id: Unique template identifier
+        - name: Template name and identifier
+        - message: SMS message content template
+        - variables: Available placeholder variables
+        - created_at: Template creation timestamp
+        - character_count: Message length tracking
+        - is_active: Template activation status
+        - delivery_priority: Message priority level
+        
+        SMS-Specific Features:
+        - Character limit compliance (160/GSM, 70/Unicode)
+        - Multi-part message handling
+        - Mobile carrier optimization
+        - Delivery confirmation tracking
+        - Cost per message calculation
+        
+        Template Categories:
+        - otp_verification: One-time password messages
+        - booking_alerts: Accommodation booking notifications
+        - payment_reminders: Payment due notifications
+        - security_codes: Access and security codes
+        - maintenance_updates: Property maintenance alerts
+        - emergency_notifications: Critical safety messages
+        
+        Optimization Features:
+        - Message length optimization
+        - Carrier-specific formatting
+        - Unicode character support
+        - Delivery speed prioritization
+        - Cost-effective messaging
+        
+        Compliance Management:
+        - SMS regulations compliance
+        - Opt-in/opt-out tracking
+        - Message frequency limits
+        - Emergency message protocols
+        - Data protection compliance
+        
+        Usage:
+        - SMS template management
+        - Mobile communication oversight
+        - Delivery performance monitoring
+        - Cost optimization
+        - Compliance management
+        
+        Error Handling:
+        - 403: Insufficient administrative privileges
+        
+        Note: SMS templates optimized for mobile delivery.
+        """
         if request.user.role not in ['tech_support', 'super_admin']:
             return Response({
                 'error': 'Admin access required'
@@ -239,12 +678,94 @@ class AdminSMSTemplateListView(APIView):
 
 
 class AdminNotificationStatsView(APIView):
-    """Notification statistics (Admin only)"""
+    """
+    Admin Notification Analytics API
+    
+    Provide comprehensive notification delivery statistics and performance metrics.
+    
+    GET: Retrieve notification delivery statistics and analytics
+    
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin only
+    
+    This endpoint provides administrators with comprehensive notification
+    analytics including delivery rates, failure analysis, and performance metrics.
+    
+    Features:
+    - Delivery rate tracking
+    - Channel performance analysis
+    - Failure reason breakdown
+    - Volume trend analysis
+    - Compliance monitoring
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        """Get notification stats"""
+        """
+        Get Notification Statistics
+        
+        Retrieve comprehensive notification delivery analytics and metrics.
+        
+        Analysis Period: Last 30 days
+        
+        Returns detailed notification statistics:
+        
+        Overall Metrics:
+        - period: Analysis timeframe
+        - total_notifications: Total notifications sent
+        - successful_deliveries: Successfully delivered notifications
+        - failed_deliveries: Failed notification deliveries
+        - delivery_rate: Success percentage
+        
+        Channel Breakdown:
+        - email: Email notification statistics
+        - sms: SMS notification statistics
+        - in_app: In-app notification statistics
+        
+        Failure Analysis:
+        - top_failed_types: Most common failure reasons
+        - failure_rate_by_type: Failure rates by notification type
+        - technical_failures: System and technical issues
+        - user_action_failures: User-related delivery failures
+        
+        Performance Metrics:
+        - average_delivery_time: Mean delivery duration
+        - peak_volume_periods: High-traffic notification times
+        - channel_efficiency: Comparative channel performance
+        - user_engagement: Notification interaction rates
+        
+        Quality Indicators:
+        - bounce_rates: Email/SMS bounce statistics
+        - spam_rates: Spam filter impact
+        - unsubscribe_rates: User opt-out trends
+        - complaint_rates: User complaint frequency
+        
+        Business Intelligence:
+        - notification_impact: User action correlation
+        - retention_metrics: Notification-driven retention
+        - revenue_impact: Revenue attribution to notifications
+        - cost_analysis: Notification delivery costs
+        
+        Compliance Tracking:
+        - regulatory_compliance: Compliance adherence rates
+        - opt_in_rates: User consent statistics
+        - data_protection: Privacy regulation compliance
+        - audit_trail: Notification delivery audit data
+        
+        Usage:
+        - Platform performance monitoring
+        - Delivery optimization
+        - User experience improvement
+        - Compliance reporting
+        - Business intelligence analysis
+        - Cost optimization
+        
+        Error Handling:
+        - 403: Insufficient administrative privileges
+        
+        Note: Analytics cover all notification channels and types.
+        """
         if request.user.role not in ['tech_support', 'super_admin']:
             return Response({
                 'error': 'Admin access required'

@@ -33,11 +33,60 @@ from .tasks import charge_saved_payment_method
 
 class PaymentInitializeView(APIView):
     """
-    Initialize payment and get Paystack payment link
+    Payment Initialization API
+    
+    Initialize payment processing and generate Paystack payment links.
+    
+    POST: Create payment transaction and get payment checkout URL
+    
+    Authentication Required: JWT Token
+    Permissions: Students (own bookings) or Tech Support/Super Admin
+    
+    This endpoint initiates payment processing for hostel bookings and late fees.
+    Integrates with Paystack payment gateway for secure payment collection.
+    
+    Payment Types:
+    - initial: Initial booking payment
+    - late_fee: Late payment fee settlement
+    
+    Security Features:
+    - Booking ownership validation
+    - Payment status checking
+    - Secure Paystack integration
+    - Transaction reference generation
     """
+    
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        """
+        Initialize Payment
+        
+        Create payment transaction and generate Paystack checkout URL.
+        
+        Request Body:
+        - booking_id: Unique booking identifier (required)
+        - payment_type: Payment type ('initial' or 'late_fee', default: 'initial')
+        - late_fee_id: Late fee identifier (required if payment_type='late_fee')
+        
+        Process Flow:
+        1. Validate booking existence and ownership
+        2. Check payment authorization permissions
+        3. Verify no existing successful payment
+        4. Calculate payment amount based on type
+        5. Create transaction record with unique reference
+        6. Initialize Paystack payment session
+        7. Return checkout URL and transaction details
+        
+        Returns payment initialization details including checkout URL.
+        
+        Error Handling:
+        - 404: Booking not found
+        - 403: Unauthorized access to booking
+        - 400: Missing required fields or invalid payment type
+        - 400: Payment already completed
+        - 500: Paystack integration failure
+        """
         booking_id = request.data.get('booking_id')
         payment_type = request.data.get('payment_type', 'initial')  # initial or late_fee
 
@@ -174,11 +223,63 @@ class PaymentInitializeView(APIView):
 
 class StudentTransactionListView(APIView):
     """
-    List student's payment transactions
+    Student Transaction History API
+    
+    Retrieve student's payment transaction history with filtering.
+    
+    GET: List student's payment transactions with status filtering
+    
+    Authentication Required: JWT Token
+    Permissions: Students only
+    
+    This endpoint provides students with comprehensive transaction history
+    including payment status, amounts, and transaction details.
+    
+    Features:
+    - Transaction status filtering
+    - Transaction type filtering
+    - Pagination support
+    - Detailed transaction information
+    - Chronological ordering
     """
+    
     permission_classes = [IsStudent]
 
     def get(self, request):
+        """
+        Get Student Transactions
+        
+        Retrieve payment transaction history for the authenticated student.
+        
+        Query Parameters:
+        - status: Filter by transaction status (success, pending, failed)
+        - type: Filter by transaction type (initial, late_fee)
+        - limit: Number of results per page (default: 20)
+        - offset: Pagination offset for result sets
+        
+        Returns comprehensive transaction history:
+        
+        Transaction Details:
+        - transaction_id: Unique transaction identifier
+        - booking_reference: Associated booking reference
+        - amount: Transaction amount
+        - status: Current transaction status
+        - type: Transaction type (initial, late_fee)
+        - paid_at: Payment completion timestamp
+        - created_at: Transaction creation timestamp
+        
+        Summary Statistics:
+        - total_transactions: Count of all transactions
+        - transactions: Paginated transaction list
+        
+        Usage:
+        - Payment history tracking
+        - Financial record keeping
+        - Transaction status monitoring
+        - Accounting and bookkeeping
+        
+        Note: Only accessible by students viewing their own transactions.
+        """
         student = request.user.student_profile
 
         # Filters
@@ -207,11 +308,63 @@ class StudentTransactionListView(APIView):
 
 class StudentTransactionDetailView(APIView):
     """
-    Get student's transaction details
+    Student Transaction Details API
+    
+    Retrieve detailed information for specific student transaction.
+    
+    GET: Get comprehensive transaction details
+    
+    Authentication Required: JWT Token
+    Permissions: Students only (own transactions)
+    
+    This endpoint provides detailed transaction information including
+    associated booking, payment breakdown, and receipt data.
+    
+    Features:
+    - Complete transaction details
+    - Associated booking information
+    - Payment method and gateway details
+    - Receipt generation capability
     """
+    
     permission_classes = [IsStudent]
 
     def get(self, request, transaction_id):
+        """
+        Get Transaction Details
+        
+        Retrieve comprehensive details for a specific transaction.
+        
+        Path Parameters:
+        - transaction_id: Unique transaction identifier
+        
+        Returns detailed transaction information:
+        
+        Transaction Data:
+        - Basic transaction information (ID, reference, amount, status)
+        - Payment details (method, gateway, fees)
+        - Associated booking information
+        - Student and landlord details
+        - Timestamps (created, paid, failed)
+        
+        Booking Context:
+        - Room and hostel information
+        - Booking dates and status
+        - Payment plan details
+        
+        Financial Breakdown:
+        - Base rent amount
+        - Service fees
+        - Platform revenue share
+        - Landlord payout amount
+        - Gateway processing fees
+        
+        Error Handling:
+        - 404: Transaction not found
+        - 403: Unauthorized access to transaction
+        
+        Note: Students can only view their own transaction details.
+        """
         student = request.user.student_profile
 
         try:
@@ -229,11 +382,67 @@ class StudentTransactionDetailView(APIView):
 
 class LandlordTransactionListView(APIView):
     """
-    List landlord's payment transactions (payouts received)
+    Landlord Transaction History API
+    
+    Retrieve landlord's payment transaction history and payout information.
+    
+    GET: List landlord's successful transactions with payout details
+    
+    Authentication Required: JWT Token
+    Permissions: Landlords only
+    
+    This endpoint provides landlords with comprehensive transaction history
+    including student payments and associated payout information.
+    
+    Features:
+    - Successful transaction filtering
+    - Payout information integration
+    - Student payment details
+    - Revenue tracking
     """
+    
     permission_classes = [IsLandlord]
 
     def get(self, request):
+        """
+        Get Landlord Transactions
+        
+        Retrieve payment transaction history for the authenticated landlord.
+        
+        Query Parameters:
+        - status: Filter by transaction status (default: success)
+        - limit: Number of results per page (default: 20)
+        - offset: Pagination offset for result sets
+        
+        Returns landlord transaction history:
+        
+        Transaction Information:
+        - transaction_id: Unique transaction identifier
+        - student_details: Paying student information
+        - booking_reference: Associated booking reference
+        - amount: Total transaction amount
+        - landlord_payout: Amount paid to landlord
+        - paid_at: Payment completion timestamp
+        
+        Payout Details:
+        - payout_id: Associated payout record ID
+        - payout_status: Current payout status
+        - payout_amount: Actual payout amount
+        - payout_date: Payout processing date
+        - payout_method: Payment method used
+        
+        Financial Summary:
+        - total_transactions: Count of transactions
+        - transactions: Detailed transaction list with payout data
+        
+        Usage:
+        - Revenue tracking and reporting
+        - Payout verification
+        - Financial reconciliation
+        - Student payment monitoring
+        
+        Note: Only returns successful transactions by default.
+        """
         landlord = request.user.landlord_profile
 
         # Filters
@@ -272,11 +481,69 @@ class LandlordTransactionListView(APIView):
 
 class LandlordPayoutListView(APIView):
     """
-    List landlord's payouts
+    Landlord Payout Management API
+    
+    Retrieve landlord's payout history and status tracking.
+    
+    GET: List landlord's payout transactions with status filtering
+    
+    Authentication Required: JWT Token
+    Permissions: Landlords only
+    
+    This endpoint provides landlords with comprehensive payout history
+    including payment processing status and payout details.
+    
+    Features:
+    - Payout status tracking
+    - Payment method information
+    - Payout amount details
+    - Processing timeline tracking
     """
+    
     permission_classes = [IsLandlord]
 
     def get(self, request):
+        """
+        Get Landlord Payouts
+        
+        Retrieve payout history for the authenticated landlord.
+        
+        Query Parameters:
+        - status: Filter by payout status (pending, completed, failed)
+        - limit: Number of results per page (default: 20)
+        - offset: Pagination offset for result sets
+        
+        Returns comprehensive payout information:
+        
+        Payout Details:
+        - payout_id: Unique payout identifier
+        - payout_reference: Internal payout reference
+        - amount: Total payout amount
+        - status: Current payout status
+        - initiated_at: Payout initiation timestamp
+        - processed_at: Payout processing timestamp
+        - payment_method: Payout delivery method
+        
+        Transaction Context:
+        - associated_transactions: Related payment transactions
+        - gross_amount: Total amount before deductions
+        - net_amount: Actual payout amount
+        - deductions: Any applicable deductions
+        
+        Status Tracking:
+        - pending: Awaiting processing
+        - completed: Successfully processed
+        - failed: Processing failed
+        - cancelled: Payout cancelled
+        
+        Usage:
+        - Payout status monitoring
+        - Revenue collection tracking
+        - Financial reconciliation
+        - Payment method verification
+        
+        Note: Provides complete payout lifecycle tracking.
+        """
         landlord = request.user.landlord_profile
 
         # Filters
@@ -302,11 +569,74 @@ class LandlordPayoutListView(APIView):
 
 class AdminTransactionListView(APIView):
     """
-    Admin view of all transactions
+    Admin Transaction Oversight API
+    
+    Provide administrators with comprehensive transaction oversight and filtering.
+    
+    GET: List all platform transactions with advanced filtering
+    
+    Authentication Required: JWT Token
+    Permissions: Admin or Super Admin only
+    
+    This endpoint provides administrators with comprehensive transaction oversight
+    across the entire platform, enabling financial monitoring and dispute resolution.
+    
+    Features:
+    - Platform-wide transaction monitoring
+    - Advanced filtering capabilities
+    - User-specific transaction tracking
+    - Financial analytics support
+    - Dispute investigation tools
     """
+    
     permission_classes = [IsAdminOrSuperAdmin]
 
     def get(self, request):
+        """
+        Get All Platform Transactions
+        
+        Retrieve comprehensive transaction list for administrative oversight.
+        
+        Query Parameters:
+        - status: Filter by transaction status
+        - type: Filter by transaction type (initial, late_fee)
+        - landlord_id: Filter by specific landlord
+        - student_id: Filter by specific student
+        - limit: Number of results per page (default: 50)
+        - offset: Pagination offset for result sets
+        
+        Returns platform-wide transaction data:
+        
+        Transaction Details:
+        - All transaction information with full context
+        - Student and landlord details
+        - Booking and room information
+        - Payment amounts and fee breakdown
+        - Gateway processing information
+        - Timestamps and status history
+        
+        Administrative Features:
+        - Financial reconciliation support
+        - Dispute investigation data
+        - Platform revenue tracking
+        - User activity monitoring
+        - Compliance reporting
+        
+        Filtering Capabilities:
+        - Status-based filtering for monitoring
+        - User-specific queries for investigations
+        - Time-based analysis support
+        - Type-specific transaction review
+        
+        Usage:
+        - Financial oversight and reporting
+        - Dispute resolution support
+        - Platform analytics and insights
+        - Compliance and audit support
+        - Revenue monitoring and analysis
+        
+        Note: Provides complete platform transaction visibility for admins.
+        """
         # Filters
         status_filter = request.query_params.get('status')
         transaction_type = request.query_params.get('type')
@@ -341,11 +671,73 @@ class AdminTransactionListView(APIView):
 
 class RefundRequestCreateView(APIView):
     """
-    Create refund request (Student only)
+    Refund Request Creation API
+    
+    Handle student refund requests with automated processing.
+    
+    POST: Create new refund request with reason validation
+    
+    Authentication Required: JWT Token
+    Permissions: Students only (own transactions)
+    
+    This endpoint allows students to request refunds for completed transactions
+    with automated percentage calculations based on reason and timing.
+    
+    Refund Reasons:
+    - early_cancellation: Cancellation within time limits
+    - room_unavailable: Property no longer available
+    - platform_error: Technical or payment errors
+    
+    Features:
+    - Automated refund percentage calculation
+    - Reason-based policy enforcement
+    - Admin notification system
+    - Duplicate request prevention
     """
+    
     permission_classes = [IsStudent]
 
     def post(self, request):
+        """
+        Create Refund Request
+        
+        Submit a new refund request for a completed transaction.
+        
+        Request Body:
+        - transaction_id: Target transaction ID (required)
+        - reason: Refund reason (required)
+        - additional_notes: Optional detailed explanation
+        
+        Valid Reasons:
+        - early_cancellation: Early booking cancellation
+        - room_unavailable: Property became unavailable
+        - platform_error: Technical or payment processing error
+        
+        Process Flow:
+        1. Validate transaction ownership and status
+        2. Check for existing refund requests
+        3. Validate refund reason against policy
+        4. Calculate refund amount based on reason and timing
+        5. Create refund request record
+        6. Notify administrators for review
+        7. Return request confirmation
+        
+        Refund Calculation Logic:
+        - platform_error: 100% refund (full amount)
+        - room_unavailable: 100% refund (full amount)
+        - early_cancellation: 
+          * ≤7 days: 90% refund
+          * ≤30 days: 70% refund
+          * >30 days: 50% refund
+        
+        Returns refund request details and processing information.
+        
+        Error Handling:
+        - 404: Transaction not found or not eligible
+        - 400: Invalid reason or missing fields
+        - 400: Refund already requested
+        - 403: Unauthorized transaction access
+        """
         transaction_id = request.data.get('transaction_id')
         reason = request.data.get('reason')
         additional_notes = request.data.get('additional_notes', '')
@@ -442,11 +834,78 @@ class RefundRequestCreateView(APIView):
 
 class RefundRequestListView(APIView):
     """
-    List refund requests (Student view or Admin view)
+    Refund Request Management API
+    
+    List refund requests for students and administrators.
+    
+    GET: List refund requests with role-based filtering
+    
+    Authentication Required: JWT Token
+    Permissions: Students (own requests) or Admin/Super Admin (all requests)
+    
+    This endpoint provides different views based on user role:
+    - Students: View their own refund requests
+    - Admins: View all platform refund requests
+    
+    Features:
+    - Role-based request filtering
+    - Status-based organization
+    - Request tracking and updates
+    - Administrative oversight
     """
+    
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        """
+        Get Refund Requests
+        
+        Retrieve refund requests based on user role and permissions.
+        
+        Student View:
+        - Returns student's own refund requests only
+        - Shows request status and processing updates
+        - Provides request history and details
+        
+        Admin View:
+        - Returns all platform refund requests
+        - Includes status filtering options
+        - Provides comprehensive request oversight
+        
+        Query Parameters (Admin only):
+        - status: Filter by request status (pending, approved, rejected)
+        
+        Returns refund request information:
+        
+        Request Details:
+        - request_id: Unique refund request identifier
+        - transaction_reference: Associated transaction
+        - original_amount: Original payment amount
+        - refund_amount: Calculated refund amount
+        - refund_percentage: Percentage of original amount
+        - reason: Refund reason and explanation
+        - status: Current request status
+        - requested_at: Request submission timestamp
+        - processed_at: Admin processing timestamp
+        
+        Status Information:
+        - pending: Awaiting admin review
+        - approved: Refund approved for processing
+        - rejected: Refund request denied
+        - completed: Refund successfully processed
+        
+        Administrative Data:
+        - student_details: Requester information
+        - admin_notes: Processing comments
+        - processing timeline: Request lifecycle tracking
+        
+        Usage:
+        - Student: Track refund request progress
+        - Admin: Monitor and process refund requests
+        - Support: Assist with refund inquiries
+        
+        Note: Access level determined by user role and permissions.
+        """
         if request.user.role == 'student':
             # Student view - their own requests
             student = request.user.student_profile
@@ -749,11 +1208,90 @@ def _handle_charge_failure(data):
 
 class PaymentReceiptView(APIView):
     """
-    Get payment receipt for a transaction
+    Payment Receipt Generation API
+    
+    Generate and retrieve detailed payment receipts for transactions.
+    
+    GET: Generate and retrieve payment receipt for specific transaction
+    
+    Authentication Required: JWT Token
+    Permissions: Transaction participants or Admin/Super Admin
+    
+    This endpoint generates comprehensive payment receipts including
+    transaction details, platform fees, and regulatory compliance information.
+    
+    Features:
+    - Automatic receipt generation
+    - Comprehensive transaction details
+    - Platform fee breakdown
+    - Regulatory compliance data
+    - Multiple format support
     """
+    
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, transaction_id):
+        """
+        Get Payment Receipt
+        
+        Generate and retrieve detailed payment receipt for transaction.
+        
+        Path Parameters:
+        - transaction_id: Unique transaction identifier
+        
+        Access Control:
+        - Students: Can view receipts for their own transactions
+        - Landlords: Can view receipts for their property transactions
+        - Admins: Can view any transaction receipt
+        
+        Returns comprehensive receipt data:
+        
+        Receipt Header:
+        - receipt_id: Unique receipt identifier
+        - receipt_number: Sequential receipt number
+        - generated_at: Receipt generation timestamp
+        - platform_info: RUMI platform details
+        
+        Transaction Details:
+        - transaction_reference: Unique transaction ID
+        - paystack_reference: Payment gateway reference
+        - amount: Total transaction amount
+        - currency: Payment currency (KES)
+        - status: Transaction status
+        - paid_at: Payment completion timestamp
+        
+        Party Information:
+        - student_details: Payer information
+        - landlord_details: Payee information
+        - booking_details: Associated booking context
+        
+        Financial Breakdown:
+        - base_rent: Accommodation cost
+        - service_fee: Platform service charge
+        - total_charged: Amount charged to student
+        - landlord_payout: Amount paid to landlord
+        - gateway_fee: Payment processing fee
+        - net_platform_revenue: Platform net revenue
+        
+        Compliance Data:
+        - tax_information: Applicable tax details
+        - regulatory_compliance: Required disclosures
+        - terms_and_conditions: Service terms
+        
+        Usage:
+        - Financial record keeping
+        - Tax and accounting purposes
+        - Dispute resolution support
+        - Regulatory compliance
+        - Customer service assistance
+        
+        Error Handling:
+        - 404: Transaction not found
+        - 403: Unauthorized receipt access
+        - 500: Receipt generation failure
+        
+        Note: Receipts include all regulatory required information.
+        """
         try:
             transaction = Transaction.objects.select_related(
                 'booking__room__hostel', 'student__user', 'landlord__user'
@@ -832,11 +1370,66 @@ class PaymentReceiptView(APIView):
 
 class SavedPaymentMethodsView(APIView):
     """
-    Manage saved payment methods (Student only)
+    Saved Payment Methods Management API
+    
+    Manage student's saved payment methods for recurring payments.
+    
+    GET: List student's saved payment methods
+    POST: Add new payment method to saved collection
+    
+    Authentication Required: JWT Token
+    Permissions: Students only
+    
+    This endpoint allows students to securely save payment methods for
+    recurring payments and automatic billing setup.
+    
+    Features:
+    - Secure payment method storage
+    - Tokenized card storage (Paystack integration)
+    - Default payment method management
+    - Method validation and verification
     """
+    
     permission_classes = [IsStudent]
 
     def get(self, request):
+        """
+        Get Saved Payment Methods
+        
+        Retrieve all saved payment methods for the authenticated student.
+        
+        Returns list of saved payment methods:
+        
+        Payment Method Details:
+        - method_id: Unique payment method identifier
+        - card_type: Card brand (visa, mastercard, etc.)
+        - last_four: Last four digits of card
+        - expiry_month: Card expiration month
+        - expiry_year: Card expiration year
+        - is_default: Whether this is the default payment method
+        - is_active: Whether method is currently usable
+        - created_at: When method was saved
+        - last_used: Last time method was used
+        
+        Security Features:
+        - Only last four digits stored
+        - Full card details tokenized
+        - PCI compliance through Paystack
+        - Secure storage and transmission
+        
+        Default Method:
+        - Only one method can be default
+        - Used for automatic payments
+        - Marked clearly in response
+        
+        Usage:
+        - Recurring payment setup
+        - Quick payment processing
+        - Payment method management
+        - Automatic billing configuration
+        
+        Note: Full card details are never stored locally.
+        """
         """List student's saved payment methods"""
         student = request.user.student_profile
         payment_methods = SavedPaymentMethod.objects.filter(student=student).order_by('-created_at')
@@ -844,6 +1437,31 @@ class SavedPaymentMethodsView(APIView):
         return Response({'payment_methods': serializer.data})
 
     def post(self, request):
+        """
+        Add Payment Method
+        
+        Save a new payment method for future use.
+        
+        Request Body:
+        - authorization_code: Paystack authorization code
+        - card_type: Card brand type
+        - last_four: Last four card digits
+        - expiry_month: Card expiration month
+        - expiry_year: Card expiration year
+        
+        Process:
+        1. Validate authorization code with Paystack
+        2. Store tokenized payment information
+        3. Set as default if first method
+        4. Return saved method details
+        
+        Security:
+        - No full card details stored
+        - Tokenized storage only
+        - PCI DSS compliant
+        
+        Returns saved payment method information.
+        """
         """Add new payment method"""
         student = request.user.student_profile
 

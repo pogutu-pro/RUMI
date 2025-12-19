@@ -20,12 +20,63 @@ from .models import (
 
 
 class HostelCreateView(APIView):
-    """Create new hostel listing (Landlord only)"""
+    """
+    Hostel Creation API
+    
+    Create new hostel listing for verified landlords.
+    
+    POST: Create new hostel property listing
+    
+    Authentication Required: JWT Token
+    Permissions: Verified landlords only
+    
+    This endpoint allows verified landlords to create new hostel listings on the platform.
+    Includes property details, amenities, rules, and image management.
+    
+    Security Features:
+    - Landlord verification requirement
+    - Ownership validation
+    - Data sanitization and validation
+    - Automatic statistics update
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        """Create hostel"""
+        """
+        Create Hostel Listing
+        
+        Create a new hostel property listing with comprehensive details.
+        
+        Required Fields:
+        - name: Hostel property name
+        - description: Detailed property description
+        - address: Physical address
+        - city: City location
+        - university: Associated university name
+        - gender_policy: Gender policy (male_only, female_only, mixed)
+        
+        Optional Fields:
+        - distance_from_university: Distance in kilometers
+        - amenities: Dictionary of available amenities
+        - rules: Hostel rules and regulations
+        - images: Array of image URLs
+        
+        Process Flow:
+        1. Validate user is verified landlord
+        2. Validate required field presence
+        3. Validate gender policy options
+        4. Create hostel record with all details
+        5. Update landlord statistics
+        6. Return creation confirmation
+        
+        Returns hostel ID, initial stats, and next steps guidance.
+        
+        Error Handling:
+        - 403: Non-landlord or unverified landlord access
+        - 400: Missing required fields or invalid gender policy
+        - 500: Database or server errors
+        """
         # Check if user is verified landlord
         if request.user.role != 'landlord':
             return Response({
@@ -114,12 +165,66 @@ class HostelDetailView(APIView):
 
 
 class RoomCreateView(APIView):
-    """Add room to hostel (Landlord only)"""
+    """
+    Room Creation API
+    
+    Add new rooms to existing hostel properties.
+    
+    POST: Create new room in specified hostel
+    
+    Authentication Required: JWT Token
+    Permissions: Verified landlords (property owners)
+    
+    This endpoint allows verified landlords to add individual rooms to their
+    hostel properties, with detailed room specifications and pricing.
+    
+    Features:
+    - Room type validation (single, double, triple, quad)
+    - Duplicate room number prevention
+    - Automatic inventory and statistics updates
+    - Detailed room attributes and images
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, hostel_id):
-        """Add room to hostel"""
+        """
+        Create Room
+        
+        Add a new room to the specified hostel property.
+        
+        Path Parameters:
+        - hostel_id: Unique hostel identifier
+        
+        Required Fields:
+        - room_number: Unique room identifier within hostel
+        - capacity: Maximum number of occupants
+        - base_price: Monthly rent amount
+        - deposit_required: Security deposit amount
+        - room_type: Room type (single, double, triple, quad)
+        
+        Optional Fields:
+        - floor: Floor number
+        - semester_price: Semester pricing option
+        - detailed_attributes: Room-specific features
+        - images: Room photos array
+        
+        Process Flow:
+        1. Validate hostel ownership and existence
+        2. Validate required field presence
+        3. Validate room type options
+        4. Check for duplicate room numbers
+        5. Create room record with specifications
+        6. Update hostel and landlord statistics
+        7. Return room creation confirmation
+        
+        Returns room ID, specifications, and availability status.
+        
+        Error Handling:
+        - 404: Hostel not found or access denied
+        - 400: Missing fields, invalid room type, or duplicate room number
+        - 500: Database or server errors
+        """
         # Validate hostel ownership
         try:
             hostel = Hostel.objects.get(id=hostel_id, landlord__user=request.user, is_active=True)
@@ -577,12 +682,66 @@ class InventoryCheckInVerifyView(APIView):
 
 
 class RoomSearchView(APIView):
-    """Search available rooms"""
+    """
+    Room Search API
+    
+    Search and filter available rooms across all hostels.
+    
+    GET: Search rooms with comprehensive filtering options
+    
+    Authentication Required: JWT Token
+    Permissions: Authenticated users (any role)
+    
+    This endpoint provides comprehensive room search functionality with
+    multiple filtering options and compatibility scoring for students.
+    
+    Search Features:
+    - University-based filtering
+    - Price range filtering
+    - Room type filtering
+    - Compatibility score calculation
+    - Real-time availability checking
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        """Search rooms with filters"""
+        """
+        Search Rooms
+        
+        Search available rooms with comprehensive filtering options.
+        
+        Query Parameters:
+        - university: Filter by university name
+        - min_price: Minimum price filter (KES)
+        - max_price: Maximum price filter (KES)
+        - room_type: Room type filter (single, double, triple, quad)
+        - limit: Number of results (default: 20)
+        - offset: Pagination offset
+        
+        Returns comprehensive room search results:
+        
+        Room Information:
+        - room_id: Unique room identifier
+        - hostel_name: Associated property name
+        - room_number: Room identifier
+        - capacity: Maximum occupants
+        - base_price: Monthly rent amount
+        - room_type: Room configuration type
+        - amenities: Available amenities list
+        - images: Room photo gallery
+        
+        Matching Data:
+        - compatibility_score: Student compatibility rating (0-100)
+        
+        Search Features:
+        - Real-time availability checking
+        - Multiple filter combination support
+        - Optimized database queries
+        - Pagination for large result sets
+        
+        Note: Only returns rooms from active, verified hostels.
+        """
         queryset = Room.objects.select_related('hostel').filter(
             is_available=True,
             hostel__is_active=True
@@ -642,12 +801,85 @@ class RoomSearchView(APIView):
 
 
 class HostelSearchView(APIView):
-    """Search available hostels with comprehensive filters"""
+    """
+    Hostel Search API
+    
+    Search and filter available hostels with comprehensive options.
+    
+    GET: Search hostels with advanced filtering and sorting
+    
+    Authentication Required: JWT Token
+    Permissions: Authenticated users (any role)
+    
+    This endpoint provides comprehensive hostel search with advanced filtering,
+    sorting options, and detailed property information.
+    
+    Search Features:
+    - Text search across multiple fields
+    - University-based filtering
+    - Price range filtering
+    - Gender policy filtering
+    - Amenity-based filtering
+    - Verification status filtering
+    - Multiple sorting options
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        """Search hostels with filters"""
+        """
+        Search Hostels
+        
+        Search available hostels with comprehensive filtering and sorting.
+        
+        Query Parameters:
+        - search: Text search in name, description, address, university
+        - university: Filter by specific university
+        - min_price: Minimum base price filter (KES)
+        - max_price: Maximum base price filter (KES)
+        - gender_policy: Gender policy filter (male_only, female_only, mixed)
+        - verified: Show only verified hostels (true/false)
+        - amenities: Comma-separated amenity list
+        - sort_by: Sorting option (name, price_low, price_high, rating)
+        - limit: Number of results (default: 20)
+        - offset: Pagination offset
+        
+        Returns comprehensive hostel search results:
+        
+        Property Information:
+        - id: Unique hostel identifier
+        - name: Property name
+        - description: Detailed description
+        - address: Physical address
+        - city: City location
+        - university: Associated university
+        - latitude/longitude: GPS coordinates
+        - total_rooms: Total room count
+        - available_rooms: Currently available rooms
+        - base_price: Starting price
+        - currency: Pricing currency
+        
+        Quality Metrics:
+        - rating: Average rating (1-5 stars)
+        - review_count: Number of reviews
+        - distance_from_university: Calculated distance
+        - is_verified: Verification status
+        
+        Property Details:
+        - images: Property photo gallery
+        - amenities: Available amenities list
+        - gender_policy: Gender accommodation policy
+        - landlord_name: Property owner/manager
+        
+        Search Features:
+        - Multi-field text search
+        - Complex filter combinations
+        - Multiple sorting options
+        - Real-time availability
+        - Verification status filtering
+        
+        Note: Only returns active hostel properties.
+        """
         queryset = Hostel.objects.filter(is_active=True)
 
         # Apply filters

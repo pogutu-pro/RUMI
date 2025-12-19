@@ -29,12 +29,104 @@ from .permissions import IsTechSupportAdmin, IsSuperAdmin
 
 
 class SystemActivityFeedView(APIView):
-    """Get system-wide activity feed for admin dashboard"""
+    """
+    System Activity Monitoring API
+    
+    Provide comprehensive system-wide activity monitoring for administrators.
+    
+    GET: Retrieve system activities with advanced filtering and pagination
+    
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin only
+    
+    This endpoint provides administrators with comprehensive system activity
+    monitoring including user actions, system events, and security incidents.
+    
+    Activity Categories:
+    - User authentication events
+    - Booking and payment activities
+    - System configuration changes
+    - Security and compliance events
+    - Error and exception tracking
+    
+    Features:
+    - Multi-dimensional filtering
+    - Severity-based organization
+    - Real-time activity streaming
+    - Compliance audit trails
+    """
     
     permission_classes = [IsTechSupportAdmin]
     
     def get(self, request):
-        """Return system activities with filtering and pagination"""
+        """
+        Get System Activity Feed
+        
+        Retrieve system-wide activity data with comprehensive filtering.
+        
+        Query Parameters:
+        - activity_type: Filter by activity category
+        - severity: Filter by severity level (info, warning, error, critical)
+        - user_role: Filter by user role type
+        - date_from: Start date for activity range
+        - date_to: End date for activity range
+        - limit: Number of activities per page (default: 20)
+        - offset: Pagination offset
+        
+        Returns comprehensive activity monitoring data:
+        
+        Activity Details:
+        - activity_id: Unique activity identifier
+        - activity_type: Category of activity
+        - title: Activity summary title
+        - description: Detailed activity description
+        - user: Associated user information
+        - user_role: User role at time of activity
+        - severity: Activity severity level
+        - created_at: Activity timestamp
+        - metadata: Additional activity data (JSON)
+        
+        Severity Levels:
+        - info: Informational activities
+        - warning: Cautionary events
+        - error: Error conditions
+        - critical: Security and system-critical events
+        
+        Activity Types:
+        - user_registration: New user signups
+        - login_events: Authentication activities
+        - booking_activities: Reservation and booking actions
+        - payment_transactions: Financial transaction events
+        - property_management: Hostel and room management
+        - support_tickets: Customer support interactions
+        - system_configuration: Admin configuration changes
+        - security_incidents: Security and compliance events
+        - api_access: API usage and access patterns
+        - data_exports: Data export and reporting activities
+        
+        Filtering Capabilities:
+        - Time-based activity windows
+        - User-specific activity tracking
+        - Role-based activity monitoring
+        - Severity-based incident filtering
+        - Activity type categorization
+        
+        Administrative Use Cases:
+        - System health monitoring
+        - Security incident investigation
+        - Compliance audit support
+        - User behavior analysis
+        - Performance monitoring
+        - Troubleshooting assistance
+        
+        Performance Features:
+        - Efficient pagination for large datasets
+        - Optimized filtering queries
+        - Real-time activity streaming
+        - Historical data retention
+        
+        Note: Provides complete system visibility for administrators.
+        """
         # Filters
         activity_type = request.query_params.get('activity_type')
         severity = request.query_params.get('severity')
@@ -76,12 +168,104 @@ class SystemActivityFeedView(APIView):
 
 
 class AdminUserManagementView(APIView):
-    """Admin user management with role-based filtering"""
+    """
+    Administrative User Management API
+    
+    Provide comprehensive user management capabilities for administrators.
+    
+    GET: List users with role-based filtering and comprehensive search
+    
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin only
+    
+    This endpoint provides administrators with comprehensive user management
+    including role-based filtering, status monitoring, and user oversight.
+    
+    Features:
+    - Multi-role user filtering
+    - Status-based organization
+    - Advanced search capabilities
+    - Role-specific data inclusion
+    - Comprehensive user profiles
+    """
     
     permission_classes = [IsTechSupportAdmin]
     
     def get(self, request):
-        """List users with role-based filtering"""
+        """
+        Get User Management List
+        
+        Retrieve comprehensive user list with advanced filtering and search.
+        
+        Query Parameters:
+        - role: Filter by user role (student, landlord, caretaker, tech_support, super_admin)
+        - status: Filter by account status (active, suspended, pending)
+        - search: Text search in name and email fields
+        - page: Page number for pagination (default: 1)
+        - limit: Users per page (default: 50)
+        
+        Returns comprehensive user management data:
+        
+        User Information:
+        - id: Unique user identifier
+        - email: User email address
+        - name: Complete user name
+        - role: User role type
+        - status: Account status (active/inactive)
+        - is_verified: Email verification status
+        - joined_at: Registration timestamp
+        - last_login: Last login timestamp
+        
+        Role-Specific Data:
+        
+        Student Profile:
+        - university: Student's university
+        - course: Course of study
+        - year_of_study: Academic year level
+        
+        Landlord Profile:
+        - company_name: Business/company name
+        - total_hostels: Number of properties owned
+        - is_verified: Landlord verification status
+        
+        Caretaker Profile:
+        - assigned_hostel: Currently assigned property
+        - is_active: Employment status
+        
+        Status Categories:
+        - active: Verified and active accounts
+        - inactive: Deactivated or suspended accounts
+        - pending: Unverified or pending approval
+        - suspended: Temporarily suspended accounts
+        
+        Search Capabilities:
+        - Email address matching
+        - Name field searching
+        - Partial string matching
+        - Case-insensitive search
+        
+        Administrative Features:
+        - User verification management
+        - Account status control
+        - Role assignment oversight
+        - Compliance monitoring
+        - Security incident tracking
+        
+        Pagination Support:
+        - Efficient large dataset handling
+        - Configurable page sizes
+        - Total count tracking
+        - Navigation support
+        
+        Usage:
+        - User administration and oversight
+        - Compliance monitoring
+        - Security management
+        - Support ticket resolution
+        - Platform analytics
+        
+        Note: Provides comprehensive user lifecycle management.
+        """
         role = request.query_params.get('role')
         status_filter = request.query_params.get('status')
         search = request.query_params.get('search')
@@ -191,12 +375,110 @@ class AdminUserManagementView(APIView):
 
 
 class HostelModerationListView(APIView):
-    """List hostels awaiting admin moderation"""
+    """
+    Hostel Moderation Management API
+    
+    Manage hostel property moderation and approval workflows.
+    
+    GET: List hostels awaiting administrative moderation
+    
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin only
+    
+    This endpoint provides administrators with comprehensive hostel moderation
+    capabilities including property review, approval workflows, and quality control.
+    
+    Features:
+    - Pending property review queue
+    - Comprehensive property details
+    - Landlord verification tracking
+    - Quality assurance workflows
+    - Moderation timeline tracking
+    """
     
     permission_classes = [IsTechSupportAdmin]
     
     def get(self, request):
-        """List pending hostels for moderation"""
+        """
+        Get Hostel Moderation Queue
+        
+        Retrieve hostels awaiting administrative moderation and review.
+        
+        Query Parameters:
+        - status: Filter by moderation status (default: pending)
+        
+        Returns comprehensive moderation data:
+        
+        Property Information:
+        - id: Moderation record identifier
+        - hostel_id: Associated hostel property ID
+        - name: Hostel property name
+        - location: Property location details
+        
+        Landlord Details:
+        - id: Landlord user ID
+        - name: Landlord full name
+        - email: Contact email address
+        - phone: Contact phone number
+        - avatar: Profile picture URL
+        
+        Property Specifications:
+        - total_rooms: Number of rooms in property
+        - base_price: Starting rental price
+        - description: Property description
+        - amenities: Available amenities list
+        - images: Property photo gallery
+        
+        Moderation Details:
+        - verification_checklist: Admin verification requirements
+        - submitted_at: Submission timestamp
+        - days_waiting: Time since submission
+        - moderation_status: Current review status
+        
+        Quality Control Metrics:
+        - Photo quality assessment
+        - Description completeness
+        - Pricing verification
+        - Amenity validation
+        - Compliance checking
+        
+        Moderation Workflow:
+        1. Initial submission review
+        - Document verification
+        - Photo quality check
+        - Pricing validation
+        2. Quality assessment
+        - Property condition evaluation
+        - Amenity verification
+        - Compliance checking
+        3. Final approval/rejection
+        - Administrative decision
+        - Feedback provision
+        - Timeline tracking
+        
+        Review Priorities:
+        - High-value properties
+        - Popular locations
+        - First-time landlords
+        - Quality submissions
+        - Compliance-sensitive areas
+        
+        Administrative Actions:
+        - Approve property listing
+        - Reject with detailed feedback
+        - Request additional information
+        - Flag for quality review
+        - Suspend pending investigation
+        
+        Usage:
+        - Quality assurance oversight
+        - Property listing management
+        - Landlord verification
+        - Compliance monitoring
+        - Platform quality control
+        
+        Note: Critical for maintaining platform property quality standards.
+        """
         status_filter = request.query_params.get('status', 'pending')
         
         queryset = HostelModeration.objects.filter(status=status_filter).select_related(
@@ -234,12 +516,104 @@ class HostelModerationListView(APIView):
 
 
 class HostelModerationActionView(APIView):
-    """Approve or reject hostel moderation"""
+    """
+    Hostel Moderation Action API
+    
+    Process hostel moderation decisions with comprehensive approval/rejection workflows.
+    
+    POST: Approve or reject hostel moderation with admin notes
+    
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin only
+    
+    This endpoint processes administrative decisions on hostel moderation
+    including approvals, rejections, and detailed feedback provision.
+    
+    Features:
+    - Comprehensive approval workflows
+    - Detailed rejection feedback
+    - System activity logging
+    - Automated notifications
+    - Compliance tracking
+    """
     
     permission_classes = [IsTechSupportAdmin]
     
     def post(self, request, moderation_id, action):
-        """Approve or reject hostel"""
+        """
+        Process Hostel Moderation
+        
+        Approve or reject hostel property with administrative decision tracking.
+        
+        Path Parameters:
+        - moderation_id: Unique moderation record identifier
+        - action: Administrative action (approve/reject)
+        
+        Request Body:
+        - admin_notes: Administrative comments and notes
+        - rejection_reason: Detailed rejection explanation (required for reject)
+        
+        Process Flow:
+        1. Validate moderation record existence
+        2. Verify administrative permissions
+        3. Process approval/rejection decision
+        4. Update property status accordingly
+        5. Log system activity
+        6. Notify affected parties
+        7. Return decision confirmation
+        
+        Approval Process:
+        - Set moderation status to 'approved'
+        - Update hostel status to 'approved'
+        - Mark property as verified
+        - Activate property listing
+        - Notify landlord of approval
+        - Log approval activity
+        
+        Rejection Process:
+        - Set moderation status to 'rejected'
+        - Update hostel status to 'rejected'
+        - Maintain verification flags
+        - Provide detailed feedback
+        - Notify landlord of rejection
+        - Log rejection activity
+        
+        Returns moderation decision results:
+        
+        Decision Confirmation:
+        - message: Decision confirmation message
+        - moderation: Updated moderation record
+        - property_status: New property status
+        - admin_actions: Actions taken
+        - notification_sent: Communication status
+        
+        System Integration:
+        - Activity logging for audit trails
+        - Notification system integration
+        - Compliance tracking updates
+        - Performance metrics tracking
+        - Quality control documentation
+        
+        Error Handling:
+        - 404: Moderation record not found
+        - 400: Invalid action or missing required data
+        - 403: Insufficient administrative privileges
+        
+        Security Features:
+        - Administrative action logging
+        - Audit trail maintenance
+        - Compliance documentation
+        - Decision tracking and review
+        
+        Usage:
+        - Property quality control
+        - Landlord communication
+        - Platform management
+        - Compliance oversight
+        - Quality assurance
+        
+        Note: Critical administrative action with full audit trail.
+        """
         try:
             moderation = HostelModeration.objects.get(id=moderation_id)
         except HostelModeration.DoesNotExist:

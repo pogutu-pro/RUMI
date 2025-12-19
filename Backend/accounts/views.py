@@ -54,11 +54,50 @@ from .utils import (
 
 
 class UserRegistrationView(APIView):
-    """Handle user registration with role-based profile creation"""
+    """
+    User Registration API
+    
+    Handle user registration with role-based profile creation.
+    
+    POST: Register new user with role-specific profile creation
+    
+    Authentication Required: None (Public endpoint)
+    
+    This endpoint allows new users to register accounts with different roles:
+    - student: Student looking for accommodation
+    - landlord: Property owner/manager
+    - caretaker: Property management staff
+    
+    Features:
+    - Automatic OTP generation for email verification
+    - Role-specific profile creation
+    - Email validation and disposable email checking
+    - Rate limiting and security measures
+    - Async email sending (verification and welcome)
+    - Activity logging for audit trail
+    """
 
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+        """
+        Register New User
+        
+        Create a new user account with role-specific profile.
+        
+        Required Fields:
+        - email: Unique email address (validated for disposable emails)
+        - password: Strong password (minimum requirements enforced)
+        - first_name: User's first name
+        - last_name: User's last name
+        - role: User role (student, landlord, caretaker)
+        
+        Optional Fields:
+        - phone_number: Contact phone number
+        
+        Returns user ID, email, role, and verification instructions.
+        Automatically generates and sends verification OTP via email.
+        """
         serializer = UserRegistrationSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({
@@ -153,11 +192,45 @@ class UserRegistrationView(APIView):
 
 
 class EmailVerificationView(APIView):
-    """Handle email verification with OTP"""
+    """
+    Email Verification API
+    
+    Handle email verification with OTP (One-Time Password).
+    
+    POST: Verify email address using OTP code
+    
+    Authentication Required: None (Public endpoint)
+    
+    This endpoint verifies user email addresses using the OTP sent during registration.
+    Features OTP validation, attempt limiting, and automatic token generation upon success.
+    
+    Security Features:
+    - OTP expiration (5 minutes)
+    - Maximum attempt limiting (5 attempts)
+    - Rate limiting protection
+    - Automatic token blacklisting on failure
+    """
 
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+        """
+        Verify Email Address
+        
+        Verify email address using OTP code sent during registration.
+        
+        Required Fields:
+        - email: Email address used during registration
+        - otp_code: 6-digit verification code
+        
+        On successful verification:
+        - Marks user as verified
+        - Generates JWT access and refresh tokens
+        - Sends welcome email
+        - Logs verification activity
+        
+        Returns authentication tokens and user verification status.
+        """
         serializer = OTPVerificationSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({
@@ -293,11 +366,48 @@ class ResendOTPView(APIView):
 
 
 class UserLoginView(APIView):
-    """Handle user authentication"""
+    """
+    User Authentication API
+    
+    Handle user authentication and JWT token generation.
+    
+    POST: Authenticate user and generate JWT tokens
+    
+    Authentication Required: None (Public endpoint)
+    
+    This endpoint authenticates users using email and password, then generates
+    JWT tokens for API access. Includes comprehensive security features and
+    user profile data in response.
+    
+    Security Features:
+    - Login attempt rate limiting
+    - Failed login attempt tracking
+    - Device and browser detection
+    - Automatic token blacklisting
+    - Secure cookie setting for frontend
+    """
 
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+        """
+        Authenticate User
+        
+        Authenticate user with email and password, then generate JWT tokens.
+        
+        Required Fields:
+        - email: Registered email address
+        - password: User password
+        
+        On successful authentication:
+        - Generates access and refresh tokens
+        - Sets secure HTTP-only cookies
+        - Updates last login timestamp
+        - Logs successful login with device info
+        - Returns user profile data based on role
+        
+        Returns JWT tokens, user profile, and authentication status.
+        """
         serializer = UserLoginSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({
@@ -647,16 +757,67 @@ class PasswordResetConfirmView(APIView):
 
 
 class UserProfileView(APIView):
-    """Get and update user profile"""
+    """
+    User Profile Management API
+    
+    Get and update authenticated user's profile information.
+    
+    GET: Retrieve user's profile information
+    PUT: Update user's profile data
+    
+    Authentication Required: JWT Token
+    Permissions: Authenticated user (any role)
+    
+    This endpoint allows users to view and update their profile information.
+    Includes basic user details and role-specific profile data.
+    
+    Profile Completion:
+    - Automatically calculates profile completion percentage
+    - Tracks missing required fields
+    - Updates activity logs on changes
+    """
 
     def get(self, request):
-        """Get authenticated user's profile"""
+        """
+        Get User Profile
+        
+        Retrieve the authenticated user's profile information.
+        
+        Returns comprehensive user profile including:
+        - Basic user information (name, email, phone)
+        - Role-specific profile data
+        - Profile completion status
+        - Verification status
+        - Account creation and login timestamps
+        
+        The response structure varies based on user role:
+        - Students: Include profile completion status
+        - Landlords: Include verification and hostel listing permissions
+        - Caretakers: Include assigned hostel information
+        """
         user = request.user
         serializer = UserProfileSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request):
-        """Update user profile"""
+        """
+        Update User Profile
+        
+        Update the authenticated user's profile information.
+        
+        Optional Fields (partial updates allowed):
+        - first_name, last_name: Name updates
+        - phone_number: Contact number
+        - profile_picture: Profile image URL
+        - Role-specific fields based on user type
+        
+        On successful update:
+        - Saves changes to database
+        - Calculates new profile completion status
+        - Logs profile update activity
+        
+        Returns update confirmation and completion status.
+        """
         user = request.user
         serializer = UserProfileSerializer(user, data=request.data, partial=True)
 
@@ -827,12 +988,54 @@ class ProfileCompletionView(APIView):
 
 
 class CaretakerListCreateView(APIView):
-    """List and create caretakers (Landlord only)"""
+    """
+    Caretaker Management API
+    
+    List and create caretaker accounts (Landlord only).
+    
+    GET: List landlord's caretakers with detailed information
+    POST: Create new caretaker account for specific hostel
+    
+    Authentication Required: JWT Token
+    Permissions: Verified landlords only
+    
+    This endpoint allows verified landlords to manage their caretaker staff.
+    Includes account creation, profile management, and hostel assignment.
+    
+    Features:
+    - Automatic caretaker account creation with temporary passwords
+    - Email notification with login credentials
+    - Hostel-specific assignment
+    - Permission management for caretaker actions
+    - Activity logging for audit trail
+    """
 
     permission_classes = [IsLandlord]
 
     def get(self, request):
-        """List landlord's caretakers"""
+        """
+        List Caretakers
+        
+        Retrieve all caretakers assigned to the landlord's properties.
+        
+        Returns comprehensive caretaker list including:
+        
+        Caretaker Information:
+        - caretaker_id: Unique caretaker identifier
+        - user_id: Associated user account ID
+        - email: Caretaker email address
+        - full_name: Caretaker first and last name
+        - phone_number: Contact phone number
+        
+        Assignment Details:
+        - hostel: Hostel information (ID and name)
+        - employment_start_date: Start date of employment
+        - is_active: Current employment status
+        - salary_amount: Current salary (if tracked)
+        
+        Returns total count and detailed caretaker profiles.
+        Ordered by most recently created first.
+        """
         landlord = request.user.landlord_profile
 
         caretakers = CaretakerProfile.objects.filter(
@@ -863,7 +1066,45 @@ class CaretakerListCreateView(APIView):
         }, status=status.HTTP_200_OK)
 
     def post(self, request):
-        """Create new caretaker"""
+        """
+        Create Caretaker
+        
+        Create a new caretaker account for a specific hostel.
+        
+        Required Fields:
+        - first_name: Caretaker's first name
+        - last_name: Caretaker's last name
+        - email: Unique email address for caretaker account
+        - national_id: National identification number
+        - hostel_id: Hostel to assign caretaker to
+        - employment_start_date: Start date of employment
+        - emergency_contact_name: Emergency contact person
+        - emergency_contact_phone: Emergency contact phone
+        
+        Optional Fields:
+        - phone_number: Caretaker's phone number
+        - salary_amount: Monthly salary amount
+        - payment_method: Payment tracking method
+        - permissions: Custom permission settings
+        
+        Process Flow:
+        1. Validate landlord owns the specified hostel
+        2. Check for existing active caretaker on hostel
+        3. Validate unique national ID
+        4. Generate temporary secure password
+        5. Create user account with caretaker role
+        6. Create caretaker profile with permissions
+        7. Send welcome email with credentials
+        8. Log creation activity
+        
+        Returns created caretaker details and temporary password.
+        
+        Security Features:
+        - Unique email validation
+        - National ID uniqueness check
+        - Secure password generation
+        - Email notification with credentials
+        """
         landlord = request.user.landlord_profile
 
         serializer = CaretakerCreateSerializer(data=request.data)
@@ -1092,12 +1333,63 @@ class CaretakerDetailView(APIView):
 
 
 class UserManagementView(APIView):
-    """User management for admins"""
+    """
+    User Management API
+    
+    Administrative user management with filtering and search capabilities.
+    
+    GET: List users with advanced filtering and search
+    
+    Authentication Required: JWT Token
+    Permissions: Admin or Super Admin only
+    
+    This endpoint provides administrators with comprehensive user management
+    capabilities including filtering, searching, and user oversight.
+    
+    Features:
+    - Role-based filtering (student, landlord, caretaker, etc.)
+    - Verification status filtering
+    - Active status filtering
+    - Text search across name and email
+    - Pagination support
+    - Activity tracking integration
+    """
 
     permission_classes = [IsAdminOrSuperAdmin]
 
     def get(self, request):
-        """List users with filters"""
+        """
+        List Users
+        
+        Retrieve users with advanced filtering and search capabilities.
+        
+        Query Parameters:
+        - role: Filter by user role (student, landlord, caretaker, tech_support, super_admin)
+        - is_verified: Filter by verification status (true/false)
+        - is_active: Filter by account status (true/false)
+        - search: Text search in name and email fields
+        - limit: Number of results per page (default: 20)
+        - offset: Pagination offset (default: 0)
+        
+        Returns comprehensive user list including:
+        
+        User Information:
+        - user_id: Unique user identifier
+        - email: User email address
+        - full_name: Complete user name
+        - role: User role type
+        - is_verified: Email verification status
+        - is_active: Account status
+        - date_joined: Registration date
+        - last_login: Last login timestamp
+        
+        Additional Data:
+        - total_users: Total count matching filters
+        - filters_applied: Summary of applied filters
+        - pagination_info: Results pagination details
+        
+        Note: Only accessible by admin and super admin users.
+        """
         queryset = User.objects.select_related(
             'student_profile', 'landlord_profile', 'caretaker_profile'
         ).all()
@@ -1412,12 +1704,59 @@ class LandlordVerificationView(APIView):
 
 
 class StudentDashboardView(APIView):
-    """Student dashboard with overview of bookings, payments, and activities"""
+    """
+    Student Dashboard API
+    
+    Provide comprehensive dashboard data for student users.
+    
+    GET: Retrieve student dashboard with overview data
+    
+    Authentication Required: JWT Token
+    Permissions: Students only
+    
+    This endpoint provides students with a comprehensive overview of their
+    accommodation journey including bookings, payments, profile completion,
+    and quick actions.
+    
+    Dashboard Components:
+    - Profile completion tracking and guidance
+    - Recent booking history with status updates
+    - Payment transaction history
+    - Quick action buttons for common tasks
+    - Notification count for unread messages
+    - Statistics summary (total bookings, spending)
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        """Get student dashboard data"""
+        """
+        Get Student Dashboard
+        
+        Retrieve comprehensive dashboard data for the authenticated student.
+        
+        Returns dashboard data including:
+        
+        Profile Section:
+        - completion_percentage: Profile completion percentage
+        - is_complete: Boolean indicating if profile is fully complete
+        
+        Statistics Section:
+        - total_bookings: Total number of bookings made
+        - active_bookings: Currently active/confirmed bookings
+        - total_spent: Total amount spent on accommodations
+        - unread_notifications: Count of unread notifications
+        
+        Recent Activity:
+        - recent_bookings: Latest 5 bookings with details
+        - recent_payments: Latest 5 successful payments
+        
+        Quick Actions:
+        - Available actions based on user status
+        - Contextual recommendations
+        
+        Note: Only accessible by users with 'student' role.
+        """
         if request.user.role != 'student':
             return Response({
                 'error': 'Only students can access dashboard'
@@ -1532,12 +1871,70 @@ class StudentDashboardView(APIView):
 
 
 class LandlordDashboardView(APIView):
-    """Landlord dashboard with overview of hostels, earnings, and activities"""
+    """
+    Landlord Dashboard API
+    
+    Provide comprehensive dashboard data for landlord users.
+    
+    GET: Retrieve landlord dashboard with business overview
+    
+    Authentication Required: JWT Token
+    Permissions: Landlords only
+    
+    This endpoint provides landlords with a comprehensive business dashboard
+    including property management, earnings, bookings, and platform analytics.
+    
+    Dashboard Components:
+    - Property portfolio overview with occupancy rates
+    - Financial earnings and payout tracking
+    - Recent booking activity and guest management
+    - Subscription plan and billing information
+    - Quick action buttons for property management
+    - Performance metrics and analytics
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        """Get landlord dashboard data"""
+        """
+        Get Landlord Dashboard
+        
+        Retrieve comprehensive dashboard data for the authenticated landlord.
+        
+        Returns dashboard data including:
+        
+        Profile Section:
+        - is_verified: Verification status for hostel listing
+        - company_name: Business/company name
+        - total_hostels: Number of properties owned
+        - total_rooms: Total room inventory
+        - total_earnings: Lifetime earnings summary
+        
+        Subscription Section:
+        - plan_name: Current subscription plan
+        - status: Subscription status (active, trial, etc.)
+        - billing_period: Current billing period dates
+        - trial_remaining_days: Days left in trial (if applicable)
+        
+        Statistics Section:
+        - total_hostels: Count of properties
+        - total_rooms: Total room count across all properties
+        - available_rooms: Currently available rooms
+        - occupied_rooms: Currently occupied rooms
+        - active_bookings: Ongoing confirmed bookings
+        - total_earnings: Recent earnings total
+        - unread_notifications: Count of unread notifications
+        
+        Business Data:
+        - hostels: Detailed property list with occupancy
+        - recent_bookings: Latest booking activity
+        - recent_payments: Latest payment transactions
+        
+        Quick Actions:
+        - Contextual actions based on verification status and activity
+        
+        Note: Only accessible by users with 'landlord' role.
+        """
         if request.user.role != 'landlord':
             return Response({
                 'error': 'Only landlords can access dashboard'
@@ -1685,10 +2082,44 @@ class LandlordDashboardView(APIView):
 
 
 class ConversationListView(APIView):
-    """List user's chat conversations"""
+    """
+    Conversation List API
+    
+    Retrieve all chat conversations for the authenticated user.
+    
+    GET: List all active conversations with message previews
+    
+    Authentication Required: JWT Token
+    Permissions: Authenticated user (any role)
+    
+    This endpoint provides users with a list of all their active chat conversations,
+    including message previews and participant information.
+    
+    Features:
+    - Real-time conversation updates
+    - Message preview with last message content
+    - Unread message counting
+    - Participant information display
+    - Conversation status tracking
+    """
 
     def get(self, request):
-        """Get all conversations for the authenticated user"""
+        """
+        Get User Conversations
+        
+        Retrieve all active chat conversations for the authenticated user.
+        
+        Returns conversation list including:
+        - conversation_id: Unique conversation identifier
+        - participants: List of conversation participants with basic info
+        - last_message: Most recent message with timestamp
+        - unread_count: Number of unread messages in conversation
+        - updated_at: Last activity timestamp
+        - is_active: Conversation status
+        
+        Conversations are ordered by most recent activity (updated_at).
+        Only active conversations are included in the response.
+        """
         conversations = Conversation.objects.filter(
             participants=request.user,
             is_active=True
@@ -1702,10 +2133,53 @@ class ConversationListView(APIView):
 
 
 class ConversationMessagesView(APIView):
-    """Get messages for a specific conversation"""
+    """
+    Conversation Messages API
+    
+    Retrieve and send messages within a specific conversation.
+    
+    GET: Retrieve all messages in a conversation
+    POST: Send a new message to the conversation
+    
+    Authentication Required: JWT Token
+    Permissions: Must be participant in the conversation
+    
+    This endpoint handles message retrieval and sending within existing conversations.
+    Includes automatic read status updates and real-time broadcasting.
+    
+    Features:
+    - Message history with pagination
+    - Automatic read status marking
+    - Real-time message broadcasting via WebSocket
+    - Message activity logging
+    - Conversation timestamp updates
+    """
 
     def get(self, request, conversation_id):
-        """Get messages for a conversation"""
+        """
+        Get Conversation Messages
+        
+        Retrieve all messages for a specific conversation.
+        
+        Path Parameters:
+        - conversation_id: Unique conversation identifier
+        
+        Returns conversation messages including:
+        - message_id: Unique message identifier
+        - sender: Message sender information
+        - content: Message text content
+        - created_at: Message timestamp
+        - is_read: Read status for current user
+        - read_at: Timestamp when message was read
+        
+        Side Effects:
+        - Marks all messages as read for current user
+        - Updates conversation last activity timestamp
+        
+        Error Handling:
+        - 404: Conversation not found or user not participant
+        - 403: User not authorized to access conversation
+        """
         try:
             conversation = Conversation.objects.get(
                 id=conversation_id,
@@ -1740,7 +2214,29 @@ class ConversationMessagesView(APIView):
         }, status=status.HTTP_200_OK)
 
     def post(self, request, conversation_id):
-        """Send a message to a conversation"""
+        """
+        Send Message to Conversation
+        
+        Send a new message to an existing conversation.
+        
+        Path Parameters:
+        - conversation_id: Unique conversation identifier
+        
+        Request Body:
+        - content: Message text content (required)
+        
+        Returns the created message with full metadata.
+        
+        Side Effects:
+        - Creates new message in database
+        - Updates conversation last activity timestamp
+        - Broadcasts message via WebSocket to all participants
+        - Logs message sending activity
+        
+        Real-time Features:
+        - WebSocket message broadcasting
+        - Automatic conversation timestamp updates
+        """
         try:
             conversation = Conversation.objects.get(
                 id=conversation_id,
@@ -1803,10 +2299,52 @@ class ConversationMessagesView(APIView):
 
 
 class SendMessageView(APIView):
-    """Send a message to start a new conversation or continue existing"""
+    """
+    Direct Message API
+    
+    Send a message to start a new conversation or continue existing one.
+    
+    POST: Send message to recipient (creates conversation if needed)
+    
+    Authentication Required: JWT Token
+    Permissions: Authenticated user (any role)
+    
+    This endpoint allows users to send direct messages to other users,
+    automatically creating conversations when they don't exist.
+    
+    Features:
+    - Automatic conversation creation
+    - Existing conversation detection
+    - Real-time message broadcasting
+    - Message activity logging
+    - Recipient validation
+    """
 
     def post(self, request):
-        """Send message to recipient (creates conversation if doesn't exist)"""
+        """
+        Send Direct Message
+        
+        Send a message to a recipient, creating conversation if needed.
+        
+        Request Body:
+        - recipient_id: Target user ID (required)
+        - content: Message text content (required)
+        
+        Process Flow:
+        1. Validate recipient exists and is different from sender
+        2. Check for existing conversation between users
+        3. Create new conversation if none exists
+        4. Create and save new message
+        5. Update conversation timestamp
+        6. Broadcast message via WebSocket
+        7. Log message sending activity
+        
+        Returns created message and conversation data.
+        
+        Error Handling:
+        - 404: Recipient not found
+        - 400: Invalid message content or recipient
+        """
         serializer = SendMessageSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({
@@ -1888,10 +2426,51 @@ class SendMessageView(APIView):
 
 
 class UnreadMessageCountView(APIView):
-    """Get unread message count for authenticated user"""
+    """
+    Unread Messages Count API
     
+    Get unread message count and breakdown for authenticated user.
+    
+    GET: Retrieve unread message statistics
+    
+    Authentication Required: JWT Token
+    Permissions: Authenticated user (any role)
+    
+    This endpoint provides users with their unread message statistics,
+    useful for dashboard notifications and message indicators.
+    
+    Features:
+    - Total unread count across all conversations
+    - Conversation-level breakdown
+    - Real-time count updates
+    - Participant name inclusion for UI display
+    """
+
     def get(self, request):
-        """Get unread message count"""
+        """
+        Get Unread Message Count
+        
+        Retrieve unread message statistics for the authenticated user.
+        
+        Returns comprehensive unread message data:
+        
+        Summary Statistics:
+        - unread_count: Total unread messages across all conversations
+        - conversations_with_unread: Number of conversations with unread messages
+        
+        Detailed Breakdown:
+        - conversation_breakdown: Array of conversations with unread counts
+          - conversation_id: Unique conversation identifier
+          - other_participant_name: Name of conversation partner
+          - unread_count: Number of unread messages in this conversation
+        
+        Usage:
+        - Dashboard notification badges
+        - Message list indicators
+        - Real-time UI updates
+        
+        Note: Counts exclude messages sent by the current user.
+        """
         # Count unread messages across all conversations for this user
         unread_count = Message.objects.filter(
             conversation__participants=request.user,
