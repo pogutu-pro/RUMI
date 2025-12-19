@@ -7,9 +7,17 @@ urlpatterns = [
     
     # Support Ticket Management
     path('tickets/', views.SupportTicketListView.as_view(), name='support_tickets'),
-    path('tickets/<int:ticket_id>/', views.SupportTicketDetailView.as_view(), name='support_ticket_detail'),
-    path('tickets/<int:ticket_id>/respond/', views.SupportTicketResponseView.as_view(), name='support_ticket_respond'),
-    path('tickets/<int:ticket_id>/resolve/', views.SupportTicketResolveView.as_view(), name='support_ticket_resolve'),
+    path('tickets/<str:ticket_id>/', views.SupportTicketDetailView.as_view(), name='support_ticket_detail'),
+    path('tickets/<str:ticket_id>/respond/', views.SupportTicketResponseView.as_view(), name='support_ticket_respond'),
+    path('tickets/<str:ticket_id>/escalate/', views.SupportTicketEscalateView.as_view(), name='support_ticket_escalate'),
+    path('tickets/<str:ticket_id>/resolve/', views.SupportTicketResolveView.as_view(), name='support_ticket_resolve'),
+    path('tickets/stats/', views.SupportTicketStatsView.as_view(), name='support_ticket_stats'),
+    
+    # Tech Support User Management (Super Admin only)
+    path('tech-support/', views.TechSupportUserManagementView.as_view(), name='tech_support_management'),
+    
+    # Caretaker Management (Landlord only)
+    path('caretakers/', views.CaretakerManagementView.as_view(), name='caretaker_management'),
     
     # System Health & Monitoring
     path('system-health/', views.SystemHealthView.as_view(), name='support_system_health'),
