@@ -61,18 +61,26 @@ urlpatterns = [
         path('notifications/', include('notifications.urls')),
         path('payments/', include('payments.urls')),
         path('home/', include('home.urls')),
-        path('admin/', include('admin_api.urls')),
-        
-        # New advanced endpoints
         path('analytics/', include('analytics.urls')),
-        path('caretaker-operations/', include('caretaker_operations.urls')),
         path('roommates/', include('roommate_system.urls')),
-        path('admin-endpoints/', include('admin_endpoints.urls')),
+        
+        # Landlord API (new)
+        path('landlord/', include('landlord_api.urls')),
+        
+        # Student API (new)
+        path('students/', include('student_api.urls')),
+        
+        # Admin endpoints (consolidated)
+        path('admin/', include('admin_api.urls')),
+        path('admin-endpoints/', include('admin_endpoints.urls')),  # Legacy - to be deprecated
+        
+        # Caretaker endpoints (aligned with frontend)
+        path('caretaker/', include('caretaker_operations.urls')),
 
     ])),
     
-    # Direct caretaker routes to match frontend expectations
-    path('api/v1/caretaker/', include('caretaker_operations.urls')),
+    # Tech Support endpoints
+    path('api/v1/support/', include('support_api.urls')),
 ]
 
 # Debug toolbar URLs
