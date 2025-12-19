@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     Transaction, SavedPaymentMethod, RecurringPayment, LateFeeCharge,
-    TaxReport, PaystackSubaccount, Payout, RefundRequest, RevenueAnalytics, Receipt
+    TaxReport, PaystackSubaccount, Payout, RefundRequest, RevenueAnalytics, Receipt, MpesaPaymentConfig
 )
 from hostels.models import Booking
 from accounts.models import StudentProfile, LandlordProfile
@@ -227,4 +227,20 @@ class ReceiptSerializer(serializers.ModelSerializer):
             'reference': obj.transaction.transaction_reference,
             'amount': float(obj.transaction.total_charged_amount),
             'paid_at': obj.transaction.paid_at.isoformat() if obj.transaction.paid_at else None
+        }
+
+
+class MpesaPaymentConfigSerializer(serializers.ModelSerializer):
+    landlord_details = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = MpesaPaymentConfig
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at', 'verified_at']
+    
+    def get_landlord_details(self, obj):
+        return {
+            'id': obj.landlord.id,
+            'business_name': obj.landlord.business_name,
+            'user': obj.landlord.user.get_full_name(),
         }

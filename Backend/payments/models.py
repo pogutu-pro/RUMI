@@ -5,6 +5,74 @@ from decimal import Decimal
 import uuid
 
 
+class MpesaPaymentConfig(models.Model):
+    """Store landlord-specific M-Pesa payment configurations"""
+    
+    PAYMENT_TYPE_CHOICES = [
+        ('send_money', 'Send Money'),
+        ('till_number', 'Till Number'),
+        ('pochi', 'Pochi la Biashara'),
+        ('paybill', 'Paybill Number'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+        ('pending_verification', 'Pending Verification'),
+    ]
+    
+    landlord = models.ForeignKey(
+        'accounts.LandlordProfile',
+        on_delete=models.CASCADE,
+        related_name='mpesa_payment_configs'
+    )
+    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES)
+    mpesa_number = models.CharField(max_length=20, help_text="M-Pesa number (till, paybill, or phone number)")
+    business_name = models.CharField(max_length=255, help_text="Business name for display")
+    is_default = models.BooleanField(default=False, help_text="Default payment method for this landlord")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_verification')
+    verification_code = models.CharField(max_length=10, blank=True, null=True, help_text="SMS verification code")
+    verified_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        db_table = 'payments_mpesapaymentconfig'
+        indexes = [
+            models.Index(fields=['landlord'], name='idx_mpesa_config_landlord'),
+            models.Index(fields=['payment_type'], name='idx_mpesa_config_type'),
+            models.Index(fields=['status'], name='idx_mpesa_config_status'),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(payment_type__in=['send_money', 'till_number', 'pochi', 'paybill']),
+                name='check_mpesa_payment_type'
+            ),
+            models.CheckConstraint(
+                check=models.Q(status__in=['active', 'inactive', 'pending_verification']),
+                name='check_mpesa_config_status'
+            ),
+            models.UniqueConstraint(
+                fields=['landlord', 'is_default'],
+                condition=models.Q(is_default=True),
+                name='unique_default_mpesa_config'
+            ),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_payment_type_display()} - {self.mpesa_number} ({self.landlord.user.get_full_name()})"
+    
+    def save(self, *args, **kwargs):
+        # If this is set as default, unset others
+        if self.is_default:
+            MpesaPaymentConfig.objects.filter(
+                landlord=self.landlord
+            ).exclude(pk=self.pk).update(is_default=False)
+        
+        self.updated_at = timezone.now()
+        super().save(*args, **kwargs)
+
+
 class Transaction(models.Model):
     """Central record of all payment attempts and completions"""
 
@@ -29,6 +97,14 @@ class Transaction(models.Model):
         ('mpesa', 'M-Pesa'),
         ('card', 'Card'),
         ('bank_transfer', 'Bank Transfer'),
+    ]
+
+    MPESA_PAYMENT_TYPE_CHOICES = [
+        ('send_money', 'Send Money'),
+        ('till_number', 'Till Number'),
+        ('pochi', 'Pochi la Biashara'),
+        ('paybill', 'Paybill Number'),
+        ('c2b_offline', 'C2B Offline Payment'),
     ]
 
     booking = models.OneToOneField(
@@ -91,6 +167,25 @@ class Transaction(models.Model):
     paid_at = models.DateTimeField(blank=True, null=True)
     failed_at = models.DateTimeField(blank=True, null=True)
     metadata = models.JSONField(blank=True, null=True)
+    
+    # M-Pesa specific fields
+    mpesa_payment_type = models.CharField(
+        max_length=20,
+        choices=MPESA_PAYMENT_TYPE_CHOICES,
+        blank=True,
+        null=True
+    )
+    mpesa_transaction_id = models.CharField(max_length=100, blank=True, null=True)
+    mpesa_receipt_number = models.CharField(max_length=100, blank=True, null=True)
+    mpesa_checkout_request_id = models.CharField(max_length=100, blank=True, null=True)
+    mpesa_phone_number = models.CharField(max_length=15, blank=True, null=True)
+    mpesa_transaction_date = models.DateTimeField(blank=True, null=True)
+    mpesa_balance = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    
+    # C2B specific fields
+    c2b_reference = models.CharField(max_length=100, blank=True, null=True)
+    c2b_validation_response = models.JSONField(blank=True, null=True)
+    c2b_confirmation_response = models.JSONField(blank=True, null=True)
 
     class Meta:
         db_table = 'payments_transaction'

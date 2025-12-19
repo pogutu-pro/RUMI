@@ -1,9 +1,20 @@
 from django.urls import path
 from . import views
+from .mpesa_webhooks import StkPushWebhookView, C2BValidationWebhookView, C2BConfirmationWebhookView
 
 urlpatterns = [
     # Payment initialization
     path('initialize/', views.PaymentInitializeView.as_view(), name='payment_initialize'),
+    
+    # M-Pesa payments
+    path('mpesa/initialize/', views.MpesaPaymentInitializeView.as_view(), name='mpesa_payment_initialize'),
+    path('mpesa/status/', views.MpesaPaymentStatusView.as_view(), name='mpesa_payment_status'),
+    path('mpesa/config/', views.LandlordMpesaConfigView.as_view(), name='landlord_mpesa_config'),
+    
+    # M-Pesa webhooks (class-based for Swagger documentation)
+    path('webhook/mpesa/stk_push/', StkPushWebhookView.as_view(), name='mpesa_stk_push_webhook'),
+    path('webhook/mpesa/c2b_validation/', C2BValidationWebhookView.as_view(), name='mpesa_c2b_validation_webhook'),
+    path('webhook/mpesa/c2b_confirmation/', C2BConfirmationWebhookView.as_view(), name='mpesa_c2b_confirmation_webhook'),
 
     # Recurring payments
     path('recurring/enable/', views.RecurringPaymentEnableView.as_view(), name='recurring_payment_enable'),

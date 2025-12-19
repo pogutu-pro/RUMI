@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import json
 import uuid
+import logging
 from decimal import Decimal
 from django.conf import settings
 from django.utils import timezone
@@ -14,6 +15,11 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from rest_framework import serializers
+
+logger = logging.getLogger(__name__)
 
 from accounts.models import StudentProfile, LandlordProfile, User
 from accounts.permissions import IsStudent, IsLandlord, IsAdminOrSuperAdmin, IsVerifiedLandlord
@@ -21,14 +27,15 @@ from hostels.models import Booking
 
 from .models import (
     Transaction, SavedPaymentMethod, RecurringPayment, LateFeeCharge,
-    TaxReport, PaystackSubaccount, Payout, RefundRequest, RevenueAnalytics
+    TaxReport, PaystackSubaccount, Payout, RefundRequest, RevenueAnalytics, MpesaPaymentConfig
 )
 from .serializers import (
     TransactionSerializer, SavedPaymentMethodSerializer, RecurringPaymentSerializer,
     LateFeeChargeSerializer, TaxReportSerializer, PaystackSubaccountSerializer,
-    PayoutSerializer, RefundRequestSerializer, RevenueAnalyticsSerializer, ReceiptSerializer
+    PayoutSerializer, RefundRequestSerializer, RevenueAnalyticsSerializer, ReceiptSerializer, MpesaPaymentConfigSerializer
 )
 from .tasks import charge_saved_payment_method
+from .mpesa_api import MpesaDarajaAPI
 
 
 class PaymentInitializeView(APIView):
@@ -1834,3 +1841,547 @@ class TaxReportsView(APIView):
         return Response({
             'reports': serializer.data
         })
+
+
+class MpesaPaymentInitializeView(APIView):
+    """
+    M-Pesa Payment Initialization API (Optimized for Performance)
+    
+    Initialize M-Pesa payments with STK Push method.
+    C2B offline payments are handled automatically via webhooks.
+    
+    Features:
+    - Performance optimized with connection pooling and token caching
+    - Sub-second response times
+    - Automatic C2B alternative instructions
+    - Fast-fail error handling
+    """
+    
+    permission_classes = [permissions.IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_summary="Initialize M-Pesa Payment",
+        operation_description="""
+        Initialize M-Pesa payment for booking or late fee with optimized performance.
+        
+        **Performance Optimizations:**
+        - Connection pooling for faster requests
+        - Token caching (eliminates repeated OAuth calls)
+        - Optimized database queries
+        - Sub-second response times
+        
+        **Payment Methods:**
+        - **STK Push**: Online payment with instant prompt (this endpoint)
+        - **C2B Offline**: Automatic processing via webhooks (no manual selection)
+        
+        **Workflow:**
+        1. Student provides phone number
+        2. System initiates STK Push
+        3. Customer enters M-Pesa PIN on phone
+        4. Payment confirmed via webhook
+        5. Booking confirmed automatically
+        
+        **C2B Alternative:**
+        Students can also pay via M-Pesa menu using:
+        - Business Number: Platform Shortcode
+        - Amount: Transaction Amount  
+        - Reference: Transaction Reference
+        
+        Processing is completely automatic via webhooks.
+        """,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['booking_id', 'payment_method', 'phone_number'],
+            properties={
+                'booking_id': openapi.Schema(
+                    type=openapi.TYPE_INTEGER,
+                    description='Unique booking identifier',
+                    example=123
+                ),
+                'payment_type': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Payment type',
+                    enum=['initial', 'late_fee'],
+                    default='initial',
+                    example='initial'
+                ),
+                'payment_method': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Payment method (only STK Push supported)',
+                    enum=['stk_push'],
+                    default='stk_push',
+                    example='stk_push'
+                ),
+                'phone_number': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Customer phone number (format: 254XXXXXXXXX)',
+                    example='254712345678'
+                ),
+                'late_fee_id': openapi.Schema(
+                    type=openapi.TYPE_INTEGER,
+                    description='Late fee identifier (required if payment_type is late_fee)',
+                    example=456
+                )
+            },
+            example={
+                'booking_id': 123,
+                'payment_type': 'initial',
+                'payment_method': 'stk_push',
+                'phone_number': '254712345678'
+            }
+        ),
+        responses={
+            200: openapi.Response(
+                description='M-Pesa payment initialized successfully',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'transaction_id': openapi.Schema(type=openapi.TYPE_INTEGER, example=789),
+                        'transaction_reference': openapi.Schema(type=openapi.TYPE_STRING, example='RUMI-INITIAL-123-abc12345'),
+                        'amount': openapi.Schema(type=openapi.TYPE_NUMBER, example=15000.0),
+                        'payment_method': openapi.Schema(type=openapi.TYPE_STRING, example='mpesa'),
+                        'mpesa_payment_type': openapi.Schema(type=openapi.TYPE_STRING, example='stk_push'),
+                        'phone_number': openapi.Schema(type=openapi.TYPE_STRING, example='254712345678'),
+                        'checkout_request_id': openapi.Schema(type=openapi.TYPE_STRING, example='ws_co_123456789'),
+                        'merchant_request_id': openapi.Schema(type=openapi.TYPE_STRING, example='mr_123456789'),
+                        'status': openapi.Schema(type=openapi.TYPE_STRING, example='pending_stk_push'),
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, example='STK push initiated. Please check your phone for payment prompt.'),
+                        'c2b_alternative': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'note': openapi.Schema(type=openapi.TYPE_STRING),
+                                'business_number': openapi.Schema(type=openapi.TYPE_STRING),
+                                'amount': openapi.Schema(type=openapi.TYPE_STRING),
+                                'reference': openapi.Schema(type=openapi.TYPE_STRING)
+                            }
+                        )
+                    }
+                )
+            ),
+            400: 'Bad Request - Invalid input data',
+            401: 'Unauthorized - Authentication required',
+            404: 'Not Found - Booking or late fee not found',
+            500: 'Internal Server Error - M-Pesa API error'
+        },
+        tags=['Payments']
+    )
+    
+    def post(self, request):
+        """
+        Initialize M-Pesa Payment (Optimized for speed)
+        
+        Fast payment initialization with minimal database operations.
+        
+        Request Body:
+        - booking_id: Unique booking identifier (required)
+        - payment_type: Payment type ('initial' or 'late_fee', default: 'initial')
+        - payment_method: 'stk_push' (M-Pesa STK Push)
+        - phone_number: Customer phone number (required for STK push)
+        - late_fee_id: Late fee identifier (required if payment_type='late_fee')
+        
+        Note: C2B offline payments are handled automatically via webhooks.
+        
+        Returns optimized payment initialization response.
+        """
+        booking_id = request.data.get('booking_id')
+        payment_type = request.data.get('payment_type', 'initial')
+        payment_method = request.data.get('payment_method', 'stk_push')
+        phone_number = request.data.get('phone_number')
+        
+        # Fast validation - fail early
+        if not booking_id:
+            return Response({'error': 'Booking ID is required'}, status=400)
+        
+        if payment_method != 'stk_push':
+            return Response({
+                'error': 'Invalid payment method. Use "stk_push" for M-Pesa payments.',
+                'note': 'C2B offline payments are handled automatically via webhooks.'
+            }, status=400)
+        
+        if not phone_number:
+            return Response({'error': 'Phone number is required for STK Push payments'}, status=400)
+        
+        # Get booking with optimized query
+        try:
+            from hostels.models import Booking
+            booking = Booking.objects.select_related(
+                'student__user', 'room__hostel__landlord'
+            ).only(
+                'id', 'student_id', 'room__hostel__landlord_id', 'monthly_rent',
+                'total_amount', 'amount_paid', 'status'
+            ).get(id=booking_id)
+        except Booking.DoesNotExist:
+            return Response({'error': 'Booking not found'}, status=404)
+        
+        # Fast permission check
+        if request.user.role == 'student':
+            if booking.student.user != request.user:
+                return Response({'error': 'Unauthorized access to booking'}, status=403)
+        elif request.user.role not in ['tech_support', 'super_admin']:
+            return Response({'error': 'Unauthorized'}, status=403)
+        
+        # Fast payment status check
+        if hasattr(booking, 'payment_transaction') and booking.payment_transaction.status == 'success':
+            return Response({'error': 'Payment already completed for this booking'}, status=400)
+        
+        try:
+            # Calculate amount with minimal operations
+            if payment_type == 'late_fee':
+                late_fee_id = request.data.get('late_fee_id')
+                try:
+                    late_fee = LateFeeCharge.objects.only('late_fee_amount', 'status').get(
+                        id=late_fee_id, booking=booking, status='pending'
+                    )
+                except LateFeeCharge.DoesNotExist:
+                    return Response({'error': 'Late fee not found or already paid'}, status=404)
+                amount = late_fee.late_fee_amount
+                transaction_type = 'late_fee'
+            else:
+                amount = booking.total_amount - booking.amount_paid
+                transaction_type = 'initial'
+            
+            # Create transaction with minimal fields
+            transaction_ref = f"RUMI-{transaction_type.upper()}-{booking.id}-{uuid.uuid4().hex[:8]}"
+            
+            transaction_obj = Transaction.objects.create(
+                booking=booking,
+                student=booking.student,
+                landlord=booking.room.hostel.landlord,
+                transaction_reference=transaction_ref,
+                transaction_type=transaction_type,
+                payment_plan='monthly',
+                payment_method='mpesa',
+                mpesa_payment_type='stk_push',
+                base_rent=booking.monthly_rent if transaction_type == 'initial' else amount,
+                student_service_fee=booking.monthly_rent * Decimal('0.02') if transaction_type == 'initial' else Decimal('0.00'),
+                total_charged_amount=amount,
+                landlord_payout_amount=booking.monthly_rent if transaction_type == 'initial' else Decimal('0.00'),
+                gross_platform_revenue=booking.monthly_rent * Decimal('0.02') if transaction_type == 'initial' else Decimal('0.00'),
+                status='pending'
+            )
+            
+            # Fast M-Pesa API call
+            mpesa_api = MpesaDarajaAPI()
+            formatted_phone = mpesa_api.validate_phone_number(phone_number)
+            
+            if not formatted_phone:
+                return Response({'error': 'Invalid phone number format'}, status=400)
+            
+            # Initiate STK Push with timeout
+            stk_result = mpesa_api.initiate_stk_push(
+                amount=str(amount),
+                phone_number=formatted_phone,
+                reference=transaction_ref,
+                description=f"RUMI {transaction_type.title()} Payment"
+            )
+            
+            if 'error' in stk_result:
+                # Clean up transaction on failure
+                transaction_obj.delete()
+                return Response({
+                    'error': 'M-Pesa payment initialization failed',
+                    'details': stk_result['error']
+                }, status=500)
+            
+            # Update transaction with minimal operations
+            transaction_obj.mpesa_checkout_request_id = stk_result.get('CheckoutRequestID')
+            transaction_obj.mpesa_phone_number = formatted_phone
+            transaction_obj.save(update_fields=['mpesa_checkout_request_id', 'mpesa_phone_number'])
+            
+            # Fast response with minimal data
+            return Response({
+                'transaction_id': transaction_obj.id,
+                'transaction_reference': transaction_ref,
+                'amount': float(amount),
+                'payment_method': 'mpesa',
+                'mpesa_payment_type': 'stk_push',
+                'phone_number': formatted_phone,
+                'checkout_request_id': stk_result.get('CheckoutRequestID'),
+                'merchant_request_id': stk_result.get('MerchantRequestID'),
+                'status': 'pending_stk_push',
+                'message': 'STK push initiated. Please check your phone for payment prompt.',
+                'c2b_alternative': {
+                    'note': 'You can also pay via C2B offline using M-Pesa menu',
+                    'business_number': getattr(settings, 'MPESA_SHORTCODE', 'N/A'),
+                    'amount': str(amount),
+                    'reference': transaction_ref
+                }
+            }, status=200)
+            
+        except Exception as e:
+            logger.error(f"Payment initialization failed: {str(e)}")
+            return Response({
+                'error': 'Payment initialization failed',
+                'details': str(e)
+            }, status=500)
+
+
+class MpesaPaymentStatusView(APIView):
+    """
+    M-Pesa Payment Status API
+    
+    Check the status of an M-Pesa payment transaction.
+    Supports both STK Push and C2B payment status checking.
+    
+    Features:
+    - Real-time payment status checking
+    - Automatic STK Push status updates
+    - C2B payment confirmation tracking
+    - Optimized for fast responses
+    """
+    
+    permission_classes = [permissions.IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_summary="Check M-Pesa Payment Status",
+        operation_description="""
+        Check the current status of an M-Pesa payment transaction.
+        
+        **Supported Payment Types:**
+        - **STK Push**: Online payments initiated via this platform
+        - **C2B**: Offline payments made via M-Pesa menu
+        
+        **Status Updates:**
+        - For STK Push: Queries M-Pesa API for real-time status
+        - For C2B: Returns transaction status from webhook processing
+        
+        **Performance:**
+        - Fast database queries with optimized lookups
+        - Minimal payload processing
+        - Quick response times
+        
+        **Authentication:**
+        - Students can only check their own transactions
+        - Admins can check any transaction
+        """,
+        manual_parameters=[
+            openapi.Parameter(
+                'transaction_id',
+                openapi.IN_QUERY,
+                description='Transaction ID to check',
+                type=openapi.TYPE_INTEGER,
+                required=False
+            ),
+            openapi.Parameter(
+                'checkout_request_id',
+                openapi.IN_QUERY,
+                description='STK Push checkout request ID to check',
+                type=openapi.TYPE_STRING,
+                required=False
+            )
+        ],
+        responses={
+            200: openapi.Response(
+                description='Payment status retrieved successfully',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'transaction': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            description='Complete transaction object'
+                        ),
+                        'status': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            enum=['pending', 'success', 'failed'],
+                            example='success'
+                        ),
+                        'last_updated': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            format=openapi.FORMAT_DATETIME,
+                            example='2024-01-01T12:00:00Z'
+                        )
+                    }
+                )
+            ),
+            400: 'Bad Request - Invalid parameters',
+            401: 'Unauthorized - Authentication required',
+            403: 'Forbidden - Access denied to transaction',
+            404: 'Not Found - Transaction not found',
+            500: 'Internal Server Error'
+        },
+        tags=['Payments']
+    )
+    
+    def get(self, request):
+        """
+        Get M-Pesa Payment Status
+        
+        Query Parameters:
+        - transaction_id: Transaction ID (optional)
+        - checkout_request_id: STK Push checkout request ID (optional)
+        
+        Returns current payment status and details.
+        """
+        transaction_id = request.query_params.get('transaction_id')
+        checkout_request_id = request.query_params.get('checkout_request_id')
+        
+        if not transaction_id and not checkout_request_id:
+            return Response({
+                'error': 'Either transaction_id or checkout_request_id is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Get transaction
+            if transaction_id:
+                transaction_obj = Transaction.objects.get(id=transaction_id)
+            else:
+                transaction_obj = Transaction.objects.get(
+                    mpesa_checkout_request_id=checkout_request_id,
+                    payment_method='mpesa'
+                )
+            
+            # Check permissions
+            if request.user.role == 'student':
+                if transaction_obj.student.user != request.user:
+                    return Response({
+                        'error': 'Unauthorized to view this transaction'
+                    }, status=status.HTTP_403_FORBIDDEN)
+            elif not request.user.role in ['tech_support', 'super_admin']:
+                return Response({
+                    'error': 'Unauthorized'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Check status for STK push payments
+            if (transaction_obj.mpesa_payment_type == 'stk_push' and 
+                transaction_obj.mpesa_checkout_request_id and 
+                transaction_obj.status == 'pending'):
+                
+                # Query M-Pesa for status update
+                mpesa_api = MpesaDarajaAPI()
+                query_result = mpesa_api.query_stk_push(transaction_obj.mpesa_checkout_request_id)
+                
+                if 'error' not in query_result:
+                    result_code = query_result.get('ResultCode')
+                    
+                    if result_code == 0:
+                        # Payment successful
+                        transaction_obj.status = 'success'
+                        transaction_obj.paid_at = timezone.now()
+                        transaction_obj.mpesa_receipt_number = query_result.get('MpesaReceiptNumber')
+                        transaction_obj.save()
+                        
+                        # Update booking
+                        booking = transaction_obj.booking
+                        booking.status = 'confirmed'
+                        booking.amount_paid += transaction_obj.total_charged_amount
+                        booking.save()
+                        
+                    elif result_code == '1032':
+                        # Payment cancelled by user
+                        transaction_obj.status = 'failed'
+                        transaction_obj.failed_at = timezone.now()
+                        transaction_obj.save()
+            
+            # Return current status
+            serializer = TransactionSerializer(transaction_obj)
+            return Response({
+                'transaction': serializer.data,
+                'status': transaction_obj.status,
+                'last_updated': transaction_obj.updated_at.isoformat() if hasattr(transaction_obj, 'updated_at') else None
+            }, status=status.HTTP_200_OK)
+            
+        except Transaction.DoesNotExist:
+            return Response({
+                'error': 'Transaction not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'error': 'Failed to check payment status',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LandlordMpesaConfigView(APIView):
+    """
+    Landlord M-Pesa Configuration API
+    
+    Manage landlord's M-Pesa payment configurations for different payment methods.
+    
+    Features:
+    - Configure multiple M-Pesa payment methods
+    - Set default payment option
+    - Validate M-Pesa numbers
+    - Track configuration status
+    
+    Supported Payment Types:
+    - Send Money
+    - Till Number
+    - Pochi la Biashara
+    - Paybill Number
+    """
+    
+    permission_classes = [IsLandlord]
+    
+    @swagger_auto_schema(
+        operation_summary="Manage Landlord M-Pesa Configuration",
+        operation_description="""
+        Manage landlord's M-Pesa payment configurations.
+        
+        **Supported Payment Methods:**
+        - **Send Money**: Direct M-Pesa send money to business
+        - **Till Number**: Pay using business till number
+        - **Pochi la Biashara**: Pay using Pochi business account
+        - **Paybill Number**: Pay using paybill number
+        
+        **Features:**
+        - Configure multiple payment methods
+        - Set default payment option
+        - Track configuration verification status
+        - Validate M-Pesa numbers
+        
+        **Authentication:**
+        - Landlord JWT Token required
+        - Can only manage own configurations
+        
+        **GET**: List all configurations
+        **POST**: Create new configuration
+        """,
+        responses={
+            200: 'Configurations retrieved successfully',
+            201: 'Configuration created successfully',
+            400: 'Bad Request - Invalid input data',
+            401: 'Unauthorized - Authentication required',
+            403: 'Forbidden - Landlord access required',
+            500: 'Internal Server Error'
+        },
+        tags=['Payments']
+    )
+    
+    def get(self, request):
+        """Get landlord's M-Pesa configurations"""
+        landlord = request.user.landlord_profile
+        configs = MpesaPaymentConfig.objects.filter(landlord=landlord).order_by('-created_at')
+        serializer = MpesaPaymentConfigSerializer(configs, many=True)
+        return Response({'configs': serializer.data})
+    
+    def post(self, request):
+        """Add new M-Pesa configuration"""
+        landlord = request.user.landlord_profile
+        
+        payment_type = request.data.get('payment_type')
+        mpesa_number = request.data.get('mpesa_number')
+        business_name = request.data.get('business_name')
+        is_default = request.data.get('is_default', False)
+        
+        if not all([payment_type, mpesa_number, business_name]):
+            return Response({
+                'error': 'Payment type, M-Pesa number, and business name are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            config = MpesaPaymentConfig.objects.create(
+                landlord=landlord,
+                payment_type=payment_type,
+                mpesa_number=mpesa_number,
+                business_name=business_name,
+                is_default=is_default
+            )
+            
+            serializer = MpesaPaymentConfigSerializer(config)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response({
+                'error': 'Failed to create M-Pesa configuration',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

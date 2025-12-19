@@ -170,9 +170,33 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3001",
     "http://127.0.0.1:3001",
     "https://rumi.co.ke",
+    "http://localhost:5173",  # Vite dev server
+    "http://127.0.0.1:5173",
+    "http://localhost:8080",  # Other common dev ports
+    "http://127.0.0.1:8080",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = True  # Allow all origins for development
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+CORS_ALLOW_METHODS = [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS',
+]
 
 # Email Configuration (Mailtrap)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -191,6 +215,16 @@ AFRICASTALKING_API_KEY = os.getenv('AFRICASTALKING_API_KEY')
 PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
 PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
 PAYSTACK_WEBHOOK_SECRET = os.getenv('PAYSTACK_WEBHOOK_SECRET')
+
+# M-Pesa Configuration
+MPESA_CONSUMER_KEY = os.getenv('MPESA_CONSUMER_KEY')
+MPESA_CONSUMER_SECRET = os.getenv('MPESA_CONSUMER_SECRET')
+MPESA_SHORTCODE = os.getenv('MPESA_SHORTCODE')
+MPESA_PASSKEY = os.getenv('MPESA_PASSKEY')
+MPESA_CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL', f"{os.getenv('FRONTEND_URL', 'https://rumi.co.ke')}/api/payments/webhook/mpesa/stk_push")
+MPESA_VALIDATION_URL = os.getenv('MPESA_VALIDATION_URL', f"{os.getenv('FRONTEND_URL', 'https://rumi.co.ke')}/api/payments/webhook/mpesa/c2b_validation")
+MPESA_CONFIRMATION_URL = os.getenv('MPESA_CONFIRMATION_URL', f"{os.getenv('FRONTEND_URL', 'https://rumi.co.ke')}/api/payments/webhook/mpesa/c2b_confirmation")
+MPESA_SANDBOX = os.getenv('MPESA_SANDBOX', 'True').lower() == 'true'
 
 # Platform Fee Configuration (UPDATED v2.0)
 # Student pays 2% service fee, Landlord receives full rent
