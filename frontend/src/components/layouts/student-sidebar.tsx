@@ -193,8 +193,9 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
               <Image
                 src="/images/logo/logo.svg"
                 alt="RUMI Logo"
-                fill
-                className="object-contain"
+                width={32}
+                height={32}
+                className="object-contain w-auto h-auto"
               />
             </div>
             <span>RUMI</span>
@@ -204,8 +205,9 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
             <Image
               src="/images/logo/logo.svg"
               alt="RUMI Logo"
-              fill
-              className="object-contain"
+              width={32}
+              height={32}
+              className="object-contain w-auto h-auto"
             />
           </Link>
         )}

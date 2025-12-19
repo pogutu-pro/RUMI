@@ -83,9 +83,22 @@ axiosInstance.interceptors.request.use(
       Object.assign(config.headers, csrfHeaders);
     }
 
+    // Debug logging for non-GET requests in development
+    if (process.env.NODE_ENV === 'development' && config.method !== 'get') {
+      console.groupCollapsed(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+      console.log('Payload:', config.data);
+      console.log('Headers:', config.headers);
+      console.groupEnd();
+    }
+
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('❌ Request Error:', error);
+    }
+    return Promise.reject(error);
+  }
 );
 
 // Response: Error Handling & Refresh Token

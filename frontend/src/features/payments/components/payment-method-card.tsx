@@ -28,21 +28,21 @@ export function PaymentMethodCard({ method, onSelect }: PaymentMethodCardProps) 
 
   return (
     <Card
-      className="cursor-pointer hover:border-primary transition-colors"
+      className="cursor-pointer hover:border-emerald-500/50 transition-all active:scale-[0.98] border-border bg-card shadow-sm"
       onClick={onSelect}
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{method.name}</CardTitle>
-        {method.isDefault && <Badge variant="default">Default</Badge>}
+        <CardTitle className="text-sm font-black text-foreground">{method.name}</CardTitle>
+        {method.isDefault && <Badge className="bg-emerald-500 hover:bg-emerald-600 font-black uppercase text-[10px]">Default</Badge>}
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-            <Icon className="h-6 w-6 text-primary" />
+          <div className="h-12 w-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+            <Icon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div>
-            <p className="text-sm font-medium capitalize">{method.type}</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm font-black text-foreground capitalize">{method.type}</p>
+            <p className="text-xs text-muted-foreground font-black">
               {method.type === 'mpesa' && method.details.phoneNumber}
               {method.type === 'bank' && method.details.accountNumber}
               {method.type === 'card' && `**** ${method.details.last4}`}

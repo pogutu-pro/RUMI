@@ -173,7 +173,13 @@ export function AdminSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
         {isExpanded ? (
           <Link href="/" className="flex items-center gap-3">
             <div className="relative h-9 w-9 overflow-hidden rounded-xl">
-               <Image src="/images/logo/logo.svg" alt="RUMI" fill className="object-cover" />
+               <Image 
+                 src="/images/logo/logo.svg" 
+                 alt="RUMI" 
+                 width={36} 
+                 height={36} 
+                 className="object-cover w-auto h-auto" 
+               />
             </div>
             <div className="flex flex-col">
               <span className="font-bold text-lg leading-none tracking-tight text-foreground">RUMI</span>
@@ -182,7 +188,13 @@ export function AdminSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
           </Link>
         ) : (
            <Link href="/" className="relative h-9 w-9 overflow-hidden rounded-xl">
-              <Image src="/images/logo/logo.svg" alt="RUMI" fill className="object-contain" />
+              <Image 
+                src="/images/logo/logo.svg" 
+                alt="RUMI" 
+                width={36} 
+                height={36} 
+                className="object-contain w-auto h-auto" 
+              />
            </Link>
         )}
         

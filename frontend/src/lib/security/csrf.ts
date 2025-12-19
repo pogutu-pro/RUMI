@@ -38,17 +38,8 @@ export function getCsrfHeader(): Record<string, string> {
  * This should be called before the first API request
  */
 export async function fetchCsrfToken(apiUrl: string): Promise<void> {
-  if (typeof window === 'undefined') return;
-  
-  try {
-    // Django typically exposes CSRF token via a GET endpoint or sets it in response headers
-    await fetch(`${apiUrl}/accounts/csrf/`, {
-      method: 'GET',
-      credentials: 'include',
-    });
-  } catch (error) {
-    console.warn('Failed to fetch CSRF token:', error);
-  }
+  // Silent bypass if not explicitly needed, to avoid 404 errors on missing endpoint
+  return;
 }
 
 export const csrf = {

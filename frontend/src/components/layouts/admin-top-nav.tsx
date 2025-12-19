@@ -90,8 +90,8 @@ export function AdminTopNav({
 
   // Fetch real notifications from API
   const { data: notificationsData, isLoading: isLoadingNotifications } = useNotifications({ page: 1 });
-  const notifications = notificationsData?.results || [];
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const notifications = notificationsData?.data || [];
+  const unreadCount = notifications.filter((n: any) => !n.isRead).length;
 
   // Detect which admin context we're in
   const isTechSupport = pathname?.startsWith('/tech-support');
@@ -160,7 +160,13 @@ export function AdminTopNav({
       <div className="flex items-center gap-2 mr-4">
         <Link href="/" className="flex items-center gap-2">
           <div className="relative h-8 w-8">
-            <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" />
+            <Image 
+              src="/images/logo/logo.svg" 
+              alt="RUMI Logo" 
+              width={32} 
+              height={32} 
+              className="object-contain w-auto h-auto" 
+            />
           </div>
           <div className="flex items-center gap-2">
             <span className="font-bold text-lg text-indigo-600 dark:text-indigo-400">RUMI</span>
@@ -232,7 +238,7 @@ export function AdminTopNav({
                     <p className="text-sm">No notifications yet</p>
                   </div>
                 ) : (
-                  notifications.slice(0, 5).map((notification) => {
+                  notifications.slice(0, 5).map((notification: any) => {
                     const style = getNotificationStyle(notification.type);
                     const IconComponent = style.icon;
                     return (

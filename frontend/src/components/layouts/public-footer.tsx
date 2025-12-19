@@ -56,6 +56,7 @@ export const Footer = React.memo(function Footer() {
                 alt="RUMI Logo"
                 width={36}
                 height={36}
+                className="w-auto h-auto"
               />
               <span className="font-bold text-2xl text-white">RUMI</span>
             </Link>

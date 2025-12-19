@@ -154,7 +154,13 @@ export function LandlordTopNav({
       <div className="flex items-center gap-2 mr-4">
         <Link href="/" className="flex items-center gap-2">
           <div className="relative h-8 w-8">
-            <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" />
+            <Image 
+              src="/images/logo/logo.svg" 
+              alt="RUMI Logo" 
+              width={32} 
+              height={32} 
+              className="object-contain w-auto h-auto" 
+            />
           </div>
           <span className="font-bold text-lg text-emerald-600 dark:text-emerald-400">RUMI</span>
         </Link>

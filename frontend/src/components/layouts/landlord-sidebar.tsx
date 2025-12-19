@@ -7,33 +7,31 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
-  Home,
+  Building2,
   CreditCard,
   MessageSquare,
   Settings,
   LifeBuoy,
   Bell,
   UserCheck,
-  Building2,
   ChevronDown,
   PanelLeft,
   UserPlus,
   BarChart3,
   TrendingUp,
-  ClipboardList,
   CalendarCheck,
   Clock,
-  CheckCircle,
-  History,
   Wallet,
-  Receipt,
   FileText,
   DollarSign,
   Package,
-  Award,
-  Activity,
   Shield,
+  Moon,
+  Sun,
+  LogOut,
 } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { useAuth } from '@/features/auth';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -72,88 +70,64 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    title: 'Dashboard',
+    title: 'Home',
     href: '/landlord/dashboard',
     icon: LayoutDashboard,
   },
   {
-    title: 'Hostels',
+    title: 'My Hostels',
     icon: Building2,
     items: [
       { title: 'All Hostels', href: '/landlord/hostels', icon: Building2 },
       { title: 'Add New', href: '/landlord/hostels/new', icon: UserPlus },
-      { title: 'Analytics', href: '/landlord/hostels/analytics', icon: BarChart3 },
       { title: 'Inventory', href: '/landlord/hostels/inventory', icon: Package },
+      { title: 'Analytics', href: '/landlord/hostels/analytics', icon: BarChart3 },
     ],
   },
   {
-    title: 'Caretakers',
-    icon: Shield,
-    items: [
-      { title: 'All Caretakers', href: '/landlord/caretakers', icon: Users },
-      { title: 'Add New', href: '/landlord/caretakers/new', icon: UserPlus },
-      { title: 'Performance', href: '/landlord/caretakers/performance', icon: Award },
-    ],
-  },
-  {
-    title: 'Tenants',
+    title: 'People',
     icon: Users,
     items: [
-      { title: 'All Tenants', href: '/landlord/tenants', icon: Users },
+      { title: 'Tenants', href: '/landlord/tenants', icon: Users },
+      { title: 'Bookings', href: '/landlord/bookings', icon: CalendarCheck },
+      { title: 'Caretakers', href: '/landlord/caretakers', icon: Shield },
       { title: 'Check-Ins', href: '/landlord/tenants/check-ins', icon: CalendarCheck },
       { title: 'Check-Outs', href: '/landlord/tenants/check-outs', icon: Clock },
-      { title: 'Roommates', href: '/landlord/tenants/roommates', icon: Users },
     ],
   },
   {
-    title: 'Bookings',
-    icon: CalendarCheck,
-    items: [
-      { title: 'All Bookings', href: '/landlord/bookings', icon: ClipboardList },
-      { title: 'Pending', href: '/landlord/bookings/pending', icon: Clock, badge: 'new' },
-      { title: 'Confirmed', href: '/landlord/bookings/confirmed', icon: CheckCircle },
-      { title: 'History', href: '/landlord/bookings/history', icon: History },
-    ],
-  },
-  {
-    title: 'Financial',
+    title: 'Earnings',
     icon: DollarSign,
     items: [
       { title: 'Payments', href: '/landlord/payments', icon: CreditCard },
       { title: 'Payouts', href: '/landlord/payments/payouts', icon: Wallet },
-      { title: 'Subscription', href: '/landlord/payments/subscription', icon: Award },
       { title: 'Reports', href: '/landlord/payments/reports', icon: FileText },
+      { title: 'Analytics', href: '/landlord/analytics', icon: TrendingUp },
     ],
   },
   {
-    title: 'Analytics',
-    href: '/landlord/analytics',
-    icon: TrendingUp,
-  },
-  {
-    title: 'Messages',
-    href: '/landlord/messages',
+    title: 'Inbox',
     icon: MessageSquare,
+    items: [
+      { title: 'Messages', href: '/landlord/messages', icon: MessageSquare },
+      { title: 'Notifications', href: '/landlord/notifications', icon: Bell },
+    ],
   },
   {
-    title: 'Notifications',
-    href: '/landlord/notifications',
-    icon: Bell,
-  },
-  {
-    title: 'Support',
-    href: '/landlord/support',
-    icon: LifeBuoy,
-  },
-  {
-    title: 'Profile',
-    href: '/landlord/profile',
-    icon: UserCheck,
+    title: 'Account',
+    icon: Settings,
+    items: [
+      { title: 'My Profile', href: '/landlord/profile', icon: UserCheck },
+      { title: 'Settings', href: '/landlord/settings', icon: Settings },
+      { title: 'Support', href: '/landlord/support', icon: LifeBuoy },
+    ],
   },
 ];
 
 export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
   const pathname = usePathname();
+  const { theme, setTheme } = useTheme();
+  const { logout } = useAuth();
   const [openGroups, setOpenGroups] = React.useState<string[]>([]);
   const [isHovered, setIsHovered] = React.useState(false);
 
@@ -192,7 +166,13 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
           </Link>
         ) : (
            <Link href="/" className="relative h-8 w-8">
-              <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" />
+              <Image 
+                src="/images/logo/logo.svg" 
+                alt="RUMI Logo" 
+                width={32} 
+                height={32} 
+                className="object-contain w-auto h-auto" 
+              />
            </Link>
         )}
         
@@ -227,8 +207,8 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                     <Button
                       variant="ghost"
                       className={cn(
-                        "w-full justify-between font-bold text-slate-900 dark:text-slate-400 hover:bg-muted hover:text-foreground transition-all duration-200",
-                        is_active && "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+                        "w-full justify-between font-medium hover:bg-accent hover:text-foreground transition-all duration-200",
+                        is_active && "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary font-semibold"
                       )}
                     >
                       <div className="flex items-center gap-3">
@@ -252,7 +232,7 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                           "flex items-center gap-2 px-4 py-2 text-base transition-colors duration-200 border-l-2 -ml-[2px]",
                           pathname === subItem.href || pathname.startsWith(subItem.href + '/')
                             ? "border-primary text-primary font-bold bg-primary/10"
-                            : "border-transparent text-slate-900 dark:text-slate-400 font-bold hover:text-foreground hover:bg-muted"
+                            : "border-transparent text-muted-foreground font-medium hover:text-foreground hover:bg-accent"
                         )}
                       >
                         {subItem.icon && <subItem.icon className="h-3.5 w-3.5 opacity-70" />}
@@ -296,8 +276,8 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                 asChild
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start font-bold text-slate-900 dark:text-slate-400 hover:bg-muted hover:text-foreground transition-all duration-200",
-                  is_active && "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+                  "w-full justify-start font-medium hover:bg-accent hover:text-foreground transition-all duration-200",
+                  is_active && "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary font-semibold"
                 )}
               >
                 <Link href={item.href!}>
@@ -346,6 +326,66 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
           })}
         </div>
       </ScrollArea>
+
+      {/* Sidebar Footer */}
+      <div className="mt-auto p-4 space-y-2 border-t border-border/50">
+        {isExpanded ? (
+          <>
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-3 h-10 px-3 hover:text-foreground border-border/50 transition-all duration-200"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            >
+              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              <span className="text-sm font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 h-10 px-3 hover:text-destructive hover:bg-destructive/10 transition-all duration-200"
+              onClick={logout}
+            >
+              <LogOut className="h-5 w-5" />
+              <span className="text-sm font-medium">Log Out</span>
+            </Button>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 hover:text-foreground hover:bg-accent/50"
+                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  >
+                    {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    onClick={logout}
+                  >
+                    <LogOut className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Log Out</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        )}
+      </div>
     </div>
   );
 

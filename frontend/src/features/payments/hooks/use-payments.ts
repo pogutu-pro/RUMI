@@ -1,107 +1,117 @@
+'use client';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/react-query/query-keys';
-import { paymentsApi, PaymentInitializeRequest, RefundRequest } from '../api';
+import { paymentsApi } from '../api/payments';
+import { 
+  MpesaInitializeRequest, 
+  CreateMpesaConfigRequest,
+  PaymentInitializeRequest,
+  Payment
+} from '../types';
 import { toast } from 'sonner';
+
+// -- Student & Landlord Transaction Hooks --
+
+export const useStudentTransactions = (filters?: any) => {
+  return useQuery({
+    queryKey: [...queryKeys.payments.all, 'student', filters],
+    queryFn: () => paymentsApi.getStudentTransactionsWithReceipts(filters),
+  });
+};
+
+export const useLandlordTransactions = (filters?: any) => {
+  return useQuery({
+    queryKey: [...queryKeys.payments.all, 'landlord', filters],
+    queryFn: () => paymentsApi.getLandlordPayments(filters),
+  });
+};
 
 export const useLandlordPayouts = () => {
   return useQuery({
-    queryKey: ['payments', 'payouts', 'landlord'],
-    queryFn: paymentsApi.getLandlordPayouts,
+    queryKey: [...queryKeys.payments.all, 'landlord', 'payouts'],
+    queryFn: () => paymentsApi.getLandlordPayouts(),
   });
 };
 
-export const useAdminTransactions = () => {
+export const useAdminTransactions = (filters?: any) => {
   return useQuery({
-    queryKey: ['payments', 'transactions', 'admin'],
-    queryFn: paymentsApi.getAdminTransactions,
+    queryKey: [...queryKeys.payments.all, 'admin', filters],
+    queryFn: () => paymentsApi.getAdminPayments(filters),
   });
 };
 
-export const useLandlordTransactions = () => {
+export const usePaymentStats = () => {
   return useQuery({
-    queryKey: ['payments', 'transactions', 'landlord'],
-    queryFn: paymentsApi.getLandlordTransactions,
+    queryKey: queryKeys.payments.stats(),
+    queryFn: () => paymentsApi.getPaymentStats(),
   });
 };
 
-export const useStudentTransactions = () => {
-    return useQuery({
-      queryKey: ['payments', 'transactions', 'student'],
-      queryFn: paymentsApi.getStudentTransactions,
-    });
+export const useReceipt = (transactionId: string | number) => {
+  return useQuery({
+    queryKey: [...queryKeys.payments.all, 'receipt', transactionId],
+    queryFn: () => paymentsApi.getReceipt(transactionId),
+    enabled: !!transactionId,
+  });
 };
 
-export const useStudentTransactionDetail = (transactionId: string) => {
-    return useQuery({
-        queryKey: ['payments', 'transactions', 'student', transactionId],
-        queryFn: () => paymentsApi.getStudentTransactionDetail(transactionId),
-        enabled: !!transactionId,
-    });
+// -- M-Pesa Specific Hooks --
+
+export const useInitializeMpesaPayment = () => {
+  return useMutation({
+    mutationFn: (data: MpesaInitializeRequest) => paymentsApi.initializeMpesaPayment(data),
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to initiate M-Pesa payment');
+    },
+  });
 };
 
-export const useReceipt = (transactionId: string) => {
-    return useQuery({
-        queryKey: ['payments', 'receipt', transactionId],
-        queryFn: () => paymentsApi.getReceipt(transactionId),
-        enabled: !!transactionId,
-    });
+export const useMpesaPaymentStatus = (params: { 
+  transaction_id?: string | number; 
+  checkout_request_id?: string;
+}, options?: { enabled?: boolean; refetchInterval?: number | false }) => {
+  return useQuery({
+    queryKey: [...queryKeys.payments.all, 'mpesa', 'status', params.transaction_id || params.checkout_request_id],
+    queryFn: () => paymentsApi.getMpesaPaymentStatus(params),
+    enabled: options?.enabled !== false && (!!params.transaction_id || !!params.checkout_request_id),
+    refetchInterval: options?.refetchInterval ?? 5000, 
+  });
 };
+
+export const useMpesaConfigs = () => {
+  return useQuery({
+    queryKey: [...queryKeys.payments.all, 'mpesa', 'configs'],
+    queryFn: () => paymentsApi.getMpesaConfigs(),
+  });
+};
+
+export const useCreateMpesaConfig = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateMpesaConfigRequest) => paymentsApi.createMpesaConfig(data),
+    onSuccess: () => {
+      toast.success('M-Pesa configuration added successfully');
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.payments.all, 'mpesa', 'configs'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to add M-Pesa configuration');
+    },
+  });
+};
+
+// -- Legacy/Generic Compatibility --
 
 export const useInitiatePayment = () => {
   return useMutation({
-    mutationFn: (data: PaymentInitializeRequest) => paymentsApi.initializePayment(data),
+    mutationFn: (data: PaymentInitializeRequest) => paymentsApi.initiatePayment(data),
+    onSuccess: () => {
+      toast.success('Payment initiated successfully');
+    },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to initiate payment');
     },
   });
 };
 
-export const useCreateRefundRequest = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (data: RefundRequest) => paymentsApi.createRefundRequest(data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['payments', 'refunds'] });
-            toast.success('Refund request submitted successfully');
-        },
-        onError: (error: any) => {
-            toast.error(error.message || 'Failed to submit refund request');
-        }
-    });
-};
-
-export const useRefunds = () => {
-    return useQuery({
-        queryKey: ['payments', 'refunds'],
-        queryFn: paymentsApi.getRefunds,
-    });
-};
-
-export const useProcessRefund = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (refundId: string) => paymentsApi.processRefund(refundId),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['payments', 'refunds'] });
-            toast.success('Refund processed successfully');
-        },
-        onError: (error: any) => {
-            toast.error(error.message || 'Failed to process refund');
-        }
-    });
-};
-
-// -- Kept as placeholders or if needed for other parts not covered by spec instructions --
-// If other parts of the app import these, they need to be handled or removed.
-// For now, I will remove them if they conflict or leave them if I cannot confirm replacements.
-// The user gave specific endpoints, which seem to replace generic usage.
-// Adapters for missing exports
-export const usePayments = useStudentTransactions; // Alias to student transactions for now
-
-export const usePaymentStats = () => {
-    return useQuery({
-        queryKey: ['payments', 'stats'],
-        queryFn: paymentsApi.getPaymentStats,
-    });
-};
-
+export const usePayments = useStudentTransactions;

@@ -131,7 +131,13 @@ export function TechSupportSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps
         {isExpanded ? (
            <Link href="/tech-support/dashboard" className="flex items-center gap-2 font-bold text-xl text-primary">
              <div className="relative h-8 w-8">
-               <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" />
+               <Image 
+                 src="/images/logo/logo.svg" 
+                 alt="RUMI Logo" 
+                 width={32} 
+                 height={32} 
+                 className="object-contain w-auto h-auto" 
+               />
              </div>
              <div className="flex flex-col leading-none">
                <span>RUMI</span>
@@ -140,7 +146,13 @@ export function TechSupportSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps
            </Link>
         ) : (
            <Link href="/tech-support/dashboard" className="relative h-8 w-8">
-              <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" />
+              <Image 
+                src="/images/logo/logo.svg" 
+                alt="RUMI Logo" 
+                width={32} 
+                height={32} 
+                className="object-contain w-auto h-auto" 
+              />
            </Link>
         )}
         

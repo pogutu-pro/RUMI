@@ -92,7 +92,7 @@ export const HostelsHeader = React.memo(function HostelsHeader({
                   alt="RUMI"
                   width={40}
                   height={40}
-                  className="object-cover"
+                  className="object-cover w-auto h-auto"
                   priority
                 />
               </div>
@@ -169,7 +169,7 @@ export const HostelsHeader = React.memo(function HostelsHeader({
                               alt="RUMI"
                               width={32}
                               height={32}
-                              className="object-cover"
+                              className="object-cover w-auto h-auto"
                             />
                           </div>
                           <span className="font-bold text-xl tracking-tight">RUMI</span>
