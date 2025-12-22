@@ -1,253 +1,1088 @@
 "use client";
 
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { 
-  Building2, 
-  MapPin, 
-  Home, 
-  Wifi, 
-  Shield, 
-  Car, 
-  Zap,
-  ArrowRight,
-  ArrowLeft,
-  CheckCircle2,
+import {
+  Building2,
+  Home,
+  BedDouble,
+  CreditCard,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+  Check,
   Save,
-  Loader2
+  X,
+  AlertCircle,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
-import { HostelImageUpload } from '@/features/hostels';
-import { toast } from 'sonner';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
+import { useCreateHostel, HostelImageUpload } from '@/features/hostels';
 
-// Amenities list for selection
-const AMENITIES = [
-  { id: 'wifi', label: 'High-Speed WiFi', icon: Wifi },
-  { id: 'security', label: '24/7 Security', icon: Shield },
-  { id: 'parking', label: 'Secure Parking', icon: Car },
-  { id: 'backup', label: 'Backup Generator', icon: Zap },
-  { id: 'water', label: 'Borehole Water', icon: CheckCircle2 },
+// ============================================================================
+// WIZARD TYPES
+// ============================================================================
+
+interface HostelFormData {
+  // Step 1: Basic Info
+  name: string;
+  description: string;
+  campus: string;
+  town: string;
+  genderPolicy: 'male_only' | 'female_only' | 'mixed' | '';
+  tenantType: 'students_only' | 'anyone' | '';
+  
+  // Step 2: Building Structure
+  totalFloors: number;
+  totalRooms: number;
+  caretakerName: string;
+  caretakerPhone: string;
+  safetyFeatures: string[];
+  
+  // Step 3: Room Types and Photos
+  roomTypes: {
+    name: string;
+    bedsPerRoom: number;
+    genderRestriction: string;
+    amenities: string[];
+    monthlyRent: number;
+  }[];
+  images: string[];
+  imageFiles: File[];
+  
+  // Step 4: Pricing
+  depositAmount: number;
+  depositRefundable: boolean;
+  registrationFee: number;
+  paymentCycle: 'monthly' | 'semester' | 'annual';
+  gracePeriod: number;
+  lateFeePercent: number;
+  
+  // Step 5: Rules
+  minimumStay: 'semester' | 'year' | 'flexible';
+  midTermJoins: boolean;
+  houseRules: string;
+  termsAgreed: boolean;
+}
+
+const initialFormData: HostelFormData = {
+  name: '',
+  description: '',
+  campus: '',
+  town: '',
+  genderPolicy: '',
+  tenantType: '',
+  totalFloors: 1,
+  totalRooms: 1,
+  caretakerName: '',
+  caretakerPhone: '',
+  safetyFeatures: [],
+  roomTypes: [],
+  images: [],
+  imageFiles: [],
+  depositAmount: 0,
+  depositRefundable: true,
+  registrationFee: 0,
+  paymentCycle: 'monthly',
+  gracePeriod: 5,
+  lateFeePercent: 5,
+  minimumStay: 'semester',
+  midTermJoins: true,
+  houseRules: '',
+  termsAgreed: false,
+};
+
+// Campus options
+const campusOptions = [
+  { value: 'dekut', label: 'Dedan Kimathi University (DeKUT)' },
+  { value: 'ku', label: 'Kenyatta University (KU)' },
+  { value: 'uon', label: 'University of Nairobi (UoN)' },
+  { value: 'jkuat', label: 'JKUAT' },
+  { value: 'moi', label: 'Moi University' },
+  { value: 'egerton', label: 'Egerton University' },
+  { value: 'other', label: 'Other Institution' },
 ];
 
-export default function AddHostelPage() {
+// Safety features
+const safetyFeatureOptions = [
+  { id: 'cctv', label: 'CCTV Cameras' },
+  { id: 'security_guard', label: 'Security Guard (24/7)' },
+  { id: 'fire_exits', label: 'Fire Exits' },
+  { id: 'fire_extinguisher', label: 'Fire Extinguishers' },
+  { id: 'curfew', label: 'Curfew Hours' },
+  { id: 'visitor_rules', label: 'Visitor Registration' },
+  { id: 'gated', label: 'Gated Compound' },
+  { id: 'well_lit', label: 'Well Lit Areas' },
+];
+
+// Step definitions
+const steps = [
+  { id: 1, title: 'Basic Info', icon: Building2, description: 'Hostel name and location' },
+  { id: 2, title: 'Structure', icon: Home, description: 'Rooms and safety' },
+  { id: 3, title: 'Room Types', icon: BedDouble, description: 'Room setup and amenities' },
+  { id: 4, title: 'Pricing', icon: CreditCard, description: 'Rent and fees' },
+  { id: 5, title: 'Rules', icon: FileText, description: 'Terms and conditions' },
+];
+
+// ============================================================================
+// MAIN WIZARD COMPONENT
+// ============================================================================
+
+export default function NewHostelWizardPage() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
-  const [loading, setLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState<HostelFormData>(initialFormData);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   
-  // Form State
-  const [formData, setFormData] = useState({
-      name: '',
-      type: 'mixed',
-      address: '',
-      description: '',
-      totalRooms: 20,
-      basePrice: '',
-      amenities: [] as string[],
-      images: [] as File[],
-  });
+  const createHostel = useCreateHostel();
 
-  const updateField = (field: string, value: any) => {
-      setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  // Calculate progress
+  const progress = ((currentStep - 1) / (steps.length - 1)) * 100;
 
-  const handleAmenityToggle = (id: string) => {
-      setFormData(prev => ({
-          ...prev,
-          amenities: prev.amenities.includes(id) 
-             ? prev.amenities.filter(a => a !== id)
-             : [...prev.amenities, id]
-      }));
-  };
+  // Update form data
+  const updateField = useCallback(<K extends keyof HostelFormData>(
+    field: K,
+    value: HostelFormData[K]
+  ) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when field is updated
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  }, [errors]);
 
-  const handleSubmit = async () => {
-      setLoading(true);
+  // Toggle safety feature
+  const toggleSafetyFeature = useCallback((featureId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      safetyFeatures: prev.safetyFeatures.includes(featureId)
+        ? prev.safetyFeatures.filter(f => f !== featureId)
+        : [...prev.safetyFeatures, featureId]
+    }));
+  }, []);
+
+  // Validate current step
+  const validateStep = useCallback((): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    switch (currentStep) {
+      case 1:
+        if (!formData.name.trim()) newErrors.name = 'Hostel name is required';
+        if (!formData.campus) newErrors.campus = 'Please select a campus';
+        if (!formData.town.trim()) newErrors.town = 'Town is required';
+        if (!formData.genderPolicy) newErrors.genderPolicy = 'Please select a gender policy';
+        if (!formData.tenantType) newErrors.tenantType = 'Please select who can rent';
+        break;
+      case 2:
+        if (formData.totalRooms < 1) newErrors.totalRooms = 'Must have at least 1 room';
+        if (!formData.caretakerName.trim()) newErrors.caretakerName = 'Caretaker name is required';
+        if (!formData.caretakerPhone.trim()) newErrors.caretakerPhone = 'Caretaker phone is required';
+        break;
+      case 3:
+        // Room types are optional for initial creation
+        break;
+      case 4:
+        if (formData.depositAmount < 0) newErrors.depositAmount = 'Deposit cannot be negative';
+        break;
+      case 5:
+        if (!formData.termsAgreed) newErrors.termsAgreed = 'You must agree to the terms';
+        break;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [currentStep, formData]);
+
+  // Handle next step
+  const handleNext = useCallback(() => {
+    if (validateStep()) {
+      if (currentStep < steps.length) {
+        setCurrentStep(prev => prev + 1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  }, [currentStep, validateStep]);
+
+  // Handle previous step
+  const handlePrevious = useCallback(() => {
+    if (currentStep > 1) {
+      setCurrentStep(prev => prev - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentStep]);
+
+  // Handle save draft
+  const handleSaveDraft = useCallback(() => {
+    localStorage.setItem('hostel_draft', JSON.stringify(formData));
+    toast.success('Draft saved! You can continue later.');
+  }, [formData]);
+
+  // Handle submit
+  const handleSubmit = useCallback(async () => {
+    if (!validateStep()) return;
+
+    try {
+      // Transform form data to API format
+      const apiData = {
+        name: formData.name,
+        description: formData.description,
+        address: `${formData.town}, near ${campusOptions.find(c => c.value === formData.campus)?.label || formData.campus}`,
+        campus: formData.campus,
+        gender_policy: formData.genderPolicy,
+        tenant_type: formData.tenantType,
+        total_rooms: formData.totalRooms,
+        total_floors: formData.totalFloors,
+        base_price: formData.roomTypes[0]?.monthlyRent?.toString() || '5000',
+        deposit_amount: formData.depositAmount,
+        caretaker_name: formData.caretakerName,
+        caretaker_phone: formData.caretakerPhone,
+        safety_features: formData.safetyFeatures,
+        house_rules: formData.houseRules,
+        minimum_stay: formData.minimumStay,
+        mid_term_joins_allowed: formData.midTermJoins,
+        payment_cycle: formData.paymentCycle,
+        grace_period_days: formData.gracePeriod,
+        late_fee_percent: formData.lateFeePercent,
+        images: formData.images, // Image URLs/previews
+      };
+
+      await createHostel.mutateAsync(apiData as any);
       
-      // Simulate API call
-      setTimeout(() => {
-          setLoading(false);
-          toast.success("Hostel added successfully!");
-          router.push('/landlord/hostels');
-      }, 2000);
+      // Clear draft on success
+      localStorage.removeItem('hostel_draft');
       
-      // Real implementation would append formData.images to FormData object
-  };
+      toast.success('Hostel created successfully!');
+      router.push('/landlord/hostels');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create hostel');
+    }
+  }, [formData, validateStep, createHostel, router]);
 
-  const nextStep = () => setStep(s => Math.min(s + 1, 3));
-  const prevStep = () => setStep(s => Math.max(s - 1, 1));
+  // Load draft on mount
+  React.useEffect(() => {
+    const draft = localStorage.getItem('hostel_draft');
+    if (draft) {
+      try {
+        const parsed = JSON.parse(draft);
+        setFormData({ ...initialFormData, ...parsed });
+        toast.info('Draft restored! Continue where you left off.');
+      } catch {
+        // Invalid draft, ignore
+      }
+    }
+  }, []);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-20">
-        <div className="flex flex-col items-center text-center space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">List Your Property</h1>
-            <p className="text-slate-500 max-w-lg">Add a new hostel to your portfolio. Follow the steps to provide all necessary details.</p>
+    <div className="max-w-4xl mx-auto space-y-6 pb-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+            Add New Hostel
+          </h1>
+          <p className="text-base text-muted-foreground mt-1">
+            Fill in the details step by step
+          </p>
         </div>
+        <Button variant="ghost" size="lg" asChild>
+          <Link href="/landlord/hostels">
+            <X className="h-5 w-5 mr-2" />
+            Cancel
+          </Link>
+        </Button>
+      </div>
 
-        {/* Progress */}
-        <div className="flex items-center justify-center">
-             {[1, 2, 3].map((s) => (
-                 <div key={s} className="flex items-center">
-                     <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 font-bold ${step >= s ? 'border-emerald-600 bg-emerald-600 text-white shadow-lg shadow-emerald-200' : 'border-slate-200 text-slate-400'}`}>
-                         {s}
-                     </div>
-                     {s < 3 && (
-                         <div className={`w-20 md:w-32 h-1 mx-2 rounded-full transition-all duration-300 ${step > s ? 'bg-emerald-600' : 'bg-slate-100'}`} />
-                     )}
-                 </div>
-             ))}
-        </div>
+      {/* Progress Bar */}
+      <Card className="border shadow-sm bg-card">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-bold text-muted-foreground">
+              Step {currentStep} of {steps.length}
+            </span>
+            <span className="text-sm font-bold text-foreground">
+              {Math.round(progress)}% Complete
+            </span>
+          </div>
+          <Progress value={progress} className="h-3" />
+          
+          {/* Step Indicators */}
+          <div className="flex justify-between mt-6">
+            {steps.map((step) => {
+              const StepIcon = step.icon;
+              const isActive = step.id === currentStep;
+              const isCompleted = step.id < currentStep;
+              
+              return (
+                <div
+                  key={step.id}
+                  className={cn(
+                    "flex flex-col items-center text-center",
+                    "flex-1"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all",
+                      isCompleted && "bg-primary text-primary-foreground",
+                      isActive && "bg-primary/20 text-primary border-2 border-primary",
+                      !isCompleted && !isActive && "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {isCompleted ? (
+                      <Check className="h-5 w-5 md:h-6 md:w-6" />
+                    ) : (
+                      <StepIcon className="h-5 w-5 md:h-6 md:w-6" />
+                    )}
+                  </div>
+                  <span className={cn(
+                    "text-xs md:text-sm font-medium mt-2 hidden md:block",
+                    isActive ? "text-foreground" : "text-muted-foreground"
+                  )}>
+                    {step.title}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
-        <Card className="border-none shadow-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm overflow-hidden min-h-[500px] flex flex-col">
-            <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b">
-                <CardTitle>{step === 1 ? 'Basic Details' : step === 2 ? 'Features & Amenities' : 'Media Gallery'}</CardTitle>
-                <CardDescription>
-                    {step === 1 ? 'Tell us about your property location and capacity.' : step === 2 ? 'What makes your hostel stand out?' : 'Upload high-quality photos (Max 8).'}
-                </CardDescription>
-            </CardHeader>
-            
-            <div className="flex-1 p-6 relative">
-                 <AnimatePresence mode="wait">
-                     {step === 1 && (
-                         <motion.div
-                           key="step1"
-                           initial={{ opacity: 0, x: 20 }}
-                           animate={{ opacity: 1, x: 0 }}
-                           exit={{ opacity: 0, x: -20 }}
-                           className="space-y-6"
-                         >
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                 <div className="space-y-2">
-                                     <Label>Hostel Name</Label>
-                                     <Input placeholder="e.g. Sunny Makers Hostel" value={formData.name} onChange={(e) => updateField('name', e.target.value)} />
-                                 </div>
-                                 <div className="space-y-2">
-                                     <Label>Type</Label>
-                                     <Select value={formData.type} onValueChange={(v) => updateField('type', v)}>
-                                         <SelectTrigger>
-                                             <SelectValue placeholder="Select type" />
-                                         </SelectTrigger>
-                                         <SelectContent>
-                                             <SelectItem value="mixed">Mixed</SelectItem>
-                                             <SelectItem value="mens">Men's Only</SelectItem>
-                                             <SelectItem value="ladies">Ladies' Only</SelectItem>
-                                         </SelectContent>
-                                     </Select>
-                                 </div>
-                                 <div className="space-y-2 md:col-span-2">
-                                     <Label>Address / Location</Label>
-                                     <div className="relative">
-                                         <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                                         <Input className="pl-9" placeholder="e.g. 123 University Way, Nairobi" value={formData.address} onChange={(e) => updateField('address', e.target.value)} />
-                                     </div>
-                                 </div>
-                                 <div className="space-y-2 md:col-span-2">
-                                     <Label>Description</Label>
-                                     <Textarea placeholder="Describe your hostel..." className="min-h-[100px]" value={formData.description} onChange={(e) => updateField('description', e.target.value)} />
-                                 </div>
-                             </div>
-                         </motion.div>
-                     )}
+      {/* Step Content */}
+      <Card className="border shadow-sm bg-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xl font-bold text-foreground">
+            {steps[currentStep - 1].title}
+          </CardTitle>
+          <CardDescription className="text-base text-muted-foreground">
+            {steps[currentStep - 1].description}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-4 space-y-6">
+          {/* Step 1: Basic Info */}
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-base font-bold">
+                  Hostel Name *
+                </Label>
+                <Input
+                  id="name"
+                  placeholder="e.g., Sunrise Hostels"
+                  value={formData.name}
+                  onChange={(e) => updateField('name', e.target.value)}
+                  className={cn("h-12 text-base", errors.name && "border-red-500")}
+                />
+                {errors.name && (
+                  <p className="text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.name}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  This name will be shown to students searching for hostels
+                </p>
+              </div>
 
-                     {step === 2 && (
-                         <motion.div
-                           key="step2"
-                           initial={{ opacity: 0, x: 20 }}
-                           animate={{ opacity: 1, x: 0 }}
-                           exit={{ opacity: 0, x: -20 }}
-                           className="space-y-8"
-                         >
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                   <div className="space-y-4">
-                                       <Label className="text-lg font-semibold">Capacity & Pricing</Label>
-                                       <div className="space-y-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed">
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between">
-                                                    <Label>Total Rooms</Label>
-                                                    <span className="font-bold text-emerald-600">{formData.totalRooms}</span>
-                                                </div>
-                                                <Slider min={5} max={100} step={1} value={[formData.totalRooms]} onValueChange={(v) => updateField('totalRooms', v[0])} />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Base Rent (KES / Month)</Label>
-                                                <Input type="number" placeholder="e.g. 15000" value={formData.basePrice} onChange={(e) => updateField('basePrice', e.target.value)} />
-                                            </div>
-                                       </div>
-                                   </div>
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-base font-bold">
+                  Short Description
+                </Label>
+                <Textarea
+                  id="description"
+                  placeholder="e.g., Secure, furnished hostel for DeKUT students. Close to campus with 24/7 security."
+                  value={formData.description}
+                  onChange={(e) => updateField('description', e.target.value)}
+                  className="min-h-[100px] text-base"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Describe what makes your hostel special (optional)
+                </p>
+              </div>
 
-                                   <div className="space-y-4">
-                                        <Label className="text-lg font-semibold">Amenities</Label>
-                                        <div className="grid grid-cols-1 gap-3">
-                                            {AMENITIES.map((amenity) => {
-                                                const Icon = amenity.icon;
-                                                const isSelected = formData.amenities.includes(amenity.id);
-                                                return (
-                                                    <div 
-                                                        key={amenity.id}
-                                                        onClick={() => handleAmenityToggle(amenity.id)}
-                                                        className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all duration-200 ${isSelected ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-                                                    >
-                                                        <div className={`p-2 rounded-full mr-3 ${isSelected ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
-                                                            <Icon className="h-4 w-4" />
-                                                        </div>
-                                                        <span className={`font-medium ${isSelected ? 'text-emerald-900 dark:text-emerald-100' : 'text-slate-600 dark:text-slate-300'}`}>{amenity.label}</span>
-                                                        {isSelected && <CheckCircle2 className="h-5 w-5 text-emerald-600 ml-auto" />}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                   </div>
-                              </div>
-                         </motion.div>
-                     )}
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-base font-bold">Campus/Institution *</Label>
+                  <Select
+                    value={formData.campus}
+                    onValueChange={(value) => updateField('campus', value)}
+                  >
+                    <SelectTrigger className={cn("h-12 text-base", errors.campus && "border-red-500")}>
+                      <SelectValue placeholder="Select a campus" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {campusOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value} className="text-base">
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.campus && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.campus}
+                    </p>
+                  )}
+                </div>
 
-                      {step === 3 && (
-                         <motion.div
-                           key="step3"
-                           initial={{ opacity: 0, x: 20 }}
-                           animate={{ opacity: 1, x: 0 }}
-                           exit={{ opacity: 0, x: -20 }}
-                           className="space-y-6"
-                         >
-                             <HostelImageUpload 
-                                 onImagesChange={() => {}} // We use onFilesChange
-                                 onFilesChange={(files) => updateField('images', files)}
-                                 initialImages={[]}
-                             />
-                             
-                             <div className="p-4 bg-blue-50 text-blue-800 text-sm rounded-lg flex gap-3 items-start border border-blue-100">
-                                 <Shield className="h-5 w-5 shrink-0 mt-0.5" />
-                                 <p>By uploading these images, you certify that you own the rights to them and they accurately represent the property. False representation may lead to account suspension.</p>
-                             </div>
-                         </motion.div>
-                     )}
-                 </AnimatePresence>
+                <div className="space-y-2">
+                  <Label htmlFor="town" className="text-base font-bold">
+                    Town *
+                  </Label>
+                  <Input
+                    id="town"
+                    placeholder="e.g., Nyeri"
+                    value={formData.town}
+                    onChange={(e) => updateField('town', e.target.value)}
+                    className={cn("h-12 text-base", errors.town && "border-red-500")}
+                  />
+                  {errors.town && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.town}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-base font-bold">Gender Policy *</Label>
+                <RadioGroup
+                  value={formData.genderPolicy}
+                  onValueChange={(value) => updateField('genderPolicy', value as any)}
+                  className="grid gap-4 md:grid-cols-3"
+                >
+                  {[
+                    { value: 'male_only', label: 'Male Only', desc: 'Only male students' },
+                    { value: 'female_only', label: 'Female Only', desc: 'Only female students' },
+                    { value: 'mixed', label: 'Mixed', desc: 'Separate blocks by gender' },
+                  ].map(option => (
+                    <div key={option.value}>
+                      <RadioGroupItem
+                        value={option.value}
+                        id={option.value}
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor={option.value}
+                        className={cn(
+                          "flex flex-col items-center justify-center rounded-lg border-2 p-4 cursor-pointer transition-all",
+                          "hover:bg-muted/50",
+                          formData.genderPolicy === option.value
+                            ? "border-primary bg-primary/5"
+                            : "border-muted"
+                        )}
+                      >
+                        <span className="text-base font-bold">{option.label}</span>
+                        <span className="text-sm text-muted-foreground">{option.desc}</span>
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+                {errors.genderPolicy && (
+                  <p className="text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.genderPolicy}
+                  </p>
+                )}
+              </div>
+
+              {/* Tenant Type Selection */}
+              <div className="space-y-3">
+                <Label className="text-base font-bold">Who can rent your rooms? *</Label>
+                <p className="text-sm text-muted-foreground">
+                  Choose whether your hostel is exclusively for students or open to anyone
+                </p>
+                <RadioGroup
+                  value={formData.tenantType}
+                  onValueChange={(value) => updateField('tenantType', value as any)}
+                  className="grid gap-4 md:grid-cols-2"
+                >
+                  {[
+                    { 
+                      value: 'students_only', 
+                      label: 'Students Only', 
+                      desc: 'Only university/college students can book' 
+                    },
+                    { 
+                      value: 'anyone', 
+                      label: 'Open to Anyone', 
+                      desc: 'Students and non-students (working professionals, etc.)' 
+                    },
+                  ].map(option => (
+                    <div key={option.value}>
+                      <RadioGroupItem
+                        value={option.value}
+                        id={`tenant-${option.value}`}
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor={`tenant-${option.value}`}
+                        className={cn(
+                          "flex flex-col items-center justify-center rounded-lg border-2 p-4 cursor-pointer transition-all text-center",
+                          "hover:bg-muted/50",
+                          formData.tenantType === option.value
+                            ? "border-primary bg-primary/5"
+                            : "border-muted"
+                        )}
+                      >
+                        <span className="text-base font-bold">{option.label}</span>
+                        <span className="text-sm text-muted-foreground">{option.desc}</span>
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+                {errors.tenantType && (
+                  <p className="text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.tenantType}
+                  </p>
+                )}
+              </div>
             </div>
+          )}
 
-            <CardFooter className="flex justify-between border-t p-6 bg-slate-50/50">
-                 <Button variant="ghost" onClick={prevStep} disabled={step === 1 || loading}>
-                     <ArrowLeft className="h-4 w-4 mr-2" /> Back
-                 </Button>
-                 
-                 {step < 3 ? (
-                     <Button onClick={nextStep} className="bg-slate-900 text-white hover:bg-slate-800">
-                         Continue <ArrowRight className="h-4 w-4 ml-2" />
-                     </Button>
-                 ) : (
-                     <Button onClick={handleSubmit} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700 w-32">
-                         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="h-4 w-4 mr-2" /> Publish</>}
-                     </Button>
-                 )}
-            </CardFooter>
-        </Card>
+          {/* Step 2: Building Structure */}
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="totalFloors" className="text-base font-bold">
+                    Total Floors/Blocks
+                  </Label>
+                  <Input
+                    id="totalFloors"
+                    type="number"
+                    min="1"
+                    value={formData.totalFloors}
+                    onChange={(e) => updateField('totalFloors', parseInt(e.target.value) || 1)}
+                    className="h-12 text-base"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    How many floors or blocks does your hostel have?
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="totalRooms" className="text-base font-bold">
+                    Total Rooms *
+                  </Label>
+                  <Input
+                    id="totalRooms"
+                    type="number"
+                    min="1"
+                    value={formData.totalRooms}
+                    onChange={(e) => updateField('totalRooms', parseInt(e.target.value) || 1)}
+                    className={cn("h-12 text-base", errors.totalRooms && "border-red-500")}
+                  />
+                  {errors.totalRooms && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.totalRooms}
+                    </p>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    Total number of rooms available for rent
+                  </p>
+                </div>
+              </div>
+
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-bold text-foreground mb-4">Caretaker Details</h3>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="caretakerName" className="text-base font-bold">
+                      Caretaker Name *
+                    </Label>
+                    <Input
+                      id="caretakerName"
+                      placeholder="Full name"
+                      value={formData.caretakerName}
+                      onChange={(e) => updateField('caretakerName', e.target.value)}
+                      className={cn("h-12 text-base", errors.caretakerName && "border-red-500")}
+                    />
+                    {errors.caretakerName && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.caretakerName}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="caretakerPhone" className="text-base font-bold">
+                      Caretaker Phone *
+                    </Label>
+                    <Input
+                      id="caretakerPhone"
+                      type="tel"
+                      placeholder="e.g., 0712345678"
+                      value={formData.caretakerPhone}
+                      onChange={(e) => updateField('caretakerPhone', e.target.value)}
+                      className={cn("h-12 text-base", errors.caretakerPhone && "border-red-500")}
+                    />
+                    {errors.caretakerPhone && (
+                      <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.caretakerPhone}
+                      </p>
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      An account will be created for your caretaker
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-bold text-foreground mb-4">Safety Features</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Select all safety features available at your hostel
+                </p>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {safetyFeatureOptions.map((feature) => (
+                    <div
+                      key={feature.id}
+                      className={cn(
+                        "flex items-center space-x-3 rounded-lg border p-4 cursor-pointer transition-all",
+                        formData.safetyFeatures.includes(feature.id)
+                          ? "border-primary bg-primary/5"
+                          : "border-muted hover:bg-muted/50"
+                      )}
+                      onClick={() => toggleSafetyFeature(feature.id)}
+                    >
+                      <Checkbox
+                        id={feature.id}
+                        checked={formData.safetyFeatures.includes(feature.id)}
+                        onCheckedChange={() => toggleSafetyFeature(feature.id)}
+                      />
+                      <Label
+                        htmlFor={feature.id}
+                        className="text-base font-medium cursor-pointer flex-1"
+                      >
+                        {feature.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Room Types (Simplified) */}
+          {currentStep === 3 && (
+            <div className="space-y-6">
+              <div className="bg-muted/50 rounded-lg p-4 md:p-6">
+                <h3 className="text-lg font-bold text-foreground mb-2">
+                  Room Types Setup
+                </h3>
+                <p className="text-base text-muted-foreground mb-4">
+                  You can add detailed room types after creating the hostel. For now, just tell us the basics:
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultRoomName" className="text-base font-bold">
+                      Main Room Type Name
+                    </Label>
+                    <Input
+                      id="defaultRoomName"
+                      placeholder="e.g., Single Room, 2-Bed Shared, 4-Bed Dorm"
+                      value={formData.roomTypes[0]?.name || ''}
+                      onChange={(e) => updateField('roomTypes', [{ 
+                        ...formData.roomTypes[0], 
+                        name: e.target.value,
+                        bedsPerRoom: formData.roomTypes[0]?.bedsPerRoom || 1,
+                        genderRestriction: formData.roomTypes[0]?.genderRestriction || '',
+                        amenities: formData.roomTypes[0]?.amenities || [],
+                        monthlyRent: formData.roomTypes[0]?.monthlyRent || 0
+                      }])}
+                      className="h-12 text-base"
+                    />
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="bedsPerRoom" className="text-base font-bold">
+                        Beds Per Room
+                      </Label>
+                      <Select
+                        value={formData.roomTypes[0]?.bedsPerRoom?.toString() || '1'}
+                        onValueChange={(value) => updateField('roomTypes', [{ 
+                          ...formData.roomTypes[0],
+                          name: formData.roomTypes[0]?.name || '',
+                          bedsPerRoom: parseInt(value),
+                          genderRestriction: formData.roomTypes[0]?.genderRestriction || '',
+                          amenities: formData.roomTypes[0]?.amenities || [],
+                          monthlyRent: formData.roomTypes[0]?.monthlyRent || 0
+                        }])}
+                      >
+                        <SelectTrigger className="h-12 text-base">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1" className="text-base">1 Bed (Single)</SelectItem>
+                          <SelectItem value="2" className="text-base">2 Beds (Shared)</SelectItem>
+                          <SelectItem value="3" className="text-base">3 Beds</SelectItem>
+                          <SelectItem value="4" className="text-base">4 Beds (Dorm)</SelectItem>
+                          <SelectItem value="6" className="text-base">6 Beds</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="monthlyRent" className="text-base font-bold">
+                        Monthly Rent (KES) per bed
+                      </Label>
+                      <Input
+                        id="monthlyRent"
+                        type="number"
+                        min="0"
+                        placeholder="e.g., 5000"
+                        value={formData.roomTypes[0]?.monthlyRent || ''}
+                        onChange={(e) => updateField('roomTypes', [{ 
+                          ...formData.roomTypes[0],
+                          name: formData.roomTypes[0]?.name || '',
+                          bedsPerRoom: formData.roomTypes[0]?.bedsPerRoom || 1,
+                          genderRestriction: formData.roomTypes[0]?.genderRestriction || '',
+                          amenities: formData.roomTypes[0]?.amenities || [],
+                          monthlyRent: parseInt(e.target.value) || 0
+                        }])}
+                        className="h-12 text-base"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                <strong>Tip:</strong> After creating your hostel, you can add more room types with different prices and amenities from the hostel management page.
+              </p>
+
+              {/* Image Upload Section */}
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-bold text-foreground mb-2">
+                  Hostel Photos
+                </h3>
+                <p className="text-base text-muted-foreground mb-4">
+                  Upload photos of your hostel to attract students. Show the building front, rooms, bathrooms, and common areas.
+                </p>
+                <HostelImageUpload
+                  onImagesChange={(images) => updateField('images', images)}
+                  onFilesChange={(files) => updateField('imageFiles', files)}
+                  initialImages={formData.images}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Pricing */}
+          {currentStep === 4 && (
+            <div className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="depositAmount" className="text-base font-bold">
+                    Deposit Amount (KES)
+                  </Label>
+                  <Input
+                    id="depositAmount"
+                    type="number"
+                    min="0"
+                    placeholder="e.g., 5000"
+                    value={formData.depositAmount || ''}
+                    onChange={(e) => updateField('depositAmount', parseInt(e.target.value) || 0)}
+                    className="h-12 text-base"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    One-time deposit paid by student on move-in
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="registrationFee" className="text-base font-bold">
+                    Registration/Key Fee (KES)
+                  </Label>
+                  <Input
+                    id="registrationFee"
+                    type="number"
+                    min="0"
+                    placeholder="e.g., 500"
+                    value={formData.registrationFee || ''}
+                    onChange={(e) => updateField('registrationFee', parseInt(e.target.value) || 0)}
+                    className="h-12 text-base"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    One-time fee for registration or key deposit
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3 p-4 rounded-lg border">
+                <Checkbox
+                  id="depositRefundable"
+                  checked={formData.depositRefundable}
+                  onCheckedChange={(checked) => updateField('depositRefundable', checked as boolean)}
+                />
+                <Label htmlFor="depositRefundable" className="text-base font-medium cursor-pointer">
+                  Deposit is refundable on checkout (when no damages)
+                </Label>
+              </div>
+
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-bold text-foreground mb-4">Payment Terms</h3>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-base font-bold">Payment Cycle</Label>
+                    <RadioGroup
+                      value={formData.paymentCycle}
+                      onValueChange={(value) => updateField('paymentCycle', value as any)}
+                      className="grid gap-4 md:grid-cols-3"
+                    >
+                      {[
+                        { value: 'monthly', label: 'Monthly', desc: 'Pay every month' },
+                        { value: 'semester', label: 'Per Semester', desc: 'Pay once per semester' },
+                        { value: 'annual', label: 'Annual', desc: 'Pay for full year' },
+                      ].map(option => (
+                        <div key={option.value}>
+                          <RadioGroupItem
+                            value={option.value}
+                            id={`payment-${option.value}`}
+                            className="peer sr-only"
+                          />
+                          <Label
+                            htmlFor={`payment-${option.value}`}
+                            className={cn(
+                              "flex flex-col items-center justify-center rounded-lg border-2 p-4 cursor-pointer transition-all",
+                              "hover:bg-muted/50",
+                              formData.paymentCycle === option.value
+                                ? "border-primary bg-primary/5"
+                                : "border-muted"
+                            )}
+                          >
+                            <span className="text-base font-bold">{option.label}</span>
+                            <span className="text-sm text-muted-foreground">{option.desc}</span>
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="gracePeriod" className="text-base font-bold">
+                        Grace Period (Days)
+                      </Label>
+                      <Input
+                        id="gracePeriod"
+                        type="number"
+                        min="0"
+                        max="30"
+                        value={formData.gracePeriod}
+                        onChange={(e) => updateField('gracePeriod', parseInt(e.target.value) || 0)}
+                        className="h-12 text-base"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Days after due date before late fee applies
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="lateFeePercent" className="text-base font-bold">
+                        Late Fee (%)
+                      </Label>
+                      <Input
+                        id="lateFeePercent"
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={formData.lateFeePercent}
+                        onChange={(e) => updateField('lateFeePercent', parseInt(e.target.value) || 0)}
+                        className="h-12 text-base"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Percentage of rent charged as late fee
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Rules & Compliance */}
+          {currentStep === 5 && (
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-base font-bold">Minimum Stay</Label>
+                  <RadioGroup
+                    value={formData.minimumStay}
+                    onValueChange={(value) => updateField('minimumStay', value as any)}
+                    className="grid gap-4 md:grid-cols-3"
+                  >
+                    {[
+                      { value: 'semester', label: 'One Semester', desc: 'Students stay for at least one semester' },
+                      { value: 'year', label: 'Full Year', desc: 'Students commit for the full academic year' },
+                      { value: 'flexible', label: 'Flexible', desc: 'No minimum stay requirement' },
+                    ].map(option => (
+                      <div key={option.value}>
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`stay-${option.value}`}
+                          className="peer sr-only"
+                        />
+                        <Label
+                          htmlFor={`stay-${option.value}`}
+                          className={cn(
+                            "flex flex-col items-center justify-center rounded-lg border-2 p-4 cursor-pointer transition-all text-center",
+                            "hover:bg-muted/50",
+                            formData.minimumStay === option.value
+                              ? "border-primary bg-primary/5"
+                              : "border-muted"
+                          )}
+                        >
+                          <span className="text-base font-bold">{option.label}</span>
+                          <span className="text-sm text-muted-foreground">{option.desc}</span>
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+
+                <div className="flex items-center space-x-3 p-4 rounded-lg border">
+                  <Checkbox
+                    id="midTermJoins"
+                    checked={formData.midTermJoins}
+                    onCheckedChange={(checked) => updateField('midTermJoins', checked as boolean)}
+                  />
+                  <Label htmlFor="midTermJoins" className="text-base font-medium cursor-pointer">
+                    Allow mid-semester/term move-ins
+                  </Label>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="houseRules" className="text-base font-bold">
+                  House Rules
+                </Label>
+                <Textarea
+                  id="houseRules"
+                  placeholder="e.g., No loud music after 10pm. No overnight guests without permission. Keep common areas clean."
+                  value={formData.houseRules}
+                  onChange={(e) => updateField('houseRules', e.target.value)}
+                  className="min-h-[150px] text-base"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Rules that all tenants must follow
+                </p>
+              </div>
+
+              <div className="border-t pt-6">
+                <div
+                  className={cn(
+                    "flex items-start space-x-3 p-4 rounded-lg border-2",
+                    formData.termsAgreed ? "border-primary bg-primary/5" : "border-muted",
+                    errors.termsAgreed && "border-red-500"
+                  )}
+                >
+                  <Checkbox
+                    id="termsAgreed"
+                    checked={formData.termsAgreed}
+                    onCheckedChange={(checked) => updateField('termsAgreed', checked as boolean)}
+                  />
+                  <Label htmlFor="termsAgreed" className="text-base font-medium cursor-pointer leading-relaxed">
+                    I confirm that all information provided is accurate and I agree to RUMI's terms of service for property listing.
+                  </Label>
+                </div>
+                {errors.termsAgreed && (
+                  <p className="text-sm text-red-500 flex items-center gap-1 mt-2">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.termsAgreed}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Navigation Buttons */}
+      <div className="flex items-center justify-between">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={handlePrevious}
+            disabled={currentStep === 1}
+            className="gap-2"
+          >
+            <ChevronLeft className="h-5 w-5" />
+            Back
+          </Button>
+          <Button
+            variant="ghost"
+            size="lg"
+            onClick={handleSaveDraft}
+            className="gap-2"
+          >
+            <Save className="h-5 w-5" />
+            <span className="hidden md:inline">Save Draft</span>
+          </Button>
+        </div>
+
+        {currentStep < steps.length ? (
+          <Button
+            size="lg"
+            onClick={handleNext}
+            className="gap-2 bg-primary hover:bg-primary/90"
+          >
+            Next
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+        ) : (
+          <Button
+            size="lg"
+            onClick={handleSubmit}
+            disabled={createHostel.isPending}
+            className="gap-2 bg-primary hover:bg-primary/90"
+          >
+            {createHostel.isPending ? (
+              <>
+                <span className="animate-spin">⏳</span>
+                Creating...
+              </>
+            ) : (
+              <>
+                <Check className="h-5 w-5" />
+                Create Hostel
+              </>
+            )}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

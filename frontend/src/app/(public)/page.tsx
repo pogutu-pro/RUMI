@@ -9,12 +9,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import {
-  ArrowRight,
-  Search,
-  CheckCircle2,
-  Sparkles,
-} from 'lucide-react';
+import { ArrowRight, Search, CheckCircle2, Sparkles } from 'lucide-react';
 import {
   FadeIn,
   FadeInStagger,
@@ -107,7 +102,11 @@ export default function HomePage() {
                   Find Hostels
                 </Button>
               </Link>
-              <Link href={AUTH_ROUTES.REGISTER} prefetch className="w-full sm:w-auto">
+              <Link
+                href={AUTH_ROUTES.REGISTER}
+                prefetch
+                className="w-full sm:w-auto"
+              >
                 <Button
                   size="lg"
                   variant="charcoal"
@@ -143,7 +142,10 @@ export default function HomePage() {
       </section>
 
       {/* Why Rumi? - Replaced with Video Section */}
-      <section className="py-16 xs:py-20 md:py-24 lg:py-32 bg-white" aria-label="Why choose Rumi">
+      <section
+        className="py-16 xs:py-20 md:py-24 lg:py-32 bg-white"
+        aria-label="Why choose Rumi"
+      >
         <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-5xl text-center">
             <h2 className="mb-6 xs:mb-8 text-3xl xs:text-4xl font-bold text-gray-900 sm:text-5xl">
@@ -209,7 +211,10 @@ export default function HomePage() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-16 xs:py-20 md:py-24 lg:py-32 bg-white" aria-label="How Rumi works">
+      <section
+        className="py-16 xs:py-20 md:py-24 lg:py-32 bg-white"
+        aria-label="How Rumi works"
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-5xl">
             <FadeIn className="mb-12 xs:mb-16 text-center">
@@ -281,28 +286,20 @@ export default function HomePage() {
               <PlatformCarousel
                 slides={[
                   {
-                    src: '/images/carousel/carousel-01.png',
+                    src: '/images/carousel/carousel-01.jpeg',
                     alt: 'Verified and trustworthy hostels',
-                    title: 'Verified & Trustworthy',
-                    description: 'All hostels are verified for legitimacy and safety',
                   },
                   {
-                    src: '/images/carousel/carousel-02.jpg',
+                    src: '/images/carousel/carousel-02.jpeg',
                     alt: 'Easy dashboard management',
-                    title: 'Easy Dashboard',
-                    description: 'User-centric dashboards for effortless management',
                   },
                   {
-                    src: '/images/carousel/carousel-03.png',
+                    src: '/images/carousel/carousel-03.jpeg',
                     alt: 'Mobile friendly design',
-                    title: 'Mobile Friendly',
-                    description: 'Fully responsive design that works great on any device',
                   },
                   {
-                    src: '/images/carousel/carousel-04.png',
+                    src: '/images/carousel/carousel-04.jpeg',
                     alt: 'Secure M-PESA payments',
-                    title: 'Secure M-PESA Payments',
-                    description: 'Safe and instant payments without the hassle',
                   },
                 ]}
                 autoPlayInterval={5000}
@@ -313,7 +310,10 @@ export default function HomePage() {
       </section>
 
       {/* Students Section - Video on the right (desktop) */}
-      <section className="py-16 xs:py-20 md:py-24 lg:py-32 bg-white" aria-label="For students">
+      <section
+        className="py-16 xs:py-20 md:py-24 lg:py-32 bg-white"
+        aria-label="For students"
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
             <div className="grid gap-12 md:gap-16 lg:grid-cols-2 lg:items-center">
@@ -368,7 +368,7 @@ export default function HomePage() {
                   </Button>
                 </Link>
               </FadeIn>
-              
+
               {/* Right Column - Video */}
               <FadeIn className="lg:order-last">
                 <div className="w-full max-w-3xl mx-auto lg:mx-0">
@@ -388,7 +388,10 @@ export default function HomePage() {
       </section>
 
       {/* Landlords Section - Video on the right (desktop) */}
-      <section className="bg-gray-50 py-16 xs:py-20 md:py-24 lg:py-32" aria-label="For landlords">
+      <section
+        className="bg-gray-50 py-16 xs:py-20 md:py-24 lg:py-32"
+        aria-label="For landlords"
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
             <div className="grid gap-12 md:gap-16 lg:grid-cols-2 lg:items-center">
@@ -443,7 +446,7 @@ export default function HomePage() {
                   </Button>
                 </Link>
               </FadeIn>
-              
+
               {/* Right Column - Video */}
               <FadeIn className="lg:order-last">
                 <div className="w-full max-w-3xl mx-auto lg:mx-0">

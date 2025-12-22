@@ -132,7 +132,7 @@ export default function CaretakersPage() {
 
       {/* Stats Overview */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+        <Card className="border shadow-sm bg-white dark:bg-slate-900">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -148,7 +148,7 @@ export default function CaretakersPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+        <Card className="border shadow-sm bg-white dark:bg-slate-900">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -164,7 +164,7 @@ export default function CaretakersPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+        <Card className="border shadow-sm bg-white dark:bg-slate-900">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -180,7 +180,7 @@ export default function CaretakersPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+        <Card className="border shadow-sm bg-white dark:bg-slate-900">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -272,128 +272,123 @@ export default function CaretakersPage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3, delay: index * 0.05 }}
             >
-              <Card className="border-none shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+              <Card className="border shadow-sm hover:shadow-md transition-all duration-300 bg-white dark:bg-slate-900">
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row lg:items-center gap-6">
                     {/* Caretaker Info */}
                     <div className="flex items-center gap-4 flex-1">
-                      <Avatar className="h-16 w-16 ring-4 ring-emerald-100 dark:ring-emerald-900/50">
+                      <Avatar className="h-16 w-16 ring-2 ring-slate-100 dark:ring-slate-800">
                         <AvatarImage src={undefined} />
-                        <AvatarFallback className="bg-gradient-to-br from-emerald-100 to-cyan-100 dark:from-emerald-950 dark:to-cyan-950 text-emerald-700 dark:text-emerald-400 font-bold text-lg">
+                        <AvatarFallback className="bg-slate-100 text-slate-900 font-bold text-xl dark:bg-slate-800 dark:text-slate-200">
                           {getInitials(caretaker.firstName, caretaker.lastName)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                        <div className="flex items-center gap-3 mb-1">
+                          <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
                             {caretaker.firstName} {caretaker.lastName}
                           </h3>
                           <Badge
+                            variant="outline"
                             className={cn(
-                              'border-0',
+                              'font-bold border-0',
                               caretaker.isActive
-                                ? 'bg-green-100 text-green-700 dark:bg-green-950dark:text-green-400'
-                                : 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400'
+                                ? 'bg-green-50 text-green-700 ring-1 ring-green-600/20 dark:bg-green-900/20 dark:text-green-400'
+                                : 'bg-red-50 text-red-700 ring-1 ring-red-600/20 dark:bg-red-900/20 dark:text-red-400'
                             )}
                           >
                             {caretaker.isActive ? 'Active' : 'Inactive'}
                           </Badge>
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-slate-600 dark:text-slate-400">
-                          <div className="flex items-center gap-1">
-                            <Building2 className="h-4 w-4" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm font-medium text-slate-700 dark:text-slate-300">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-slate-500" />
                             <span>{caretaker.hostelName}</span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Mail className="h-4 w-4" />
-                            <span>{caretaker.email}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Phone className="h-4 w-4" />
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-slate-500" />
                             <span>{caretaker.phone}</span>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2 mt-2 text-xs text-slate-500 dark:text-slate-500">
-                          <Calendar className="h-3 w-3" />
-                          <span>Joined {format(new Date(caretaker.createdAt), 'MMM dd, yyyy')}</span>
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-slate-500" />
+                            <span>{caretaker.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-slate-500" />
+                             <span>Joined {format(new Date(caretaker.createdAt), 'MMM yyyy')}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Performance Stats */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 lg:gap-6">
+                    <div className="flex items-center gap-8 border-l border-slate-100 dark:border-slate-800 pl-8">
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                        <p className="text-2xl font-black text-slate-900 dark:text-slate-100">
                           {caretaker.rating?.toFixed(1) || 'N/A'}
                         </p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">Rating</p>
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Rating</p>
                       </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                          {caretaker.tasksCompleted || 0}
-                        </p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">Tasks</p>
+                      <div className="text-center hidden sm:block">
+                        <div className="flex items-center gap-1 justify-center">
+                          <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                             {caretaker.tasksCompleted || 0}
+                          </p>
+                        </div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Tasks</p>
                       </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                          {caretaker.responseTime ? `${caretaker.responseTime}m` : 'N/A'}
+                      <div className="text-center hidden lg:block">
+                        <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                          {caretaker.occupancyRate ? `${caretaker.occupancyRate}%` : '-'}
                         </p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">Avg Response</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                          {caretaker.occupancyRate ? `${caretaker.occupancyRate}%` : 'N/A'}
-                        </p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">Occupancy</p>
+                         <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Occupancy</p>
                       </div>
                     </div>
 
                     {/* Actions */}
                     <div className="flex items-center gap-2">
                       <Link href={`/landlord/caretakers/${caretaker.id}`}>
-                        <Button variant="outline" size="sm" className="gap-2">
-                          <Eye className="h-4 w-4" />
-                          View
+                        <Button variant="outline" size="sm" className="font-bold border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">
+                          View details
                         </Button>
                       </Link>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" className="h-9 w-9">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem asChild>
-                            <Link href={`/landlord/caretakers/${caretaker.id}`}>
+                            <Link href={`/landlord/caretakers/${caretaker.id}`} className="cursor-pointer">
                               <Eye className="h-4 w-4 mr-2" />
                               View Profile
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link href={`/landlord/caretakers/${caretaker.id}/edit`}>
+                            <Link href={`/landlord/caretakers/${caretaker.id}/edit`} className="cursor-pointer">
                               <Edit className="h-4 w-4 mr-2" />
                               Edit Details
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link href={`/landlord/hostels/${caretaker.hostelId}`}>
+                            <Link href={`/landlord/hostels/${caretaker.hostelId}`} className="cursor-pointer">
                               <Building2 className="h-4 w-4 mr-2" />
                               View Hostel
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600 dark:text-red-400">
+                          <DropdownMenuItem className="text-red-600 dark:text-red-400 cursor-pointer">
                             <XCircle className="h-4 w-4 mr-2" />
-                            Deactivate
+                            Deactivate Caretaker
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
                   </div>
                 </CardContent>
-                <div className="h-1 w-full bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
               </Card>
             </motion.div>
           ))

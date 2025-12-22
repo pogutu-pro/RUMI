@@ -136,7 +136,7 @@ export default function TenantsPage() {
 
       {/* Stats Overview */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+        <Card className="border shadow-sm bg-white dark:bg-slate-900">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -154,7 +154,7 @@ export default function TenantsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+        <Card className="border shadow-sm bg-white dark:bg-slate-900">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -172,7 +172,7 @@ export default function TenantsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+        <Card className="border shadow-sm bg-white dark:bg-slate-900">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -190,7 +190,7 @@ export default function TenantsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+        <Card className="border shadow-sm bg-white dark:bg-slate-900">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -276,119 +276,100 @@ export default function TenantsPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: index * 0.05 }}
           >
-            <Card className="border-none shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+            <Card className="border shadow-sm hover:shadow-md transition-all duration-300 bg-white dark:bg-slate-900">
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-6">
                   {/* Tenant Info */}
                   <div className="flex items-center gap-4 flex-1">
-                    <Avatar className="h-16 w-16 ring-4 ring-emerald-100 dark:ring-emerald-900/50">
+                    <Avatar className="h-16 w-16 ring-2 ring-slate-100 dark:ring-slate-800">
                       <AvatarImage src={tenant.profile_picture || undefined} />
-                      <AvatarFallback className="bg-gradient-to-br from-emerald-100 to-cyan-100 dark:from-emerald-950 dark:to-cyan-950 text-emerald-700 dark:text-emerald-400 font-bold text-lg">
+                      <AvatarFallback className="bg-slate-100 text-slate-900 font-bold text-xl dark:bg-slate-800 dark:text-slate-200">
                         {getInitials(name)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
                           {name}
                         </h3>
-                        <Badge className={cn('border-0', getPaymentStatusColor(paymentStatus))}>
+                        <Badge className={cn('font-bold', getPaymentStatusColor(paymentStatus))}>
                           {paymentStatus === 'current' ? 'Current' : paymentStatus === 'late' ? 'Late' : 'Overdue'}
                         </Badge>
                       </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm text-slate-600 dark:text-slate-400">
-                        <div className="flex items-center gap-1">
-                          <Building2 className="h-4 w-4" />
-                          <span>{hostelName} - Room {roomNumber}</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm font-medium text-slate-700 dark:text-slate-300">
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-slate-500" />
+                          <span>{hostelName} <span className="text-slate-400">•</span> Room {roomNumber}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Mail className="h-4 w-4" />
-                          <span className="truncate max-w-[200px]">{tenant.email}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Phone className="h-4 w-4" />
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-slate-500" />
                           <span>{tenant.phone_number || 'N/A'}</span>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-slate-500 dark:text-slate-500">
-                        <Calendar className="h-3 w-3" />
-                         <span>
-                            Lease: {leaseStart ? format(leaseStart, 'MMM dd, yyyy') : 'N/A'} - {leaseEnd ? format(leaseEnd, 'MMM dd, yyyy') : 'N/A'}
-                         </span>
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-slate-500" />
+                          <span className="truncate">{tenant.email}</span>
+                        </div>
+                         <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-slate-500" />
+                          <span>
+                             {leaseStart ? format(leaseStart, 'MMM yyyy') : 'N/A'} - {leaseEnd ? format(leaseEnd, 'MMM yyyy') : 'N/A'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Payment Info */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div className="flex items-center gap-8 border-l border-slate-100 dark:border-slate-800 pl-8">
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                        KES {(monthlyRent / 1000).toFixed(0)}K
+                      <p className="text-2xl font-black text-slate-900 dark:text-slate-100">
+                        {(monthlyRent / 1000).toFixed(1)}K
                       </p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Monthly Rent</p>
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Rent</p>
                     </div>
-                    <div className="text-center">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                        {lastPaymentDate ? format(lastPaymentDate, 'MMM dd') : 'N/A'}
+                    <div className="text-center hidden sm:block">
+                      <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                        {lastPaymentDate ? format(lastPaymentDate, 'dd MMM') : '-'}
                       </p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Last Payment</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
-                        {university}
-                      </p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">University</p>
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Paid</p>
                     </div>
                   </div>
 
                   {/* Actions */}
                   <div className="flex items-center gap-2">
                     <Link href={`/landlord/tenants/${tenant.id}`}>
-                      <Button variant="outline" size="sm" className="gap-2">
-                        <Eye className="h-4 w-4" />
-                        View
+                      <Button variant="outline" size="sm" className="font-bold border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        View Profile
                       </Button>
                     </Link>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" className="h-9 w-9">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                          <Link href={`/landlord/tenants/${tenant.id}`}>
+                          <Link href={`/landlord/tenants/${tenant.id}`} className="cursor-pointer">
                             <Eye className="h-4 w-4 mr-2" />
-                            View Profile
+                            View Full Profile
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem className="cursor-pointer">
                           <Mail className="h-4 w-4 mr-2" />
-                          Send Message
+                          Message Tenant
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                           {/* Assuming finding hostel ID is possible, else skipping link */}
-                           { (tenant as any).hostelId ? 
-                            <Link href={`/landlord/hostels/${(tenant as any).hostelId}`}>
-                                <Home className="h-4 w-4 mr-2" />
-                                View Hostel
-                            </Link>
-                            : <span className="flex items-center pl-2 py-1.5 cursor-default text-sm text-muted-foreground"><Home className="h-4 w-4 mr-2" /> View Hostel</span>
-                           }
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-orange-600 dark:text-orange-400">
+                        <DropdownMenuItem className="text-orange-600 dark:text-orange-400 cursor-pointer">
                           <DollarSign className="h-4 w-4 mr-2" />
-                          Payment Reminder
+                          Send Reminder
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
                 </div>
               </CardContent>
-              <div className="h-1 w-full bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
             </Card>
           </motion.div>
           );

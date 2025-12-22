@@ -1,7 +1,8 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 import { queryKeys } from '@/lib/react-query/query-keys';
-import { getHostels, getHostel, getHostelById } from '@/features/hostels';
+import { getHostels, getHostel, getHostelById, createHostel } from '@/features/hostels';
 import type { Hostel } from '@/types/entities.types';
 import { HostelsResponse } from '@/features/hostels/api/hostels';
 
@@ -92,3 +93,25 @@ export const usePrefetchHostel = () => {
 };
 
 export const useHostelBySlug = useHostel;
+
+/**
+ * Hook to create a new hostel
+ * Used in the landlord hostel creation wizard
+ */
+export const useCreateHostel = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Partial<Hostel>) => createHostel(data),
+    onSuccess: () => {
+      // Invalidate hostels list to refetch
+      queryClient.invalidateQueries({ queryKey: queryKeys.hostels.all });
+      toast.success('Hostel created successfully!');
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || error?.message || 'Failed to create hostel';
+      toast.error(message);
+    },
+  });
+};
+

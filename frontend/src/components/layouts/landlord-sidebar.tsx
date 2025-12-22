@@ -327,65 +327,8 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
         </div>
       </ScrollArea>
 
-      {/* Sidebar Footer */}
-      <div className="mt-auto p-4 space-y-2 border-t border-border/50">
-        {isExpanded ? (
-          <>
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3 h-10 px-3 hover:text-foreground border-border/50 transition-all duration-200"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            >
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              <span className="text-sm font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 h-10 px-3 hover:text-destructive hover:bg-destructive/10 transition-all duration-200"
-              onClick={logout}
-            >
-              <LogOut className="h-5 w-5" />
-              <span className="text-sm font-medium">Log Out</span>
-            </Button>
-          </>
-        ) : (
-          <div className="flex flex-col items-center gap-2">
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 hover:text-foreground hover:bg-accent/50"
-                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                  >
-                    {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    onClick={logout}
-                  >
-                    <LogOut className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Log Out</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        )}
-      </div>
+      {/* Sidebar Footer - Removing as requested, items are in header */}
+      {/* <div className="mt-auto p-4 space-y-2 border-t border-border/50"> ... </div> */}
     </div>
   );
 
