@@ -14,47 +14,201 @@ import {
   LogOut, 
   Home, 
   Wrench,
-  Users
+  Users,
+  UserPlus,
+  UserX,
+  ClipboardCheck,
+  FileWarning,
+  UsersRound,
+  GitCompare,
+  Clock,
+  Moon,
+  Settings
 } from 'lucide-react';
-import { cn } from '@/lib/utils/cn';
-import { Badge } from '@/components/ui/badge';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/features/auth';
 
-const mainNavItems = [
-  { 
-    icon: LayoutDashboard, 
-    label: 'Home', 
-    href: '/caretaker/dashboard',
-    match: (path: string) => path === '/caretaker/dashboard' || path === '/caretaker'
-  },
-  { 
-    icon: ClipboardList, 
-    label: 'Ops', 
-    href: '/caretaker/check-in', // Direct access to widely used feature
-    match: (path: string) => path.startsWith('/caretaker/check-in') || path.startsWith('/caretaker/check-out') || path.startsWith('/caretaker/approvals')
-  },
-  { 
-    icon: MessageSquare, 
-    label: 'Chat', 
-    href: '/caretaker/message',
-    match: (path: string) => path.startsWith('/caretaker/message')
-  },
+const OPS_ITEMS = [
+  { icon: UserPlus, label: 'Check-In', href: '/caretaker/check-in' },
+  { icon: UserX, label: 'Check-Out', href: '/caretaker/check-out' },
+  { icon: ClipboardCheck, label: 'Approvals', href: '/caretaker/approvals' },
+  { icon: Wrench, label: 'Maintenance', href: '/caretaker/maintenance' },
+  { icon: FileWarning, label: 'Damage', href: '/caretaker/damage-reports' },
 ];
 
-const menuItems = [
-  { icon: Users, label: 'Tenants & Roommates', href: '/caretaker/tenants' },
-  { icon: Home, label: 'Rooms & Property', href: '/caretaker/room-management' },
-  { icon: Wrench, label: 'Maintenance & Damage', href: '/caretaker/maintenance' },
-  { icon: Shield, label: 'Security Logs', href: '/caretaker/security/visitor-logs' },
-  { icon: User, label: 'My Profile', href: '/caretaker/profile' },
+const TENANTS_ITEMS = [
+  { icon: Users, label: 'All Tenants', href: '/caretaker/tenants' },
+  { icon: Home, label: 'Rooms', href: '/caretaker/room-management' },
+  { icon: UsersRound, label: 'Roommates', href: '/caretaker/tenants/roommates' },
+  { icon: GitCompare, label: 'Matching', href: '/caretaker/tenants/roommate-matching' },
+];
+
+const SECURITY_ITEMS = [
+  { icon: Users, label: 'Visitors', href: '/caretaker/security/visitor-logs' },
+  { icon: Clock, label: 'Late Entries', href: '/caretaker/security/late-entries' },
+  { icon: Moon, label: 'Night Checks', href: '/caretaker/security/night-checks' },
+];
+
+const MENU_ITEMS = [
+  { icon: MessageSquare, label: 'Messages', href: '/caretaker/message' },
+  { icon: User, label: 'Profile', href: '/caretaker/profile' },
+  { icon: Settings, label: 'Settings', href: '/caretaker/settings' },
   { icon: LifeBuoy, label: 'Support', href: '/caretaker/support' },
 ];
 
+const NavLink = ({ item, active }: { item: any, active: boolean }) => (
+  <Link
+    href={item.href}
+    className={cn(
+      'flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 transition-transform duration-100 min-w-[50px] h-full w-full',
+      'active:scale-95 touch-manipulation transform-gpu',
+      active && 'bg-primary/10'
+    )}
+  >
+    <div className="relative will-change-transform">
+      <item.icon 
+        className={cn(
+          'h-5 w-5 transition-transform duration-200',
+          active ? 'text-primary scale-110' : 'text-muted-foreground'
+        )}
+        strokeWidth={active ? 2.5 : 2}
+      />
+    </div>
+    <span className={cn(
+      'text-[10px] font-medium truncate w-full text-center',
+      active ? 'text-primary font-semibold' : 'text-muted-foreground'
+    )}>
+      {item.label}
+    </span>
+  </Link>
+);
+
+const MenuButton = ({ icon: Icon, label, isOpen, onClick }: { icon: any, label: string, isOpen: boolean, onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className={cn(
+      'flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 transition-all duration-200 min-w-[50px] h-full w-full',
+      'active:scale-95 touch-manipulation',
+      isOpen && 'bg-primary/10'
+    )}
+  >
+    <Icon 
+      className={cn(
+        'h-5 w-5 transition-all duration-200',
+        isOpen ? 'text-primary scale-110' : 'text-muted-foreground'
+      )}
+      strokeWidth={isOpen ? 2.5 : 2}
+    />
+    <span className={cn(
+      'text-[10px] font-medium transition-all duration-200 truncate w-full text-center',
+      isOpen ? 'text-primary font-semibold' : 'text-muted-foreground'
+    )}>
+      {label}
+    </span>
+  </button>
+);
+
+const MenuSheet = ({ title, items, isOpen, onOpenChange, pathname, onSignOut }: { title: string, items: any[], isOpen: boolean, onOpenChange: (open: boolean) => void, pathname: string | null, onSignOut?: () => void }) => (
+  <Sheet open={isOpen} onOpenChange={onOpenChange}>
+    <SheetContent side="bottom" className="h-[80vh] rounded-t-3xl p-0 ring-0 focus:ring-0 outline-none">
+      <SheetHeader className="sr-only">
+        <SheetTitle>{title}</SheetTitle>
+        <SheetDescription>Navigation options</SheetDescription>
+      </SheetHeader>
+      
+      <div className="p-4 border-b border-border flex items-center justify-center bg-muted/20 rounded-t-3xl">
+        <div className="w-12 h-1.5 bg-muted-foreground/20 rounded-full" />
+      </div>
+
+      <ScrollArea className="h-full pb-8">
+        <div className="p-4 grid grid-cols-3 gap-3">
+          {items.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              onClick={() => onOpenChange(false)}
+              className={cn(
+                "flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border bg-card hover:bg-accent/50 transition-all duration-200 active:scale-95 aspect-square",
+                pathname?.startsWith(item.href) || (item.href.includes('?') && pathname === item.href.split('?')[0]) ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20" : "border-border/50"
+              )}
+            >
+              <div className={cn(
+                "p-2.5 rounded-full bg-background shadow-sm",
+                pathname?.startsWith(item.href) ? "text-primary" : "text-muted-foreground"
+              )}>
+                <item.icon className="w-5 h-5" />
+              </div>
+              <span className="text-[10px] font-semibold text-center leading-tight">{item.label}</span>
+            </Link>
+          ))}
+
+          {onSignOut && (
+            <button
+              onClick={onSignOut}
+              className="flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border border-destructive/20 bg-destructive/5 hover:bg-destructive/10 transition-all duration-200 active:scale-95 aspect-square"
+            >
+              <div className="p-2.5 rounded-full bg-background shadow-sm text-destructive">
+                <LogOut className="w-5 h-5" />
+              </div>
+              <span className="text-[10px] font-semibold text-center leading-tight text-destructive">Sign Out</span>
+            </button>
+          )}
+        </div>
+      </ScrollArea>
+    </SheetContent>
+  </Sheet>
+);
+
 export function CaretakerBottomNav() {
   const pathname = usePathname();
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isVisible, setIsVisible] = React.useState(true);
+  const scrollYRef = React.useRef(0);
   const { logout } = useAuth();
+  
+  // State for sheets
+  const [isOpsOpen, setIsOpsOpen] = React.useState(false);
+  const [isTenantsOpen, setIsTenantsOpen] = React.useState(false);
+  const [isSecurityOpen, setIsSecurityOpen] = React.useState(false);
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+
+  // Auto-hide on scroll down, show on scroll up
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const lastScrollY = scrollYRef.current;
+      
+      // Always show if near top
+      if (currentScrollY < 50) {
+        setIsVisible(true);
+        scrollYRef.current = currentScrollY;
+        return;
+      }
+      
+      // Determine direction
+      const isScrollingDown = currentScrollY > lastScrollY;
+      const scrollDiff = Math.abs(currentScrollY - lastScrollY);
+
+      // Only toggle visibility if we've scrolled enough to matter
+      if (scrollDiff > 10) {
+        if (isScrollingDown && currentScrollY > 100) {
+           setIsVisible(false);
+        } else if (!isScrollingDown) {
+           setIsVisible(true);
+        }
+        scrollYRef.current = currentScrollY;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const is_active = (href: string) => {
+    if (href === '/caretaker/dashboard') return pathname === href;
+    return pathname?.startsWith(href);
+  };
 
   const handleSignOut = async () => {
     try {
@@ -66,88 +220,94 @@ export function CaretakerBottomNav() {
 
   return (
     <>
-      {/* Safe Area Spacer */}
-      <div className="h-16 md:hidden" aria-hidden="true" />
+      <div className="h-20 md:hidden" aria-hidden="true" />
       
-      {/* Premium Fixed Bottom Bar (Airbnb Style) */}
       <nav 
-        className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/95 backdrop-blur-xl border-t border-border/40 shadow-[0_-1px_3px_rgba(0,0,0,0.05)]"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        className={cn(
+          'fixed bottom-0 left-0 right-0 z-50 md:hidden',
+          'bg-background/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)]',
+          'transition-transform duration-300 ease-in-out transform-gpu will-change-transform',
+          isVisible ? 'translate-y-0' : 'translate-y-full'
+        )}
+        style={{
+          paddingBottom: 'max(env(safe-area-inset-bottom), 0.5rem)',
+        }}
       >
-        <div className="flex items-center justify-around h-16 w-full max-w-lg mx-auto px-2">
-          {mainNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = item.match(pathname || '');
-            
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={cn(
-                  "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors duration-200",
-                  isActive 
-                    ? "text-primary" 
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <div className={cn("relative transition-transform duration-200", isActive ? "scale-105" : "")}>
-                  <Icon className={cn("h-6 w-6", isActive ? "fill-current" : "fill-none")} strokeWidth={isActive ? 2.5 : 2} />
-                </div>
-                <span className={cn("text-[10px] font-medium leading-none", isActive ? "font-semibold" : "")}>
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
+        <div className="grid grid-cols-5 h-[68px] items-center px-1">
+          {/* 1. Home */}
+          <NavLink 
+            item={{ label: 'Home', href: '/caretaker/dashboard', icon: LayoutDashboard }} 
+            active={is_active('/caretaker/dashboard')} 
+          />
 
-          {/* Menu Trigger */}
-          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <SheetTrigger asChild>
-              <button
-                className={cn(
-                  "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors duration-200",
-                  isMenuOpen 
-                    ? "text-primary" 
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Menu className="h-6 w-6" strokeWidth={2} />
-                <span className="text-[10px] font-medium leading-none">More</span>
-              </button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="h-[85vh] rounded-t-[20px] p-0 border-t-0 bg-background/95 backdrop-blur-xl z-[60]">
-              <SheetHeader className="p-6 text-left border-b">
-                <SheetTitle className="text-xl font-bold">Menu</SheetTitle>
-              </SheetHeader>
-              
-              <div className="p-4 grid grid-cols-2 gap-3 overflow-y-auto max-h-[calc(85vh-80px)]">
-                {menuItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setIsMenuOpen(false)}
-                      className="flex flex-col gap-3 p-4 rounded-2xl bg-muted/50 hover:bg-muted active:scale-95 transition-all border border-border/50"
-                    >
-                      <div className="h-10 w-10 rounded-full bg-background flex items-center justify-center shadow-sm text-primary">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <span className="font-semibold text-sm">{item.label}</span>
-                    </Link>
-                  );
-                })}
+          {/* 2. Ops */}
+          <div>
+            <MenuButton 
+              icon={ClipboardList} 
+              label="Ops" 
+              isOpen={isOpsOpen} 
+              onClick={() => setIsOpsOpen(true)} 
+            />
+            <MenuSheet 
+              title="Operations" 
+              items={OPS_ITEMS} 
+              isOpen={isOpsOpen} 
+              onOpenChange={setIsOpsOpen} 
+              pathname={pathname}
+            />
+          </div>
 
-                <button
-                  onClick={handleSignOut}
-                  className="col-span-2 flex items-center gap-3 p-4 rounded-2xl bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 mt-4 active:scale-95 transition-all"
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span className="font-semibold">Sign Out</span>
-                </button>
-              </div>
-            </SheetContent>
-          </Sheet>
+          {/* 3. Tenants */}
+          <div>
+            <MenuButton 
+              icon={Users} 
+              label="Tenants" 
+              isOpen={isTenantsOpen} 
+              onClick={() => setIsTenantsOpen(true)} 
+            />
+            <MenuSheet 
+              title="Tenants & Rooms" 
+              items={TENANTS_ITEMS} 
+              isOpen={isTenantsOpen} 
+              onOpenChange={setIsTenantsOpen} 
+              pathname={pathname}
+            />
+          </div>
+
+          {/* 4. Security */}
+          <div>
+            <MenuButton 
+              icon={Shield} 
+              label="Security" 
+              isOpen={isSecurityOpen} 
+              onClick={() => setIsSecurityOpen(true)} 
+            />
+            <MenuSheet 
+              title="Security" 
+              items={SECURITY_ITEMS} 
+              isOpen={isSecurityOpen} 
+              onOpenChange={setIsSecurityOpen} 
+              pathname={pathname}
+            />
+          </div>
+
+          {/* 5. Menu */}
+          <div>
+            <MenuButton 
+              icon={Menu} 
+              label="Menu" 
+              isOpen={isMenuOpen} 
+              onClick={() => setIsMenuOpen(true)} 
+            />
+            <MenuSheet 
+              title="Menu" 
+              items={MENU_ITEMS} 
+              isOpen={isMenuOpen} 
+              onOpenChange={setIsMenuOpen} 
+              pathname={pathname}
+              onSignOut={handleSignOut}
+            />
+          </div>
         </div>
       </nav>
     </>

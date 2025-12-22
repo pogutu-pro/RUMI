@@ -9,83 +9,208 @@ import {
   Users, 
   Wallet, 
   Menu, 
-  X, 
   Shield, 
   LifeBuoy, 
   User, 
   LogOut,
   BarChart3,
   CalendarCheck,
-  UserCog,
-  Settings,
-  Bell
+  Settings, 
+  Bell,
+  Package,
+  UserPlus,
+  Clock,
+  CreditCard,
+  FileText,
+  TrendingUp,
+  MessageSquare
 } from 'lucide-react';
-import { cn } from '@/lib/utils/cn';
-import { Badge } from '@/components/ui/badge';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/features/auth';
 
-interface NavItem {
-  icon: React.ElementType;
-  label: string;
-  href: string;
-  badge?: number;
-}
-
-const mainNavItems: NavItem[] = [
-  { icon: LayoutDashboard, label: 'Home', href: '/landlord/dashboard' },
-  { icon: Building2, label: 'Properties', href: '/landlord/hostels' },
-  { icon: Users, label: 'Tenants', href: '/landlord/tenants' },
-  { icon: Wallet, label: 'Payments', href: '/landlord/payments' },
+const PROPERTIES_ITEMS = [
+  { icon: Building2, label: 'All Hostels', href: '/landlord/hostels' },
+  { icon: UserPlus, label: 'Add New', href: '/landlord/hostels/new' },
+  { icon: Package, label: 'Inventory', href: '/landlord/hostels/inventory' },
+  { icon: BarChart3, label: 'Analytics', href: '/landlord/hostels/analytics' },
 ];
 
-const moreRoutes = [
-  '/landlord/analytics',
-  '/landlord/bookings',
-  '/landlord/caretakers',
-  '/landlord/approvals',
-  '/landlord/settings',
-  '/landlord/support',
-  '/landlord/profile',
-  '/landlord/messages',
-  '/landlord/notifications',
+const TENANTS_ITEMS = [
+  { icon: Users, label: 'All Tenants', href: '/landlord/tenants' },
+  { icon: CalendarCheck, label: 'Bookings', href: '/landlord/bookings' },
+  { icon: Shield, label: 'Caretakers', href: '/landlord/caretakers' },
+  { icon: CalendarCheck, label: 'Check-Ins', href: '/landlord/tenants/check-ins' },
+  { icon: Clock, label: 'Check-Outs', href: '/landlord/tenants/check-outs' },
 ];
+
+const FINANCE_ITEMS = [
+  { icon: CreditCard, label: 'Payments', href: '/landlord/payments' },
+  { icon: Wallet, label: 'Payouts', href: '/landlord/payments/payouts' },
+  { icon: FileText, label: 'Reports', href: '/landlord/payments/reports' },
+  { icon: TrendingUp, label: 'Analytics', href: '/landlord/analytics' },
+];
+
+const MENU_ITEMS = [
+  { icon: User, label: 'Profile', href: '/landlord/profile' },
+  { icon: MessageSquare, label: 'Messages', href: '/landlord/messages' },
+  { icon: Bell, label: 'Notifications', href: '/landlord/notifications' },
+  { icon: Settings, label: 'Settings', href: '/landlord/settings' },
+  { icon: LifeBuoy, label: 'Support', href: '/landlord/support' },
+];
+
+const NavLink = ({ item, active }: { item: any, active: boolean }) => (
+  <Link
+    href={item.href}
+    className={cn(
+      'flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 transition-transform duration-100 min-w-[50px] h-full w-full',
+      'active:scale-95 touch-manipulation transform-gpu',
+      active && 'bg-primary/10'
+    )}
+  >
+    <div className="relative will-change-transform">
+      <item.icon 
+        className={cn(
+          'h-5 w-5 transition-transform duration-200',
+          active ? 'text-primary scale-110' : 'text-muted-foreground'
+        )}
+        strokeWidth={active ? 2.5 : 2}
+      />
+    </div>
+    <span className={cn(
+      'text-[10px] font-medium truncate w-full text-center',
+      active ? 'text-primary font-semibold' : 'text-muted-foreground'
+    )}>
+      {item.label}
+    </span>
+  </Link>
+);
+
+const MenuButton = ({ icon: Icon, label, isOpen, onClick }: { icon: any, label: string, isOpen: boolean, onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className={cn(
+      'flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 transition-all duration-200 min-w-[50px] h-full w-full',
+      'active:scale-95 touch-manipulation',
+      isOpen && 'bg-primary/10'
+    )}
+  >
+    <Icon 
+      className={cn(
+        'h-5 w-5 transition-all duration-200',
+        isOpen ? 'text-primary scale-110' : 'text-muted-foreground'
+      )}
+      strokeWidth={isOpen ? 2.5 : 2}
+    />
+    <span className={cn(
+      'text-[10px] font-medium transition-all duration-200 truncate w-full text-center',
+      isOpen ? 'text-primary font-semibold' : 'text-muted-foreground'
+    )}>
+      {label}
+    </span>
+  </button>
+);
+
+const MenuSheet = ({ title, items, isOpen, onOpenChange, pathname, onSignOut }: { title: string, items: any[], isOpen: boolean, onOpenChange: (open: boolean) => void, pathname: string | null, onSignOut?: () => void }) => (
+  <Sheet open={isOpen} onOpenChange={onOpenChange}>
+    <SheetContent side="bottom" className="h-[80vh] rounded-t-3xl p-0 ring-0 focus:ring-0 outline-none">
+      <SheetHeader className="sr-only">
+        <SheetTitle>{title}</SheetTitle>
+        <SheetDescription>Navigation options</SheetDescription>
+      </SheetHeader>
+      
+      <div className="p-4 border-b border-border flex items-center justify-center bg-muted/20 rounded-t-3xl">
+        <div className="w-12 h-1.5 bg-muted-foreground/20 rounded-full" />
+      </div>
+
+      <ScrollArea className="h-full pb-8">
+        <div className="p-4 grid grid-cols-3 gap-3">
+          {items.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              onClick={() => onOpenChange(false)}
+              className={cn(
+                "flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border bg-card hover:bg-accent/50 transition-all duration-200 active:scale-95 aspect-square",
+                pathname?.startsWith(item.href) || (item.href.includes('?') && pathname === item.href.split('?')[0]) ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20" : "border-border/50"
+              )}
+            >
+              <div className={cn(
+                "p-2.5 rounded-full bg-background shadow-sm",
+                pathname?.startsWith(item.href) ? "text-primary" : "text-muted-foreground"
+              )}>
+                <item.icon className="w-5 h-5" />
+              </div>
+              <span className="text-[10px] font-semibold text-center leading-tight">{item.label}</span>
+            </Link>
+          ))}
+
+          {onSignOut && (
+            <button
+              onClick={onSignOut}
+              className="flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border border-destructive/20 bg-destructive/5 hover:bg-destructive/10 transition-all duration-200 active:scale-95 aspect-square"
+            >
+              <div className="p-2.5 rounded-full bg-background shadow-sm text-destructive">
+                <LogOut className="w-5 h-5" />
+              </div>
+              <span className="text-[10px] font-semibold text-center leading-tight text-destructive">Sign Out</span>
+            </button>
+          )}
+        </div>
+      </ScrollArea>
+    </SheetContent>
+  </Sheet>
+);
 
 export function LandlordBottomNav() {
   const pathname = usePathname();
-  const [isMoreOpen, setIsMoreOpen] = React.useState(false);
+  const [isVisible, setIsVisible] = React.useState(true);
+  const scrollYRef = React.useRef(0);
   const { logout } = useAuth();
+  
+  // State for sheets
+  const [isPropertiesOpen, setIsPropertiesOpen] = React.useState(false);
+  const [isTenantsOpen, setIsTenantsOpen] = React.useState(false);
+  const [isFinanceOpen, setIsFinanceOpen] = React.useState(false);
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+
+  // Auto-hide on scroll down, show on scroll up
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const lastScrollY = scrollYRef.current;
+      
+      // Always show if near top
+      if (currentScrollY < 50) {
+        setIsVisible(true);
+        scrollYRef.current = currentScrollY;
+        return;
+      }
+      
+      // Determine direction
+      const isScrollingDown = currentScrollY > lastScrollY;
+      const scrollDiff = Math.abs(currentScrollY - lastScrollY);
+
+      // Only toggle visibility if we've scrolled enough to matter
+      if (scrollDiff > 10) {
+        if (isScrollingDown && currentScrollY > 100) {
+           setIsVisible(false);
+        } else if (!isScrollingDown) {
+           setIsVisible(true);
+        }
+        scrollYRef.current = currentScrollY;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const is_active = (href: string) => {
-    if (!pathname) return false;
-
-    // Home
-    if (href === '/landlord/dashboard') {
-      return pathname === '/landlord' || pathname === '/landlord/dashboard';
-    }
-
-    // Properties/Hostels
-    if (href === '/landlord/hostels') {
-      return pathname.startsWith('/landlord/hostels');
-    }
-
-    // Tenants
-    if (href === '/landlord/tenants') {
-      return pathname.startsWith('/landlord/tenants');
-    }
-    
-    // Payments
-    if (href === '/landlord/payments') {
-      return pathname.startsWith('/landlord/payments');
-    }
-
-    return pathname.startsWith(href);
+    if (href === '/landlord/dashboard') return pathname === href;
+    return pathname?.startsWith(href);
   };
-
-  const isMoreActive = React.useMemo(() => {
-    if (!pathname) return false;
-    return moreRoutes.some(route => pathname.startsWith(route));
-  }, [pathname]);
 
   const handleSignOut = async () => {
     try {
@@ -95,160 +220,96 @@ export function LandlordBottomNav() {
     }
   };
 
-  const moreMenuItems = [
-    { icon: BarChart3, label: 'Analytics', href: '/landlord/analytics' },
-    { icon: CalendarCheck, label: 'Bookings', href: '/landlord/bookings' },
-    { icon: UserCog, label: 'Caretakers', href: '/landlord/caretakers' },
-    { icon: Shield, label: 'Approvals', href: '/landlord/approvals' },
-    { icon: Bell, label: 'Notifications', href: '/landlord/notifications' },
-    { icon: Settings, label: 'Settings', href: '/landlord/settings' },
-    { icon: LifeBuoy, label: 'Support', href: '/landlord/support' },
-    { icon: User, label: 'Profile', href: '/landlord/profile' },
-  ];
-
   return (
     <>
+      <div className="h-20 md:hidden" aria-hidden="true" />
       
-      {/* Bottom Navigation - Mobile Only */}
       <nav 
-        className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background border-t border-border transform-gpu will-change-transform"
+        className={cn(
+          'fixed bottom-0 left-0 right-0 z-50 md:hidden',
+          'bg-background/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)]',
+          'transition-transform duration-300 ease-in-out transform-gpu will-change-transform',
+          isVisible ? 'translate-y-0' : 'translate-y-full'
+        )}
         style={{
           paddingBottom: 'max(env(safe-area-inset-bottom), 0.5rem)',
-          contain: 'paint layout'
         }}
       >
-        <div className="flex items-center justify-around px-2 py-2">
-          {mainNavItems.map((item) => {
-            const Icon = item.icon;
-            const active = is_active(item.href);
-            
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 transition-transform duration-100 min-w-[64px]",
-                  "active:scale-95 touch-manipulation transform-gpu",
-                  active && "bg-primary/10"
-                )}
-              >
-                <div className="relative will-change-transform">
-                  <Icon 
-                    className={cn(
-                      "h-6 w-6 transition-transform duration-200",
-                      active 
-                        ? "text-primary scale-110" 
-                        : "text-muted-foreground"
-                    )}
-                    strokeWidth={active ? 2.5 : 2}
-                  />
-                  {item.badge && item.badge > 0 && (
-                    <Badge 
-                      className="absolute -top-1 -right-2 h-4 min-w-4 p-0 flex items-center justify-center text-[10px] bg-destructive text-destructive-foreground border-2 border-background"
-                    >
-                      {item.badge > 99 ? '99+' : item.badge}
-                    </Badge>
-                  )}
-                </div>
-                <span 
-                  className={cn(
-                    "text-[10px] font-medium",
-                    active 
-                      ? "text-primary" 
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
+        <div className="grid grid-cols-5 h-[68px] items-center px-1">
+          {/* 1. Home */}
+          <NavLink 
+            item={{ label: 'Home', href: '/landlord/dashboard', icon: LayoutDashboard }} 
+            active={is_active('/landlord/dashboard')} 
+          />
 
-          {/* More Menu */}
-          <Sheet open={isMoreOpen} onOpenChange={setIsMoreOpen}>
-            <SheetTrigger asChild>
-              <button
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 transition-all duration-200 min-w-[64px]",
-                  "active:scale-95 touch-manipulation",
-                  (isMoreOpen || isMoreActive) && "bg-primary/10"
-                )}
-              >
-                <div className="relative">
-                  <Menu 
-                    className={cn(
-                      "h-6 w-6 transition-all duration-200",
-                      (isMoreOpen || isMoreActive)
-                        ? "text-primary scale-110" 
-                        : "text-muted-foreground"
-                    )}
-                    strokeWidth={(isMoreOpen || isMoreActive) ? 2.5 : 2}
-                  />
-                </div>
-                <span 
-                  className={cn(
-                    "text-[10px] font-medium transition-all duration-200",
-                    (isMoreOpen || isMoreActive)
-                      ? "text-primary" 
-                      : "text-muted-foreground"
-                  )}
-                >
-                  More
-                </span>
-              </button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="h-[85vh] rounded-t-[20px] p-0 flex flex-col">
-              <SheetHeader className="p-6 border-b text-left shrink-0">
-                <SheetTitle>Menu</SheetTitle>
-              </SheetHeader>
-              <div className="flex-1 overflow-y-auto p-4">
-                <div className="grid grid-cols-2 gap-3">
-                  {moreMenuItems.map((item) => {
-                    const Icon = item.icon;
-                    const active = pathname?.startsWith(item.href);
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setIsMoreOpen(false)}
-                        className={cn(
-                          "flex flex-col items-center gap-3 p-4 rounded-xl transition-all border",
-                          active 
-                            ? "bg-primary/5 border-primary/20" 
-                            : "bg-card border-border hover:bg-muted/50"
-                        )}
-                      >
-                        <div className={cn(
-                          "p-3 rounded-full",
-                          active 
-                            ? "bg-primary/10 text-primary" 
-                            : "bg-muted text-muted-foreground"
-                        )}>
-                          <Icon className="h-6 w-6" />
-                        </div>
-                        <span className={cn(
-                          "font-medium text-sm text-center",
-                          active ? "text-primary" : "text-foreground"
-                        )}>{item.label}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-                
-                <div className="my-6 border-t" />
-                
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-destructive/10 active:bg-destructive/20 transition-colors text-destructive w-full border border-transparent hover:border-destructive/20"
-                >
-                  <div className="p-2 rounded-full bg-destructive/10">
-                    <LogOut className="h-5 w-5" />
-                  </div>
-                  <span className="font-medium text-base">Sign Out</span>
-                </button>
-              </div>
-            </SheetContent>
-          </Sheet>
+          {/* 2. Properties */}
+          <div>
+            <MenuButton 
+              icon={Building2} 
+              label="Properties" 
+              isOpen={isPropertiesOpen} 
+              onClick={() => setIsPropertiesOpen(true)} 
+            />
+            <MenuSheet 
+              title="Properties" 
+              items={PROPERTIES_ITEMS} 
+              isOpen={isPropertiesOpen} 
+              onOpenChange={setIsPropertiesOpen} 
+              pathname={pathname}
+            />
+          </div>
+
+          {/* 3. Tenants */}
+          <div>
+            <MenuButton 
+              icon={Users} 
+              label="Tenants" 
+              isOpen={isTenantsOpen} 
+              onClick={() => setIsTenantsOpen(true)} 
+            />
+            <MenuSheet 
+              title="Tenants & Bookings" 
+              items={TENANTS_ITEMS} 
+              isOpen={isTenantsOpen} 
+              onOpenChange={setIsTenantsOpen} 
+              pathname={pathname}
+            />
+          </div>
+
+          {/* 4. Finance */}
+          <div>
+            <MenuButton 
+              icon={Wallet} 
+              label="Finance" 
+              isOpen={isFinanceOpen} 
+              onClick={() => setIsFinanceOpen(true)} 
+            />
+            <MenuSheet 
+              title="Finance" 
+              items={FINANCE_ITEMS} 
+              isOpen={isFinanceOpen} 
+              onOpenChange={setIsFinanceOpen} 
+              pathname={pathname}
+            />
+          </div>
+
+          {/* 5. Menu */}
+          <div>
+            <MenuButton 
+              icon={Menu} 
+              label="Menu" 
+              isOpen={isMenuOpen} 
+              onClick={() => setIsMenuOpen(true)} 
+            />
+            <MenuSheet 
+              title="Menu" 
+              items={MENU_ITEMS} 
+              isOpen={isMenuOpen} 
+              onOpenChange={setIsMenuOpen} 
+              pathname={pathname}
+              onSignOut={handleSignOut}
+            />
+          </div>
         </div>
       </nav>
     </>

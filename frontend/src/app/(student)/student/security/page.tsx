@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Shield, UserPlus, Clock, AlertTriangle, CheckCircle, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,9 +13,22 @@ import { cn } from '@/lib/utils/cn';
 import { useMyLateEntries, useAcknowledgeLateEntry } from '@/features/student';
 
 export default function StudentSecurityPage() {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'late-entries' ? 'late-entries' : 'visitor-invitations';
+  
   const { data: lateEntries = [], isLoading } = useMyLateEntries();
   const acknowledgeMutation = useAcknowledgeLateEntry();
-  const [selectedTab, setSelectedTab] = React.useState('visitor-invitations');
+  const [selectedTab, setSelectedTab] = React.useState(initialTab);
+  
+  // Update state if search param changes
+  React.useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'late-entries') {
+      setSelectedTab('late-entries');
+    } else if (tab === 'visitor-invitations') {
+      setSelectedTab('visitor-invitations');
+    }
+  }, [searchParams]);
 
   const pendingEntries = lateEntries.filter(e => e.status === 'pending');
   const acknowledgedEntries = lateEntries.filter(e => e.status === 'acknowledged');
@@ -74,8 +88,8 @@ export default function StudentSecurityPage() {
 
         <TabsContent value="visitor-invitations" className="mt-6 space-y-4">
           {/* Quick Link to Visitor Invitations */}
-          <Card className="hover:shadow-lg transition-all cursor-pointer" asChild>
-            <Link href="/student/security/visitor-invitations">
+          <Link href="/student/security/visitor-invitations">
+            <Card className="hover:shadow-lg transition-all cursor-pointer">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -92,8 +106,8 @@ export default function StudentSecurityPage() {
                   </Button>
                 </div>
               </CardHeader>
-            </Link>
-          </Card>
+            </Card>
+          </Link>
 
           {/* Info Card */}
           <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">

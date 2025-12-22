@@ -35,6 +35,11 @@ import {
   PanelLeft,
   Shield,
   Clock,
+  User,
+  Inbox,
+  Lock,
+  HelpCircle,
+  Wallet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -76,24 +81,26 @@ const navItems: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
-    title: 'My Hostel',
+    title: 'My Stay',
     icon: Building2,
     items: [
       {
-        title: 'Current Booking',
+        title: 'Current Room',
         href: '/student/bookings/active',
-        icon: CalendarCheck,
+        icon: Home,
       },
-      { title: 'My Roommates', href: '/student/roommates', icon: Users },
-      { title: 'Check-In/Out', href: '/student/check-in', icon: UserCheck },
+      { title: 'Roommates', href: '/student/roommates', icon: Users },
       { title: 'Transfers', href: '/student/transfers', icon: ArrowRightLeft },
+      { title: 'Move In/Out', href: '/student/check-in', icon: CalendarCheck },
+      { title: 'History', href: '/student/bookings', icon: History },
+      { title: 'Reviews', href: '/student/reviews', icon: Star },
     ],
   },
   {
-    title: 'Find Hostel',
+    title: 'Find Accommodation',
     icon: Search,
     items: [
-      { title: 'Browse Hostels', href: '/student/hostels', icon: Building2 },
+      { title: 'Browse', href: '/student/hostels', icon: Search },
       { title: 'Favorites', href: '/student/hostels/favorites', icon: Star },
       {
         title: 'Compare',
@@ -103,48 +110,53 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    title: 'Payments',
+    title: 'Finance',
     icon: CreditCard,
     items: [
-      { title: 'Overview', href: '/student/payments', icon: BarChart },
+      { title: 'Payments', href: '/student/payments', icon: CreditCard },
       { title: 'History', href: '/student/payments/receipts', icon: FileText },
       {
-        title: 'Payment Methods',
+        title: 'Methods',
         href: '/student/payments/methods',
-        icon: CreditCard,
+        icon: Wallet,
       },
     ],
   },
   {
-    title: 'Messages',
-    href: '/student/messages',
-    icon: MessageSquare,
+    title: 'Inbox',
+    icon: Inbox,
+    items: [
+      { title: 'Messages', href: '/student/messages', icon: MessageSquare },
+      { title: 'Notifications', href: '/student/notifications', icon: Bell },
+    ],
   },
   {
     title: 'Security',
     icon: Shield,
     items: [
       {
-        title: 'Visitor Invitations',
+        title: 'Visitors',
         href: '/student/security/visitor-invitations',
         icon: UserPlus,
+      },
+      {
+        title: 'Late Entries',
+        href: '/student/security?tab=late-entries',
+        icon: Clock,
       },
       { title: 'Overview', href: '/student/security', icon: Shield },
     ],
   },
   {
-    title: 'Profile',
-    href: '/student/profile',
-    icon: UserCheck,
+    title: 'Support',
+    href: '/student/support',
+    icon: LifeBuoy,
   },
   {
-    title: 'More',
-    icon: Menu,
+    title: 'Account',
+    icon: User,
     items: [
-      { title: 'Bookings', href: '/student/bookings', icon: CalendarCheck },
-      { title: 'Notifications', href: '/student/notifications', icon: Bell },
-      { title: 'Reviews', href: '/student/reviews', icon: Star },
-      { title: 'Support', href: '/student/support', icon: LifeBuoy },
+      { title: 'Profile', href: '/student/profile', icon: UserCheck },
       { title: 'Settings', href: '/student/settings', icon: Settings },
     ],
   },
