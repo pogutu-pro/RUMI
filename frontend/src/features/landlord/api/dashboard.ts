@@ -78,7 +78,7 @@ export const getLandlordDashboard = async (): Promise<LandlordDashboardData> => 
  */
 export const getLandlordActivityFeed = async (limit = 10): Promise<LandlordActivity[]> => {
   try {
-    const res = await axios.get<ApiResponse<LandlordActivity[]>>('/admin/admin/activity-feed/', {
+    const res = await axios.get<ApiResponse<LandlordActivity[]>>('/landlord/dashboard/activity-feed/', {
       params: { limit, role: 'landlord' },
     });
     return res.data.data || [];

@@ -171,7 +171,7 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                 alt="RUMI Logo" 
                 width={32} 
                 height={32} 
-                className="object-contain w-auto h-auto" 
+                className="object-contain" 
               />
            </Link>
         )}

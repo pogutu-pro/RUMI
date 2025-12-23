@@ -16,6 +16,7 @@ import {
   Save,
   X,
   AlertCircle,
+  Camera,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -35,7 +36,7 @@ import {
 } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { useCreateHostel, HostelImageUpload } from '@/features/hostels';
+import { useCreateHostel, HostelImageUpload, EnhancedHostelImageUpload } from '@/features/hostels';
 
 // ============================================================================
 // WIZARD TYPES
@@ -57,7 +58,7 @@ interface HostelFormData {
   caretakerPhone: string;
   safetyFeatures: string[];
   
-  // Step 3: Room Types and Photos
+  // Step 3: Room Types
   roomTypes: {
     name: string;
     bedsPerRoom: number;
@@ -65,8 +66,11 @@ interface HostelFormData {
     amenities: string[];
     monthlyRent: number;
   }[];
+  
+  // Step 6: Photos
   images: string[];
   imageFiles: File[];
+  photoCategories: Record<number, string>;
   
   // Step 4: Pricing
   depositAmount: number;
@@ -98,6 +102,7 @@ const initialFormData: HostelFormData = {
   roomTypes: [],
   images: [],
   imageFiles: [],
+  photoCategories: {},
   depositAmount: 0,
   depositRefundable: true,
   registrationFee: 0,
@@ -137,9 +142,10 @@ const safetyFeatureOptions = [
 const steps = [
   { id: 1, title: 'Basic Info', icon: Building2, description: 'Hostel name and location' },
   { id: 2, title: 'Structure', icon: Home, description: 'Rooms and safety' },
-  { id: 3, title: 'Room Types', icon: BedDouble, description: 'Room setup and amenities' },
+  { id: 3, title: 'Room Types', icon: BedDouble, description: 'Room setup' },
   { id: 4, title: 'Pricing', icon: CreditCard, description: 'Rent and fees' },
   { id: 5, title: 'Rules', icon: FileText, description: 'Terms and conditions' },
+  { id: 6, title: 'Upload Photos', icon: Camera, description: '5-8 quality photos' },
 ];
 
 // ============================================================================
@@ -156,6 +162,13 @@ export default function NewHostelWizardPage() {
 
   // Calculate progress
   const progress = ((currentStep - 1) / (steps.length - 1)) * 100;
+
+  // Helper function to format file size
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0MB';
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(1)}MB`;
+  };
 
   // Update form data
   const updateField = useCallback(<K extends keyof HostelFormData>(
@@ -184,7 +197,7 @@ export default function NewHostelWizardPage() {
   }, []);
 
   // Validate current step
-  const validateStep = useCallback((): boolean => {
+  const validateStep = useCallback((): { isValid: boolean; firstError?: string } => {
     const newErrors: Record<string, string> = {};
 
     switch (currentStep) {
@@ -209,19 +222,32 @@ export default function NewHostelWizardPage() {
       case 5:
         if (!formData.termsAgreed) newErrors.termsAgreed = 'You must agree to the terms';
         break;
+      case 6:
+        // Photos - minimum 5 required
+        if (formData.images.length < 5) {
+          newErrors.images = 'Please upload at least 5 photos';
+        }
+        break;
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const errorValues = Object.values(newErrors);
+    return {
+      isValid: errorValues.length === 0,
+      firstError: errorValues[0]
+    };
   }, [currentStep, formData]);
 
   // Handle next step
   const handleNext = useCallback(() => {
-    if (validateStep()) {
+    const { isValid, firstError } = validateStep();
+    if (isValid) {
       if (currentStep < steps.length) {
         setCurrentStep(prev => prev + 1);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
+    } else {
+      toast.error(firstError || 'Please fill in all required fields');
     }
   }, [currentStep, validateStep]);
 
@@ -236,12 +262,18 @@ export default function NewHostelWizardPage() {
   // Handle save draft
   const handleSaveDraft = useCallback(() => {
     localStorage.setItem('hostel_draft', JSON.stringify(formData));
-    toast.success('Draft saved! You can continue later.');
-  }, [formData]);
+    toast.success('Draft saved! You can continue later from your dashboard.');
+    router.push('/landlord/hostels');
+  }, [formData, router]);
 
   // Handle submit
   const handleSubmit = useCallback(async () => {
-    if (!validateStep()) return;
+    // First validate the current step
+    const { isValid, firstError } = validateStep();
+    if (!isValid) {
+      toast.error(firstError || 'Please fill in all required fields');
+      return;
+    }
 
     try {
       // Transform form data to API format
@@ -249,6 +281,8 @@ export default function NewHostelWizardPage() {
         name: formData.name,
         description: formData.description,
         address: `${formData.town}, near ${campusOptions.find(c => c.value === formData.campus)?.label || formData.campus}`,
+        city: formData.town, // Backend expects 'city' field
+        university: campusOptions.find(c => c.value === formData.campus)?.label || formData.campus, // Map campus to university
         campus: formData.campus,
         gender_policy: formData.genderPolicy,
         tenant_type: formData.tenantType,
@@ -276,7 +310,10 @@ export default function NewHostelWizardPage() {
       toast.success('Hostel created successfully!');
       router.push('/landlord/hostels');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create hostel');
+      // Show specific error messages
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create hostel';
+      toast.error(errorMessage);
+      console.error('Hostel creation error:', error);
     }
   }, [formData, validateStep, createHostel, router]);
 
@@ -780,21 +817,6 @@ export default function NewHostelWizardPage() {
               <p className="text-sm text-muted-foreground">
                 <strong>Tip:</strong> After creating your hostel, you can add more room types with different prices and amenities from the hostel management page.
               </p>
-
-              {/* Image Upload Section */}
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-bold text-foreground mb-2">
-                  Hostel Photos
-                </h3>
-                <p className="text-base text-muted-foreground mb-4">
-                  Upload photos of your hostel to attract students. Show the building front, rooms, bathrooms, and common areas.
-                </p>
-                <HostelImageUpload
-                  onImagesChange={(images) => updateField('images', images)}
-                  onFilesChange={(files) => updateField('imageFiles', files)}
-                  initialImages={formData.images}
-                />
-              </div>
             </div>
           )}
 
@@ -1026,6 +1048,44 @@ export default function NewHostelWizardPage() {
               </div>
             </div>
           )}
+
+          {/* Step 6: Upload Photos (Final Step) */}
+          {currentStep === 6 && (
+            <div className="space-y-6">
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                <p className="text-base font-bold text-primary">
+                  📸 5-8 photos make students book faster!
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Current: {formData.images.length}/8 photos • {formatFileSize(formData.imageFiles.reduce((sum, f) => sum + f.size, 0))}
+                </p>
+              </div>
+
+              <EnhancedHostelImageUpload
+                onImagesChange={(images) => updateField('images', images)}
+                onFilesChange={(files) => updateField('imageFiles', files)}
+                onCategoriesChange={(categories) => updateField('photoCategories', categories)}
+                initialImages={formData.images}
+                initialCategories={formData.photoCategories}
+                showValidation={true}
+              />
+
+              {errors.images && (
+                <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <p className="text-base font-bold text-red-900 dark:text-red-100 flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5" />
+                    {errors.images}
+                  </p>
+                </div>
+              )}
+
+              <div className="border-t pt-4">
+                <p className="text-sm text-muted-foreground text-center">
+                  <strong>Note:</strong> After publishing, you can edit photos anytime from your dashboard
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -1063,24 +1123,44 @@ export default function NewHostelWizardPage() {
             <ChevronRight className="h-5 w-5" />
           </Button>
         ) : (
-          <Button
-            size="lg"
-            onClick={handleSubmit}
-            disabled={createHostel.isPending}
-            className="gap-2 bg-primary hover:bg-primary/90"
-          >
-            {createHostel.isPending ? (
-              <>
-                <span className="animate-spin">⏳</span>
-                Creating...
-              </>
-            ) : (
-              <>
-                <Check className="h-5 w-5" />
-                Create Hostel
-              </>
+          <div className="flex gap-2">
+            {/* Skip Photos Button (only on Step 6) */}
+            {currentStep === 6 && formData.images.length < 5 && (
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={async () => {
+                  if (window.confirm('⚠️ Students book 3x faster with photos. Are you sure you want to skip?')) {
+                    await handleSubmit();
+                  }
+                }}
+                disabled={createHostel.isPending}
+                className="gap-2"
+              >
+                ⏭️ Skip Photos
+              </Button>
             )}
-          </Button>
+            
+            {/* Publish Button */}
+            <Button
+              size="lg"
+              onClick={handleSubmit}
+              disabled={createHostel.isPending || (currentStep === 6 && formData.images.length < 5)}
+              className="gap-2 bg-primary hover:bg-primary/90"
+            >
+              {createHostel.isPending ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Check className="h-5 w-5" />
+                  {currentStep === 6 && formData.images.length >= 5 ? 'Publish Hostel' : 'Create Hostel'}
+                </>
+              )}
+            </Button>
+          </div>
         )}
       </div>
     </div>

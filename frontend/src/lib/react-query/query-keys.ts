@@ -116,6 +116,7 @@ export const queryKeys = {
       [...queryKeys.notifications.all, 'preferences'] as QueryKey,
   },
   analytics: {
+    all: ['analytics'] as const,
     dashboard: (period: string, dateRange?: unknown): QueryKey => ['analytics', 'dashboard', period, dateRange ?? null] as QueryKey,
   },
   users: {

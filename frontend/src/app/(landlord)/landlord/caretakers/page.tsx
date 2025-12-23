@@ -13,18 +13,18 @@ import {
   Edit,
   Award,
   Building2,
-  Activity,
-  Calendar,
   Phone,
   Mail,
   CheckCircle2,
   XCircle,
-  User,
+  Calendar,
+  AlertTriangle,
+  ClipboardList
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -48,13 +48,55 @@ import {
 import { cn } from '@/lib/utils';
 import { useCaretakers } from '@/features/landlord';
 
+// Mock types for extended caretaker functionality - aligned with API where possible
+interface CaretakerActivity {
+    check_ins_completed: number;
+    maintenance_tasks: number;
+    student_confirmations: number;
+    last_active: string;
+}
+
+interface ExtendedCaretaker {
+    // Extending the base type inferred from usage
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    hostelName: string;
+    hostelId: string;
+    isActive: boolean;
+    createdAt: string;
+    rating?: number;
+    tasksCompleted?: number;
+    occupancyRate?: number;
+    // New fields need to be optional or handled if missing
+    assigned_rooms?: number;
+    permissions?: any; // Allow the API object structure or mock array
+    activity?: CaretakerActivity;
+}
+
 export default function CaretakersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('rating');
 
   // Fetch caretakers from API
-  const { data: caretakers = [], isLoading } = useCaretakers();
+  const { data: caretakersData, isLoading } = useCaretakers();
+  // Safe cast with fallback for missing properties
+  const caretakers = (caretakersData || []).map(c => ({
+      ...c,
+      // Provide defaults for UI-only fields if API doesn't return them yet
+      rating: c.rating || 0,
+      tasksCompleted: c.tasksCompleted || 0,
+      occupancyRate: c.occupancyRate || 0,
+      activity: {
+          check_ins_completed: 0,
+          maintenance_tasks: 0,
+          student_confirmations: 0,
+          last_active: new Date().toISOString()
+      } as CaretakerActivity
+  })) as unknown as ExtendedCaretaker[];
 
   const filteredCaretakers = caretakers.filter((caretaker) => {
     const fullName = `${caretaker.firstName} ${caretaker.lastName}`;
@@ -87,42 +129,38 @@ export default function CaretakersPage() {
   });
 
   const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || 'CT';
   };
 
-  // Calculate stats from real data
-  const stats = {
-    total: caretakers.length,
-    active: caretakers.filter(c => c.isActive).length,
-    avgRating: caretakers.length > 0 
-      ? (caretakers.reduce((sum, c) => sum + (c.rating || 0), 0) / caretakers.length).toFixed(1)
-      : '0.0',
-    hostelsManaged: caretakers.length, // Each caretaker manages one hostel
-  };
-
+  // Metrics
+  const totalCaretakers = caretakers.length;
+  const activeCaretakers = caretakers.filter(c => c.isActive).length;
+  const avgRating = totalCaretakers > 0 
+    ? (caretakers.reduce((sum, c) => sum + (c.rating || 0), 0) / totalCaretakers).toFixed(1) 
+    : '0.0';
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-3">
-            <Shield className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
-            Caretaker Management
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+            <Shield className="h-8 w-8 text-primary" />
+            Caretakers
           </h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Oversee your property managers and their performance
+          <p className="mt-2 text-muted-foreground text-lg">
+            Manage your on-site team, assign hostels, and track performance.
           </p>
         </div>
         <div className="flex gap-3">
           <Link href="/landlord/caretakers/performance">
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2 h-11">
               <Award className="h-4 w-4" />
-              Performance
+              Performance Reports
             </Button>
           </Link>
           <Link href="/landlord/caretakers/new">
-            <Button className="gap-2 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700">
+            <Button className="gap-2 h-11 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white shadow-lg shadow-emerald-900/10">
               <Plus className="h-4 w-4" />
               Add Caretaker
             </Button>
@@ -130,268 +168,228 @@ export default function CaretakersPage() {
         </div>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border shadow-sm bg-white dark:bg-slate-900">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Caretakers</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {isLoading ? '...' : stats.total}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-emerald-100 dark:bg-emerald-950/30">
-                <Users className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border shadow-sm bg-white dark:bg-slate-900">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Active</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {isLoading ? '...' : stats.active}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-green-100 dark:bg-green-950/30">
-                <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border shadow-sm bg-white dark:bg-slate-900">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Avg Rating</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {isLoading ? '...' : stats.avgRating}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-yellow-100 dark:bg-yellow-950/30">
-                <Award className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border shadow-sm bg-white dark:bg-slate-900">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Hostels Managed</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {isLoading ? '...' : stats.hostelsManaged}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-blue-100 dark:bg-blue-950/30">
-                <Building2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+       {/* Metrics Section */}
+       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="border shadow-none bg-card">
+              <CardContent className="p-6">
+                  <div className="flex flex-col gap-1">
+                      <span className="text-sm font-medium text-muted-foreground">Total Team</span>
+                      <span className="text-3xl font-bold text-foreground">{totalCaretakers}</span>
+                  </div>
+              </CardContent>
+          </Card>
+           <Card className="border shadow-none bg-card">
+              <CardContent className="p-6">
+                  <div className="flex flex-col gap-1">
+                      <span className="text-sm font-medium text-muted-foreground">Active Now</span>
+                      <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{activeCaretakers}</span>
+                  </div>
+              </CardContent>
+          </Card>
+           <Card className="border shadow-none bg-card">
+              <CardContent className="p-6">
+                  <div className="flex flex-col gap-1">
+                      <span className="text-sm font-medium text-muted-foreground">Avg Rating</span>
+                      <span className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{avgRating}</span>
+                  </div>
+              </CardContent>
+          </Card>
+           <Card className="border shadow-none bg-card">
+              <CardContent className="p-6">
+                  <div className="flex flex-col gap-1">
+                      <span className="text-sm font-medium text-muted-foreground">Hostels Managed</span>
+                      <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">{caretakers.length}</span>
+                  </div>
+              </CardContent>
+          </Card>
       </div>
 
-      {/* Filters */}
-      <Card className="border-none shadow-md">
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Search by name, email, or hostel..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+      {/* Filters Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-4 py-4 md:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, email, or hostel..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-11 text-base"
+          />
+        </div>
+        <div className="flex gap-2">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-[160px] h-11">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="on_leave">On Leave</SelectItem>
                 <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-[160px] h-11">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="rating">Rating (High-Low)</SelectItem>
                 <SelectItem value="name">Name (A-Z)</SelectItem>
-                <SelectItem value="hireDate">Hire Date (Recent)</SelectItem>
+                <SelectItem value="hireDate">Joined (Recent)</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Caretakers List */}
       <div className="grid gap-4">
         {isLoading ? (
-          // Loading skeletons
-          [...Array(3)].map((_, index) => (
-            <Card key={index} className="border-none shadow-lg">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <Skeleton className="h-16 w-16 rounded-full" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-48" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          Array.from({ length: 3 }).map((_, i) => (
+             <div key={i} className="mb-2">
+                <Skeleton className="h-32 w-full rounded-xl" />
+             </div>
           ))
         ) : sortedCaretakers.length === 0 ? (
-          <Card className="border-none shadow-md">
-            <CardContent className="p-12 text-center">
-              <Users className="h-12 w-12 mx-auto text-slate-400 mb-4" />
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                No caretakers found
-              </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Try adjusting your search or filter criteria
-              </p>
-            </CardContent>
+           <Card className="border-dashed shadow-none py-12">
+              <CardContent className="flex flex-col items-center justify-center text-center p-0">
+                  <div className="p-4 rounded-full bg-muted mb-4">
+                      <Shield className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-semibold text-lg">No caretakers found</h3>
+                  <p className="text-muted-foreground mb-4">Add a new caretaker or adjust your filters.</p>
+                  <Link href="/landlord/caretakers/new">
+                        <Button>Add Caretaker</Button>
+                  </Link>
+              </CardContent>
           </Card>
         ) : (
-          sortedCaretakers.map((caretaker, index) => (
-            <motion.div
-              key={caretaker.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-            >
-              <Card className="border shadow-sm hover:shadow-md transition-all duration-300 bg-white dark:bg-slate-900">
-                <CardContent className="p-6">
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-                    {/* Caretaker Info */}
-                    <div className="flex items-center gap-4 flex-1">
-                      <Avatar className="h-16 w-16 ring-2 ring-slate-100 dark:ring-slate-800">
-                        <AvatarImage src={undefined} />
-                        <AvatarFallback className="bg-slate-100 text-slate-900 font-bold text-xl dark:bg-slate-800 dark:text-slate-200">
-                          {getInitials(caretaker.firstName, caretaker.lastName)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-1">
-                          <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                            {caretaker.firstName} {caretaker.lastName}
-                          </h3>
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'font-bold border-0',
-                              caretaker.isActive
-                                ? 'bg-green-50 text-green-700 ring-1 ring-green-600/20 dark:bg-green-900/20 dark:text-green-400'
-                                : 'bg-red-50 text-red-700 ring-1 ring-red-600/20 dark:bg-red-900/20 dark:text-red-400'
-                            )}
-                          >
-                            {caretaker.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm font-medium text-slate-700 dark:text-slate-300">
-                          <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-slate-500" />
-                            <span>{caretaker.hostelName}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-slate-500" />
-                            <span>{caretaker.phone}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Mail className="h-4 w-4 text-slate-500" />
-                            <span>{caretaker.email}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-slate-500" />
-                             <span>Joined {format(new Date(caretaker.createdAt), 'MMM yyyy')}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+            <AnimatePresence mode='popLayout'>
+              {sortedCaretakers.map((caretaker, index) => (
+                <motion.div
+                  key={caretaker.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2, delay: index * 0.05 }}
+                >
+                  <Card className="group overflow-hidden border shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300 bg-card">
+                    <CardContent className="p-0">
+                        <div className="flex flex-col lg:flex-row">
+                             {/* Left: Main Info */}
+                            <div className="flex-1 p-6 flex items-start gap-4">
+                                <Avatar className="h-16 w-16 border-2 border-background shadow-sm">
+                                    <AvatarImage src={undefined} />
+                                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xl">
+                                        {getInitials(caretaker.firstName, caretaker.lastName)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0 space-y-2">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <h3 className="text-lg font-bold text-foreground">
+                                        {caretaker.firstName} {caretaker.lastName}
+                                      </h3>
+                                       <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          'font-medium border-0 px-2 py-0.5',
+                                          caretaker.isActive
+                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                        )}
+                                      >
+                                        {caretaker.isActive ? 'Active' : 'Inactive'}
+                                      </Badge>
+                                    </div>
+                                    
+                                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                                          <div className="flex items-center gap-1.5">
+                                            <Building2 className="h-4 w-4 opacity-70" />
+                                            <span className="font-medium text-foreground/80">{caretaker.hostelName}</span>
+                                          </div>
+                                          <div className="flex items-center gap-1.5">
+                                            <Phone className="h-4 w-4 opacity-70" />
+                                            <span>{caretaker.phone}</span>
+                                          </div>
+                                           <div className="flex items-center gap-1.5">
+                                            <Mail className="h-4 w-4 opacity-70" />
+                                            <span>{caretaker.email}</span>
+                                          </div>
+                                     </div>
+                                </div>
+                            </div>
+                            
+                             {/* Middle: Performance & Activity */}
+                             <div className="border-t lg:border-t-0 lg:border-l border-border bg-muted/5 p-6 min-w-[300px] flex flex-col justify-center gap-4">
+                                  <div className="flex justify-between items-center">
+                                      <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                          <Award className="h-4 w-4 text-yellow-500" />
+                                          Rating
+                                      </span>
+                                      <span className="text-base font-bold text-foreground">{caretaker.rating?.toFixed(1) || 'N/A'}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                      <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                          Check-ins
+                                      </span>
+                                      <span className="text-base font-bold text-foreground">{caretaker.tasksCompleted || 0}</span>
+                                  </div>
+                                   <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                        <span>Last Active</span>
+                                        <span>Today, 10:24 AM</span>
+                                   </div>
+                             </div>
 
-                    {/* Performance Stats */}
-                    <div className="flex items-center gap-8 border-l border-slate-100 dark:border-slate-800 pl-8">
-                      <div className="text-center">
-                        <p className="text-2xl font-black text-slate-900 dark:text-slate-100">
-                          {caretaker.rating?.toFixed(1) || 'N/A'}
-                        </p>
-                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Rating</p>
-                      </div>
-                      <div className="text-center hidden sm:block">
-                        <div className="flex items-center gap-1 justify-center">
-                          <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                             {caretaker.tasksCompleted || 0}
-                          </p>
+                             {/* Right: Actions */}
+                            <div className="border-t lg:border-t-0 lg:border-l border-border p-4 lg:p-6 flex lg:flex-col items-center justify-center gap-2">
+                                <div className="flex w-full gap-2">
+                                    <Link href={`/landlord/caretakers/${caretaker.id}`} className="flex-1">
+                                        <Button variant="outline" className="w-full gap-2 h-10 border-input hover:bg-accent hover:text-accent-foreground">
+                                            <Eye className="h-4 w-4" />
+                                            <span className="hidden lg:inline">Details</span>
+                                        </Button>
+                                    </Link>
+                                    
+                                     <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" size="icon" className="h-10 w-10">
+                                            <MoreVertical className="h-4 w-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-56">
+                                          <DropdownMenuLabel>Manage Caretaker</DropdownMenuLabel>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem asChild>
+                                            <Link href={`/landlord/caretakers/${caretaker.id}/edit`} className="cursor-pointer">
+                                              <Edit className="h-4 w-4 mr-2" />
+                                              Edit Permissions
+                                            </Link>
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem asChild>
+                                            <Link href={`/landlord/hostels/${caretaker.hostelId}`} className="cursor-pointer">
+                                              <Building2 className="h-4 w-4 mr-2" />
+                                              Reassign Hostel
+                                            </Link>
+                                          </DropdownMenuItem>
+                                           <DropdownMenuItem asChild>
+                                            <Link href={`/landlord/caretakers/${caretaker.id}/inventory`} className="cursor-pointer">
+                                              <ClipboardList className="h-4 w-4 mr-2" />
+                                              Inventory Logs
+                                            </Link>
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem className="text-red-600 dark:text-red-400 cursor-pointer">
+                                            <XCircle className="h-4 w-4 mr-2" />
+                                            Deactivate Account
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                </div>
+                            </div>
                         </div>
-                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Tasks</p>
-                      </div>
-                      <div className="text-center hidden lg:block">
-                        <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                          {caretaker.occupancyRate ? `${caretaker.occupancyRate}%` : '-'}
-                        </p>
-                         <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Occupancy</p>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2">
-                      <Link href={`/landlord/caretakers/${caretaker.id}`}>
-                        <Button variant="outline" size="sm" className="font-bold border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">
-                          View details
-                        </Button>
-                      </Link>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-9 w-9">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem asChild>
-                            <Link href={`/landlord/caretakers/${caretaker.id}`} className="cursor-pointer">
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Profile
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/landlord/caretakers/${caretaker.id}/edit`} className="cursor-pointer">
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Details
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/landlord/hostels/${caretaker.hostelId}`} className="cursor-pointer">
-                              <Building2 className="h-4 w-4 mr-2" />
-                              View Hostel
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600 dark:text-red-400 cursor-pointer">
-                            <XCircle className="h-4 w-4 mr-2" />
-                            Deactivate Caretaker
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </AnimatePresence>
         )}
       </div>
     </div>

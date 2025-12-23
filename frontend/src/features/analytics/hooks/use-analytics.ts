@@ -1,6 +1,14 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/react-query/query-keys';
-import { getAnalytics, getAnalyticsBreakdown, exportAnalytics } from '@/features/analytics';
+import { 
+  getAnalytics, 
+  getAnalyticsBreakdown, 
+  exportAnalytics,
+  getLandlordOccupancy,
+  getLandlordRevenue,
+  getLandlordPerformance,
+  getLandlordFinancialReports
+} from '../api/analytics';
 import { toast } from 'sonner';
 
 import type { AnalyticsPeriod } from '@/features/analytics/types/types';
@@ -11,10 +19,7 @@ export interface CustomDateRange {
 }
 
 /**
- * Hook to fetch platform analytics
- * @param period - Time period for analytics
- * @param dateRange - Custom date range (only used when period is 'custom')
- * @returns Query result with analytics data
+ * Hook to fetch platform analytics (Generic)
  */
 export const useAnalytics = (
   period: AnalyticsPeriod = '30d',
@@ -23,16 +28,44 @@ export const useAnalytics = (
   return useQuery({
     queryKey: queryKeys.analytics.dashboard(period, dateRange),
     queryFn: () => getAnalytics(period, dateRange),
-    staleTime: 15 * 60 * 1000, // 15 minutes
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+    staleTime: 15 * 60 * 1000, 
+    refetchInterval: 5 * 60 * 1000, 
   });
 };
 
 /**
+ * Hooks for Landlord Specific Analytics (Real World API)
+ */
+export const useLandlordRevenue = (period: AnalyticsPeriod = '30d') => {
+  return useQuery({
+    queryKey: [...queryKeys.analytics.all, 'landlord', 'revenue', period],
+    queryFn: () => getLandlordRevenue(period),
+  });
+};
+
+export const useLandlordOccupancy = (period: AnalyticsPeriod = '30d') => {
+  return useQuery({
+      queryKey: [...queryKeys.analytics.all, 'landlord', 'occupancy', period],
+      queryFn: () => getLandlordOccupancy(period),
+  });
+};
+
+export const useLandlordPerformance = () => {
+    return useQuery({
+        queryKey: [...queryKeys.analytics.all, 'landlord', 'performance'],
+        queryFn: getLandlordPerformance,
+    });
+};
+
+export const useLandlordFinancialReports = (period: AnalyticsPeriod = '30d') => {
+    return useQuery({
+        queryKey: [...queryKeys.analytics.all, 'landlord', 'reports', period],
+        queryFn: () => getLandlordFinancialReports(period),
+    });
+};
+
+/**
  * Hook to fetch detailed analytics breakdown
- * @param category - Analytics category (users, bookings, revenue, etc.)
- * @param period - Time period for breakdown
- * @returns Query result with breakdown data
  */
 export const useAnalyticsBreakdown = (
   category: 'users' | 'bookings' | 'revenue' | 'payments',
@@ -41,13 +74,12 @@ export const useAnalyticsBreakdown = (
   return useQuery({
     queryKey: [...queryKeys.analytics.dashboard(period), category, 'breakdown'],
     queryFn: () => getAnalyticsBreakdown(category, period),
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 10 * 60 * 1000, 
   });
 };
 
 /**
  * Hook to export analytics data
- * @returns Mutation for exporting analytics
  */
 export const useExportAnalytics = () => {
   return useMutation({
@@ -80,13 +112,12 @@ export const useExportAnalytics = () => {
 
 /**
  * Hook to get real-time analytics updates
- * @returns Query result with live metrics
  */
 export const useLiveAnalytics = () => {
   return useQuery({
     queryKey: ['analytics', 'live'],
     queryFn: () => getAnalytics('7d'),
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 30 * 1000, // Refetch every 30 seconds for live updates
+    staleTime: 30 * 1000, 
+    refetchInterval: 30 * 1000, 
   });
 };

@@ -84,7 +84,7 @@ export const getAdminPayments = async (filters?: GetPaymentsFilters): Promise<Pa
  * Get payment statistics
  */
 export const getPaymentStats = async (): Promise<PaymentStats> => {
-  const response = await apiClient.axios.get<ApiResponse<PaymentStats>>('/payments/analytics/revenue/');
+  const response = await apiClient.axios.get<ApiResponse<PaymentStats>>('/landlord/payments/analytics/');
   
   return response.data.data || {
     totalRevenue: 0,
@@ -138,7 +138,19 @@ export const initializeMpesaPayment = async (
     '/payments/mpesa/initialize/', 
     payload
   );
-  return response.data.data;
+  return response.data.data || { 
+    transaction_id: 0, 
+    transaction_reference: '', 
+    amount: 0, 
+    payment_method: '', 
+    mpesa_payment_type: '', 
+    phone_number: '', 
+    checkout_request_id: '', 
+    merchant_request_id: '', 
+    status: 'failed', 
+    message: 'Failed to initialize', 
+    c2b_alternative: { note: '', business_number: '', amount: '', reference: '' } 
+  };
 };
 
 /**
@@ -153,7 +165,11 @@ export const getMpesaPaymentStatus = async (params: {
     '/payments/mpesa/status/',
     { params }
   );
-  return response.data.data;
+  return response.data.data || { 
+    status: 'failed', 
+    last_updated: new Date().toISOString(),
+    transaction: { id: '', date: '', amount: 0, type: 'rent', status: 'failed', method: 'mpesa', reference: '' }
+  };
 };
 
 /**
@@ -162,9 +178,9 @@ export const getMpesaPaymentStatus = async (params: {
  */
 export const getMpesaConfigs = async (): Promise<MpesaConfig[]> => {
   const response = await apiClient.axios.get<ApiResponse<{ configs: MpesaConfig[] }>>(
-    '/api/v1/payments/mpesa/config/'
+    '/payments/mpesa/config/'
   );
-  return response.data.data.configs || [];
+  return response.data.data?.configs || [];
 };
 
 /**
@@ -178,7 +194,15 @@ export const createMpesaConfig = async (
     '/api/v1/payments/mpesa/config/',
     data
   );
-  return response.data.data;
+  return response.data.data || { 
+    id: 0, 
+    payment_type: 'till_number', 
+    mpesa_number: '', 
+    business_name: '', 
+    is_default: false, 
+    status: 'inactive', 
+    verified_at: null 
+  };
 };
 
 

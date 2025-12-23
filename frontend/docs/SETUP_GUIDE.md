@@ -819,3 +819,19 @@ roommates_verification_list
 POST
 /roommates/verification/
 roommates_verification_create
+GET
+/api/v1/payments/mpesa/config/
+Manage Landlord M-Pesa Configuration
+api_v1_payments_mpesa_config_list
+
+
+POST
+/api/v1/payments/mpesa/initialize/
+Initialize M-Pesa Payment
+api_v1_payments_mpesa_initialize_create
+
+
+GET
+/api/v1/payments/mpesa/status/
+Check M-Pesa Payment Status
+api_v1_payments_mpesa_status_list

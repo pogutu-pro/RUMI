@@ -9,6 +9,8 @@ export * from './components/room-list';
 export * from './components/hostels-view';
 export * from './components/hostel-detail-client';
 export { default as HostelImageUpload } from './components/hostel-image-upload';
+export { default as EnhancedHostelImageUpload } from './components/enhanced-hostel-image-upload';
+
 export * from './components/hostel-location-map';
 export * from './components/hostel-sort';
 export * from './components/booking-success-view';

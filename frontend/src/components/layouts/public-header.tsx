@@ -77,7 +77,7 @@ export const PublicHeader = React.memo(function PublicHeader({
                   alt="RUMI"
                   width={36}
                   height={36}
-                  className="object-cover w-auto h-auto"
+                  className="w-auto h-auto"
                   priority
                 />
               </div>

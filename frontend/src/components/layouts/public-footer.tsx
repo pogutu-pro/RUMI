@@ -54,9 +54,9 @@ export const Footer = React.memo(function Footer() {
               <Image
                 src="/images/logo/logo.svg"
                 alt="RUMI Logo"
-                width={36}
-                height={36}
-                className="w-auto h-auto"
+                width={40}
+                height={40}
+                className="h-10 w-auto"
               />
               <span className="font-bold text-2xl text-white">RUMI</span>
             </Link>

@@ -8,14 +8,14 @@ export interface CustomDateRange {
 }
 
 /**
- * Get platform analytics
+ * Get generic platform analytics
  */
 export const getAnalytics = async (
   period: string,
   dateRange?: CustomDateRange
 ): Promise<PlatformAnalytics> => {
-  const response = await apiClient.axios.get<ApiResponse<PlatformAnalytics>>(
-    '/analytics/dashboard/',
+  const response = await apiClient.axios.get<ApiResponse<any>>(
+    '/landlord/dashboard/overview/',
     {
       params: {
         period,
@@ -27,20 +27,27 @@ export const getAnalytics = async (
     }
   );
 
-  return response.data.data || {
-    totalUsers: 0,
-    activeUsers: 0,
-    totalHostels: 0,
-    totalBookings: 0,
-    totalRevenue: 0,
-    userGrowth: { current: 0, previous: 0, percentage: 0 },
-    bookingGrowth: { current: 0, previous: 0, percentage: 0 },
-    revenueGrowth: { current: 0, previous: 0, percentage: 0 },
+  const data = response.data.data;
+  
+  // Map specialized landlord dashboard data to expected PlatformAnalytics shape
+  return {
+    totalUsers: data?.stats?.total_users || 0,
+    activeUsers: data?.stats?.active_users || 0,
+    totalHostels: data?.stats?.active_hostels || 0,
+    totalBookings: data?.stats?.total_bookings || 0,
+    totalRevenue: data?.stats?.total_revenue || 0,
+    userGrowth: data?.growth?.users || { current: 0, previous: 0, percentage: 0 },
+    bookingGrowth: data?.growth?.bookings || { current: 0, previous: 0, percentage: 0 },
+    revenueGrowth: data?.growth?.revenue || { current: 0, previous: 0, percentage: 0 },
     period: period as any,
-    trends: [],
-    propertyPerformance: [],
+    trends: data?.monthly_revenue || [],
+    propertyPerformance: data?.hostel_performance || [],
     platformMetrics: [],
-    revenueDistribution: [],
+    revenueDistribution: data?.booking_status ? [
+      { name: 'Confirmed', value: data.booking_status.confirmed },
+      { name: 'Pending', value: data.booking_status.pending },
+      { name: 'Cancelled', value: data.booking_status.cancelled }
+    ] : [],
   };
 };
 
@@ -59,7 +66,48 @@ export const getAnalyticsBreakdown = async (
 };
 
 /**
+ * LANDLORD SPECIFIC ANALYTICS ENDPOINTS
+ * aligned with SETUP_GUIDE.md
+ */
+
+// /analytics/landlord/financial-reports/
+export const getLandlordFinancialReports = async (period: string = '30d'): Promise<any[]> => {
+  const response = await apiClient.axios.get<ApiResponse<any[]>>(
+    '/analytics/landlord/financial-reports/',
+    { params: { period } }
+  );
+  return response.data.data || [];
+};
+
+// /analytics/landlord/occupancy/
+export const getLandlordOccupancy = async (period: string = '30d'): Promise<any> => {
+  const response = await apiClient.axios.get<ApiResponse<any>>(
+    '/analytics/landlord/occupancy/',
+    { params: { period } }
+  );
+  return response.data.data || { rate: 0, growth: 0 };
+};
+
+// /analytics/landlord/revenue/
+export const getLandlordRevenue = async (period: string = '30d'): Promise<any> => {
+   const response = await apiClient.axios.get<ApiResponse<any>>(
+    '/analytics/landlord/revenue/',
+    { params: { period } }
+  );
+  return response.data.data || { totalRevenue: 0, trends: [], growth: 0 };
+};
+
+// /analytics/landlord/performance/
+export const getLandlordPerformance = async (): Promise<any[]> => {
+   const response = await apiClient.axios.get<ApiResponse<any[]>>(
+    '/analytics/landlord/performance/'
+  );
+  return response.data.data || [];
+};
+
+/**
  * Export analytics data
+ * Matches generic export used in guide
  */
 export const exportAnalytics = async (
   period: string,
@@ -82,40 +130,3 @@ export const exportAnalytics = async (
   );
   return response.data;
 };
-
-/**
- * ================================================================================
- * README: Analytics API Module (analytics.ts)
- * ================================================================================
- *
- * OVERVIEW:
- * ---------
- * Provides analytics and dashboard data for platform administrators and landlords.
- * Includes user growth, booking metrics, revenue tracking, and data export.
- *
- * BACKEND ENDPOINTS:
- * ------------------
- * | Method | Endpoint                           | Function              |
- * |--------|-----------------------------------|----------------------|
- * | GET    | /api/v1/analytics/dashboard/      | getAnalytics()        |
- * | GET    | /api/v1/analytics/breakdown/{cat}/| getAnalyticsBreakdown()|
- * | POST   | /api/v1/analytics/export/         | exportAnalytics()     |
- *
- * FEATURES:
- * ---------
- * - Dashboard Analytics: Users, bookings, revenue with growth metrics
- * - Breakdown by category: users, bookings, revenue, payments
- * - Export: CSV, PDF, Excel formats
- * - Custom date ranges supported
- *
- * USAGE:
- * ------
- * ```typescript
- * import { getAnalytics, exportAnalytics } from './analytics';
- *
- * const stats = await getAnalytics('monthly');
- * const blob = await exportAnalytics('monthly', 'csv');
- * ```
- *
- * ================================================================================
- */

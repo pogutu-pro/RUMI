@@ -21,31 +21,26 @@ export default function manifest(): MetadataRoute.Manifest {
         short_name: "Hostels",
         description: "Browse available student hostels",
         url: "/hostels",
-        icons: [{ src: "/icon-192x192.png", sizes: "192x192" }]
+        icons: [{ src: "/favicon-v2.png", sizes: "any" }]
       },
       {
         name: "Dashboard",
         short_name: "Dashboard",
         description: "View your bookings and messages",
         url: "/dashboard",
-        icons: [{ src: "/icon-192x192.png", sizes: "192x192" }]
+        icons: [{ src: "/favicon-v2.png", sizes: "any" }]
       }
     ],
     icons: [
       {
-        src: '/icon.svg',
+        src: '/images/icons/icon.svg',
         sizes: 'any',
         type: 'image/svg+xml',
-        purpose: 'any maskable'
+        purpose: 'maskable'
       },
       {
-        src: '/icon-192x192.png',
-        sizes: '192x192',
-        type: 'image/png'
-      },
-      {
-        src: '/icon-512x512.png',
-        sizes: '512x512',
+        src: '/favicon-v2.png',
+        sizes: 'any',
         type: 'image/png'
       }
     ],
@@ -54,8 +49,6 @@ export default function manifest(): MetadataRoute.Manifest {
         src: '/screenshot-mobile.png',
         sizes: '1170x2532',
         type: 'image/png',
-        // form_factor is not strictly typed in some versions, but valid in manifest
-        // @ts-expect-error - MetadataRoute.Manifest might not support form_factor yet
         form_factor: 'narrow',
         label: 'Home Screen'
       },
@@ -63,7 +56,6 @@ export default function manifest(): MetadataRoute.Manifest {
         src: '/screenshot-desktop.png',
         sizes: '1920x1080',
         type: 'image/png',
-        // @ts-expect-error
         form_factor: 'wide',
         label: 'Dashboard'
       }

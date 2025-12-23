@@ -594,7 +594,7 @@ class LandlordPaymentAnalyticsView(APIView):
         current_date = start_date.replace(day=1)
         
         while current_date <= now:
-            month_end = min((current_date + timedelta(days=32)).replace(day=1) - timedelta(days=1), now.date())
+            month_end = min(((current_date + timedelta(days=32)).replace(day=1) - timedelta(days=1)).date(), now.date())
             
             month_transactions = queryset.filter(
                 paid_at__date__gte=current_date,
