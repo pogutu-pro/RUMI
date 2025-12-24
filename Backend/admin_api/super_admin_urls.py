@@ -25,8 +25,8 @@ urlpatterns = [
     # Payment Management (EXPOSED)
     path('payments/disputes/', views.AdminPaymentDisputesListView.as_view(), name='super_admin_payment_disputes'),
     path('payments/disputes/stats/', views.AdminPaymentDisputesStatsView.as_view(), name='super_admin_payment_disputes_stats'),
-    path('payments/disputes/<int:dispute_id>/resolve/', views.AdminPaymentDisputesListView.as_view(), name='super_admin_payment_dispute_resolve'),
-    path('payments/disputes/<int:dispute_id>/status/', views.AdminPaymentDisputesListView.as_view(), name='super_admin_payment_dispute_status'),
+    path('payments/disputes/<int:dispute_id>/resolve/', views.AdminPaymentDisputeActionView.as_view(), name='super_admin_payment_dispute_resolve'),
+    path('payments/disputes/<int:dispute_id>/status/', views.AdminPaymentDisputeActionView.as_view(), name='super_admin_payment_dispute_status'),
     
     # Subscription Management (EXPOSED)
     path('subscriptions/', views.AdminSubscriptionListView.as_view(), name='super_admin_subscriptions'),

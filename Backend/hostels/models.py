@@ -151,6 +151,8 @@ class Booking(models.Model):
     duration_months = models.IntegerField(default=12)
     monthly_rent = models.DecimalField(max_digits=10, decimal_places=2)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    balance_due = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     auto_renewal = models.BooleanField(default=False)
     special_requests = models.TextField(blank=True, null=True)

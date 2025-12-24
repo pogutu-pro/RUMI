@@ -106,7 +106,7 @@ export default function PaymentsPage() {
       <PayRentModal 
         isOpen={isPayModalOpen}
         onClose={() => setIsPayModalOpen(false)}
-        bookingId={dashboardData?.hostelInfo?.id || 'current'}
+        bookingId={dashboardData?.hostelInfo?.booking_id || 'current'}
         amount={rentStatus?.totalOutstanding || 15000}
         hostelName={hostelName}
       />

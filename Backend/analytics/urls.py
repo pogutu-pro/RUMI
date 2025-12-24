@@ -2,6 +2,10 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # General Analytics Endpoints (for frontend compatibility)
+    path('dashboard/', views.AnalyticsDashboardView.as_view(), name='analytics_dashboard'),
+    path('breakdown/<str:category>/', views.AnalyticsBreakdownView.as_view(), name='analytics_breakdown'),
+
     # Landlord Advanced Dashboard Analytics (7 endpoints)
     path('landlord/revenue/', views.LandlordRevenueAnalyticsView.as_view(), name='landlord_revenue_analytics'),
     path('landlord/occupancy/', views.LandlordOccupancyAnalyticsView.as_view(), name='landlord_occupancy_analytics'),

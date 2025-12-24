@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import { submitContactForm } from '@/lib/api/public';
 
 export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,8 +32,12 @@ export default function ContactPage() {
     setIsSubmitting(true);
 
     try {
-      // TODO: Implement actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await submitContactForm({
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        message: formData.message,
+      });
       toast.success("Message sent successfully! We'll get back to you soon.");
       setFormData({
         name: '',
@@ -42,6 +47,7 @@ export default function ContactPage() {
         message: '',
       });
     } catch (error) {
+      console.error('Contact form submission error:', error);
       toast.error('Failed to send message. Please try again.');
     } finally {
       setIsSubmitting(false);

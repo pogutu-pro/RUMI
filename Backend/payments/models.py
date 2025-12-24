@@ -134,20 +134,20 @@ class Transaction(models.Model):
         choices=PAYMENT_PLAN_CHOICES,
         default='monthly'
     )
-    # NEW v2.0: Student pays 2% service fee, landlord receives full rent
+    # UPDATED: No service fees - revenue via subscriptions
     base_rent = models.DecimalField(max_digits=10, decimal_places=2)
-    student_service_fee = models.DecimalField(max_digits=10, decimal_places=2)  # 2% of rent
-    total_charged_amount = models.DecimalField(max_digits=10, decimal_places=2)  # rent + 2%
-    landlord_payout_amount = models.DecimalField(max_digits=10, decimal_places=2)  # Full rent
-    
-    # Platform revenue breakdown
-    gross_platform_revenue = models.DecimalField(max_digits=10, decimal_places=2)  # 2% service fee
-    gateway_fee = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)  # ~1.5%
-    net_platform_revenue = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)  # ~0.5%
-    
+    student_service_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))  # Always 0
+    total_charged_amount = models.DecimalField(max_digits=10, decimal_places=2)  # Same as base_rent
+    landlord_payout_amount = models.DecimalField(max_digits=10, decimal_places=2)  # Same as base_rent
+
+    # Platform revenue breakdown (always 0)
+    gross_platform_revenue = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    gateway_fee = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    net_platform_revenue = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+
     # Removed fields
-    landlord_commission = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))  # NO landlord commission!
-    withholding_tax = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))  # Removed
+    landlord_commission = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    withholding_tax = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     currency = models.CharField(max_length=3, default='KES')
     payment_method = models.CharField(
         max_length=50,
@@ -210,26 +210,10 @@ class Transaction(models.Model):
                 check=models.Q(payment_plan__in=['monthly']),
                 name='check_payment_plan'
             ),
-            # NEW v2.0: Service fee model constraints
-            models.CheckConstraint(
-                check=models.Q(student_service_fee=models.F('base_rent') * 0.02),
-                name='check_service_fee_2_percent'
-            ),
-            models.CheckConstraint(
-                check=models.Q(total_charged_amount=models.F('base_rent') + models.F('student_service_fee')),
-                name='check_total_with_service_fee'
-            ),
-            models.CheckConstraint(
-                check=models.Q(landlord_payout_amount=models.F('base_rent')),
-                name='check_landlord_gets_full_rent'
-            ),
+            # Basic validation constraints
             models.CheckConstraint(
                 check=models.Q(landlord_commission=0.00),
                 name='check_no_landlord_commission'
-            ),
-            models.CheckConstraint(
-                check=models.Q(gross_platform_revenue=models.F('student_service_fee')),
-                name='check_platform_revenue_from_service_fee'
             ),
         ]
 

@@ -15,6 +15,7 @@ from .models import (
     AnalyticsEvent, LandlordAnalytics, CaretakerAnalytics, StudentAnalytics
 )
 from accounts.permissions import IsLandlord, IsAdminOrSuperAdmin
+from accounts.models import User
 
 
 class LandlordRevenueAnalyticsView(APIView):
@@ -457,6 +458,419 @@ class LandlordGrowthAnalyticsView(APIView):
             },
             'monthly_growth': monthly_growth
         }, status=status.HTTP_200_OK)
+
+
+class AnalyticsDashboardView(APIView):
+    """General analytics dashboard for platform-wide or landlord-specific data"""
+
+    permission_classes = [IsAdminOrSuperAdmin | IsLandlord]
+
+    def get(self, request):
+        """Get analytics dashboard data"""
+        user = request.user
+        period = request.query_params.get('period', '180d')
+
+        # Calculate date range based on period
+        end_date = timezone.now().date()
+        if period == '30d':
+            start_date = end_date - timedelta(days=30)
+        elif period == '90d':
+            start_date = end_date - timedelta(days=90)
+        elif period == '1y':
+            start_date = end_date - timedelta(days=365)
+        else:  # 180d default
+            start_date = end_date - timedelta(days=180)
+
+        # Determine scope based on user role
+        if user.role in ['super_admin', 'admin']:
+            # Platform-wide analytics
+            landlord_filter = {}
+        else:
+            # Landlord-specific analytics
+            landlord = user.landlord_profile if hasattr(user, 'landlord_profile') else user
+            landlord_filter = {'landlord': landlord}
+
+        from hostels.models import Booking, Hostel, Room
+        from payments.models import Transaction
+        from accounts.models import StudentProfile
+
+        # Get bookings in period
+        bookings = Booking.objects.filter(
+            created_at__date__gte=start_date,
+            created_at__date__lte=end_date,
+            **landlord_filter
+        )
+
+        # Get transactions in period
+        transactions = Transaction.objects.filter(
+            status='success',
+            paid_at__date__gte=start_date,
+            paid_at__date__lte=end_date,
+            **landlord_filter
+        )
+
+        # Calculate metrics
+        total_revenue = transactions.aggregate(total=Sum('landlord_payout_amount'))['total'] or Decimal('0')
+        total_bookings = bookings.count()
+        confirmed_bookings = bookings.filter(status='confirmed').count()
+        completed_bookings = bookings.filter(status='completed').count()
+
+        # User metrics
+        if user.role in ['super_admin', 'admin']:
+            total_users = User.objects.count()
+            active_users = User.objects.filter(last_login__gte=timezone.now() - timedelta(days=30)).count()
+            total_hostels = Hostel.objects.count()
+        else:
+            total_users = StudentProfile.objects.filter(
+                user__in=bookings.values_list('student', flat=True).distinct()
+            ).count()
+            active_users = total_users  # For landlord, active users are those who booked
+            total_hostels = Hostel.objects.filter(**landlord_filter).count()
+
+        # Growth calculations (compare with previous period)
+        prev_start = start_date - (end_date - start_date)
+        prev_end = start_date
+
+        prev_bookings = Booking.objects.filter(
+            created_at__date__gte=prev_start,
+            created_at__date__lt=prev_end,
+            **landlord_filter
+        ).count()
+
+        prev_revenue = Transaction.objects.filter(
+            status='success',
+            paid_at__date__gte=prev_start,
+            paid_at__date__lt=prev_end,
+            **landlord_filter
+        ).aggregate(total=Sum('landlord_payout_amount'))['total'] or Decimal('0')
+
+        prev_users = User.objects.filter(
+            date_joined__gte=prev_start,
+            date_joined__lt=prev_end
+        ).count() if user.role in ['super_admin', 'admin'] else 0
+
+        # Calculate growth percentages
+        user_growth = {
+            'current': active_users,
+            'previous': prev_users,
+            'percentage': ((active_users - prev_users) / prev_users * 100) if prev_users > 0 else 0
+        }
+
+        booking_growth = {
+            'current': total_bookings,
+            'previous': prev_bookings,
+            'percentage': ((total_bookings - prev_bookings) / prev_bookings * 100) if prev_bookings > 0 else 0
+        }
+
+        revenue_growth = {
+            'current': float(total_revenue),
+            'previous': float(prev_revenue),
+            'percentage': ((total_revenue - prev_revenue) / prev_revenue * 100) if prev_revenue > 0 else 0
+        }
+
+        # Trends data (monthly breakdown)
+        trends = []
+        current_date = start_date.replace(day=1)
+        while current_date <= end_date:
+            month_end = min((current_date + timedelta(days=32)).replace(day=1) - timedelta(days=1), end_date)
+
+            month_bookings = bookings.filter(
+                created_at__date__gte=current_date,
+                created_at__date__lte=month_end
+            ).count()
+
+            month_revenue = transactions.filter(
+                paid_at__date__gte=current_date,
+                paid_at__date__lte=month_end
+            ).aggregate(total=Sum('landlord_payout_amount'))['total'] or Decimal('0')
+
+            # Calculate occupancy for the month (average)
+            month_occupancy = 0
+            if user.role in ['super_admin', 'admin']:
+                total_rooms = Room.objects.count()
+                occupied_rooms = Room.objects.filter(status='occupied').count()
+                month_occupancy = (occupied_rooms / total_rooms * 100) if total_rooms > 0 else 0
+            else:
+                landlord_rooms = Room.objects.filter(hostel__landlord=landlord)
+                total_rooms = landlord_rooms.count()
+                occupied_rooms = landlord_rooms.filter(status='occupied').count()
+                month_occupancy = (occupied_rooms / total_rooms * 100) if total_rooms > 0 else 0
+
+            trends.append({
+                'month': current_date.strftime('%b %Y'),
+                'bookings': month_bookings,
+                'revenue': float(month_revenue),
+                'occupancy': round(month_occupancy, 1)
+            })
+
+            # Move to next month
+            if current_date.month == 12:
+                current_date = current_date.replace(year=current_date.year + 1, month=1)
+            else:
+                current_date = current_date.replace(month=current_date.month + 1)
+
+        # Property performance (top hostels)
+        property_performance = []
+        hostels = Hostel.objects.filter(**landlord_filter)[:5]  # Top 5
+        for hostel in hostels:
+            hostel_bookings = bookings.filter(room__hostel=hostel).count()
+            hostel_revenue = transactions.filter(
+                booking__room__hostel=hostel
+            ).aggregate(total=Sum('landlord_payout_amount'))['total'] or Decimal('0')
+
+            total_rooms = Room.objects.filter(hostel=hostel).count()
+            occupied_rooms = Room.objects.filter(hostel=hostel, status='occupied').count()
+            occupancy = (occupied_rooms / total_rooms * 100) if total_rooms > 0 else 0
+
+            property_performance.append({
+                'name': hostel.name,
+                'occupancy': round(occupancy, 1),
+                'revenue': float(hostel_revenue),
+                'bookings': hostel_bookings
+            })
+
+        # Platform metrics (radar chart data)
+        platform_metrics = [
+            {'metric': 'Revenue', 'score': min(100, float(total_revenue) / 100000 * 100)},  # Scale to 100k = 100%
+            {'metric': 'Bookings', 'score': min(100, total_bookings / 100 * 100)},  # Scale to 100 bookings = 100%
+            {'metric': 'Users', 'score': min(100, active_users / 100 * 100)},  # Scale to 100 users = 100%
+            {'metric': 'Occupancy', 'score': 75},  # Placeholder
+            {'metric': 'Growth', 'score': min(100, max(0, (user_growth['percentage'] + booking_growth['percentage'] + revenue_growth['percentage']) / 3))}
+        ]
+
+        # Revenue distribution (pie chart data)
+        revenue_distribution = []
+        if user.role in ['super_admin', 'admin']:
+            # By landlord
+            landlord_revenue = transactions.values('landlord__user__first_name').annotate(
+                value=Sum('landlord_payout_amount')
+            ).order_by('-value')[:5]
+            colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
+            for i, item in enumerate(landlord_revenue):
+                revenue_distribution.append({
+                    'name': item['landlord__user__first_name'] or f'Landlord {i+1}',
+                    'value': float(item['value']),
+                    'color': colors[i % len(colors)]
+                })
+        else:
+            # By hostel
+            hostel_revenue = transactions.values('booking__room__hostel__name').annotate(
+                value=Sum('landlord_payout_amount')
+            ).order_by('-value')[:5]
+            colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
+            for i, item in enumerate(hostel_revenue):
+                revenue_distribution.append({
+                    'name': item['booking__room__hostel__name'] or f'Hostel {i+1}',
+                    'value': float(item['value']),
+                    'color': colors[i % len(colors)]
+                })
+
+        return Response({
+            'totalUsers': total_users,
+            'activeUsers': active_users,
+            'totalHostels': total_hostels,
+            'totalBookings': total_bookings,
+            'totalRevenue': float(total_revenue),
+            'userGrowth': user_growth,
+            'bookingGrowth': booking_growth,
+            'revenueGrowth': revenue_growth,
+            'period': period,
+            'trends': trends,
+            'propertyPerformance': property_performance,
+            'platformMetrics': platform_metrics,
+            'revenueDistribution': revenue_distribution,
+        }, status=status.HTTP_200_OK)
+
+
+class AnalyticsBreakdownView(APIView):
+    """Detailed analytics breakdown by category"""
+
+    permission_classes = [IsAdminOrSuperAdmin | IsLandlord]
+
+    def get(self, request, category):
+        """Get detailed breakdown for a specific category"""
+        user = request.user
+        period = request.query_params.get('period', '180d')
+
+        # Calculate date range
+        end_date = timezone.now().date()
+        if period == '30d':
+            start_date = end_date - timedelta(days=30)
+        elif period == '90d':
+            start_date = end_date - timedelta(days=90)
+        elif period == '1y':
+            start_date = end_date - timedelta(days=365)
+        else:
+            start_date = end_date - timedelta(days=180)
+
+        # Determine scope
+        if user.role in ['super_admin', 'admin']:
+            landlord_filter = {}
+        else:
+            landlord = user.landlord_profile if hasattr(user, 'landlord_profile') else user
+            landlord_filter = {'landlord': landlord}
+
+        from hostels.models import Booking
+        from payments.models import Transaction
+
+        if category == 'users':
+            # User analytics breakdown
+            if user.role in ['super_admin', 'admin']:
+                # Platform-wide user breakdown
+                users_by_role = User.objects.values('role').annotate(count=Count('id')).order_by('-count')
+                users_by_month = User.objects.filter(
+                    date_joined__date__gte=start_date,
+                    date_joined__date__lte=end_date
+                ).annotate(
+                    month=TruncMonth('date_joined')
+                ).values('month').annotate(count=Count('id')).order_by('month')
+
+                return Response({
+                    'usersByRole': list(users_by_role),
+                    'usersByMonth': [
+                        {'month': item['month'].strftime('%b %Y'), 'count': item['count']}
+                        for item in users_by_month
+                    ],
+                    'totalUsers': User.objects.count(),
+                    'activeUsers': User.objects.filter(last_login__gte=timezone.now() - timedelta(days=30)).count()
+                })
+            else:
+                # Landlord-specific: students who booked
+                students = StudentProfile.objects.filter(
+                    user__in=Booking.objects.filter(
+                        created_at__date__gte=start_date,
+                        created_at__date__lte=end_date,
+                        **landlord_filter
+                    ).values_list('student', flat=True).distinct()
+                )
+
+                return Response({
+                    'totalStudents': students.count(),
+                    'students': [
+                        {
+                            'id': student.user.id,
+                            'name': student.user.get_full_name(),
+                            'email': student.user.email,
+                            'bookings_count': Booking.objects.filter(
+                                student=student,
+                                created_at__date__gte=start_date,
+                                created_at__date__lte=end_date,
+                                **landlord_filter
+                            ).count()
+                        }
+                        for student in students[:20]  # Limit to 20
+                    ]
+                })
+
+        elif category == 'bookings':
+            # Booking analytics breakdown
+            bookings = Booking.objects.filter(
+                created_at__date__gte=start_date,
+                created_at__date__lte=end_date,
+                **landlord_filter
+            )
+
+            bookings_by_status = bookings.values('status').annotate(count=Count('id')).order_by('-count')
+            bookings_by_month = bookings.annotate(
+                month=TruncMonth('created_at')
+            ).values('month').annotate(count=Count('id')).order_by('month')
+
+            # Bookings by hostel
+            bookings_by_hostel = bookings.values('room__hostel__name').annotate(
+                count=Count('id'),
+                revenue=Sum('total_amount')
+            ).order_by('-count')[:10]
+
+            return Response({
+                'bookingsByStatus': list(bookings_by_status),
+                'bookingsByMonth': [
+                    {'month': item['month'].strftime('%b %Y'), 'count': item['count']}
+                    for item in bookings_by_month
+                ],
+                'bookingsByHostel': [
+                    {
+                        'hostel': item['room__hostel__name'],
+                        'count': item['count'],
+                        'revenue': float(item['revenue'] or 0)
+                    }
+                    for item in bookings_by_hostel
+                ],
+                'totalBookings': bookings.count(),
+                'averageBookingValue': float(bookings.aggregate(avg=Avg('total_amount'))['avg'] or 0)
+            })
+
+        elif category == 'revenue':
+            # Revenue analytics breakdown
+            transactions = Transaction.objects.filter(
+                status='success',
+                paid_at__date__gte=start_date,
+                paid_at__date__lte=end_date,
+                **landlord_filter
+            )
+
+            revenue_by_month = transactions.annotate(
+                month=TruncMonth('paid_at')
+            ).values('month').annotate(
+                total=Sum('landlord_payout_amount')
+            ).order_by('month')
+
+            revenue_by_method = transactions.values('payment_method').annotate(
+                total=Sum('landlord_payout_amount'),
+                count=Count('id')
+            ).order_by('-total')
+
+            return Response({
+                'revenueByMonth': [
+                    {'month': item['month'].strftime('%b %Y'), 'total': float(item['total'] or 0)}
+                    for item in revenue_by_month
+                ],
+                'revenueByMethod': [
+                    {
+                        'method': item['payment_method'] or 'Unknown',
+                        'total': float(item['total']),
+                        'count': item['count']
+                    }
+                    for item in revenue_by_method
+                ],
+                'totalRevenue': float(transactions.aggregate(total=Sum('landlord_payout_amount'))['total'] or 0),
+                'averageTransactionValue': float(transactions.aggregate(avg=Avg('landlord_payout_amount'))['avg'] or 0)
+            })
+
+        elif category == 'payments':
+            # Payment analytics breakdown
+            transactions = Transaction.objects.filter(
+                paid_at__date__gte=start_date,
+                paid_at__date__lte=end_date,
+                **landlord_filter
+            )
+
+            payments_by_status = transactions.values('status').annotate(count=Count('id')).order_by('-count')
+            payments_by_method = transactions.values('payment_method').annotate(
+                count=Count('id'),
+                total_amount=Sum('landlord_payout_amount')
+            ).order_by('-total_amount')
+
+            # Success rate
+            total_payments = transactions.count()
+            successful_payments = transactions.filter(status='success').count()
+            success_rate = (successful_payments / total_payments * 100) if total_payments > 0 else 0
+
+            return Response({
+                'paymentsByStatus': list(payments_by_status),
+                'paymentsByMethod': [
+                    {
+                        'method': item['payment_method'] or 'Unknown',
+                        'count': item['count'],
+                        'total_amount': float(item['total_amount'] or 0)
+                    }
+                    for item in payments_by_method
+                ],
+                'successRate': round(success_rate, 2),
+                'totalPayments': total_payments,
+                'successfulPayments': successful_payments
+            })
+
+        return Response({'error': 'Invalid category'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LandlordPerformanceMetricsView(APIView):

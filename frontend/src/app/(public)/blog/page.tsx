@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import type { Metadata } from 'next';
 import { ArrowRight, Clock, MapPin, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,8 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { FadeIn, FadeInStagger, FadeInItem } from '@/components/animations/fade-in';
+import { getBlogPosts } from '@/lib/api/public';
+import { toast } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'Blog - Insights for Students, Landlords & Caretakers',
@@ -38,80 +41,54 @@ interface BlogPost {
   meta?: string;
 }
 
-const posts: BlogPost[] = [
-  {
-    slug: 'how-to-choose-the-right-campus-hostel',
-    title: 'How to Choose the Right Campus Hostel (Without Guesswork)',
-    description:
-      'A practical checklist for comparing prices, safety, distance to campus, and amenities before you book.',
-    category: 'students',
-    readTime: '7 min read',
-    audienceLabel: 'For Students',
-    tag: 'Student Guides',
-    publishedAt: '2025-02-01',
-    meta: 'Hostel selection • Safety • Budget',
-  },
-  {
-    slug: 'turn-your-hostel-into-a-fully-booked-business',
-    title: 'Turn Your Hostel into a Fully Booked Business with Rumi',
-    description:
-      'How landlords use Rumi to reduce vacancies, get paid on time, and gain visibility with thousands of students.',
-    category: 'landlords',
-    readTime: '6 min read',
-    audienceLabel: 'For Landlords',
-    tag: 'Landlord Playbook',
-    publishedAt: '2025-01-24',
-    meta: 'Occupancy • Payments • Growth',
-  },
-  {
-    slug: 'inside-the-rumi-safety-and-verification-process',
-    title: 'Inside the Rumi Safety & Verification Process',
-    description:
-      'A behind-the-scenes look at how we verify hostels, photos, and licenses before they ever go live.',
-    category: 'product',
-    readTime: '5 min read',
-    audienceLabel: 'Product Deep Dive',
-    tag: 'Product Updates',
-    publishedAt: '2025-01-10',
-    meta: 'Verification • Trust • Quality',
-  },
-  {
-    slug: 'caretaker-handbook-daily-ops-in-a-digital-hostel',
-    title: 'Caretaker Handbook: Daily Ops in a Digital-First Hostel',
-    description:
-      'Best practices for managing check-ins, maintenance, and tenant requests when everything runs through Rumi.',
-    category: 'caretakers',
-    readTime: '8 min read',
-    audienceLabel: 'For Caretakers',
-    tag: 'Operations',
-    publishedAt: '2024-12-18',
-    meta: 'Operations • Maintenance • Service',
-  },
-  {
-    slug: 'mpesa-rent-payments-how-rumi-keeps-everyone-in-sync',
-    title: 'M-PESA Rent Payments: How Rumi Keeps Everyone in Sync',
-    description:
-      'From payment reminders to instant receipts, here is how rent collection works when everything is digital.',
-    category: 'product',
-    readTime: '4 min read',
-    audienceLabel: 'Product Deep Dive',
-    tag: 'Payments',
-    publishedAt: '2024-11-30',
-    meta: 'M-PESA • Receipts • Automation',
-  },
-  {
-    slug: 'surviving-your-first-semester-away-from-home',
-    title: 'Surviving Your First Semester Away From Home',
-    description:
-      'Real advice from students on budgeting, roommates, and settling into a new city and hostel.',
-    category: 'campus-life',
-    readTime: '6 min read',
-    audienceLabel: 'For Students',
-    tag: 'Campus Life',
-    publishedAt: '2024-11-05',
-    meta: 'Budgeting • Roommates • Wellbeing',
-  },
-];
+interface ApiBlogPost {
+  post_id: number;
+  title: string;
+  slug: string;
+  excerpt: string;
+  featured_image?: string;
+  author: {
+    name: string;
+    profile_picture?: string;
+  };
+  category: string;
+  tags: string[];
+  read_time_minutes: number;
+  published_at: string;
+  view_count: number;
+}
+
+function transformApiPost(apiPost: ApiBlogPost): BlogPost {
+  const categoryMap: Record<string, BlogCategory> = {
+    'student_stories': 'students',
+    'landlord_tips': 'landlords',
+    'housing_guides': 'students',
+    'company_news': 'product',
+    'product_updates': 'product',
+    'marketplace_highlights': 'product',
+  };
+
+  const audienceLabels: Record<string, string> = {
+    'student_stories': 'For Students',
+    'landlord_tips': 'For Landlords',
+    'housing_guides': 'For Students',
+    'company_news': 'Product Deep Dive',
+    'product_updates': 'Product Deep Dive',
+    'marketplace_highlights': 'Product Deep Dive',
+  };
+
+  return {
+    slug: apiPost.slug,
+    title: apiPost.title,
+    description: apiPost.excerpt,
+    category: categoryMap[apiPost.category] || 'product',
+    readTime: `${apiPost.read_time_minutes || 5} min read`,
+    audienceLabel: audienceLabels[apiPost.category] || 'Product Deep Dive',
+    tag: apiPost.tags[0] || 'General',
+    publishedAt: apiPost.published_at,
+    meta: apiPost.tags.join(' • '),
+  };
+}
 
 const filters: { id: BlogCategory; label: string }[] = [
   { id: 'all', label: 'All posts' },
@@ -123,6 +100,29 @@ const filters: { id: BlogCategory; label: string }[] = [
 ];
 
 export default function BlogPage() {
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
+        const response = await getBlogPosts({ limit: 20 });
+        const transformedPosts = response.data.map(transformApiPost);
+        setPosts(transformedPosts);
+      } catch (err) {
+        console.error('Failed to fetch blog posts:', err);
+        setError('Failed to load blog posts. Please try again later.');
+        toast.error('Failed to load blog posts');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
   const activeFilter: BlogCategory = 'all';
   const visiblePosts =
     activeFilter === 'all'
@@ -130,6 +130,42 @@ export default function BlogPage() {
       : posts.filter((post) => post.category === activeFilter);
 
   const [featured, ...rest] = visiblePosts;
+
+  if (loading) {
+    return (
+      <main className="flex flex-col bg-white text-gray-900">
+        <section className="border-b border-gray-100">
+          <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-12 md:pt-28 md:pb-16">
+            <div className="mx-auto max-w-4xl text-center">
+              <div className="animate-pulse">
+                <div className="h-8 bg-gray-200 rounded w-32 mx-auto mb-4"></div>
+                <div className="h-12 bg-gray-200 rounded w-full mb-4"></div>
+                <div className="h-6 bg-gray-200 rounded w-3/4 mx-auto mb-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+              </div>
+            </div>
+          </FadeIn>
+        </section>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="flex flex-col bg-white text-gray-900">
+        <section className="border-b border-gray-100">
+          <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-12 md:pt-28 md:pb-16">
+            <div className="mx-auto max-w-4xl text-center">
+              <h1 className="mb-4 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
+                Blog
+              </h1>
+              <p className="text-lg text-red-600">{error}</p>
+            </div>
+          </FadeIn>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="flex flex-col bg-white text-gray-900">
@@ -185,7 +221,7 @@ export default function BlogPage() {
               })}
             </div>
             <div className="text-xs sm:text-sm text-gray-500">
-              Showing {visiblePosts.length} curated articles
+              Showing {visiblePosts.length} articles
             </div>
           </div>
         </FadeIn>

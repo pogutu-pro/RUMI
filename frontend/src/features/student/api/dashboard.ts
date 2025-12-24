@@ -83,32 +83,44 @@ export async function getRecentTransactions(limit: number = 5): Promise<Transact
 
 /**
  * Get unread message count
- * Note: Endpoint not explicitly in SETUP_GUIDE.md.
- * Gracefully returns 0.
+ * Endpoint: /accounts/messages/unread-count/
  */
 export async function getUnreadMessageCount(): Promise<number> {
-  // Graceful fallback
-  return 0;
+  try {
+    const res = await axios.get<{ unread_count: number }>('/accounts/messages/unread-count/');
+    return res.data.unread_count || 0;
+  } catch (error) {
+    console.warn('Failed to fetch unread messages count:', error);
+    return 0;
+  }
 }
 
 /**
  * Get active support tickets
- * Note: Endpoint not explicitly in SETUP_GUIDE.md.
- * Gracefully returns empty list.
+ * Endpoint: /accounts/student/support/tickets/
  */
 export async function getActiveTickets(): Promise<SupportTicketSummary[]> {
-   // Graceful fallback
-   return [];
+  try {
+    const res = await axios.get<{ tickets: SupportTicketSummary[], total_active: number }>('/accounts/student/support/tickets/');
+    return res.data.tickets || [];
+  } catch (error) {
+    console.warn('Failed to fetch active tickets:', error);
+    return [];
+  }
 }
 
 /**
  * Get activity feed
- * Note: Endpoint not explicitly in SETUP_GUIDE.md.
- * Gracefully returns empty list.
+ * Endpoint: /accounts/student/activity/feed/
  */
 export async function getActivityFeed(limit: number = 5): Promise<ActivityEvent[]> {
-    // Graceful fallback
+  try {
+    const res = await axios.get<{ activities: ActivityEvent[], total: number }>(`/accounts/student/activity/feed/?limit=${limit}`);
+    return res.data.activities || [];
+  } catch (error) {
+    console.warn('Failed to fetch activity feed:', error);
     return [];
+  }
 }
 
 /**
@@ -147,14 +159,13 @@ export const studentDashboardApi = {
  *
  * ENDPOINTS:
  * ----------
- * | Method | Endpoint               | Function                |
- * |--------|------------------------|-------------------------|
- * | GET    | /accounts/dashboard/   | getDashboardData()      |
- * | GET    | /payments/rent-status/ | getRentStatus()         |
- * | GET    | /payments/transactions/| getRecentTransactions() |
- * | GET    | /messages/unread-count/| getUnreadMessageCount() |
- * | GET    | /support/tickets/      | getActiveTickets()      |
- * | GET    | /activity/feed/        | getActivityFeed()       |
+ * | Method | Endpoint                        | Function                |
+ * |--------|---------------------------------|-------------------------|
+ * | GET    | /accounts/dashboard/            | getDashboardData()      |
+ * | GET    | /payments/transactions/student/ | getRecentTransactions() |
+ * | GET    | /accounts/messages/unread-count/ | getUnreadMessageCount() |
+ * | GET    | /accounts/student/support/tickets/ | getActiveTickets()    |
+ * | GET    | /accounts/student/activity/feed/ | getActivityFeed()      |
  *
  * DASHBOARD DATA:
  * ---------------

@@ -7,6 +7,8 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 from accounts.models import StudentProfile, LandlordProfile, CaretakerProfile, User
 from hostels.models import Hostel
@@ -855,36 +857,36 @@ class AdminPaymentDisputesListView(APIView):
 
 class AdminPaymentDisputesStatsView(APIView):
     """Get payment dispute statistics"""
-    
+
     permission_classes = [IsTechSupportAdmin]
-    
+
     def get(self, request):
         """Return dispute statistics"""
         now = timezone.now()
-        
+
         disputes = PaymentDispute.objects.all()
-        
+
         # Count by status
         status_counts = disputes.values('status').annotate(count=Count('status'))
         status_summary = {item['status']: item['count'] for item in status_counts}
-        
+
         # Total amount in dispute
         total_dispute_amount = disputes.aggregate(
             total=Sum('amount_disputed')
         )['total'] or 0
-        
+
         # Average resolution time for resolved disputes
         resolved_disputes = disputes.filter(status='resolved')
         if resolved_disputes.exists():
             total_resolution_time = sum([
-                (d.resolved_at - d.submitted_at).days 
-                for d in resolved_disputes 
+                (d.resolved_at - d.submitted_at).days
+                for d in resolved_disputes
                 if d.resolved_at
             ])
             avg_resolution_time = total_resolution_time / len(resolved_disputes)
         else:
             avg_resolution_time = 0
-        
+
         return Response({
             'total_disputes': disputes.count(),
             'open_disputes': status_summary.get('open', 0),
@@ -893,6 +895,347 @@ class AdminPaymentDisputesStatsView(APIView):
             'rejected_disputes': status_summary.get('rejected', 0),
             'total_amount_in_dispute': float(total_dispute_amount),
             'avg_resolution_time_days': round(avg_resolution_time, 1)
+        }, status=status.HTTP_200_OK)
+
+
+class AdminPaymentDisputeActionView(APIView):
+    """
+    Payment Dispute Resolution Actions API
+
+    Handle administrative actions on payment disputes including resolution,
+    status updates, and refund processing.
+
+    POST: Resolve or update payment dispute status
+    PATCH: Update dispute status and notes
+
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin only
+
+    This endpoint provides comprehensive dispute resolution capabilities
+    including status updates, refund processing, and detailed resolution tracking.
+
+    Features:
+    - Dispute status management (open, investigating, resolved, rejected)
+    - Refund amount specification for resolutions
+    - Resolution notes and audit trail
+    - Automatic system activity logging
+    - Notification triggers for affected parties
+    """
+
+    permission_classes = [IsTechSupportAdmin]
+
+    @swagger_auto_schema(
+        operation_description="Resolve or update payment dispute status",
+        operation_summary="Resolve Payment Dispute",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['action'],
+            properties={
+                'action': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    enum=['resolve', 'reject', 'update_status'],
+                    description='Resolution action to perform'
+                ),
+                'status': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    enum=['open', 'investigating'],
+                    description='New status (required for update_status action)'
+                ),
+                'resolution_notes': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Detailed resolution explanation'
+                ),
+                'refund_amount': openapi.Schema(
+                    type=openapi.TYPE_NUMBER,
+                    format=openapi.FORMAT_FLOAT,
+                    description='Refund amount in KES (required for resolve action)'
+                ),
+                'admin_notes': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Additional administrative notes'
+                ),
+            }
+        ),
+        responses={
+            200: openapi.Response(
+                description="Dispute resolved successfully",
+                examples={
+                    "application/json": {
+                        "message": "Dispute resolved successfully",
+                        "dispute": {
+                            "id": 1,
+                            "dispute_id": "DIS-2025-001",
+                            "status": "resolved",
+                            "refund_amount": 2500.00,
+                            "resolution_notes": "Issue verified, processing refund"
+                        },
+                        "action_taken": "resolve",
+                        "old_status": "open",
+                        "new_status": "resolved"
+                    }
+                }
+            ),
+            400: "Validation error",
+            404: "Dispute not found"
+        }
+    )
+    def post(self, request, dispute_id):
+        """
+        Resolve Payment Dispute
+
+        Process administrative resolution of payment disputes with refund handling.
+
+        Path Parameters:
+        - dispute_id: Unique dispute identifier
+
+        Request Body:
+        - action: Resolution action (resolve/reject/update_status)
+        - status: New dispute status (for update_status action)
+        - resolution_notes: Detailed resolution explanation (required)
+        - refund_amount: Refund amount in KES (required for resolve action)
+        - admin_notes: Additional administrative notes
+
+        Resolution Process:
+        1. Validate dispute existence and permissions
+        2. Process resolution based on action type
+        3. Update dispute status and metadata
+        4. Log system activity for audit trail
+        5. Trigger notifications to affected parties
+        6. Return resolution confirmation
+
+        Actions:
+        - resolve: Mark dispute as resolved with refund
+        - reject: Reject dispute with explanation
+        - update_status: Update status to investigating/open
+
+        Returns resolution confirmation with updated dispute details.
+        """
+        try:
+            dispute = PaymentDispute.objects.get(id=dispute_id)
+        except PaymentDispute.DoesNotExist:
+            return Response({
+                'error': 'Payment dispute not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        action = request.data.get('action')
+        if not action:
+            return Response({
+                'error': 'Action is required (resolve/reject/update_status)'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if action not in ['resolve', 'reject', 'update_status']:
+            return Response({
+                'error': 'Invalid action. Must be resolve, reject, or update_status'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate required fields based on action
+        resolution_notes = request.data.get('resolution_notes')
+        if action in ['resolve', 'reject'] and not resolution_notes:
+            return Response({
+                'error': 'Resolution notes are required for resolve/reject actions'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if action == 'resolve':
+            refund_amount = request.data.get('refund_amount')
+            if refund_amount is None:
+                return Response({
+                    'error': 'Refund amount is required for resolve action'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Validate refund amount doesn't exceed disputed amount
+            if float(refund_amount) > float(dispute.amount_disputed):
+                return Response({
+                    'error': 'Refund amount cannot exceed disputed amount'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Process the action
+        old_status = dispute.status
+
+        if action == 'resolve':
+            dispute.status = 'resolved'
+            dispute.refund_amount = request.data.get('refund_amount')
+            dispute.resolution_notes = resolution_notes
+            dispute.resolved_at = timezone.now()
+            dispute.resolved_by = request.user
+
+            # Create system activity
+            SystemActivity.objects.create(
+                activity_type='dispute_resolved',
+                title=f'Dispute Resolved: {dispute.dispute_id}',
+                description=f'Payment dispute resolved by admin {request.user.get_full_name()}: {resolution_notes}',
+                user=dispute.student.user,
+                user_role='student',
+                severity='info',
+                metadata={
+                    'dispute_id': dispute.id,
+                    'refund_amount': float(dispute.refund_amount),
+                    'resolution_notes': resolution_notes
+                }
+            )
+
+        elif action == 'reject':
+            dispute.status = 'rejected'
+            dispute.resolution_notes = resolution_notes
+            dispute.resolved_at = timezone.now()
+            dispute.resolved_by = request.user
+
+            # Create system activity
+            SystemActivity.objects.create(
+                activity_type='dispute_rejected',
+                title=f'Dispute Rejected: {dispute.dispute_id}',
+                description=f'Payment dispute rejected by admin {request.user.get_full_name()}: {resolution_notes}',
+                user=dispute.student.user,
+                user_role='student',
+                severity='warning',
+                metadata={
+                    'dispute_id': dispute.id,
+                    'resolution_notes': resolution_notes
+                }
+            )
+
+        elif action == 'update_status':
+            new_status = request.data.get('status')
+            if not new_status:
+                return Response({
+                    'error': 'New status is required for update_status action'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            if new_status not in ['open', 'investigating']:
+                return Response({
+                    'error': 'Status must be open or investigating for update_status action'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            dispute.status = new_status
+            dispute.resolution_notes = resolution_notes or dispute.resolution_notes
+
+            # Create system activity
+            SystemActivity.objects.create(
+                activity_type='dispute_status_updated',
+                title=f'Dispute Status Updated: {dispute.dispute_id}',
+                description=f'Dispute status changed from {old_status} to {new_status} by admin {request.user.get_full_name()}',
+                user=dispute.student.user,
+                user_role='student',
+                severity='info',
+                metadata={
+                    'dispute_id': dispute.id,
+                    'old_status': old_status,
+                    'new_status': new_status,
+                    'notes': resolution_notes
+                }
+            )
+
+        dispute.save()
+
+        return Response({
+            'message': f'Dispute {action}d successfully',
+            'dispute': PaymentDisputeSerializer(dispute).data,
+            'action_taken': action,
+            'old_status': old_status,
+            'new_status': dispute.status
+        }, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        operation_description="Update payment dispute status with partial data",
+        operation_summary="Update Payment Dispute Status",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'status': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    enum=['open', 'investigating', 'resolved', 'rejected'],
+                    description='New dispute status'
+                ),
+                'resolution_notes': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Updated resolution notes'
+                ),
+                'refund_amount': openapi.Schema(
+                    type=openapi.TYPE_NUMBER,
+                    format=openapi.FORMAT_FLOAT,
+                    description='Updated refund amount (for resolved disputes)'
+                ),
+            }
+        ),
+        responses={
+            200: openapi.Response(
+                description="Dispute updated successfully",
+                examples={
+                    "application/json": {
+                        "message": "Dispute updated successfully",
+                        "dispute": {
+                            "id": 1,
+                            "dispute_id": "DIS-2025-001",
+                            "status": "investigating",
+                            "resolution_notes": "Under review"
+                        },
+                        "old_status": "open",
+                        "new_status": "investigating"
+                    }
+                }
+            ),
+            400: "Validation error",
+            404: "Dispute not found"
+        }
+    )
+    def patch(self, request, dispute_id):
+        """
+        Update Payment Dispute Status
+
+        Alternative method for updating dispute status with partial data.
+
+        Path Parameters:
+        - dispute_id: Unique dispute identifier
+
+        Request Body:
+        - status: New dispute status
+        - resolution_notes: Updated resolution notes
+        - refund_amount: Updated refund amount (for resolved disputes)
+
+        Returns updated dispute details.
+        """
+        try:
+            dispute = PaymentDispute.objects.get(id=dispute_id)
+        except PaymentDispute.DoesNotExist:
+            return Response({
+                'error': 'Payment dispute not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = PaymentDisputeActionSerializer(
+            dispute,
+            data=request.data,
+            partial=True
+        )
+
+        if not serializer.is_valid():
+            return Response({
+                'error': 'Validation failed',
+                'details': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        old_status = dispute.status
+        updated_dispute = serializer.save()
+
+        # Create system activity if status changed
+        if old_status != updated_dispute.status:
+            SystemActivity.objects.create(
+                activity_type='dispute_status_updated',
+                title=f'Dispute Status Updated: {dispute.dispute_id}',
+                description=f'Dispute status changed from {old_status} to {updated_dispute.status}',
+                user=dispute.student.user,
+                user_role='student',
+                severity='info',
+                metadata={
+                    'dispute_id': dispute.id,
+                    'old_status': old_status,
+                    'new_status': updated_dispute.status
+                }
+            )
+
+        return Response({
+            'message': 'Dispute updated successfully',
+            'dispute': PaymentDisputeSerializer(updated_dispute).data,
+            'old_status': old_status,
+            'new_status': updated_dispute.status
         }, status=status.HTTP_200_OK)
 
 

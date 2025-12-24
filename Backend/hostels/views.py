@@ -17,6 +17,7 @@ from .models import (
     RoomInventory, InventoryCheckIn, InventoryCheckOut,
     DamageReport, RoomTransfer, RoomImage, HostelAmenity
 )
+from .serializers import HostelSerializer
 
 
 class HostelCreateView(APIView):
@@ -155,7 +156,7 @@ class HostelDetailView(APIView):
     def get(self, request, hostel_id):
         """Get hostel information"""
         try:
-            hostel = Hostel.objects.select_related('landlord__user').get(id=hostel_id, is_active=True)
+            hostel = Hostel.objects.select_related('landlord__user').get(id=hostel_id, status='active')
         except Hostel.DoesNotExist:
             return Response({
                 'error': 'Hostel not found'
@@ -227,7 +228,7 @@ class RoomCreateView(APIView):
         """
         # Validate hostel ownership
         try:
-            hostel = Hostel.objects.get(id=hostel_id, landlord__user=request.user, is_active=True)
+            hostel = Hostel.objects.get(id=hostel_id, landlord__user=request.user, status='active')
         except Hostel.DoesNotExist:
             return Response({
                 'error': 'Hostel not found or access denied'
@@ -743,8 +744,8 @@ class RoomSearchView(APIView):
         Note: Only returns rooms from active, verified hostels.
         """
         queryset = Room.objects.select_related('hostel').filter(
-            is_available=True,
-            hostel__is_active=True
+            status='available',
+            hostel__status='active'
         )
 
         # Apply filters
@@ -880,7 +881,7 @@ class HostelSearchView(APIView):
         
         Note: Only returns active hostel properties.
         """
-        queryset = Hostel.objects.filter(is_active=True)
+        queryset = Hostel.objects.filter(status='active')
 
         # Apply filters
         search_query = request.query_params.get('search')
@@ -1002,7 +1003,7 @@ class RoomReserveView(APIView):
 
         # Validate room
         try:
-            room = Room.objects.select_related('hostel').get(id=room_id, is_available=True)
+            room = Room.objects.select_related('hostel').get(id=room_id, status='available')
         except Room.DoesNotExist:
             return Response({
                 'error': 'Room not found or not available'
@@ -1071,10 +1072,13 @@ class RoomReserveView(APIView):
 
                 return Response({
                     'reservation_id': reservation.id,
+                    'booking_id': booking.id,
                     'room_id': room_id,
-                    'expires_at': expiry_time,
+                    'expires_at': expiry_time.isoformat(),
+                    'expires_in_seconds': 15 * 60,  # 15 minutes in seconds
                     'reservation_token': str(reservation_token),
-                    'status': 'reserved'
+                    'status': 'reserved',
+                    'countdown_started_at': timezone.now().isoformat()
                 }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
@@ -1142,6 +1146,71 @@ class RoomBookView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class ReservationStatusView(APIView):
+    """Check reservation status and remaining time (Student)"""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, reservation_id):
+        """Get reservation status and countdown information"""
+        try:
+            reservation = RoomReservation.objects.select_related(
+                'booking', 'room', 'student__user'
+            ).get(
+                id=reservation_id,
+                student__user=request.user,
+                is_active=True
+            )
+        except RoomReservation.DoesNotExist:
+            return Response({
+                'error': 'Reservation not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Calculate remaining time
+        now = timezone.now()
+        expiry_time = reservation.expiry_time
+        
+        if expiry_time <= now:
+            # Reservation expired
+            return Response({
+                'reservation_id': reservation.id,
+                'status': 'expired',
+                'expires_at': expiry_time.isoformat(),
+                'expires_in_seconds': 0,
+                'booking': {
+                    'id': reservation.booking.id,
+                    'booking_reference': reservation.booking.booking_reference,
+                    'status': reservation.booking.status
+                },
+                'room': {
+                    'id': reservation.room.id,
+                    'room_number': reservation.room.room_number,
+                    'hostel_name': reservation.room.hostel.name
+                }
+            }, status=status.HTTP_200_OK)
+        
+        # Calculate remaining seconds
+        remaining_seconds = int((expiry_time - now).total_seconds())
+        
+        return Response({
+            'reservation_id': reservation.id,
+            'status': 'active',
+            'expires_at': expiry_time.isoformat(),
+            'expires_in_seconds': remaining_seconds,
+            'countdown_started_at': reservation.created_at.isoformat(),
+            'booking': {
+                'id': reservation.booking.id,
+                'booking_reference': reservation.booking.booking_reference,
+                'status': reservation.booking.status
+            },
+            'room': {
+                'id': reservation.room.id,
+                'room_number': reservation.room.room_number,
+                'hostel_name': reservation.room.hostel.name
+            }
+        }, status=status.HTTP_200_OK)
+
+
 class RoommateMatchingView(APIView):
     """Find compatible roommates for shared rooms"""
 
@@ -1200,10 +1269,10 @@ class RoommateMatchingView(APIView):
 
     def find_potential_roommates(self, room, current_student):
         """Find students who might be compatible roommates"""
-        from accounts.models import StudentProfile
+        from accounts.models import StudentProfile as AccountsStudentProfile
 
         # Get students in the same university
-        potential = StudentProfile.objects.filter(
+        potential = AccountsStudentProfile.objects.filter(
             university=room.hostel.university,
             is_profile_complete=True
         ).exclude(id=current_student.id)

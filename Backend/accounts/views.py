@@ -1785,7 +1785,7 @@ class StudentDashboardView(APIView):
                 'status': booking.status,
                 'total_amount': float(booking.total_amount),
                 'balance_due': float(booking.balance_due),
-                'move_in_date': booking.move_in_date.isoformat() if booking.move_in_date else None,
+                'move_in_date': booking.check_in_date.isoformat() if booking.check_in_date else None,
                 'created_at': booking.created_at.isoformat()
             })
 
@@ -1828,6 +1828,57 @@ class StudentDashboardView(APIView):
             status='success'
         ).aggregate(total=Sum('total_charged_amount'))['total'] or 0
 
+        # Get current/active booking for hostelInfo (used by payments)
+        current_booking = Booking.objects.filter(
+            student=student_profile,
+            status__in=['confirmed', 'reserved']
+        ).select_related('room__hostel').first()
+
+        hostel_info = None
+        if current_booking:
+            hostel_info = {
+                'id': current_booking.room.hostel.id,
+                'name': current_booking.room.hostel.name,
+                'booking_id': current_booking.id,
+                'room_number': current_booking.room.room_number,
+                'total_amount': float(current_booking.total_amount)
+            }
+
+        # Get pending payments/bookings that need payment
+        pending_payments = Booking.objects.filter(
+            student=student_profile,
+            status__in=['pending_payment', 'reserved']
+        ).select_related('room__hostel').order_by('-created_at')
+
+        pending_payments_data = []
+        has_pending_payments = False
+        for booking in pending_payments:
+            balance_due = booking.total_amount - booking.amount_paid
+            if balance_due > 0:
+                has_pending_payments = True
+                pending_payments_data.append({
+                    'booking_id': booking.id,
+                    'booking_reference': booking.booking_reference,
+                    'hostel_name': booking.room.hostel.name,
+                    'room_number': booking.room.room_number,
+                    'amount_due': float(balance_due),
+                    'due_date': booking.check_in_date.isoformat() if booking.check_in_date else None,
+                    'status': booking.status
+                })
+
+        # Get available payment methods
+        from payments.models import SavedPaymentMethod
+        saved_methods = SavedPaymentMethod.objects.filter(
+            student=student_profile,
+            is_active=True
+        ).order_by('-is_default')
+
+        payment_methods = {
+            'available': ['mpesa_stk_push', 'paystack_card'],
+            'saved_count': saved_methods.count(),
+            'default_method': saved_methods.filter(is_default=True).first().last_four if saved_methods.filter(is_default=True).exists() else None
+        }
+
         return Response({
             'profile': {
                 'is_complete': profile_complete,
@@ -1839,10 +1890,15 @@ class StudentDashboardView(APIView):
                 'total_spent': float(total_spent),
                 'unread_notifications': unread_notifications
             },
+            'hostelInfo': hostel_info,  # Include for payment modal compatibility
+            'pending_payments': pending_payments_data,
+            'payment_methods': payment_methods,
             'recent_bookings': bookings_data,
             'recent_payments': payments_data,
             'quick_actions': [
+                {'action': 'make_payment', 'label': 'Make Payment', 'available': has_pending_payments},
                 {'action': 'search_rooms', 'label': 'Find Rooms', 'available': True},
+                {'action': 'setup_payments', 'label': 'Setup Payment Methods', 'available': True},
                 {'action': 'complete_profile', 'label': 'Complete Profile', 'available': not profile_complete},
                 {'action': 'view_receipts', 'label': 'View Receipts', 'available': len(payments_data) > 0},
                 {'action': 'contact_support', 'label': 'Contact Support', 'available': True}
@@ -2598,42 +2654,42 @@ class StudentSecurityLateEntriesView(APIView):
 
 class StudentSecurityVisitorInvitationsView(APIView):
     """Create and manage visitor invitations for students"""
-    
+
     permission_classes = [IsStudent]
-    
+
     def get(self, request):
         """Get visitor invitations for the authenticated student"""
         if request.user.role != 'student':
             return Response({
                 'error': 'Only students can access this endpoint'
             }, status=status.HTTP_403_FORBIDDEN)
-        
+
         try:
             student_profile = request.user.student_profile
         except:
             return Response({
                 'error': 'Student profile not found'
             }, status=status.HTTP_404_NOT_FOUND)
-        
+
         # Get visitor invitations for this student
         invitations = VisitorInvitation.objects.filter(
             student=student_profile
         ).select_related('hostel', 'room', 'approved_by').order_by('-expected_arrival')
-        
+
         # Apply filters
         status_filter = request.query_params.get('status', 'all')
         if status_filter != 'all':
             invitations = invitations.filter(status=status_filter)
-        
+
         # Pagination
         page = int(request.query_params.get('page', 1))
         per_page = int(request.query_params.get('per_page', 10))
         start = (page - 1) * per_page
         end = start + per_page
-        
+
         total_invitations = invitations.count()
         invitations_page = invitations[start:end]
-        
+
         # Format response data
         invitations_data = []
         for invitation in invitations_page:
@@ -2661,7 +2717,7 @@ class StudentSecurityVisitorInvitationsView(APIView):
                 'visit_duration_hours': invitation.visit_duration_hours,
                 'created_at': invitation.created_at.isoformat()
             })
-        
+
         return Response({
             'visitor_invitations': invitations_data,
             'pagination': {
@@ -2676,21 +2732,21 @@ class StudentSecurityVisitorInvitationsView(APIView):
                 'status': status_filter
             }
         }, status=status.HTTP_200_OK)
-    
+
     def post(self, request):
         """Create a new visitor invitation"""
         if request.user.role != 'student':
             return Response({
                 'error': 'Only students can access this endpoint'
             }, status=status.HTTP_403_FORBIDDEN)
-        
+
         try:
             student_profile = request.user.student_profile
         except:
             return Response({
                 'error': 'Student profile not found'
             }, status=status.HTTP_404_NOT_FOUND)
-        
+
         # Get invitation data
         visitor_name = request.data.get('visitor_name')
         visitor_phone = request.data.get('visitor_phone')
@@ -2701,25 +2757,25 @@ class StudentSecurityVisitorInvitationsView(APIView):
         expected_departure = request.data.get('expected_departure')
         special_instructions = request.data.get('special_instructions', '')
         requires_escort = request.data.get('requires_escort', False)
-        
+
         # Validate required fields
         if not all([visitor_name, visitor_phone, visitor_id_number, visitor_relationship, purpose, expected_arrival, expected_departure]):
             return Response({
                 'error': 'All visitor details and timing information are required'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         try:
             # Get student's current room and hostel
             current_occupancy = RoomOccupant.objects.filter(
                 student=student_profile,
                 is_active=True
             ).select_related('room__hostel').first()
-            
+
             if not current_occupancy:
                 return Response({
                     'error': 'No active room assignment found'
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             # Create visitor invitation
             invitation = VisitorInvitation.objects.create(
                 student=student_profile,
@@ -2736,7 +2792,7 @@ class StudentSecurityVisitorInvitationsView(APIView):
                 requires_escort=requires_escort,
                 status='pending'
             )
-            
+
             return Response({
                 'message': 'Visitor invitation created successfully',
                 'invitation_id': invitation.id,
@@ -2745,29 +2801,29 @@ class StudentSecurityVisitorInvitationsView(APIView):
                 'expected_arrival': invitation.expected_arrival.isoformat(),
                 'needs_approval': invitation.caretaker_approval_required
             }, status=status.HTTP_201_CREATED)
-        
+
         except Exception as e:
             return Response({
                 'error': 'Failed to create visitor invitation',
                 'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
     def put(self, request, invitation_id):
         """Update visitor invitation (cancel or modify)"""
         if request.user.role != 'student':
             return Response({
                 'error': 'Only students can access this endpoint'
             }, status=status.HTTP_403_FORBIDDEN)
-        
+
         try:
             student_profile = request.user.student_profile
         except:
             return Response({
                 'error': 'Student profile not found'
             }, status=status.HTTP_404_NOT_FOUND)
-        
+
         action = request.data.get('action')  # 'cancel', 'modify'
-        
+
         try:
             invitation = VisitorInvitation.objects.get(
                 id=invitation_id,
@@ -2777,45 +2833,162 @@ class StudentSecurityVisitorInvitationsView(APIView):
             return Response({
                 'error': 'Visitor invitation not found'
             }, status=status.HTTP_404_NOT_FOUND)
-        
+
         if action == 'cancel':
             if invitation.status in ['checked_in', 'checked_out']:
                 return Response({
                     'error': 'Cannot cancel invitation that has been checked in'
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             invitation.status = 'cancelled'
             invitation.save()
-            
+
             return Response({
                 'message': 'Visitor invitation cancelled successfully',
                 'invitation_id': invitation.id,
                 'status': invitation.status
             }, status=status.HTTP_200_OK)
-        
+
         elif action == 'modify':
             # Allow modification of timing or instructions
             expected_arrival = request.data.get('expected_arrival')
             expected_departure = request.data.get('expected_departure')
             special_instructions = request.data.get('special_instructions')
-            
+
             if expected_arrival:
                 invitation.expected_arrival = expected_arrival
             if expected_departure:
                 invitation.expected_departure = expected_departure
             if special_instructions is not None:
                 invitation.special_instructions = special_instructions
-            
+
             invitation.save()
-            
+
             return Response({
                 'message': 'Visitor invitation updated successfully',
                 'invitation_id': invitation.id,
                 'expected_arrival': invitation.expected_arrival.isoformat(),
                 'expected_departure': invitation.expected_departure.isoformat()
             }, status=status.HTTP_200_OK)
-        
+
         else:
             return Response({
                 'error': 'Invalid action. Must be "cancel" or "modify"'
             }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class StudentSupportTicketsView(APIView):
+    """Get student's support tickets for dashboard"""
+
+    permission_classes = [IsStudent]
+
+    def get(self, request):
+        """Get active support tickets for the student"""
+        try:
+            # Import support models
+            from support_api.models import SupportTicket
+
+            # Get student's active tickets
+            tickets = SupportTicket.objects.filter(
+                created_by=request.user,
+                status__in=['open', 'in_progress', 'pending_response']
+            ).select_related('assigned_to').order_by('-created_at')[:5]  # Limit to 5 for dashboard
+
+            tickets_data = []
+            for ticket in tickets:
+                tickets_data.append({
+                    'id': ticket.id,
+                    'ticket_id': ticket.ticket_id,
+                    'subject': ticket.subject,
+                    'status': ticket.status,
+                    'priority': ticket.priority,
+                    'category': ticket.category,
+                    'created_at': ticket.created_at.isoformat(),
+                    'last_response_at': ticket.last_response_at.isoformat() if ticket.last_response_at else None,
+                    'assigned_to': ticket.assigned_to.user.get_full_name() if ticket.assigned_to else None
+                })
+
+            return Response({
+                'tickets': tickets_data,
+                'total_active': len(tickets_data)
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            # Return empty list if support API is not available
+            return Response({
+                'tickets': [],
+                'total_active': 0
+            }, status=status.HTTP_200_OK)
+
+
+class StudentActivityFeedView(APIView):
+    """Get student's activity feed for dashboard"""
+
+    permission_classes = [IsStudent]
+
+    def get(self, request):
+        """Get recent activity feed for the student"""
+        limit = int(request.query_params.get('limit', 5))
+
+        try:
+            # Get recent activities related to the student
+            activities = []
+
+            # Recent bookings
+            from hostels.models import Booking
+            recent_bookings = Booking.objects.filter(
+                student__user=request.user
+            ).select_related('room__hostel').order_by('-created_at')[:3]
+
+            for booking in recent_bookings:
+                activities.append({
+                    'id': f'booking_{booking.id}',
+                    'type': 'booking',
+                    'title': f'Booking {booking.booking_reference}',
+                    'description': f'Booked room {booking.room.room_number} at {booking.room.hostel.name}',
+                    'timestamp': booking.created_at.isoformat(),
+                    'status': booking.status,
+                    'metadata': {
+                        'booking_id': booking.id,
+                        'hostel_name': booking.room.hostel.name,
+                        'room_number': booking.room.room_number
+                    }
+                })
+
+            # Recent payments
+            from payments.models import Transaction
+            recent_payments = Transaction.objects.filter(
+                student__user=request.user,
+                status='success'
+            ).order_by('-paid_at')[:3]
+
+            for payment in recent_payments:
+                activities.append({
+                    'id': f'payment_{payment.id}',
+                    'type': 'payment',
+                    'title': f'Payment of KES {payment.total_charged_amount}',
+                    'description': f'Payment for {payment.transaction_type} transaction',
+                    'timestamp': payment.paid_at.isoformat() if payment.paid_at else payment.initiated_at.isoformat(),
+                    'status': 'completed',
+                    'metadata': {
+                        'transaction_id': payment.id,
+                        'amount': float(payment.total_charged_amount),
+                        'type': payment.transaction_type
+                    }
+                })
+
+            # Sort by timestamp and limit
+            activities.sort(key=lambda x: x['timestamp'], reverse=True)
+            activities = activities[:limit]
+
+            return Response({
+                'activities': activities,
+                'total': len(activities)
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            # Return empty feed if there's an error
+            return Response({
+                'activities': [],
+                'total': 0
+            }, status=status.HTTP_200_OK)

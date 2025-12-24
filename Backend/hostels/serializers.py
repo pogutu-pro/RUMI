@@ -36,7 +36,7 @@ class HostelSerializer(serializers.ModelSerializer):
             'latitude', 'longitude', 'total_rooms', 'available_rooms',
             'base_price', 'currency', 'rating', 'review_count', 'images',
             'amenities', 'gender_policy', 'distance_from_university',
-            'is_verified', 'landlord_info', 'has_inventory_template'
+            'is_verified', 'landlord_info'
         ]
         read_only_fields = ['id', 'landlord_info', 'rating', 'review_count']
 

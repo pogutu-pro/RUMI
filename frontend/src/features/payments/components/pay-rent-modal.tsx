@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useInitializeMpesaPayment, useMpesaPaymentStatus } from '../hooks/use-payments';
 import { cn } from '@/lib/utils';
+import { axiosInstance as axios } from '@/lib/api/client';
 
 interface PayRentModalProps {
   isOpen: boolean;
@@ -70,13 +71,34 @@ export function PayRentModal({ isOpen, onClose, bookingId, amount, hostelName }:
     }
   }, [statusData]);
 
-  const handleMpesaInit = () => {
+  const handleMpesaInit = async () => {
     if (!phoneNumber || phoneNumber.length < 10) {
       toast.error('Please enter a valid M-Pesa phone number');
       return;
     }
 
-    if (!bookingId || bookingId === 'current') {
+    let actualBookingId = bookingId;
+    
+    // Handle 'current' booking case
+    if (bookingId === 'current') {
+      try {
+        // Try to get the current active booking using the proper API client
+        const dashboardResponse = await axios.get('/accounts/dashboard/');
+        
+        if (dashboardResponse.data?.hostelInfo?.booking_id) {
+          actualBookingId = dashboardResponse.data.hostelInfo.booking_id;
+        } else {
+          toast.error('No active booking found. Please contact support.');
+          return;
+        }
+      } catch (error: any) {
+        console.error('Failed to get current booking:', error);
+        toast.error('Unable to fetch booking information. Please contact support.');
+        return;
+      }
+    }
+
+    if (!actualBookingId) {
       toast.error('Unable to identify booking. Please contact support.');
       console.error('Missing or invalid bookingId:', bookingId);
       return;
@@ -101,11 +123,10 @@ export function PayRentModal({ isOpen, onClose, bookingId, amount, hostelName }:
 
     initializeMpesa(
       {
-        booking_id: bookingId,
+        booking_id: actualBookingId,
         payment_type: 'initial',
         payment_method: 'stk_push',
         phone_number: formattedPhone,
-        amount: finalAmount, // Pass the custom amount
       },
       {
         onSuccess: (data) => {

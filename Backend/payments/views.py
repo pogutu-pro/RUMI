@@ -125,10 +125,14 @@ class PaymentInitializeView(APIView):
             }, status=status.HTTP_403_FORBIDDEN)
 
         # Check if payment already exists
-        if hasattr(booking, 'payment_transaction') and booking.payment_transaction.status == 'success':
-            return Response({
-                'error': 'Payment has already been completed for this booking'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            if hasattr(booking, 'payment_transaction') and booking.payment_transaction.status == 'success':
+                return Response({
+                    'error': 'Payment has already been completed for this booking'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except:
+            # No payment transaction exists, continue with payment
+            pass
 
         try:
             with transaction.atomic():
@@ -157,6 +161,8 @@ class PaymentInitializeView(APIView):
                 # Create transaction record
                 transaction_ref = f"RUMI-{transaction_type.upper()}-{booking.id}-{uuid.uuid4().hex[:8]}"
 
+                # Create transaction with no service fees (revenue via subscriptions)
+                base_rent = booking.monthly_rent if transaction_type == 'initial' else amount
                 transaction_obj = Transaction.objects.create(
                     booking=booking,
                     student=booking.student,
@@ -164,11 +170,11 @@ class PaymentInitializeView(APIView):
                     transaction_reference=transaction_ref,
                     transaction_type=transaction_type,
                     payment_plan='monthly',
-                    base_rent=booking.monthly_rent if transaction_type == 'initial' else amount,
-                    student_service_fee=booking.monthly_rent * Decimal('0.02') if transaction_type == 'initial' else Decimal('0.00'),
-                    total_charged_amount=amount,
-                    landlord_payout_amount=booking.monthly_rent if transaction_type == 'initial' else Decimal('0.00'),
-                    gross_platform_revenue=booking.monthly_rent * Decimal('0.02') if transaction_type == 'initial' else Decimal('0.00'),
+                    base_rent=base_rent,
+                    student_service_fee=Decimal('0.00'),  # No service fee
+                    total_charged_amount=base_rent,  # Total = base rent
+                    landlord_payout_amount=base_rent,  # Landlord gets full amount
+                    gross_platform_revenue=Decimal('0.00'),  # No platform revenue
                     status='pending'
                 )
 
@@ -2021,8 +2027,12 @@ class MpesaPaymentInitializeView(APIView):
             return Response({'error': 'Unauthorized'}, status=403)
         
         # Fast payment status check
-        if hasattr(booking, 'payment_transaction') and booking.payment_transaction.status == 'success':
-            return Response({'error': 'Payment already completed for this booking'}, status=400)
+        try:
+            if hasattr(booking, 'payment_transaction') and booking.payment_transaction.status == 'success':
+                return Response({'error': 'Payment already completed for this booking'}, status=400)
+        except:
+            # No payment transaction exists, continue with payment
+            pass
         
         try:
             # Calculate amount with minimal operations
@@ -2043,6 +2053,7 @@ class MpesaPaymentInitializeView(APIView):
             # Create transaction with minimal fields
             transaction_ref = f"RUMI-{transaction_type.upper()}-{booking.id}-{uuid.uuid4().hex[:8]}"
             
+            # Create transaction with no service fees (revenue via subscriptions)
             transaction_obj = Transaction.objects.create(
                 booking=booking,
                 student=booking.student,
@@ -2052,11 +2063,11 @@ class MpesaPaymentInitializeView(APIView):
                 payment_plan='monthly',
                 payment_method='mpesa',
                 mpesa_payment_type='stk_push',
-                base_rent=booking.monthly_rent if transaction_type == 'initial' else amount,
-                student_service_fee=booking.monthly_rent * Decimal('0.02') if transaction_type == 'initial' else Decimal('0.00'),
-                total_charged_amount=amount,
-                landlord_payout_amount=booking.monthly_rent if transaction_type == 'initial' else Decimal('0.00'),
-                gross_platform_revenue=booking.monthly_rent * Decimal('0.02') if transaction_type == 'initial' else Decimal('0.00'),
+                base_rent=amount,
+                student_service_fee=Decimal('0.00'),  # No service fee
+                total_charged_amount=amount,  # Total = base rent
+                landlord_payout_amount=amount,  # Landlord gets full amount
+                gross_platform_revenue=Decimal('0.00'),  # No platform revenue
                 status='pending'
             )
             

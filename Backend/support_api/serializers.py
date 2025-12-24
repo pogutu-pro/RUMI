@@ -320,8 +320,97 @@ class CaretakerCreateSerializer(serializers.Serializer):
 
 class CaretakerUpdateSerializer(serializers.Serializer):
     """Serializer for updating caretaker information"""
-    
+
     emergency_contact_name = serializers.CharField(max_length=200, required=False)
     emergency_contact_phone = serializers.CharField(max_length=15, required=False)
     permissions = serializers.JSONField(required=False)
     is_active = serializers.BooleanField(required=False)
+
+
+# Tech Support Dashboard Serializers
+
+class TechSupportUserSerializer(serializers.ModelSerializer):
+    """Serializer for users visible to tech support"""
+
+    role_display = serializers.CharField(source='get_role_display', read_only=True)
+    is_verified_display = serializers.CharField(source='get_is_verified_display', read_only=True)
+    date_joined_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'id', 'email', 'first_name', 'last_name', 'role', 'role_display',
+            'is_active', 'is_verified', 'is_verified_display', 'phone_number',
+            'date_joined', 'date_joined_display'
+        ]
+        read_only_fields = ['id', 'email', 'first_name', 'last_name', 'role',
+                           'is_active', 'is_verified', 'phone_number', 'date_joined']
+
+    def get_date_joined_display(self, obj):
+        return obj.date_joined.strftime('%Y-%m-%d')
+
+
+class TechSupportHostelSerializer(serializers.Serializer):
+    """Serializer for hostels visible to tech support"""
+
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    landlord_name = serializers.CharField(read_only=True)
+    location = serializers.CharField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    rooms_count = serializers.IntegerField(read_only=True)
+    is_verified = serializers.BooleanField(read_only=True)
+    city = serializers.CharField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+
+
+class TechSupportTransactionSerializer(serializers.Serializer):
+    """Serializer for transactions visible to tech support"""
+
+    id = serializers.IntegerField(read_only=True)
+    transaction_reference = serializers.CharField(read_only=True)
+    student_name = serializers.CharField(read_only=True)
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    status = serializers.CharField(read_only=True)
+    date = serializers.DateTimeField(read_only=True)
+    type = serializers.CharField(read_only=True)
+    booking_reference = serializers.CharField(read_only=True)
+
+
+class TechSupportLogSerializer(serializers.Serializer):
+    """Serializer for system activity logs visible to tech support"""
+
+    id = serializers.IntegerField(read_only=True)
+    user = serializers.CharField(read_only=True)
+    action = serializers.CharField(read_only=True)
+    details = serializers.CharField(read_only=True)
+    ip_address = serializers.CharField(read_only=True)
+    timestamp = serializers.DateTimeField(read_only=True)
+
+
+class TechSupportMessageSerializer(serializers.Serializer):
+    """Serializer for support messages"""
+
+    id = serializers.IntegerField(read_only=True)
+    sender = serializers.CharField(read_only=True)
+    recipient = serializers.CharField(read_only=True)
+    content = serializers.CharField(read_only=True)
+    timestamp = serializers.DateTimeField(read_only=True)
+    is_read = serializers.BooleanField(read_only=True)
+
+
+class TechSupportStatsSerializer(serializers.Serializer):
+    """Serializer for consolidated tech support statistics"""
+
+    total_users = serializers.IntegerField(read_only=True)
+    active_users = serializers.IntegerField(read_only=True)
+    total_hostels = serializers.IntegerField(read_only=True)
+    verified_hostels = serializers.IntegerField(read_only=True)
+    total_transactions = serializers.IntegerField(read_only=True)
+    successful_transactions = serializers.IntegerField(read_only=True)
+    total_tickets = serializers.IntegerField(read_only=True)
+    open_tickets = serializers.IntegerField(read_only=True)
+    resolved_tickets = serializers.IntegerField(read_only=True)
+    avg_resolution_time = serializers.DecimalField(max_digits=8, decimal_places=2, read_only=True)
+    system_health = serializers.CharField(read_only=True)
+    last_updated = serializers.DateTimeField(read_only=True)

@@ -53,4 +53,8 @@ urlpatterns = [
     path('student/security/late-entries/', views.StudentSecurityLateEntriesView.as_view(), name='student_security_late_entries'),
     path('student/security/visitor-invitations/', views.StudentSecurityVisitorInvitationsView.as_view(), name='student_security_visitor_invitations'),
     path('student/security/visitor-invitations/<int:invitation_id>/', views.StudentSecurityVisitorInvitationsView.as_view(), name='student_security_visitor_invitation_action'),
+
+    # Student dashboard support endpoints
+    path('student/support/tickets/', views.StudentSupportTicketsView.as_view(), name='student_support_tickets'),
+    path('student/activity/feed/', views.StudentActivityFeedView.as_view(), name='student_activity_feed'),
 ]

@@ -2,6 +2,8 @@ from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound, ValidationError
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from django.db import transaction
 from django.utils import timezone
 from django.db.models import Q, Count, Avg
@@ -14,8 +16,12 @@ from .serializers import (
     SupportResponseSerializer, SupportResponseCreateSerializer, TechSupportProfileSerializer,
     TechSupportProfileCreateSerializer, TicketActivityLogSerializer, TicketEscalationSerializer,
     TicketResolutionSerializer, TicketAssignmentSerializer, SupportTicketStatsSerializer,
-    CaretakerCreateSerializer, CaretakerUpdateSerializer
+    CaretakerCreateSerializer, CaretakerUpdateSerializer, TechSupportUserSerializer,
+    TechSupportHostelSerializer, TechSupportTransactionSerializer, TechSupportLogSerializer,
+    TechSupportMessageSerializer, TechSupportStatsSerializer
 )
+from home.models import BlogPost
+from home.serializers import BlogPostSerializer, BlogPostCreateSerializer, BlogPostUpdateSerializer
 from .permissions import (
     CanCreateSupportTicket, CanViewOwnSupportTicket, CanViewAssignedSupportTicket,
     CanManageSupportTicket, CanEscalateTicket, CanResolveTicket, CanCreateTechSupportUser,
@@ -1020,13 +1026,183 @@ class SystemHealthView(APIView):
         return Response({'status': 'healthy', 'timestamp': timezone.now().isoformat()})
 
 
-class SystemLogsView(APIView):
-    """System Logs API"""
-    permission_classes = [permissions.IsAuthenticated]
-    
+class TechSupportLogsView(APIView):
+    """
+    Tech Support System Logs API
+
+    Provides access to system activity logs for tech support monitoring.
+
+    GET: List system logs with filtering options
+
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin only
+
+    Query Parameters:
+    - page: Page number for pagination (default: 1)
+    - per_page: Items per page (default: 50, max: 200)
+    - action: Filter by action type
+    - user: Filter by user ID
+    - date_from: Filter logs from date (YYYY-MM-DD)
+    - date_to: Filter logs to date (YYYY-MM-DD)
+    - search: Search in action or description
+    """
+
+    permission_classes = [permissions.IsAuthenticated, CanViewTechSupportDashboard]
+
+    @swagger_auto_schema(
+        operation_description="List system activity logs for tech support monitoring",
+        operation_summary="Get System Logs",
+        manual_parameters=[
+            openapi.Parameter(
+                'page',
+                openapi.IN_QUERY,
+                description="Page number for pagination",
+                type=openapi.TYPE_INTEGER,
+                default=1
+            ),
+            openapi.Parameter(
+                'per_page',
+                openapi.IN_QUERY,
+                description="Items per page (max 200)",
+                type=openapi.TYPE_INTEGER,
+                default=50
+            ),
+            openapi.Parameter(
+                'action',
+                openapi.IN_QUERY,
+                description="Filter by action type",
+                type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'user',
+                openapi.IN_QUERY,
+                description="Filter by user ID",
+                type=openapi.TYPE_INTEGER
+            ),
+            openapi.Parameter(
+                'date_from',
+                openapi.IN_QUERY,
+                description="Filter logs from date (YYYY-MM-DD)",
+                type=openapi.TYPE_STRING,
+                format="date"
+            ),
+            openapi.Parameter(
+                'date_to',
+                openapi.IN_QUERY,
+                description="Filter logs to date (YYYY-MM-DD)",
+                type=openapi.TYPE_STRING,
+                format="date"
+            ),
+            openapi.Parameter(
+                'search',
+                openapi.IN_QUERY,
+                description="Search in action or description",
+                type=openapi.TYPE_STRING
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="System logs with pagination",
+                examples={
+                    "application/json": {
+                        "logs": [
+                            {
+                                "id": 1,
+                                "user": "John Doe",
+                                "action": "ticket_created",
+                                "details": "New support ticket created",
+                                "ip_address": "N/A",
+                                "timestamp": "2025-12-24T12:00:00Z"
+                            }
+                        ],
+                        "pagination": {
+                            "current_page": 1,
+                            "total_pages": 10,
+                            "total_count": 500,
+                            "has_next": True,
+                            "has_previous": False
+                        }
+                    }
+                }
+            ),
+            401: "Unauthorized",
+            403: "Forbidden - Insufficient permissions",
+            500: "Internal server error"
+        },
+        tags=['Tech Support Dashboard']
+    )
+
     def get(self, request):
-        """Get system logs"""
-        return Response({'logs': 'System logs endpoint - implement as needed'})
+        """
+        List System Activity Logs
+
+        Get paginated system activity logs visible to tech support.
+        Filters out sensitive admin actions and shows user-facing activities.
+
+        Returns activity logs to help tech support monitor system usage.
+        """
+        try:
+            from django.core.paginator import Paginator
+
+            page = int(request.GET.get('page', 1))
+            per_page = min(int(request.GET.get('per_page', 50)), 200)  # Max 200 per page
+            action_filter = request.GET.get('action')
+            user_filter = request.GET.get('user')
+            date_from = request.GET.get('date_from')
+            date_to = request.GET.get('date_to')
+            search = request.GET.get('search')
+
+            # Base queryset - ticket activity logs (safe for tech support)
+            queryset = TicketActivityLog.objects.select_related('ticket', 'performed_by').order_by('-created_at')
+
+            # Apply filters
+            if action_filter:
+                queryset = queryset.filter(action=action_filter)
+            if user_filter:
+                queryset = queryset.filter(performed_by__id=user_filter)
+            if date_from:
+                queryset = queryset.filter(created_at__date__gte=date_from)
+            if date_to:
+                queryset = queryset.filter(created_at__date__lte=date_to)
+            if search:
+                queryset = queryset.filter(
+                    Q(action__icontains=search) |
+                    Q(description__icontains=search)
+                )
+
+            # Paginate
+            paginator = Paginator(queryset, per_page)
+            page_obj = paginator.get_page(page)
+
+            # Serialize logs
+            logs_data = []
+            for log in page_obj:
+                logs_data.append({
+                    'id': log.id,
+                    'user': log.performed_by.get_full_name() if log.performed_by else 'System',
+                    'action': log.action,
+                    'details': log.description,
+                    'ip_address': 'N/A',  # IP logging not implemented yet
+                    'timestamp': log.created_at.isoformat()
+                })
+
+            return Response({
+                'logs': logs_data,
+                'pagination': {
+                    'current_page': page,
+                    'total_pages': paginator.num_pages,
+                    'total_count': paginator.count,
+                    'has_next': page_obj.has_next(),
+                    'has_previous': page_obj.has_previous()
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Error retrieving system logs: {str(e)}")
+            return Response(
+                {'error': 'Failed to retrieve system logs'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class SystemMaintenanceView(APIView):
@@ -1056,13 +1232,159 @@ class SystemBackupView(APIView):
         return Response({'message': 'System backup initiated'})
 
 
-class UserSupportView(APIView):
-    """User Support API"""
-    permission_classes = [permissions.IsAuthenticated]
-    
+class TechSupportUserVisibilityView(APIView):
+    """
+    Tech Support User Visibility API
+
+    Provides read-only access to user information for tech support purposes.
+
+    GET: List users with filtering options for support ticket context
+
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin only
+
+    Query Parameters:
+    - page: Page number for pagination (default: 1)
+    - per_page: Items per page (default: 20, max: 100)
+    - role: Filter by user role (student, landlord, caretaker)
+    - is_verified: Filter by verification status (true/false)
+    - search: Search in name or email
+    """
+
+    permission_classes = [permissions.IsAuthenticated, CanViewTechSupportDashboard]
+
+    @swagger_auto_schema(
+        operation_description="List users visible to tech support for ticket context",
+        operation_summary="Get Users for Support",
+        manual_parameters=[
+            openapi.Parameter(
+                'page',
+                openapi.IN_QUERY,
+                description="Page number for pagination",
+                type=openapi.TYPE_INTEGER,
+                default=1
+            ),
+            openapi.Parameter(
+                'per_page',
+                openapi.IN_QUERY,
+                description="Items per page (max 100)",
+                type=openapi.TYPE_INTEGER,
+                default=20
+            ),
+            openapi.Parameter(
+                'role',
+                openapi.IN_QUERY,
+                description="Filter by user role",
+                type=openapi.TYPE_STRING,
+                enum=['student', 'landlord', 'caretaker']
+            ),
+            openapi.Parameter(
+                'is_verified',
+                openapi.IN_QUERY,
+                description="Filter by verification status",
+                type=openapi.TYPE_BOOLEAN
+            ),
+            openapi.Parameter(
+                'search',
+                openapi.IN_QUERY,
+                description="Search in first name, last name, or email",
+                type=openapi.TYPE_STRING
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Users list with pagination",
+                examples={
+                    "application/json": {
+                        "users": [
+                            {
+                                "id": 1,
+                                "email": "user@example.com",
+                                "first_name": "John",
+                                "last_name": "Doe",
+                                "role": "student",
+                                "is_active": True,
+                                "is_verified": True,
+                                "phone_number": "+1234567890",
+                                "date_joined": "2025-01-01",
+                                "date_joined_display": "2025-01-01"
+                            }
+                        ],
+                        "pagination": {
+                            "current_page": 1,
+                            "total_pages": 5,
+                            "total_count": 100,
+                            "has_next": True,
+                            "has_previous": False
+                        }
+                    }
+                }
+            ),
+            401: "Unauthorized",
+            403: "Forbidden - Insufficient permissions",
+            500: "Internal server error"
+        },
+        tags=['Tech Support Dashboard']
+    )
+
     def get(self, request):
-        """Get user support operations"""
-        return Response({'users': 'User support endpoint - implement as needed'})
+        """
+        List Users for Tech Support
+
+        Get a paginated list of users visible to tech support for ticket context.
+        Excludes sensitive information like passwords and full financial data.
+
+        Returns basic user information to help tech support understand ticket context.
+        """
+        try:
+            from accounts.models import User
+            from django.core.paginator import Paginator
+
+            page = int(request.GET.get('page', 1))
+            per_page = min(int(request.GET.get('per_page', 20)), 100)  # Max 100 per page
+            role_filter = request.GET.get('role')
+            verified_filter = request.GET.get('is_verified')
+            search = request.GET.get('search')
+
+            # Base queryset - all users (tech support needs visibility for support)
+            queryset = User.objects.all().order_by('-date_joined')
+
+            # Apply filters
+            if role_filter:
+                queryset = queryset.filter(role=role_filter)
+            if verified_filter is not None:
+                is_verified = verified_filter.lower() == 'true'
+                queryset = queryset.filter(is_verified=is_verified)
+            if search:
+                queryset = queryset.filter(
+                    Q(first_name__icontains=search) |
+                    Q(last_name__icontains=search) |
+                    Q(email__icontains=search)
+                )
+
+            # Paginate
+            paginator = Paginator(queryset, per_page)
+            page_obj = paginator.get_page(page)
+
+            serializer = TechSupportUserSerializer(page_obj, many=True)
+
+            return Response({
+                'users': serializer.data,
+                'pagination': {
+                    'current_page': page,
+                    'total_pages': paginator.num_pages,
+                    'total_count': paginator.count,
+                    'has_next': page_obj.has_next(),
+                    'has_previous': page_obj.has_previous()
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Error listing users for tech support: {str(e)}")
+            return Response(
+                {'error': 'Failed to retrieve users'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class UserSupportDetailView(APIView):
@@ -1083,13 +1405,188 @@ class UserPasswordResetView(APIView):
         return Response({'message': f'Password reset initiated for user {user_id}'})
 
 
-class PaymentSupportView(APIView):
-    """Payment Support API"""
-    permission_classes = [permissions.IsAuthenticated]
-    
+class TechSupportTransactionView(APIView):
+    """
+    Tech Support Transaction Visibility API
+
+    Provides read-only access to transaction information for payment dispute handling.
+
+    GET: List transactions with filtering options
+
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin only
+
+    Query Parameters:
+    - page: Page number for pagination (default: 1)
+    - per_page: Items per page (default: 20, max: 100)
+    - status: Filter by transaction status
+    - type: Filter by transaction type
+    - date_from: Filter transactions from date (YYYY-MM-DD)
+    - date_to: Filter transactions to date (YYYY-MM-DD)
+    - student_name: Search by student name
+    """
+
+    permission_classes = [permissions.IsAuthenticated, CanViewTechSupportDashboard]
+
+    @swagger_auto_schema(
+        operation_description="List transactions for payment dispute handling",
+        operation_summary="Get Transactions for Support",
+        manual_parameters=[
+            openapi.Parameter(
+                'page',
+                openapi.IN_QUERY,
+                description="Page number for pagination",
+                type=openapi.TYPE_INTEGER,
+                default=1
+            ),
+            openapi.Parameter(
+                'per_page',
+                openapi.IN_QUERY,
+                description="Items per page (max 100)",
+                type=openapi.TYPE_INTEGER,
+                default=20
+            ),
+            openapi.Parameter(
+                'status',
+                openapi.IN_QUERY,
+                description="Filter by transaction status",
+                type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'type',
+                openapi.IN_QUERY,
+                description="Filter by transaction type",
+                type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'date_from',
+                openapi.IN_QUERY,
+                description="Filter transactions from date (YYYY-MM-DD)",
+                type=openapi.TYPE_STRING,
+                format="date"
+            ),
+            openapi.Parameter(
+                'date_to',
+                openapi.IN_QUERY,
+                description="Filter transactions to date (YYYY-MM-DD)",
+                type=openapi.TYPE_STRING,
+                format="date"
+            ),
+            openapi.Parameter(
+                'student_name',
+                openapi.IN_QUERY,
+                description="Search by student name",
+                type=openapi.TYPE_STRING
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Transactions list with pagination",
+                examples={
+                    "application/json": {
+                        "transactions": [
+                            {
+                                "id": 1,
+                                "transaction_reference": "TXN-123456",
+                                "student_name": "John Doe",
+                                "amount": 1500.00,
+                                "status": "success",
+                                "date": "2025-12-24T12:00:00Z",
+                                "type": "booking_payment",
+                                "booking_reference": "BK-789"
+                            }
+                        ],
+                        "pagination": {
+                            "current_page": 1,
+                            "total_pages": 5,
+                            "total_count": 100,
+                            "has_next": True,
+                            "has_previous": False
+                        }
+                    }
+                }
+            ),
+            401: "Unauthorized",
+            403: "Forbidden - Insufficient permissions",
+            500: "Internal server error"
+        },
+        tags=['Tech Support Dashboard']
+    )
+
     def get(self, request):
-        """Get payment support operations"""
-        return Response({'payments': 'Payment support endpoint - implement as needed'})
+        """
+        List Transactions for Tech Support
+
+        Get paginated list of transactions visible to tech support for dispute handling.
+        Masks sensitive payment details and shows only necessary information.
+
+        Returns transaction data to help tech support handle payment disputes.
+        """
+        try:
+            from payments.models import Transaction
+            from django.core.paginator import Paginator
+
+            page = int(request.GET.get('page', 1))
+            per_page = min(int(request.GET.get('per_page', 20)), 100)  # Max 100 per page
+            status_filter = request.GET.get('status')
+            type_filter = request.GET.get('type')
+            date_from = request.GET.get('date_from')
+            date_to = request.GET.get('date_to')
+            student_search = request.GET.get('student_name')
+
+            # Base queryset - transactions (mask sensitive data)
+            queryset = Transaction.objects.select_related('booking__student').order_by('-created_at')
+
+            # Apply filters
+            if status_filter:
+                queryset = queryset.filter(status=status_filter)
+            if type_filter:
+                queryset = queryset.filter(transaction_type=type_filter)
+            if date_from:
+                queryset = queryset.filter(created_at__date__gte=date_from)
+            if date_to:
+                queryset = queryset.filter(created_at__date__lte=date_to)
+            if student_search:
+                queryset = queryset.filter(
+                    Q(booking__student__first_name__icontains=student_search) |
+                    Q(booking__student__last_name__icontains=student_search)
+                )
+
+            # Paginate
+            paginator = Paginator(queryset, per_page)
+            page_obj = paginator.get_page(page)
+
+            # Serialize transactions with masked data
+            transactions_data = []
+            for transaction in page_obj:
+                transactions_data.append({
+                    'id': transaction.id,
+                    'transaction_reference': transaction.transaction_reference,
+                    'student_name': f"{transaction.booking.student.first_name} {transaction.booking.student.last_name}" if transaction.booking and transaction.booking.student else 'N/A',
+                    'amount': float(transaction.amount),
+                    'status': transaction.status,
+                    'date': transaction.created_at.isoformat(),
+                    'type': transaction.transaction_type,
+                    'booking_reference': transaction.booking.booking_reference if transaction.booking else 'N/A'
+                })
+
+            return Response({
+                'transactions': transactions_data,
+                'pagination': {
+                    'current_page': page,
+                    'total_pages': paginator.num_pages,
+                    'total_count': paginator.count,
+                    'has_next': page_obj.has_next(),
+                    'has_previous': page_obj.has_previous()
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Error retrieving transactions for tech support: {str(e)}")
+            return Response(
+                {'error': 'Failed to retrieve transactions'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class PaymentDisputeSupportView(APIView):
@@ -1104,10 +1601,587 @@ class PaymentDisputeSupportView(APIView):
 class PaymentRefundSupportView(APIView):
     """Payment Refund Support API"""
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def get(self, request):
         """Get payment refund support"""
         return Response({'refunds': 'Payment refund support endpoint - implement as needed'})
+
+
+class TechSupportMessagingView(APIView):
+    """
+    Tech Support Messaging API
+
+    Provides messaging functionality between tech support and users.
+
+    GET: List messages/conversations
+    POST: Send message to user
+
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin only
+
+    Query Parameters:
+    - page: Page number for pagination (default: 1)
+    - per_page: Items per page (default: 20, max: 100)
+    - user_id: Filter messages by specific user
+    - ticket_id: Filter messages by ticket
+    - unread_only: Show only unread messages (true/false)
+    """
+
+    permission_classes = [permissions.IsAuthenticated, CanViewTechSupportDashboard]
+
+    @swagger_auto_schema(
+        operation_description="List support messages and conversations",
+        operation_summary="Get Support Messages",
+        manual_parameters=[
+            openapi.Parameter(
+                'page',
+                openapi.IN_QUERY,
+                description="Page number for pagination",
+                type=openapi.TYPE_INTEGER,
+                default=1
+            ),
+            openapi.Parameter(
+                'per_page',
+                openapi.IN_QUERY,
+                description="Items per page (max 100)",
+                type=openapi.TYPE_INTEGER,
+                default=20
+            ),
+            openapi.Parameter(
+                'user_id',
+                openapi.IN_QUERY,
+                description="Filter messages by specific user ID",
+                type=openapi.TYPE_INTEGER
+            ),
+            openapi.Parameter(
+                'ticket_id',
+                openapi.IN_QUERY,
+                description="Filter messages by ticket ID",
+                type=openapi.TYPE_INTEGER
+            ),
+            openapi.Parameter(
+                'unread_only',
+                openapi.IN_QUERY,
+                description="Show only unread messages",
+                type=openapi.TYPE_BOOLEAN
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Messages list with pagination",
+                examples={
+                    "application/json": {
+                        "messages": [
+                            {
+                                "id": 1,
+                                "sender": "Support Team",
+                                "recipient": "John Doe",
+                                "content": "Your ticket has been updated",
+                                "timestamp": "2025-12-24T12:00:00Z",
+                                "is_read": True,
+                                "ticket_id": 123,
+                                "ticket_subject": "Login Issue"
+                            }
+                        ],
+                        "pagination": {
+                            "current_page": 1,
+                            "total_pages": 2,
+                            "total_count": 25,
+                            "has_next": True,
+                            "has_previous": False
+                        }
+                    }
+                }
+            ),
+            401: "Unauthorized",
+            403: "Forbidden - Insufficient permissions",
+            500: "Internal server error"
+        },
+        tags=['Tech Support Dashboard']
+    )
+    def get(self, request):
+        """
+        List Support Messages
+
+        Get paginated list of messages between tech support and users.
+        Currently uses ticket responses as the message system.
+
+        Returns message data for support communication tracking.
+        """
+        try:
+            from django.core.paginator import Paginator
+
+            page = int(request.GET.get('page', 1))
+            per_page = min(int(request.GET.get('per_page', 20)), 100)  # Max 100 per page
+            user_id = request.GET.get('user_id')
+            ticket_id = request.GET.get('ticket_id')
+            unread_only = request.GET.get('unread_only', '').lower() == 'true'
+
+            # Base queryset - support responses (acting as messages)
+            queryset = SupportResponse.objects.select_related(
+                'ticket', 'responder', 'ticket__created_by'
+            ).order_by('-created_at')
+
+            # Apply filters
+            if user_id:
+                queryset = queryset.filter(
+                    Q(ticket__created_by__id=user_id) | Q(responder__id=user_id)
+                )
+            if ticket_id:
+                queryset = queryset.filter(ticket__id=ticket_id)
+            if unread_only:
+                # For now, assume all messages are read (no read status tracking yet)
+                queryset = queryset.none()
+
+            # Paginate
+            paginator = Paginator(queryset, per_page)
+            page_obj = paginator.get_page(page)
+
+            # Serialize messages
+            messages_data = []
+            for response in page_obj:
+                messages_data.append({
+                    'id': response.id,
+                    'sender': response.responder.get_full_name(),
+                    'recipient': response.ticket.created_by.get_full_name(),
+                    'content': response.message,
+                    'timestamp': response.created_at.isoformat(),
+                    'is_read': True,  # Placeholder - no read status tracking yet
+                    'ticket_id': response.ticket.id,
+                    'ticket_subject': response.ticket.title
+                })
+
+            return Response({
+                'messages': messages_data,
+                'pagination': {
+                    'current_page': page,
+                    'total_pages': paginator.num_pages,
+                    'total_count': paginator.count,
+                    'has_next': page_obj.has_next(),
+                    'has_previous': page_obj.has_previous()
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Error retrieving messages for tech support: {str(e)}")
+            return Response(
+                {'error': 'Failed to retrieve messages'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @swagger_auto_schema(
+        operation_description="Send a message to a user through the support system",
+        operation_summary="Send Support Message",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['user_id', 'content'],
+            properties={
+                'user_id': openapi.Schema(
+                    type=openapi.TYPE_INTEGER,
+                    description="ID of the user to message"
+                ),
+                'content': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description="Message content"
+                ),
+                'ticket_id': openapi.Schema(
+                    type=openapi.TYPE_INTEGER,
+                    description="Optional ticket ID to associate with"
+                ),
+            }
+        ),
+        responses={
+            201: openapi.Response(
+                description="Message sent successfully",
+                examples={
+                    "application/json": {
+                        "message": "Message sent successfully",
+                        "ticket_id": 123
+                    }
+                }
+            ),
+            400: "Bad Request - Invalid data",
+            401: "Unauthorized",
+            403: "Forbidden - Insufficient permissions",
+            404: "User not found",
+            500: "Internal server error"
+        },
+        tags=['Tech Support Dashboard']
+    )
+    def post(self, request):
+        """
+        Send Message to User
+
+        Send a message to a specific user through the support system.
+        Currently creates a ticket response (internal note) that can be viewed by the user.
+
+        Required Fields:
+        - user_id: ID of the user to message
+        - content: Message content
+        - ticket_id: Optional ticket ID to associate with (creates new ticket if not provided)
+        """
+        try:
+            from django.core.paginator import Paginator
+
+            page = int(request.GET.get('page', 1))
+            per_page = min(int(request.GET.get('per_page', 20)), 100)  # Max 100 per page
+            user_id = request.GET.get('user_id')
+            ticket_id = request.GET.get('ticket_id')
+            unread_only = request.GET.get('unread_only', '').lower() == 'true'
+
+            # Base queryset - support responses (acting as messages)
+            queryset = SupportResponse.objects.select_related(
+                'ticket', 'responder', 'ticket__created_by'
+            ).order_by('-created_at')
+
+            # Apply filters
+            if user_id:
+                queryset = queryset.filter(
+                    Q(ticket__created_by__id=user_id) | Q(responder__id=user_id)
+                )
+            if ticket_id:
+                queryset = queryset.filter(ticket__id=ticket_id)
+            if unread_only:
+                # For now, assume all messages are read (no read status tracking yet)
+                queryset = queryset.none()
+
+            # Paginate
+            paginator = Paginator(queryset, per_page)
+            page_obj = paginator.get_page(page)
+
+            # Serialize messages
+            messages_data = []
+            for response in page_obj:
+                messages_data.append({
+                    'id': response.id,
+                    'sender': response.responder.get_full_name(),
+                    'recipient': response.ticket.created_by.get_full_name(),
+                    'content': response.message,
+                    'timestamp': response.created_at.isoformat(),
+                    'is_read': True,  # Placeholder - no read status tracking yet
+                    'ticket_id': response.ticket.id,
+                    'ticket_subject': response.ticket.title
+                })
+
+            return Response({
+                'messages': messages_data,
+                'pagination': {
+                    'current_page': page,
+                    'total_pages': paginator.num_pages,
+                    'total_count': paginator.count,
+                    'has_next': page_obj.has_next(),
+                    'has_previous': page_obj.has_previous()
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Error retrieving messages for tech support: {str(e)}")
+            return Response(
+                {'error': 'Failed to retrieve messages'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+
+class TechSupportStatsView(APIView):
+    """
+    Tech Support Consolidated Statistics API
+
+    Provides comprehensive statistics for the tech support dashboard.
+
+    GET: Get consolidated dashboard statistics
+
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin only
+
+    Returns combined statistics from tickets, users, hostels, and transactions.
+    """
+
+    permission_classes = [permissions.IsAuthenticated, CanViewTechSupportDashboard]
+
+    @swagger_auto_schema(
+        operation_description="Get consolidated statistics for tech support dashboard",
+        operation_summary="Get Dashboard Statistics",
+        responses={
+            200: openapi.Response(
+                description="Consolidated dashboard statistics",
+                examples={
+                    "application/json": {
+                        "total_users": 150,
+                        "active_users": 120,
+                        "total_hostels": 25,
+                        "verified_hostels": 20,
+                        "total_transactions": 500,
+                        "successful_transactions": 450,
+                        "total_tickets": 75,
+                        "open_tickets": 15,
+                        "resolved_tickets": 50,
+                        "avg_resolution_time": 4.2,
+                        "system_health": "operational",
+                        "last_updated": "2025-12-24T12:00:00Z"
+                    }
+                }
+            ),
+            401: "Unauthorized",
+            403: "Forbidden - Insufficient permissions",
+            500: "Internal server error"
+        },
+        tags=['Tech Support Dashboard']
+    )
+
+    def get(self, request):
+        """
+        Get Consolidated Tech Support Statistics
+
+        Returns comprehensive statistics combining:
+        - User statistics
+        - Hostel statistics
+        - Transaction statistics
+        - Ticket statistics
+        - System health metrics
+        """
+        try:
+            from accounts.models import User
+            from hostels.models import Hostel
+            from payments.models import Transaction
+
+            # User statistics
+            total_users = User.objects.count()
+            active_users = User.objects.filter(is_active=True).count()
+
+            # Hostel statistics
+            total_hostels = Hostel.objects.count()
+            verified_hostels = Hostel.objects.filter(is_verified=True).count()
+
+            # Transaction statistics
+            total_transactions = Transaction.objects.count()
+            successful_transactions = Transaction.objects.filter(status='success').count()
+
+            # Ticket statistics (reuse existing logic)
+            ticket_queryset = SupportTicket.objects.all()
+            total_tickets = ticket_queryset.count()
+            open_tickets = ticket_queryset.filter(status='open').count()
+            resolved_tickets = ticket_queryset.filter(status='resolved').count()
+
+            # Average resolution time
+            resolved_with_time = ticket_queryset.filter(resolved_at__isnull=False)
+            avg_resolution_time = 0
+            if resolved_with_time.exists():
+                try:
+                    avg_resolution_hours = resolved_with_time.extra(
+                        select={'resolution_hours': 'EXTRACT(EPOCH FROM (resolved_at - created_at))/3600'}
+                    ).aggregate(avg_hours=Avg('resolution_hours'))['avg_hours'] or 0
+                    avg_resolution_time = round(float(avg_resolution_hours), 2)
+                except:
+                    avg_resolution_time = 0
+
+            # System health (simplified)
+            system_health = "operational"  # Could be expanded with actual health checks
+
+            data = {
+                'total_users': total_users,
+                'active_users': active_users,
+                'total_hostels': total_hostels,
+                'verified_hostels': verified_hostels,
+                'total_transactions': total_transactions,
+                'successful_transactions': successful_transactions,
+                'total_tickets': total_tickets,
+                'open_tickets': open_tickets,
+                'resolved_tickets': resolved_tickets,
+                'avg_resolution_time': avg_resolution_time,
+                'system_health': system_health,
+                'last_updated': timezone.now().isoformat()
+            }
+
+            serializer = TechSupportStatsSerializer(data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Error generating consolidated stats: {str(e)}")
+            return Response(
+                {'error': 'Failed to generate statistics'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class TechSupportHostelManagementView(APIView):
+    """
+    Tech Support Hostel Visibility API
+
+    Provides read-only access to hostel information for support ticket context.
+
+    GET: List hostels with filtering options
+
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin only
+
+    Query Parameters:
+    - page: Page number for pagination (default: 1)
+    - per_page: Items per page (default: 20, max: 100)
+    - status: Filter by hostel status (pending, active, hidden, flagged)
+    - is_verified: Filter by verification status (true/false)
+    - search: Search in hostel name or location
+    - landlord: Filter by landlord name
+    """
+
+    permission_classes = [permissions.IsAuthenticated, CanViewTechSupportDashboard]
+
+    @swagger_auto_schema(
+        operation_description="List hostels for support ticket context",
+        operation_summary="Get Hostels for Support",
+        manual_parameters=[
+            openapi.Parameter(
+                'page',
+                openapi.IN_QUERY,
+                description="Page number for pagination",
+                type=openapi.TYPE_INTEGER,
+                default=1
+            ),
+            openapi.Parameter(
+                'per_page',
+                openapi.IN_QUERY,
+                description="Items per page (max 100)",
+                type=openapi.TYPE_INTEGER,
+                default=20
+            ),
+            openapi.Parameter(
+                'status',
+                openapi.IN_QUERY,
+                description="Filter by hostel status",
+                type=openapi.TYPE_STRING,
+                enum=['pending', 'active', 'hidden', 'flagged']
+            ),
+            openapi.Parameter(
+                'is_verified',
+                openapi.IN_QUERY,
+                description="Filter by verification status",
+                type=openapi.TYPE_BOOLEAN
+            ),
+            openapi.Parameter(
+                'search',
+                openapi.IN_QUERY,
+                description="Search in hostel name, location, or city",
+                type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'landlord',
+                openapi.IN_QUERY,
+                description="Filter by landlord name",
+                type=openapi.TYPE_STRING
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Hostels list with pagination",
+                examples={
+                    "application/json": {
+                        "hostels": [
+                            {
+                                "id": 1,
+                                "name": "Sunset Hostel",
+                                "landlord_name": "Jane Smith",
+                                "location": "Westlands, Nairobi",
+                                "status": "active",
+                                "rooms_count": 25,
+                                "is_verified": True,
+                                "city": "Nairobi",
+                                "created_at": "2025-01-15T10:00:00Z"
+                            }
+                        ],
+                        "pagination": {
+                            "current_page": 1,
+                            "total_pages": 3,
+                            "total_count": 50,
+                            "has_next": True,
+                            "has_previous": False
+                        }
+                    }
+                }
+            ),
+            401: "Unauthorized",
+            403: "Forbidden - Insufficient permissions",
+            500: "Internal server error"
+        },
+        tags=['Tech Support Dashboard']
+    )
+
+    def get(self, request):
+        """
+        List Hostels for Tech Support
+
+        Get paginated list of hostels visible to tech support for ticket context.
+        Includes basic hostel information and landlord contact details.
+
+        Returns hostel data to help tech support understand ticket context.
+        """
+        try:
+            from hostels.models import Hostel
+            from django.core.paginator import Paginator
+
+            page = int(request.GET.get('page', 1))
+            per_page = min(int(request.GET.get('per_page', 20)), 100)  # Max 100 per page
+            status_filter = request.GET.get('status')
+            verified_filter = request.GET.get('is_verified')
+            search = request.GET.get('search')
+            landlord_filter = request.GET.get('landlord')
+
+            # Base queryset - all hostels (tech support needs visibility)
+            queryset = Hostel.objects.select_related('landlord').order_by('-created_at')
+
+            # Apply filters
+            if status_filter:
+                queryset = queryset.filter(status=status_filter)
+            if verified_filter is not None:
+                is_verified = verified_filter.lower() == 'true'
+                queryset = queryset.filter(is_verified=is_verified)
+            if search:
+                queryset = queryset.filter(
+                    Q(name__icontains=search) |
+                    Q(location__icontains=search) |
+                    Q(city__icontains=search)
+                )
+            if landlord_filter:
+                queryset = queryset.filter(
+                    Q(landlord__first_name__icontains=landlord_filter) |
+                    Q(landlord__last_name__icontains=landlord_filter)
+                )
+
+            # Paginate
+            paginator = Paginator(queryset, per_page)
+            page_obj = paginator.get_page(page)
+
+            # Serialize hostels
+            hostels_data = []
+            for hostel in page_obj:
+                hostels_data.append({
+                    'id': hostel.id,
+                    'name': hostel.name,
+                    'landlord_name': f"{hostel.landlord.first_name} {hostel.landlord.last_name}" if hostel.landlord else 'N/A',
+                    'location': hostel.location,
+                    'status': hostel.status,
+                    'rooms_count': hostel.rooms.count(),
+                    'is_verified': hostel.is_verified,
+                    'city': hostel.city,
+                    'created_at': hostel.created_at.isoformat()
+                })
+
+            return Response({
+                'hostels': hostels_data,
+                'pagination': {
+                    'current_page': page,
+                    'total_pages': paginator.num_pages,
+                    'total_count': paginator.count,
+                    'has_next': page_obj.has_next(),
+                    'has_previous': page_obj.has_previous()
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Error retrieving hostels for tech support: {str(e)}")
+            return Response(
+                {'error': 'Failed to retrieve hostels'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class SystemPerformanceView(APIView):
@@ -1131,7 +2205,377 @@ class SystemErrorAnalyticsView(APIView):
 class SystemUsageAnalyticsView(APIView):
     """System Usage Analytics API"""
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def get(self, request):
         """Get system usage analytics"""
         return Response({'usage': 'System usage analytics endpoint - implement as needed'})
+
+
+# Blog Management Views for Tech Support
+class BlogPostListView(APIView):
+    """
+    Blog Post List API for Tech Support
+
+    GET: List all blog posts with filtering and pagination
+    POST: Create new blog post (redirects to create endpoint)
+
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="List all blog posts with filtering and pagination",
+        operation_summary="Get Blog Posts",
+        manual_parameters=[
+            openapi.Parameter(
+                'page',
+                openapi.IN_QUERY,
+                description="Page number",
+                type=openapi.TYPE_INTEGER,
+                default=1
+            ),
+            openapi.Parameter(
+                'per_page',
+                openapi.IN_QUERY,
+                description="Items per page",
+                type=openapi.TYPE_INTEGER,
+                default=20
+            ),
+            openapi.Parameter(
+                'status',
+                openapi.IN_QUERY,
+                description="Filter by status (published, draft)",
+                type=openapi.TYPE_STRING,
+                enum=['published', 'draft']
+            ),
+            openapi.Parameter(
+                'category',
+                openapi.IN_QUERY,
+                description="Filter by category",
+                type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'featured',
+                openapi.IN_QUERY,
+                description="Filter by featured status",
+                type=openapi.TYPE_BOOLEAN
+            ),
+            openapi.Parameter(
+                'search',
+                openapi.IN_QUERY,
+                description="Search in title, excerpt, and content",
+                type=openapi.TYPE_STRING
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Blog posts list",
+                examples={
+                    "application/json": {
+                        "posts": [
+                            {
+                                "id": 1,
+                                "title": "Sample Blog Post",
+                                "slug": "sample-blog-post",
+                                "excerpt": "Excerpt of the blog post",
+                                "author": {"name": "Admin User", "profile_picture": None},
+                                "category": "company_news",
+                                "tags": ["tag1", "tag2"],
+                                "is_published": True,
+                                "is_featured": False,
+                                "published_at": "2025-12-24T08:00:00Z"
+                            }
+                        ],
+                        "pagination": {
+                            "current_page": 1,
+                            "total_pages": 1,
+                            "total_count": 1,
+                            "has_next": False,
+                            "has_previous": False
+                        }
+                    }
+                }
+            ),
+            401: "Unauthorized",
+            500: "Internal server error"
+        },
+        tags=['Blog Management']
+    )
+
+    def get_permissions(self):
+        """Set permissions based on request method"""
+        if self.request.method == 'GET':
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated()]
+
+    def get(self, request):
+        """List all blog posts with filtering"""
+        try:
+            queryset = BlogPost.objects.all().select_related('author')
+
+            # Apply filters
+            status_filter = request.GET.get('status')
+            if status_filter == 'published':
+                queryset = queryset.filter(is_published=True)
+            elif status_filter == 'draft':
+                queryset = queryset.filter(is_published=False)
+
+            category_filter = request.GET.get('category')
+            if category_filter:
+                queryset = queryset.filter(category=category_filter)
+
+            featured_filter = request.GET.get('featured')
+            if featured_filter:
+                queryset = queryset.filter(is_featured=featured_filter.lower() == 'true')
+
+            # Search
+            search = request.GET.get('search')
+            if search:
+                queryset = queryset.filter(
+                    Q(title__icontains=search) |
+                    Q(excerpt__icontains=search) |
+                    Q(content__icontains=search)
+                )
+
+            # Order by creation date (newest first)
+            queryset = queryset.order_by('-created_at')
+
+            # Pagination
+            page = int(request.GET.get('page', 1))
+            per_page = int(request.GET.get('per_page', 20))
+            from django.core.paginator import Paginator
+            paginator = Paginator(queryset, per_page)
+            page_obj = paginator.get_page(page)
+
+            serializer = BlogPostSerializer(page_obj, many=True)
+
+            return Response({
+                'posts': serializer.data,
+                'pagination': {
+                    'current_page': page,
+                    'total_pages': paginator.num_pages,
+                    'total_count': paginator.count,
+                    'has_next': page_obj.has_next(),
+                    'has_previous': page_obj.has_previous()
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Error listing blog posts: {str(e)}")
+            return Response(
+                {'error': 'Failed to retrieve blog posts'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class BlogPostCreateView(APIView):
+    """
+    Blog Post Create API for Tech Support
+
+    POST: Create new blog post
+
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        """Create new blog post"""
+        try:
+            serializer = BlogPostCreateSerializer(data=request.data)
+            if serializer.is_valid():
+                blog_post = serializer.save()
+                return Response(
+                    BlogPostSerializer(blog_post).data,
+                    status=status.HTTP_201_CREATED
+                )
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            logger.error(f"Error creating blog post: {str(e)}")
+            return Response(
+                {'error': 'Failed to create blog post'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class BlogPostDetailView(APIView):
+    """
+    Blog Post Detail API for Tech Support
+
+    GET: Get blog post details
+
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, post_id):
+        """Get blog post details"""
+        try:
+            blog_post = BlogPost.objects.select_related('author').get(id=post_id)
+            serializer = BlogPostSerializer(blog_post)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except BlogPost.DoesNotExist:
+            return Response(
+                {'error': 'Blog post not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error retrieving blog post {post_id}: {str(e)}")
+            return Response(
+                {'error': 'Failed to retrieve blog post'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class BlogPostUpdateView(APIView):
+    """
+    Blog Post Update API for Tech Support
+
+    PUT: Update blog post
+
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def put(self, request, post_id):
+        """Update blog post"""
+        try:
+            blog_post = BlogPost.objects.get(id=post_id)
+            serializer = BlogPostUpdateSerializer(blog_post, data=request.data, partial=True)
+            if serializer.is_valid():
+                updated_post = serializer.save()
+                return Response(
+                    BlogPostSerializer(updated_post).data,
+                    status=status.HTTP_200_OK
+                )
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except BlogPost.DoesNotExist:
+            return Response(
+                {'error': 'Blog post not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error updating blog post {post_id}: {str(e)}")
+            return Response(
+                {'error': 'Failed to update blog post'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class BlogPostPublishView(APIView):
+    """
+    Blog Post Publish API for Tech Support
+
+    POST: Publish blog post
+
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, post_id):
+        """Publish blog post"""
+        try:
+            blog_post = BlogPost.objects.get(id=post_id)
+            blog_post.is_published = True
+            if not blog_post.published_at:
+                blog_post.published_at = timezone.now()
+            blog_post.save()
+
+            serializer = BlogPostSerializer(blog_post)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except BlogPost.DoesNotExist:
+            return Response(
+                {'error': 'Blog post not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error publishing blog post {post_id}: {str(e)}")
+            return Response(
+                {'error': 'Failed to publish blog post'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class BlogPostUnpublishView(APIView):
+    """
+    Blog Post Unpublish API for Tech Support
+
+    POST: Unpublish blog post
+
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, post_id):
+        """Unpublish blog post"""
+        try:
+            blog_post = BlogPost.objects.get(id=post_id)
+            blog_post.is_published = False
+            blog_post.save()
+
+            serializer = BlogPostSerializer(blog_post)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except BlogPost.DoesNotExist:
+            return Response(
+                {'error': 'Blog post not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error unpublishing blog post {post_id}: {str(e)}")
+            return Response(
+                {'error': 'Failed to unpublish blog post'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class BlogPostDeleteView(APIView):
+    """
+    Blog Post Delete API for Tech Support
+
+    DELETE: Delete blog post
+
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, post_id):
+        """Delete blog post"""
+        try:
+            blog_post = BlogPost.objects.get(id=post_id)
+            blog_post.delete()
+            return Response(
+                {'message': 'Blog post deleted successfully'},
+                status=status.HTTP_204_NO_CONTENT
+            )
+
+        except BlogPost.DoesNotExist:
+            return Response(
+                {'error': 'Blog post not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error deleting blog post {post_id}: {str(e)}")
+            return Response(
+                {'error': 'Failed to delete blog post'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

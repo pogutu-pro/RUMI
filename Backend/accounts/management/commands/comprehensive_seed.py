@@ -457,10 +457,10 @@ class Command(BaseCommand):
             name='Welcome Email',
             subject='Welcome to RUMI Platform',
             content='Welcome to RUMI, {{user_name}}! Your account has been created successfully.',
-            variables=['user_name        EmailTemplate.objects']
+            variables=['user_name']
         )
-        
-.create(
+
+        EmailTemplate.objects.create(
             name='Payment Confirmation',
             subject='Payment Confirmation - {{receipt_number}}',
             content='Dear {{student_name}}, your payment of KES {{amount}} has been confirmed.',
