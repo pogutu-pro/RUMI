@@ -21,6 +21,7 @@ interface UseUsersParams {
   search?: string;
   page?: number;
   limit?: number;
+  hostelId?: string;
 }
 
 export const useUsers = (params?: UseUsersParams) => {

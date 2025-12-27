@@ -47,6 +47,7 @@ export function UserTable({ users, isLoading, onViewDetails, onSuspendUser }: Us
             <TableHead>User</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Hostel</TableHead>
             <TableHead>Joined</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -58,7 +59,9 @@ export function UserTable({ users, isLoading, onViewDetails, onSuspendUser }: Us
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     "h-9 w-9 rounded-full flex items-center justify-center transition-colors",
-                    user.role === 'admin' ? "bg-primary/10 text-primary" : "bg-secondary text-secondary-foreground"
+                    (user.role === 'super_admin' || user.role === 'tech_support_admin') ? "bg-primary/10 text-primary" : 
+                    user.role === 'tech_support' ? "bg-purple-100 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" :
+                    "bg-secondary text-secondary-foreground"
                   )}>
                     {user.avatar ? (
                       <img src={user.avatar} alt={user.name} className="h-9 w-9 rounded-full object-cover" />
@@ -74,10 +77,11 @@ export function UserTable({ users, isLoading, onViewDetails, onSuspendUser }: Us
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-1.5">
-                  {user.role === 'admin' && <ShieldAlert className="w-3.5 h-3.5 text-primary" />}
+                  {(user.role === 'super_admin' || user.role === 'tech_support_admin') && <ShieldAlert className="w-3.5 h-3.5 text-primary" />}
                   {user.role === 'landlord' && <ShieldCheck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
                   {user.role === 'caretaker' && <Shield className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />}
-                  <span className="capitalize text-sm text-foreground">{user.role}</span>
+                  {user.role === 'tech_support' && <Shield className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />}
+                  <span className="capitalize text-sm text-foreground">{user.role === 'tech_support' ? 'Tech Support' : user.role.replace(/_/g, ' ')}</span>
                 </div>
               </TableCell>
               <TableCell>
@@ -94,6 +98,9 @@ export function UserTable({ users, isLoading, onViewDetails, onSuspendUser }: Us
                 >
                   {user.status}
                 </Badge>
+              </TableCell>
+              <TableCell className="text-muted-foreground text-sm">
+                {(user as any).hostel_name || '-'}
               </TableCell>
               <TableCell className="text-muted-foreground text-sm">
                 {format(new Date(user.joinedAt), "MMM d, yyyy")}

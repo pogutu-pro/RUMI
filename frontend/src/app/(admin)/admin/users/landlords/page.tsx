@@ -1,172 +1,180 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { 
-  Search, 
-  Filter, 
-  MoreHorizontal, 
-  Home,
-  MapPin,
-  Phone
+  Users,
+  Search,
+  CheckCircle2,
+  XCircle,
+  FileText
 } from "lucide-react";
-import Link from "next/link";
-
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-// Mock Data
-const LANDLORDS = Array.from({ length: 15 }).map((_, i) => ({
-  id: `LL-${2000 + i}`,
-  name: `Landlord ${i + 1}`,
-  email: `landlord${i + 1}@example.com`,
-  properties: 2 + (i % 5),
-  location: "Nairobi, Kenya",
-  phone: "+254 700 000 000",
-  status: ["active", "suspended", "pending"][i % 3],
-  joined: new Date(2023, 5, 1 + i).toLocaleDateString(),
-}));
+import { UserTable } from "@/features/admin";
+import { useUsers, useUpdateUserStatus, useLandlordVerifications, useVerifyLandlord } from "@/features/users";
+import { User } from '@/features/users';
+import { toast } from "sonner";
+import { format } from "date-fns";
 
 export default function Page() {
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Fetch Landlords
+  const { data: landlords, isLoading: isLoadingLandlords } = useUsers({ 
+    role: 'landlord',
+    search: searchTerm 
+  });
+
+  // Fetch Verifications
+  const { data: verifications, isLoading: isLoadingVerifications } = useLandlordVerifications();
+  const verifyLandlordMutation = useVerifyLandlord();
+  const updateUserStatus = useUpdateUserStatus();
+
+  const handleVerify = (id: string, action: 'approve' | 'reject') => {
+    verifyLandlordMutation.mutate({ id, action }, {
+        onSuccess: () => {
+            toast.success(`Landlord verification ${action}ed successfully`);
+        },
+        onError: () => {
+            toast.error(`Failed to ${action} verification`);
+        }
+    });
+  };
+
+  const handleViewDetails = (user: User) => {
+    router.push(`/admin/users/${user.id}`);
+  };
+
+  const handleSuspendUser = (user: User) => {
+      const newStatus = user.status === "suspended" ? "active" : "suspended";
+      updateUserStatus.mutate({ id: user.id, status: newStatus });
+  };
+
   return (
-    <div className="space-y-8 p-8 bg-slate-50/50 min-h-screen">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Landlords</h1>
-          <p className="mt-2 text-slate-500">Manage landlord accounts and property listings.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">Add Landlord</Button>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Landlord Management</h1>
+          <p className="mt-1 text-muted-foreground">Oversee landlord accounts and handle verification requests.</p>
         </div>
       </div>
 
-      <Card className="border-none shadow-sm">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold text-slate-900">All Landlords</CardTitle>
-            <div className="flex items-center gap-2">
-              <div className="relative w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
-                <Input
-                  placeholder="Search landlords..."
-                  className="pl-9 bg-white"
-                />
-              </div>
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4 text-slate-500" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border border-slate-200">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/50">
-                  <TableHead>Landlord</TableHead>
-                  <TableHead>Properties</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {LANDLORDS.map((landlord) => (
-                  <TableRow key={landlord.id} className="hover:bg-slate-50/50">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
-                          <Home className="w-4 h-4" />
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList className="mb-4 bg-muted/50 p-1">
+          <TabsTrigger value="list">All Landlords</TabsTrigger>
+          <TabsTrigger value="verifications" className="relative">
+            Verifications
+            {verifications?.results?.length > 0 && (
+                <span className="ml-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                    {verifications.results.length}
+                </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="list">
+            <Card className="border-border/50 shadow-sm">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg font-semibold">Registered Landlords</CardTitle>
+                      <CardDescription>Browse and manage all landlord accounts</CardDescription>
+                    </div>
+                    <div className="relative w-64">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search landlords..."
+                          className="pl-9 bg-background"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                    <UserTable 
+                        users={landlords || []} 
+                        isLoading={isLoadingLandlords} 
+                        onViewDetails={handleViewDetails}
+                        onSuspendUser={handleSuspendUser}
+                    />
+                </CardContent>
+            </Card>
+        </TabsContent>
+
+        <TabsContent value="verifications">
+             <Card className="border-border/50 shadow-sm">
+                <CardHeader>
+                    <CardTitle className="text-lg font-semibold">Pending Verifications</CardTitle>
+                    <CardDescription>Review and approve landlord identity documents</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {isLoadingVerifications ? (
+                        <div className="h-24 flex items-center justify-center text-muted-foreground">Loading verifications...</div>
+                    ) : verifications?.results?.length === 0 ? (
+                        <div className="h-24 flex items-center justify-center text-muted-foreground">No pending verifications</div>
+                    ) : (
+                        <div className="rounded-md border border-border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-muted/50">
+                                        <TableHead>Landlord</TableHead>
+                                        <TableHead>Document Type</TableHead>
+                                        <TableHead>Submitted</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {verifications?.results?.map((req: any) => (
+                                        <TableRow key={req.id}>
+                                            <TableCell className="font-medium">
+                                                {req.landlord_name || 'Unknown Landlord'}
+                                                <div className="text-xs text-muted-foreground">{req.landlord_email}</div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline">{req.document_type || 'ID Card'}</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-muted-foreground text-sm">
+                                                {req.created_at ? format(new Date(req.created_at), "MMM d, yyyy") : '-'}
+                                            </TableCell>
+                                            <TableCell className="text-right space-x-2">
+                                                 <Button size="sm" variant="outline" onClick={() => window.open(req.document_url, '_blank')}>
+                                                    <FileText className="mr-2 h-4 w-4" />
+                                                    View Doc
+                                                </Button>
+                                                <Button size="sm" variant="outline" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => handleVerify(req.landlord_id, 'approve')}>
+                                                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                                                    Approve
+                                                </Button>
+                                                <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleVerify(req.landlord_id, 'reject')}>
+                                                    <XCircle className="mr-2 h-4 w-4" />
+                                                    Reject
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
                         </div>
-                        <div>
-                          <div className="font-medium text-slate-900">{landlord.name}</div>
-                          <div className="text-xs text-slate-500">{landlord.email}</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-slate-100 text-slate-700">
-                        {landlord.properties} Hostels
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <MapPin className="w-4 h-4" />
-                        <span className="text-sm">{landlord.location}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Phone className="w-4 h-4" />
-                        <span className="text-sm">{landlord.phone}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        className={
-                          landlord.status === "active" ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200" :
-                          landlord.status === "suspended" ? "bg-red-100 text-red-700 hover:bg-red-100 border-red-200" :
-                          "bg-amber-100 text-amber-700 hover:bg-amber-100 border-amber-200"
-                        }
-                      >
-                        {landlord.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/admin/users/landlords/${landlord.id}`}>
-                              View profile
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>View properties</DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href="/admin/users/landlords/verification">
-                              Verify identity
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">Suspend account</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                    )}
+                </CardContent>
+             </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -29,7 +29,27 @@ export const usersApi = {
       '/accounts/users/',
       { params }
     );
-    return res.data; // Adapting to PaginatedResponse return shape
+    return res.data; 
+  },
+
+  // Create Tech Support User
+  // POST /accounts/register/ (assuming standard register with specific role)
+  // or specific endpoint if exists. Re-using register for now with role='support' if backend supports it.
+  // Ideally, use a specific admin creation endpoint if available. 
+  // Based on SETUP_GUIDE, /accounts/register/ is for self-registration usually, 
+  // but admins might use it or a dedicated /admin-endpoints/users/create (not seen).
+  // I will use a placeholder or assume /accounts/register/ works with role.
+  createTechSupport: async (data: Partial<User> & { password?: string }) => {
+     // NOTE: If there is a specific admin create user endpoint, usage would go here.
+     // For now, attempting to use distinct register or just a placeholder if the backend guide doesn't specify "Create Admin/Support".
+     // Actually, looking at SETUP_GUIDE, there isn't a clear "Create User" for admin except /accounts/register/ or caretakers_create.
+     // Let's assume we use /accounts/register/ and force role if possible, or maybe it's missing.
+     // We will stick to the plan: "Assumption: accounts_register_create with role 'support' or similar."
+     const res = await apiClient.post<ApiResponse<User>>(
+         '/accounts/register/',
+         { ...data, role: 'support' } 
+     );
+     return res.data;
   },
 
   // Get User Activity

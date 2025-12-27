@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAdminActivityFeed, getPaymentDisputes, getDisputeStats, updateDisputeStatus, resolveDispute } from '../api/admin';
+import { getAdminActivityFeed, getAdminDashboardStats, getPaymentDisputes, getDisputeStats, updateDisputeStatus, resolveDispute } from '../api/admin';
 import type { AdminActivity, PaymentDispute, DisputeStats } from '../api/admin';
+import type { PlatformAnalytics } from '@/types/entities.types';
 import { toast } from 'sonner';
 
 /**
@@ -12,6 +13,17 @@ export function useAdminActivityFeed(limit = 10) {
     queryFn: () => getAdminActivityFeed(limit),
     staleTime: 1000 * 30, // 30 seconds - more frequent for activity feed
     refetchInterval: 1000 * 60, // Auto-refresh every minute
+  });
+}
+
+/**
+ * Hook to fetch admin dashboard stats
+ */
+export function useAdminDashboardStats(period = '30d') {
+  return useQuery<PlatformAnalytics>({
+    queryKey: ['admin', 'dashboard', 'stats', period],
+    queryFn: () => getAdminDashboardStats(period),
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
 

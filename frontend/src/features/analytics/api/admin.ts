@@ -17,15 +17,46 @@ export interface AdminActivity {
   createdAt: string;
 }
 
+import type { PlatformAnalytics } from '@/types/entities.types';
+
 /**
  * Get admin activity feed
- * Endpoint: GET /api/v1/admin/activity-feed/
+ * Endpoint: GET /api/v1/admin/admin/activity-feed/
  */
 export const getAdminActivityFeed = async (limit = 10): Promise<AdminActivity[]> => {
-  const res = await axios.get<ApiResponse<AdminActivity[]>>('/admin/activity-feed/', {
+  const res = await axios.get<ApiResponse<AdminActivity[]>>('/admin/admin/activity-feed/', {
     params: { limit },
   });
   return res.data.data || [];
+};
+
+/**
+ * Get admin dashboard stats
+ * Endpoint: GET /api/v1/admin/admin/dashboard/stats/
+ */
+export const getAdminDashboardStats = async (period: string = '30d'): Promise<PlatformAnalytics> => {
+  const res = await axios.get<ApiResponse<any>>('/admin/admin/dashboard/stats/', {
+    params: { period }
+  });
+  
+  const data = res.data.data || {};
+  
+  // Map response to PlatformAnalytics structure
+  return {
+    totalUsers: data.total_users || 0,
+    activeUsers: data.active_users || 0,
+    totalHostels: data.total_hostels || 0,
+    totalBookings: data.total_bookings || 0,
+    totalRevenue: data.total_revenue || 0,
+    userGrowth: data.growth?.users || { current: 0, previous: 0, percentage: 0 },
+    bookingGrowth: data.growth?.bookings || { current: 0, previous: 0, percentage: 0 },
+    revenueGrowth: data.growth?.revenue || { current: 0, previous: 0, percentage: 0 },
+    period: period as any,
+    trends: data.trends || [],
+    propertyPerformance: data.property_performance || [],
+    platformMetrics: data.platform_metrics || [],
+    revenueDistribution: data.revenue_distribution || [],
+  };
 };
 
 /**
@@ -125,6 +156,7 @@ export const resolveDispute = async (
 
 export const adminApi = {
   getAdminActivityFeed,
+  getAdminDashboardStats,
   getPaymentDisputes,
   getDisputeStats,
   updateDisputeStatus,

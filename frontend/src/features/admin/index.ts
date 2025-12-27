@@ -11,6 +11,7 @@ export * from './components/tax-report-generator';
 export * from './components/transaction-table';
 export * from './components/user-details-dialog';
 export * from './components/user-table';
+export * from './components/add-user-modal';
 export * from './components/verification-document-viewer';
 export * from './stores/admin.store';
 export * from './api/admin';
