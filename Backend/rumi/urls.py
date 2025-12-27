@@ -34,6 +34,31 @@ schema_view = get_schema_view(
     ),
     public=True,
     permission_classes=[permissions.AllowAny],
+    patterns=[
+        # Landlord APIs
+        path('api/v1/landlord/', include('landlord_api.urls')),
+        path('api/v1/analytics/landlord/', include('analytics.urls')),
+        
+        # Tech Support APIs
+        path('api/v1/support/', include('support_api.urls')),
+        
+        # Payment APIs
+        path('api/v1/payments/', include('payments.urls')),
+        
+        # Admin APIs
+        path('api/v1/admin/', include('admin_api.urls')),
+        path('api/v1/admin-endpoints/', include('admin_endpoints.urls')),
+        
+        # Student APIs
+        path('api/v1/students/', include('student_api.urls')),
+        
+        # General APIs
+        path('api/v1/accounts/', include('accounts.urls')),
+        path('api/v1/hostels/', include('hostels.urls')),
+        path('api/v1/notifications/', include('notifications.urls')),
+        path('api/v1/home/', include('home.urls')),
+        path('api/v1/roommates/', include('roommate_system.urls')),
+    ],
 )
 
 urlpatterns = [

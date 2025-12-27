@@ -7,6 +7,7 @@ from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_yasg.utils import swagger_auto_schema
 
 from .models import Notification, NotificationPreference, EmailTemplate, SMSTemplate
 
@@ -34,6 +35,12 @@ class NotificationListView(APIView):
     """
 
     permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        tags=['Notifications'],
+        operation_summary="Get User Notifications",
+        operation_description="Retrieve in-app notifications for authenticated users with filtering and pagination"
+    )
 
     def get(self, request):
         """
@@ -150,6 +157,17 @@ class NotificationMarkReadView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
+    @swagger_auto_schema(
+        tags=['Notifications'],
+        operation_summary="Mark Notification as Read",
+        operation_description="Mark a specific notification as read with timestamp tracking",
+        responses={
+            200: 'Successfully marked notification as read',
+            404: 'Notification not found',
+            401: 'Authentication required'
+        }
+    )
+
     def put(self, request, notification_id):
         """
         Mark Notification as Read
@@ -239,6 +257,16 @@ class NotificationMarkAllReadView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
+    @swagger_auto_schema(
+        tags=['Notifications'],
+        operation_summary="Mark All Notifications as Read",
+        operation_description="Bulk operation to mark all unread notifications as read",
+        responses={
+            200: 'Successfully marked all notifications as read',
+            401: 'Authentication required'
+        }
+    )
+
     def put(self, request):
         """
         Mark All Notifications as Read
@@ -314,6 +342,16 @@ class NotificationPreferencesView(APIView):
     """
 
     permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        tags=['Notifications'],
+        operation_summary="Notification Preferences Management",
+        operation_description="Manage user notification preferences across all channels and types",
+        responses={
+            200: 'Successfully retrieved preferences',
+            401: 'Authentication required'
+        }
+    )
 
     def get(self, request):
         """
@@ -484,6 +522,16 @@ class AdminEmailTemplateListView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
+    @swagger_auto_schema(
+        tags=['Tech Support'],
+        operation_summary="Get Email Templates",
+        operation_description="Retrieve all active email templates for administrative management",
+        responses={
+            200: 'Successfully retrieved email templates',
+            403: 'Admin access required'
+        }
+    )
+
     def get(self, request):
         """
         Get Email Templates
@@ -589,6 +637,16 @@ class AdminSMSTemplateListView(APIView):
     """
 
     permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        tags=['Tech Support'],
+        operation_summary="Get SMS Templates",
+        operation_description="Retrieve all active SMS templates for administrative management",
+        responses={
+            200: 'Successfully retrieved SMS templates',
+            403: 'Admin access required'
+        }
+    )
 
     def get(self, request):
         """
@@ -700,6 +758,16 @@ class AdminNotificationStatsView(APIView):
     """
 
     permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        tags=['Tech Support'],
+        operation_summary="Get Notification Statistics",
+        operation_description="Retrieve comprehensive notification delivery analytics and metrics",
+        responses={
+            200: 'Successfully retrieved notification statistics',
+            403: 'Admin access required'
+        }
+    )
 
     def get(self, request):
         """

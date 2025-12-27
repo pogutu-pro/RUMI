@@ -18,6 +18,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework.parsers import MultiPartParser, FormParser
+from drf_yasg.utils import swagger_auto_schema
 
 from .models import (
     User, StudentProfile, LandlordProfile, CaretakerProfile,
@@ -53,6 +54,9 @@ from .utils import (
 )
 
 
+@swagger_auto_schema(
+    tags=['Authentication']
+)
 class UserRegistrationView(APIView):
     """
     User Registration API
@@ -191,6 +195,9 @@ class UserRegistrationView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@swagger_auto_schema(
+    tags=['Authentication']
+)
 class EmailVerificationView(APIView):
     """
     Email Verification API
@@ -313,6 +320,9 @@ class EmailVerificationView(APIView):
             }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Authentication']
+)
 class ResendOTPView(APIView):
     """Resend verification OTP"""
 
@@ -365,6 +375,9 @@ class ResendOTPView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Authentication']
+)
 class UserLoginView(APIView):
     """
     User Authentication API
@@ -560,6 +573,9 @@ class UserLoginView(APIView):
         return base_data
 
 
+@swagger_auto_schema(
+    tags=['Authentication']
+)
 class TokenRefreshView(APIView):
     """Refresh access token"""
 
@@ -588,6 +604,9 @@ class TokenRefreshView(APIView):
             }, status=status.HTTP_401_UNAUTHORIZED)
 
 
+@swagger_auto_schema(
+    tags=['Authentication']
+)
 class UserLogoutView(APIView):
     """Handle user logout"""
 
@@ -615,6 +634,9 @@ class UserLogoutView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Authentication']
+)
 class PasswordResetRequestView(APIView):
     """Request password reset"""
 
@@ -664,6 +686,9 @@ class PasswordResetRequestView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Authentication']
+)
 class PasswordResetVerifyView(APIView):
     """Verify reset token validity"""
 
@@ -698,6 +723,9 @@ class PasswordResetVerifyView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Authentication']
+)
 class PasswordResetConfirmView(APIView):
     """Confirm password reset"""
 
@@ -756,6 +784,9 @@ class PasswordResetConfirmView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['User Management']
+)
 class UserProfileView(APIView):
     """
     User Profile Management API
@@ -854,6 +885,9 @@ class UserProfileView(APIView):
         return True
 
 
+@swagger_auto_schema(
+    tags=['User Management']
+)
 class ProfilePictureUploadView(APIView):
     """Upload profile picture"""
 
@@ -921,6 +955,9 @@ class ProfilePictureUploadView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@swagger_auto_schema(
+    tags=['User Management']
+)
 class ProfileCompletionView(APIView):
     """Get detailed profile completion information"""
 
@@ -987,6 +1024,9 @@ class ProfileCompletionView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['User Management']
+)
 class CaretakerListCreateView(APIView):
     """
     Caretaker Management API
@@ -1226,6 +1266,9 @@ class CaretakerListCreateView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@swagger_auto_schema(
+    tags=['User Management']
+)
 class CaretakerDetailView(APIView):
     """Update and delete caretakers"""
 
@@ -1332,6 +1375,9 @@ class CaretakerDetailView(APIView):
             }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Admin']
+)
 class UserManagementView(APIView):
     """
     User Management API
@@ -1447,6 +1493,9 @@ class UserManagementView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Admin']
+)
 class UserDeactivateView(APIView):
     """Deactivate user account"""
 
@@ -1499,6 +1548,9 @@ class UserDeactivateView(APIView):
             }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Admin']
+)
 class UserReactivateView(APIView):
     """Reactivate user account"""
 
@@ -1532,6 +1584,9 @@ class UserReactivateView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Admin']
+)
 class UserActivityLogView(APIView):
     """View user's activity history"""
 
@@ -1567,6 +1622,9 @@ class UserActivityLogView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Admin']
+)
 class LandlordVerificationListView(APIView):
     """List landlords awaiting verification"""
 
@@ -1598,6 +1656,9 @@ class LandlordVerificationListView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Admin']
+)
 class LandlordVerificationView(APIView):
     """Verify or reject landlord applications"""
 
@@ -1703,6 +1764,9 @@ class LandlordVerificationView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Student Dashboard']
+)
 class StudentDashboardView(APIView):
     """
     Student Dashboard API
@@ -1926,6 +1990,9 @@ class StudentDashboardView(APIView):
         return int((completed / len(required_fields)) * 100)
 
 
+@swagger_auto_schema(
+    tags=['Landlord Dashboard']
+)
 class LandlordDashboardView(APIView):
     """
     Landlord Dashboard API
@@ -2137,6 +2204,9 @@ class LandlordDashboardView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Messaging']
+)
 class ConversationListView(APIView):
     """
     Conversation List API
@@ -2188,6 +2258,9 @@ class ConversationListView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Messaging']
+)
 class ConversationMessagesView(APIView):
     """
     Conversation Messages API
@@ -2354,6 +2427,9 @@ class ConversationMessagesView(APIView):
         }, status=status.HTTP_201_CREATED)
 
 
+@swagger_auto_schema(
+    tags=['Messaging']
+)
 class SendMessageView(APIView):
     """
     Direct Message API
@@ -2481,6 +2557,9 @@ class SendMessageView(APIView):
         }, status=status.HTTP_201_CREATED)
 
 
+@swagger_auto_schema(
+    tags=['Messaging']
+)
 class UnreadMessageCountView(APIView):
     """
     Unread Messages Count API
@@ -2566,6 +2645,9 @@ class UnreadMessageCountView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Student Security']
+)
 class StudentSecurityLateEntriesView(APIView):
     """Get late entry logs for students"""
     
@@ -2652,6 +2734,9 @@ class StudentSecurityLateEntriesView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Student Security']
+)
 class StudentSecurityVisitorInvitationsView(APIView):
     """Create and manage visitor invitations for students"""
 
@@ -2877,6 +2962,9 @@ class StudentSecurityVisitorInvitationsView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 
+@swagger_auto_schema(
+    tags=['Student Dashboard']
+)
 class StudentSupportTicketsView(APIView):
     """Get student's support tickets for dashboard"""
 
@@ -2921,6 +3009,9 @@ class StudentSupportTicketsView(APIView):
             }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Student Dashboard']
+)
 class StudentActivityFeedView(APIView):
     """Get student's activity feed for dashboard"""
 

@@ -5,11 +5,16 @@ from django.utils import timezone
 from django.db.models import Count, Q, Sum, Avg
 from datetime import datetime, timedelta
 from django.db.models.functions import TruncMonth
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 from accounts.models import User, LandlordProfile
 from hostels.models import Hostel, Booking
 from payments.models import Transaction
 
+@swagger_auto_schema(
+    tags=['Landlord API']
+)
 class LandlordDashboardOverviewView(APIView):
     """
     Landlord Dashboard Overview API
@@ -221,6 +226,9 @@ class LandlordDashboardOverviewView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Landlord API']
+)
 class LandlordActivityFeedView(APIView):
     """
     Landlord Activity Feed API
@@ -346,6 +354,9 @@ class LandlordActivityFeedView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Landlord API']
+)
 class LandlordPaymentReportsView(APIView):
     """
     Landlord Payment Reports API
@@ -487,6 +498,9 @@ class LandlordPaymentReportsView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Landlord API']
+)
 class LandlordPaymentAnalyticsView(APIView):
     """
     Landlord Payment Analytics API
@@ -635,6 +649,9 @@ class LandlordPaymentAnalyticsView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Landlord API']
+)
 class LandlordRecentTransactionsView(APIView):
     """
     Landlord Recent Transactions API

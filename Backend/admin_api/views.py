@@ -60,6 +60,16 @@ class SystemActivityFeedView(APIView):
     
     permission_classes = [IsTechSupportAdmin]
     
+    @swagger_auto_schema(
+        tags=['Admin'],
+        operation_summary="Get System Activity Feed",
+        operation_description="Retrieve system-wide activity data with comprehensive filtering",
+        responses={
+            200: 'Successfully retrieved system activities',
+            403: 'Admin access required'
+        }
+    )
+    
     def get(self, request):
         """
         Get System Activity Feed
@@ -192,6 +202,16 @@ class AdminUserManagementView(APIView):
     """
     
     permission_classes = [IsTechSupportAdmin]
+    
+    @swagger_auto_schema(
+        tags=['Admin'],
+        operation_summary="Get User Management List",
+        operation_description="Retrieve comprehensive user list with advanced filtering and search",
+        responses={
+            200: 'Successfully retrieved user list',
+            403: 'Admin access required'
+        }
+    )
     
     def get(self, request):
         """
@@ -400,6 +420,16 @@ class HostelModerationListView(APIView):
     
     permission_classes = [IsTechSupportAdmin]
     
+    @swagger_auto_schema(
+        tags=['Admin'],
+        operation_summary="Get Hostel Moderation Queue",
+        operation_description="Retrieve hostels awaiting administrative moderation and review",
+        responses={
+            200: 'Successfully retrieved moderation queue',
+            403: 'Admin access required'
+        }
+    )
+    
     def get(self, request):
         """
         Get Hostel Moderation Queue
@@ -540,6 +570,18 @@ class HostelModerationActionView(APIView):
     """
     
     permission_classes = [IsTechSupportAdmin]
+    
+    @swagger_auto_schema(
+        tags=['Admin'],
+        operation_summary="Process Hostel Moderation",
+        operation_description="Approve or reject hostel property with administrative decision tracking",
+        responses={
+            200: 'Successfully processed moderation',
+            400: 'Invalid action or missing data',
+            404: 'Moderation record not found',
+            403: 'Admin access required'
+        }
+    )
     
     def post(self, request, moderation_id, action):
         """
@@ -693,6 +735,16 @@ class AdminSubscriptionListView(APIView):
     
     permission_classes = [IsTechSupportAdmin]
     
+    @swagger_auto_schema(
+        tags=['Admin'],
+        operation_summary="Get Subscription List",
+        operation_description="List all user subscriptions for admin oversight",
+        responses={
+            200: 'Successfully retrieved subscription list',
+            403: 'Admin access required'
+        }
+    )
+    
     def get(self, request):
         """List all user subscriptions for admin oversight"""
         status_filter = request.query_params.get('status')
@@ -749,6 +801,16 @@ class AdminSubscriptionStatsView(APIView):
     
     permission_classes = [IsTechSupportAdmin]
     
+    @swagger_auto_schema(
+        tags=['Admin'],
+        operation_summary="Get Subscription Statistics",
+        operation_description="Return subscription KPIs and statistics",
+        responses={
+            200: 'Successfully retrieved subscription statistics',
+            403: 'Admin access required'
+        }
+    )
+    
     def get(self, request):
         """Return subscription KPIs and statistics"""
         now = timezone.now()
@@ -800,6 +862,16 @@ class AdminPaymentDisputesListView(APIView):
     """List payment disputes for admin management"""
     
     permission_classes = [IsTechSupportAdmin]
+    
+    @swagger_auto_schema(
+        tags=['Admin'],
+        operation_summary="Get Payment Disputes List",
+        operation_description="List payment disputes with filtering",
+        responses={
+            200: 'Successfully retrieved disputes list',
+            403: 'Admin access required'
+        }
+    )
     
     def get(self, request):
         """List payment disputes with filtering"""
@@ -859,6 +931,16 @@ class AdminPaymentDisputesStatsView(APIView):
     """Get payment dispute statistics"""
 
     permission_classes = [IsTechSupportAdmin]
+    
+    @swagger_auto_schema(
+        tags=['Admin'],
+        operation_summary="Get Payment Dispute Statistics",
+        operation_description="Return dispute statistics",
+        responses={
+            200: 'Successfully retrieved dispute statistics',
+            403: 'Admin access required'
+        }
+    )
 
     def get(self, request):
         """Return dispute statistics"""
@@ -925,6 +1007,7 @@ class AdminPaymentDisputeActionView(APIView):
     permission_classes = [IsTechSupportAdmin]
 
     @swagger_auto_schema(
+        tags=['Admin'],
         operation_description="Resolve or update payment dispute status",
         operation_summary="Resolve Payment Dispute",
         request_body=openapi.Schema(
@@ -1135,6 +1218,7 @@ class AdminPaymentDisputeActionView(APIView):
         }, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
+        tags=['Admin'],
         operation_description="Update payment dispute status with partial data",
         operation_summary="Update Payment Dispute Status",
         request_body=openapi.Schema(
@@ -1243,6 +1327,16 @@ class AdminDashboardStatsView(APIView):
     """Get comprehensive admin dashboard statistics"""
     
     permission_classes = [IsTechSupportAdmin]
+    
+    @swagger_auto_schema(
+        tags=['Admin'],
+        operation_summary="Get Admin Dashboard Statistics",
+        operation_description="Return comprehensive admin statistics",
+        responses={
+            200: 'Successfully retrieved dashboard statistics',
+            403: 'Admin access required'
+        }
+    )
     
     def get(self, request):
         """Return comprehensive admin statistics"""

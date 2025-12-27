@@ -10,6 +10,8 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 from .models import (
     Hostel, Room, Booking, RoomReservation, RoomOccupant,
@@ -20,6 +22,9 @@ from .models import (
 from .serializers import HostelSerializer
 
 
+@swagger_auto_schema(
+    tags=['Hostel Management']
+)
 class HostelCreateView(APIView):
     """
     Hostel Creation API
@@ -148,6 +153,9 @@ class HostelCreateView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@swagger_auto_schema(
+    tags=['Hostel Management']
+)
 class HostelDetailView(APIView):
     """Get hostel details"""
 
@@ -165,6 +173,9 @@ class HostelDetailView(APIView):
         return Response(HostelSerializer(hostel).data, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Hostel Management']
+)
 class RoomCreateView(APIView):
     """
     Room Creation API
@@ -297,6 +308,9 @@ class RoomCreateView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@swagger_auto_schema(
+    tags=['Inventory Management']
+)
 class InventoryTemplateCreateView(APIView):
     """Create inventory template for hostel (Caretaker only)"""
 
@@ -397,6 +411,9 @@ class InventoryTemplateCreateView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@swagger_auto_schema(
+    tags=['Inventory Management']
+)
 class InventoryTemplateDetailView(APIView):
     """Get inventory template details"""
 
@@ -445,6 +462,9 @@ class InventoryTemplateDetailView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Inventory Management']
+)
 class InventoryCheckInStartView(APIView):
     """Start inventory check-in process (Student)"""
 
@@ -538,6 +558,9 @@ class InventoryCheckInStartView(APIView):
         }
 
 
+@swagger_auto_schema(
+    tags=['Inventory Management']
+)
 class InventoryCheckInSubmitView(APIView):
     """Submit completed inventory checklist (Student)"""
 
@@ -591,6 +614,9 @@ class InventoryCheckInSubmitView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@swagger_auto_schema(
+    tags=['Inventory Management']
+)
 class InventoryCheckInVerifyView(APIView):
     """Verify inventory check-in (Caretaker)"""
 
@@ -682,6 +708,9 @@ class InventoryCheckInVerifyView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@swagger_auto_schema(
+    tags=['Room Search']
+)
 class RoomSearchView(APIView):
     """
     Room Search API
@@ -801,6 +830,9 @@ class RoomSearchView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Room Search']
+)
 class HostelSearchView(APIView):
     """
     Hostel Search API
@@ -982,6 +1014,9 @@ class HostelSearchView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Room Booking']
+)
 class RoomReserveView(APIView):
     """Reserve room temporarily (Student)"""
 
@@ -1088,6 +1123,9 @@ class RoomReserveView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@swagger_auto_schema(
+    tags=['Room Booking']
+)
 class RoomBookView(APIView):
     """Confirm booking with payment (Student)"""
 
@@ -1146,6 +1184,9 @@ class RoomBookView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@swagger_auto_schema(
+    tags=['Room Booking']
+)
 class ReservationStatusView(APIView):
     """Check reservation status and remaining time (Student)"""
 
@@ -1211,6 +1252,9 @@ class ReservationStatusView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Roommate Matching']
+)
 class RoommateMatchingView(APIView):
     """Find compatible roommates for shared rooms"""
 
@@ -1358,6 +1402,9 @@ class RoommateMatchingView(APIView):
         return reasons
 
 
+@swagger_auto_schema(
+    tags=['Hostel Management']
+)
 class HostelsListView(APIView):
     """List all available hostels"""
 
@@ -1431,6 +1478,9 @@ class HostelsListView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Hostel Management']
+)
 class RoomsListView(APIView):
     """List all available rooms"""
 
@@ -1502,6 +1552,9 @@ class RoomsListView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Hostel Management']
+)
 class RoomDetailView(APIView):
     """Get detailed room information"""
 

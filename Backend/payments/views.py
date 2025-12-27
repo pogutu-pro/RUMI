@@ -38,6 +38,9 @@ from .tasks import charge_saved_payment_method
 from .mpesa_api import MpesaDarajaAPI
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class PaymentInitializeView(APIView):
     """
     Payment Initialization API
@@ -234,6 +237,9 @@ class PaymentInitializeView(APIView):
             raise Exception(f"Paystack initialization failed: {response.text}")
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class StudentTransactionListView(APIView):
     """
     Student Transaction History API
@@ -319,6 +325,9 @@ class StudentTransactionListView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class StudentTransactionDetailView(APIView):
     """
     Student Transaction Details API
@@ -393,6 +402,9 @@ class StudentTransactionDetailView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class LandlordTransactionListView(APIView):
     """
     Landlord Transaction History API
@@ -492,6 +504,9 @@ class LandlordTransactionListView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class LandlordPayoutListView(APIView):
     """
     Landlord Payout Management API
@@ -580,6 +595,9 @@ class LandlordPayoutListView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class AdminTransactionListView(APIView):
     """
     Admin Transaction Oversight API
@@ -682,6 +700,9 @@ class AdminTransactionListView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class RefundRequestCreateView(APIView):
     """
     Refund Request Creation API
@@ -845,6 +866,9 @@ class RefundRequestCreateView(APIView):
             return Decimal('0.0')
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class RefundRequestListView(APIView):
     """
     Refund Request Management API
@@ -950,6 +974,9 @@ class RefundRequestListView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class RefundRequestProcessView(APIView):
     """
     Process refund request (Admin only)
@@ -1219,6 +1246,9 @@ def _handle_charge_failure(data):
         return Response({'error': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class PaymentReceiptView(APIView):
     """
     Payment Receipt Generation API
@@ -1381,6 +1411,9 @@ class PaymentReceiptView(APIView):
         return Response(receipt_data, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class SavedPaymentMethodsView(APIView):
     """
     Saved Payment Methods Management API
@@ -1510,6 +1543,9 @@ class SavedPaymentMethodsView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class RecurringPaymentEnableView(APIView):
     """
     Enable recurring payments for a booking (Student only)
@@ -1551,6 +1587,9 @@ class RecurringPaymentEnableView(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class RevenueAnalyticsView(APIView):
     """
     Platform revenue analytics (Admin only)
@@ -1607,6 +1646,9 @@ class RevenueAnalyticsView(APIView):
         })
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class RecurringPaymentPauseView(APIView):
     """
     Pause recurring payments (Student only)
@@ -1633,6 +1675,9 @@ class RecurringPaymentPauseView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class RecurringPaymentResumeView(APIView):
     """
     Resume recurring payments (Student only)
@@ -1661,6 +1706,9 @@ class RecurringPaymentResumeView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class RecurringPaymentCancelView(APIView):
     """
     Cancel recurring payments (Student only)
@@ -1686,6 +1734,9 @@ class RecurringPaymentCancelView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class LateFeesView(APIView):
     """
     View late fees for a booking (Student/Landlord)
@@ -1713,6 +1764,9 @@ class LateFeesView(APIView):
         return Response({'late_fees': serializer.data}, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class LateFeePayView(APIView):
     """
     Pay late fee (Student only)
@@ -1744,6 +1798,9 @@ class LateFeePayView(APIView):
         return payment_view.post(payment_request)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class SavedPaymentMethodSetDefaultView(APIView):
     """
     Set default payment method (Student only)
@@ -1773,6 +1830,9 @@ class SavedPaymentMethodSetDefaultView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class SavedPaymentMethodDeleteView(APIView):
     """
     Delete saved payment method (Student only)
@@ -1807,6 +1867,9 @@ class SavedPaymentMethodDeleteView(APIView):
         return Response({'message': 'Payment method deleted'}, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class TaxReportDownloadView(APIView):
     """
     Download tax report PDF (Landlord only)
@@ -1829,6 +1892,9 @@ class TaxReportDownloadView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class TaxReportsView(APIView):
     """
     View tax reports (Landlord only)
@@ -1849,6 +1915,9 @@ class TaxReportsView(APIView):
         })
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class MpesaPaymentInitializeView(APIView):
     """
     M-Pesa Payment Initialization API (Optimized for Performance)
@@ -2127,6 +2196,9 @@ class MpesaPaymentInitializeView(APIView):
             }, status=500)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class MpesaPaymentStatusView(APIView):
     """
     M-Pesa Payment Status API
@@ -2302,6 +2374,9 @@ class MpesaPaymentStatusView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@swagger_auto_schema(
+    tags=['Payments']
+)
 class LandlordMpesaConfigView(APIView):
     """
     Landlord M-Pesa Configuration API

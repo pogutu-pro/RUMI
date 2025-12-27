@@ -32,6 +32,9 @@ from .permissions import (
 logger = logging.getLogger(__name__)
 
 
+@swagger_auto_schema(
+    tags=['Tech Support']
+)
 class TechSupportDashboardView(APIView):
     """
     Tech Support Dashboard API
@@ -113,6 +116,9 @@ class TechSupportDashboardView(APIView):
             )
 
 
+@swagger_auto_schema(
+    tags=['Tech Support']
+)
 class SupportTicketListView(APIView):
     """
     Support Ticket Management API
@@ -261,6 +267,9 @@ class SupportTicketListView(APIView):
             )
 
 
+@swagger_auto_schema(
+    tags=['Tech Support']
+)
 class SupportTicketDetailView(APIView):
     """
     Support Ticket Detail API
@@ -343,6 +352,9 @@ class SupportTicketDetailView(APIView):
             )
 
 
+@swagger_auto_schema(
+    tags=['Tech Support']
+)
 class SupportTicketResponseView(APIView):
     """
     Support Ticket Response API
@@ -448,6 +460,9 @@ class SupportTicketResponseView(APIView):
             )
 
 
+@swagger_auto_schema(
+    tags=['Tech Support']
+)
 class SupportTicketEscalateView(APIView):
     """
     Support Ticket Escalation API
@@ -544,6 +559,9 @@ class SupportTicketEscalateView(APIView):
             )
 
 
+@swagger_auto_schema(
+    tags=['Tech Support']
+)
 class SupportTicketResolveView(APIView):
     """
     Support Ticket Resolution API
@@ -644,6 +662,9 @@ class SupportTicketResolveView(APIView):
             )
 
 
+@swagger_auto_schema(
+    tags=['Tech Support']
+)
 class TechSupportUserManagementView(APIView):
     """
     Tech Support User Management API
@@ -739,6 +760,9 @@ class TechSupportUserManagementView(APIView):
             )
 
 
+@swagger_auto_schema(
+    tags=['Tech Support']
+)
 class CaretakerManagementView(APIView):
     """
     Caretaker Management API
@@ -919,6 +943,9 @@ class CaretakerManagementView(APIView):
             )
 
 
+@swagger_auto_schema(
+    tags=['Tech Support']
+)
 class SupportTicketStatsView(APIView):
     """
     Support Ticket Statistics API
