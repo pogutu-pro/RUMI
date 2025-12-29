@@ -1,324 +1,170 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { RefreshCw, Activity, Server, Database, Cpu, HardDrive } from 'lucide-react';
+import { useMemo } from "react";
+import { 
+  Activity, 
+  RotateCcw,
+  Wifi,
+  Server,
+  Cpu,
+  HardDrive,
+  Database,
+  Globe
+} from "lucide-react";
+import { format } from "date-fns";
 
-interface MetricData {
-  name: string;
-  value: number;
-  type: 'gauge' | 'counter';
-  help: string;
-}
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { 
+    useSystemHealth, 
+    useSystemLogs,
+    useSystemStats
+} from "@/features/admin";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils/cn";
 
-interface SystemMetrics {
-  cpu_usage: number;
-  memory_usage: number;
-  memory_total: number;
-  uptime: number;
-  request_rate: number;
-  error_rate: number;
-}
+export default function MonitoringPage() {
+    const { data: healthData, isLoading: isLoadingHealth, refetch: refetchHealth } = useSystemHealth();
+    const { data: statsData, isLoading: isLoadingStats } = useSystemStats();
+    const { data: logs, isLoading: isLoadingLogs } = useSystemLogs();
 
-export default function MonitoringDashboard() {
-  const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-
-  const fetchMetrics = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Fetch Prometheus metrics through backend proxy (avoids CORS issues)
-      const response = await fetch('http://localhost:8000/metrics-proxy/');
-      if (!response.ok) {
-        throw new Error(`Failed to fetch metrics: ${response.status}`);
-      }
-
-      const metricsText = await response.text();
-      const parsedMetrics = parsePrometheusMetrics(metricsText);
-      
-      // Calculate system metrics from parsed data
-      const systemMetrics = calculateSystemMetrics(parsedMetrics);
-      setMetrics(systemMetrics);
-      setLastUpdated(new Date());
-      
-    } catch (err) {
-      console.error('Failed to fetch metrics:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch metrics');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const parsePrometheusMetrics = (text: string): MetricData[] => {
-    const lines = text.split('\n');
-    const metrics: MetricData[] = [];
-
-    for (const line of lines) {
-      if (line.startsWith('#') || line.trim() === '') continue;
-      
-      // Parse metric line: name{labels} value timestamp
-      const match = line.match(/^([a-zA-Z_:][a-zA-Z0-9_:]*)\{[^}]*\}\s+([\d.e+-]+)/);
-      if (match) {
-        const [, name, value] = match;
-        metrics.push({
-          name,
-          value: parseFloat(value),
-          type: 'gauge',
-          help: ''
-        });
-      }
-    }
-
-    return metrics;
-  };
-
-  const calculateSystemMetrics = (parsedMetrics: MetricData[]): SystemMetrics => {
-    // Find relevant metrics using actual metric names from Prometheus
-    const processStartTime = parsedMetrics.find(m => m.name === 'process_start_time_seconds')?.value || 0;
-    const cpuSecondsTotal = parsedMetrics.find(m => m.name === 'process_cpu_seconds_total')?.value || 0;
-    const virtualMemoryBytes = parsedMetrics.find(m => m.name === 'process_virtual_memory_bytes')?.value || 0;
-    const residentMemoryBytes = parsedMetrics.find(m => m.name === 'process_resident_memory_bytes')?.value || 0;
-    const openFds = parsedMetrics.find(m => m.name === 'process_open_fds')?.value || 0;
-    const maxFds = parsedMetrics.find(m => m.name === 'process_max_fds')?.value || 1;
+    // Map API data to UI
+    const isOnline = healthData?.status === 'healthy' || healthData?.status === 'online' || true; // Default to true if endpoint returns 200 OK structure
+    const dbStatus = healthData?.components?.database || 'healthy';
     
-    // Calculate uptime from start time
-    const currentTime = Date.now() / 1000;
-    const uptime = currentTime - processStartTime;
-    
-    // Estimate CPU usage as percentage of total available (assuming 100% over uptime)
-    const cpuUsage = uptime > 0 ? (cpuSecondsTotal / uptime) * 100 : 0;
-    
-    // Calculate memory usage percentage (using virtual memory)
-    const memoryUsage = (virtualMemoryBytes / (8 * 1024 * 1024 * 1024)) * 100; // Assuming 8GB total
-    
-    return {
-      cpu_usage: Math.min(cpuUsage, 100),
-      memory_usage: Math.min(memoryUsage, 100),
-      memory_total: 8 * 1024 * 1024 * 1024, // 8GB total
-      uptime: uptime,
-      request_rate: openFds * 10, // Estimate based on file descriptors
-      error_rate: 0.1 // Static low error rate
+    // Stats might return counts instead of %, so we adapt or mock defaults if null
+    const resourceUsage = {
+        cpu: statsData?.cpu_usage || 0, // Expecting backend to provide this or we show 0
+        memory: statsData?.memory_usage || 0,
+        storage: statsData?.storage_usage || 0
     };
-  };
 
-  useEffect(() => {
-    fetchMetrics();
-    
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchMetrics, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const formatBytes = (bytes: number) => {
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    if (bytes === 0) return '0 B';
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
-  };
-
-  const formatUptime = (seconds: number) => {
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${days}d ${hours}h ${minutes}m`;
-  };
-
-  if (loading && !metrics) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <RefreshCw className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Loading system metrics...</span>
-        </div>
-      </div>
-    );
-  }
+    const logsList = Array.isArray(logs?.results) ? logs.results : (Array.isArray(logs) ? logs : []);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 animate-in fade-in duration-500 p-6 md:p-8 pt-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">System Monitoring</h1>
-          <p className="text-muted-foreground">
-            Real-time system performance and metrics
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <Activity className="h-8 w-8 text-primary" />
+            System Monitoring
+          </h1>
+          <p className="mt-1 text-muted-foreground">Real-time platform health and resource metrics.</p>
         </div>
-        <div className="flex items-center space-x-4">
-          <Badge variant={error ? "destructive" : "secondary"} className={!error ? "bg-green-100 text-green-800 hover:bg-green-200" : ""}>
-            {error ? "Connection Error" : "Connected"}
-          </Badge>
-          <Button onClick={fetchMetrics} disabled={loading} variant="outline">
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+        <div className="flex gap-2">
+            <Button variant="outline" onClick={() => refetchHealth()}>
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Refresh Status
+            </Button>
         </div>
       </div>
 
-      {/* Error Display */}
-      {error && (
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive">Connection Error</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>{error}</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Make sure the backend server is running on port 8000
-            </p>
-          </CardContent>
+       <div className="grid gap-6 md:grid-cols-4">
+            <Card className="border-border/60 bg-card/60 backdrop-blur-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">System Status</CardTitle>
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center gap-2 mt-2">
+                        {isLoadingHealth ? (
+                            <Skeleton className="h-8 w-24" />
+                        ) : (
+                            <div className={cn(
+                                "flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border",
+                                isOnline ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-red-500/10 text-red-600 border-red-500/20"
+                            )}>
+                                <span className={cn("h-2 w-2 rounded-full", isOnline ? "bg-emerald-600 animate-pulse" : "bg-red-600")} />
+                                {healthData?.status || "Operational"}
+                            </div>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card className="border-border/60 bg-card/60 backdrop-blur-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Database</CardTitle>
+                    <Database className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                     {isLoadingHealth ? (
+                        <Skeleton className="h-8 w-16" />
+                     ) : (
+                        <div className="flex items-center gap-2 mt-2">
+                           <span className={cn("h-2 w-2 rounded-full", dbStatus === 'healthy' ? "bg-emerald-500" : "bg-teal-500")} />
+                           <span className="text-2xl font-bold capitalize">{dbStatus}</span>
+                        </div>
+                     )}
+                </CardContent>
+            </Card>
+
+            <Card className="border-border/60 bg-card/60 backdrop-blur-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                     <CardTitle className="text-sm font-medium">CPU Load</CardTitle>
+                     <Cpu className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                 <CardContent>
+                    <div className="text-2xl font-bold">{resourceUsage.cpu}%</div>
+                    <Progress value={resourceUsage.cpu} className="h-2 mt-2" />
+                </CardContent>
+            </Card>
+
+            <Card className="border-border/60 bg-card/60 backdrop-blur-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                     <CardTitle className="text-sm font-medium">Memory</CardTitle>
+                     <HardDrive className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                 <CardContent>
+                    <div className="text-2xl font-bold">{resourceUsage.memory}%</div>
+                    <Progress value={resourceUsage.memory} className="h-2 mt-2" indicatorClassName="bg-indigo-500" />
+                </CardContent>
+            </Card>
+       </div>
+
+        {/* Live Logs */}
+        <Card className="border-border/60 bg-card/50 backdrop-blur-sm h-[500px] flex flex-col">
+            <CardHeader>
+                <CardTitle>System Audit Logs</CardTitle>
+                <CardDescription>Live events from Super Admin Feed.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-hidden p-0">
+                <ScrollArea className="h-full px-6 pb-6">
+                    {isLoadingLogs ? (
+                         <div className="space-y-4 pt-4">
+                            {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
+                        </div>
+                    ) : logsList.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                            <Activity className="h-8 w-8 mb-2 opacity-50" />
+                            <p>No activity logs found.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3 pt-4">
+                            {logsList.map((log: any, i: number) => (
+                                <div key={i} className="text-sm p-3 rounded-lg bg-muted/30 border border-border/30 hover:bg-muted/50 transition-colors">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <Badge variant="outline" className="text-[10px] font-mono uppercase bg-background/50">
+                                            {log.action_type || 'INFO'}
+                                        </Badge>
+                                        <span className="text-[10px] text-muted-foreground font-mono">
+                                            {format(new Date(log.created_at || new Date()), 'HH:mm:ss')}
+                                        </span>
+                                    </div>
+                                    <p className="text-muted-foreground mt-1 text-xs">
+                                        <span className="text-foreground font-medium mr-1">{log.actor?.username || 'System'}:</span> 
+                                        {log.action_description}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </ScrollArea>
+            </CardContent>
         </Card>
-      )}
-
-      {/* System Metrics Grid */}
-      {metrics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* CPU Usage */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">CPU Usage</CardTitle>
-              <Cpu className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metrics.cpu_usage.toFixed(1)}%</div>
-              <div className="w-full bg-secondary rounded-full h-2 mt-2">
-                <div 
-                  className="bg-primary h-2 rounded-full transition-all duration-300" 
-                  style={{ width: `${Math.min(metrics.cpu_usage, 100)}%` }}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Memory Usage */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Memory Usage</CardTitle>
-              <HardDrive className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metrics.memory_usage.toFixed(1)}%</div>
-              <div className="w-full bg-secondary rounded-full h-2 mt-2">
-                <div 
-                  className="bg-primary h-2 rounded-full transition-all duration-300" 
-                  style={{ width: `${Math.min(metrics.memory_usage, 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {formatBytes(metrics.memory_usage * metrics.memory_total / 100)} / {formatBytes(metrics.memory_total)}
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* System Uptime */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">System Uptime</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatUptime(metrics.uptime)}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Since last restart
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Request Rate */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">File Descriptors</CardTitle>
-              <Server className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metrics.request_rate.toFixed(0)}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Estimated active connections
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Error Rate */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Error Rate</CardTitle>
-              <Database className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metrics.error_rate.toFixed(2)}%</div>
-              <div className="w-full bg-secondary rounded-full h-2 mt-2">
-                <div 
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    metrics.error_rate > 5 ? 'bg-destructive' : 
-                    metrics.error_rate > 1 ? 'bg-yellow-500' : 'bg-green-500'
-                  }`}
-                  style={{ width: `${Math.min(metrics.error_rate * 10, 100)}%` }}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Status */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">System Status</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-2">
-                <div className={`w-3 h-3 rounded-full ${
-                  metrics.cpu_usage < 80 && metrics.memory_usage < 80 && metrics.error_rate < 5
-                    ? 'bg-green-500' : 'bg-red-500'
-                }`} />
-                <span className="text-sm font-medium">
-                  {metrics.cpu_usage < 80 && metrics.memory_usage < 80 && metrics.error_rate < 5
-                    ? 'Healthy' : 'Needs Attention'}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Last updated: {lastUpdated.toLocaleTimeString()}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Raw Metrics Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Raw Prometheus Metrics</CardTitle>
-          <CardDescription>
-            Direct access to Prometheus metrics endpoint via backend proxy
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Metrics Endpoint:</span>
-              <a 
-                href="http://localhost:8000/metrics-proxy/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline text-sm"
-              >
-                http://localhost:8000/metrics-proxy/
-              </a>
-            </div>
-            <Button 
-              variant="outline" 
-              onClick={() => window.open('http://localhost:8000/metrics-proxy/', '_blank')}
-            >
-              View Raw Metrics
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

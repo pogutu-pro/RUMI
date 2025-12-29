@@ -73,6 +73,7 @@ const navItems: NavItem[] = [
       { title: 'Landlord Verification', href: '/admin/users/landlords/verification', icon: ShieldCheck, badge: '!' },
       { title: 'Students', href: '/admin/users/students', icon: UserCog },
       { title: 'Landlords', href: '/admin/users/landlords', icon: Building2 },
+      { title: 'Tech Support', href: '/admin/users/tech-support', icon: LifeBuoy },
     ],
   },
   {

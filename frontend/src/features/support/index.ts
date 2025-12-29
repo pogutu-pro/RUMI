@@ -6,8 +6,14 @@ export * from './components/hostel-table';
 export * from './components/complaint-table';
 export * from './components/chat-interface';
 export * from './components/ticket-detail-dialog';
+export * from './components/user-profile-dialog';
+export * from './components/blog/blog-stats';
+export * from './components/blog/blog-list-table';
+export * from './components/blog/blog-form-dialog';
 
 export * from './api/support';
 export * from './api/tech-support';
 export * from './hooks/use-support';
-export * from './types';
+export * from './hooks/use-support-blog';
+export * from './types/types';
+

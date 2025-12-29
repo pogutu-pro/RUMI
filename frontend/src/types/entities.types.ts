@@ -25,7 +25,7 @@ export * from '@/features/roommates/types';
 export * from '@/features/transfers/types';
 
 // Support
-export * from '@/features/support/types';
+export * from '@/features/support/types/types';
 
 // Student Dashboard elements
 export * from '@/features/student/types';

@@ -30,13 +30,78 @@ export const useCreateTicket = () => {
 
 // --- TECH SUPPORT HOOKS ---
 
-export const useSupportUsers = (params?: any) => {
+export const useSupportUsers = (params?: { role?: string; is_active?: boolean; is_verified?: boolean; search?: string }) => {
   return useQuery({
     queryKey: ['tech-support', 'users', params],
     queryFn: () => techSupportApi.getUsers(params),
     staleTime: 1000 * 60 * 5,
   });
 };
+
+// Verification Queue - Unverified users
+export const useVerificationQueue = (params?: { role?: string; page?: number }) => {
+  return useQuery({
+    queryKey: ['tech-support', 'verification-queue', params],
+    queryFn: () => techSupportApi.getVerificationQueue(params),
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+};
+
+// User Profile Details
+export const useUserProfile = (userId: string) => {
+  return useQuery({
+    queryKey: ['tech-support', 'user-profile', userId],
+    queryFn: () => techSupportApi.getUserProfile(userId),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
+  });
+};
+
+// Verify User Mutation
+export const useVerifyUser = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: techSupportApi.verifyUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tech-support', 'users'] });
+      queryClient.invalidateQueries({ queryKey: ['tech-support', 'verification-queue'] });
+      toast.success('User verified successfully');
+    },
+    onError: () => {
+      toast.error('Failed to verify user');
+    },
+  });
+};
+
+// Toggle User Lock/Suspend Mutation
+export const useToggleUserLock = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, reason }: { userId: string; reason: string }) =>
+      techSupportApi.toggleUserLock(userId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tech-support', 'users'] });
+      toast.success('User status updated');
+    },
+    onError: () => {
+      toast.error('Failed to update user status');
+    },
+  });
+};
+
+// Reset User Password Mutation
+export const useResetUserPassword = () => {
+  return useMutation({
+    mutationFn: techSupportApi.resetUserPassword,
+    onSuccess: () => {
+      toast.success('Password reset email sent');
+    },
+    onError: () => {
+      toast.error('Failed to send password reset email');
+    },
+  });
+};
+
 
 export const useSupportHostels = (params?: any) => {
   return useQuery({
@@ -75,6 +140,39 @@ export const useSupportLogs = (params?: any) => {
     queryKey: ['tech-support', 'logs', params],
     queryFn: () => techSupportApi.getLogs(params),
     staleTime: 1000 * 60 * 5,
+  });
+};
+
+export const useSupportStats = () => {
+  return useQuery({
+    queryKey: ['tech-support', 'stats'],
+    queryFn: () => techSupportApi.getStats(),
+    staleTime: 1000 * 60 * 5,
+  });
+};
+
+export const useTechSupportSystemHealth = () => {
+  return useQuery({
+    queryKey: ['tech-support', 'system-health'],
+    queryFn: () => techSupportApi.getSystemHealth(),
+    staleTime: 1000 * 30, // 30 seconds
+    refetchInterval: 1000 * 60, // Refresh every minute
+  });
+};
+
+export const useSupportAnalytics = () => {
+  return useQuery({
+    queryKey: ['tech-support', 'analytics'],
+    queryFn: () => techSupportApi.getAnalyticsPerformance(),
+    staleTime: 1000 * 60 * 15, // 15 mins
+  });
+};
+
+export const useTechSupportTeam = () => {
+  return useQuery({
+    queryKey: ['tech-support', 'team'],
+    queryFn: () => techSupportApi.getTechSupportTeam(),
+    staleTime: 1000 * 60 * 60, // 1 hour
   });
 };
 

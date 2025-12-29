@@ -20,7 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { usersApi } from "@/features/users/api/users";
+import { useCreateTechSupportUser } from "@/features/users";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/react-query/query-keys";
 
@@ -37,8 +37,7 @@ const formSchema = z.object({
 
 export default function Page() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const queryClient = useQueryClient();
+  const { mutate: createTechSupport, isPending: isSubmitting } = useCreateTechSupportUser();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -52,25 +51,19 @@ export default function Page() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsSubmitting(true);
-    try {
-      await usersApi.createTechSupport({
+    createTechSupport({
           name: values.name,
           email: values.email,
           phone: values.phone,
           password: values.password,
           role: 'tech_support' as any
+      }, {
+          onSuccess: () => {
+              // Toast handled in hook
+              router.push('/admin/users/tech-support');
+          },
+          // Error handled in hook
       });
-
-      toast.success("Tech Support staff created successfully");
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
-      router.push('/admin/users/tech-support');
-    } catch (error: any) {
-        console.error(error);
-        toast.error(error?.response?.data?.message || "Failed to create account");
-    } finally {
-      setIsSubmitting(false);
-    }
   }
 
   return (

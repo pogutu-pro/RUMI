@@ -65,16 +65,40 @@ export interface TechSupportMessage {
 // Predicted Endpoints based on standard REST patterns and existing /support/ routing
 export const techSupportApi = {
   // Users
-  getUsers: async (params?: any) => {
+  getUsers: async (params?: { role?: string; is_active?: boolean; is_verified?: boolean; search?: string }) => {
     const response = await apiClient.axios.get<ApiResponse<TechSupportUser[]>>('/support/users/', { params });
     return response.data;
   },
+
+  // Get user profile details - Available in SETUP_GUIDE.md
+  getUserProfile: async (userId: string) => {
+    const response = await apiClient.axios.get<ApiResponse<TechSupportUser & { activity_log?: any[] }>>(`/support/users/${userId}/support/`);
+    return response.data;
+  },
+
+  // Verify user identity - Suggested endpoint (documented in MISSING_ENDPOINTS.md)
   verifyUser: async (userId: string) => {
-    return apiClient.axios.post(`/support/users/${userId}/verify/`);
+    return apiClient.axios.post<ApiResponse<TechSupportUser>>(`/support/users/${userId}/verify/`);
   },
+
+  // Toggle user lock/suspend - Suggested endpoint (documented in MISSING_ENDPOINTS.md)
   toggleUserLock: async (userId: string, reason: string) => {
-    return apiClient.axios.post(`/support/users/${userId}/toggle-lock/`, { reason });
+    return apiClient.axios.post<ApiResponse<TechSupportUser>>(`/support/users/${userId}/toggle-lock/`, { reason });
   },
+
+  // Reset user password - Available in SETUP_GUIDE.md
+  resetUserPassword: async (userId: string) => {
+    return apiClient.axios.post(`/support/users/${userId}/reset-password/`);
+  },
+
+  // Get verification queue (unverified users)
+  getVerificationQueue: async (params?: { role?: string; page?: number; page_size?: number }) => {
+    const response = await apiClient.axios.get<ApiResponse<TechSupportUser[]>>('/support/users/', { 
+      params: { ...params, is_verified: false } 
+    });
+    return response.data;
+  },
+
 
   // Hostels
   getHostels: async (params?: any) => {
@@ -134,6 +158,24 @@ export const techSupportApi = {
   // Dashboard Stats
   getStats: async () => {
     const response = await apiClient.axios.get<ApiResponse<any>>('/support/stats/');
+    return response.data;
+  },
+
+  // System Health
+  getSystemHealth: async () => {
+    const response = await apiClient.axios.get<ApiResponse<any>>('/support/system-health/');
+    return response.data;
+  },
+
+  // Analytics
+  getAnalyticsPerformance: async () => {
+    const response = await apiClient.axios.get<ApiResponse<any>>('/support/analytics/performance/');
+    return response.data;
+  },
+
+  // Team
+  getTechSupportTeam: async () => {
+    const response = await apiClient.axios.get<ApiResponse<any>>('/support/tech-support/');
     return response.data;
   }
 };

@@ -16,6 +16,7 @@ import {
   ShieldAlert,
   MessageSquare,
   FileText,
+  FileEdit,
   LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
@@ -34,6 +35,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/features/auth';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -91,6 +93,11 @@ const navItems: NavItem[] = [
     badge: 12,
   },
   {
+    title: 'Blog',
+    href: '/tech-support/blog',
+    icon: FileEdit,
+  },
+  {
     title: 'Messages',
     href: '/tech-support/messages',
     icon: MessageSquare,
@@ -101,56 +108,76 @@ export function TechSupportSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps
   const pathname = usePathname();
   const [openGroups, setOpenGroups] = React.useState<string[]>([]);
   const [isHovered, setIsHovered] = React.useState(false);
+  const { logout } = useAuth();
 
   // Determine if the sidebar is visually expanded
   const isExpanded = isOpen || isHovered;
 
-  // Automatically open groups if a child is active
+  // Automatically open groups if a child is active, but only when the route changes
   React.useEffect(() => {
     const activeGroup = navItems.find(
       (item) =>
         item.items &&
         item.items.some((subItem) => pathname.startsWith(subItem.href))
     );
-    if (activeGroup && !openGroups.includes(activeGroup.title)) {
-      setOpenGroups((prev) => [...prev, activeGroup.title]);
+    if (activeGroup) {
+      setOpenGroups((prev) =>
+        prev.includes(activeGroup.title)
+          ? prev
+          : [...prev, activeGroup.title]
+      );
     }
-  }, [pathname, openGroups]);
+  }, [pathname]);
 
-  const toggleGroup = (title: string) => {
-    setOpenGroups((prev) =>
-      prev.includes(title)
+  const toggleGroup = (title: string, open?: boolean) => {
+    setOpenGroups((prev) => {
+      const isCurrentlyOpen = prev.includes(title);
+
+      // If explicit open state is provided by Collapsible, respect it
+      if (typeof open === 'boolean') {
+        if (open && !isCurrentlyOpen) {
+          return [...prev, title];
+        }
+        if (!open && isCurrentlyOpen) {
+          return prev.filter((t) => t !== title);
+        }
+        return prev;
+      }
+
+      // Fallback: simple toggle
+      return isCurrentlyOpen
         ? prev.filter((t) => t !== title)
-        : [...prev, title]
-    );
+        : [...prev, title];
+    });
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full py-4 bg-card border-r border-border transition-colors duration-200">
-      <div className={cn("flex items-center h-14 px-6 mb-6", isExpanded ? "justify-between" : "justify-center")}>
+    <div className="flex flex-col h-full bg-card border-r border-border transition-all duration-300">
+      {/* Header */}
+      <div className={cn("flex items-center h-16 px-4 mb-2 border-b border-border/50", isExpanded ? "justify-between" : "justify-center")}>
         {isExpanded ? (
-           <Link href="/tech-support/dashboard" className="flex items-center gap-2 font-bold text-xl text-primary">
-             <div className="relative h-8 w-8">
+          <Link href="/tech-support/dashboard" className="flex items-center gap-3">
+            <div className="relative h-9 w-9 overflow-hidden rounded-xl">
                <Image 
                  src="/images/logo/logo.svg" 
-                 alt="RUMI Logo" 
-                 width={32} 
-                 height={32} 
-                 className="object-contain w-auto h-auto" 
+                 alt="RUMI" 
+                 width={36} 
+                 height={36} 
+                 className="object-cover w-auto h-auto" 
                />
-             </div>
-             <div className="flex flex-col leading-none">
-               <span>RUMI</span>
-               <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">Tech Support</span>
-             </div>
-           </Link>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-lg leading-none tracking-tight text-foreground">RUMI</span>
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">Tech Support</span>
+            </div>
+          </Link>
         ) : (
-           <Link href="/tech-support/dashboard" className="relative h-8 w-8">
+           <Link href="/tech-support/dashboard" className="relative h-9 w-9 overflow-hidden rounded-xl">
               <Image 
                 src="/images/logo/logo.svg" 
-                alt="RUMI Logo" 
-                width={32} 
-                height={32} 
+                alt="RUMI" 
+                width={36} 
+                height={36} 
                 className="object-contain w-auto h-auto" 
               />
            </Link>
@@ -160,15 +187,15 @@ export function TechSupportSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps
            <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 ml-auto text-muted-foreground hover:text-foreground"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-accent/50"
             onClick={() => setIsOpen(!isOpen)}
           >
-            <PanelLeft className="h-5 w-5" />
+            <PanelLeft className="h-4 w-4" />
           </Button>
         )}
       </div>
 
-      <ScrollArea className="flex-1 px-4">
+      <ScrollArea className="flex-1 px-3 py-4">
         <div className="space-y-1.5 pb-4">
           {navItems.map((item, index) => {
             const is_active = item.href
@@ -180,7 +207,7 @@ export function TechSupportSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps
                 <Collapsible
                   key={index}
                   open={openGroups.includes(item.title)}
-                  onOpenChange={() => toggleGroup(item.title)}
+                  onOpenChange={(open) => toggleGroup(item.title, open)}
                   className="w-full group"
                 >
                   <CollapsibleTrigger asChild>
@@ -306,8 +333,36 @@ export function TechSupportSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps
           })}
         </div>
       </ScrollArea>
-      
 
+      {/* Footer */}
+      <div className="p-4 border-t border-border/50">
+        {isExpanded ? (
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 font-bold"
+            onClick={logout}
+          >
+            <LogOut className="mr-3 h-4 w-4" />
+            Log Out
+          </Button>
+        ) : (
+          <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-10 w-10 mx-auto text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    onClick={logout}
+                  >
+                    <LogOut className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Log Out</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+        )}
+      </div>
     </div>
   );
 
