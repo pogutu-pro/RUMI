@@ -82,10 +82,15 @@ export interface NotificationPreferences {
     smsEnabled?: boolean;
     marketingEmails?: boolean;
     bookingUpdates?: boolean;
-    paymentReminders?: boolean;
-    roommateUpdates?: boolean;
-    marketplaceUpdates?: boolean;
-    updatedAt?: Timestamp;
+    user_id?: ID;
+    email_enabled?: boolean;
+    sms_enabled?: boolean;
+    marketing_emails?: boolean;
+    booking_updates?: boolean;
+    payment_reminders?: boolean;
+    roommate_updates?: boolean;
+    marketplace_updates?: boolean;
+    updated_at?: Timestamp;
 }
 
 export interface StudentProfile extends User { // Needs reconciliation: User fields + Profile fields
@@ -95,35 +100,24 @@ export interface StudentProfile extends User { // Needs reconciliation: User fie
   user_id?: ID; // if separate
   university?: string;
   student_id_number?: string;
-  studentId?: string; // Standardize this!
   year_of_study?: YearOfStudy;
-  yearOfStudy?: number; // Standardize!
   course?: Nullable<string>;
   program?: string;
   
   lifestyle_preferences?: Nullable<LifestylePreferences>;
   
-  emergencyContact?: {
-    name: string;
-    phone: string;
-    relationship: string;
-  };
-  // Flattened emergency contact from auth.types.ts
-   emergency_contact_name?: string;
-   emergency_contact_phone?: string;
-   emergency_contact_relationship?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_relationship?: string;
 
-   bio?: string;
-   preferences?: NotificationPreferences;
-   
-   profile_completion_percentage?: number;
-   is_profile_complete?: boolean;
+  bio?: string;
+  preferences?: NotificationPreferences;
+  
+  profile_completion_percentage?: number;
+  is_profile_complete?: boolean;
 }
 
 export interface VerificationDocuments {
-  nationalId?: string;
-  kraPin?: string;
-  businessLicense?: string;
   submittedAt?: Timestamp;
   reviewedAt?: Nullable<Timestamp>;
   reviewedBy?: Nullable<ID>;
@@ -134,7 +128,7 @@ export interface LandlordProfile {
   id: ID;
   user_id: ID;
   national_id?: string;
-  business_name?: string;
+  company_name?: string;
   kra_pin?: Nullable<string>;
   bank_account_number?: string;
   bank_name?: string;
@@ -180,19 +174,19 @@ export interface CaretakerProfile {
 
 export interface StudentProfileRequest {
   university: string;
-  studentIdNumber: string;
-  yearOfStudy: '1' | '2' | '3' | '4' | '5plus';
+  student_id_number: string;
+  year_of_study: number;
   course?: string;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
-  emergencyContactRelationship: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
+  emergency_contact_relationship: string;
 }
 
 export interface LandlordProfileRequest {
-  nationalId: string;
-  kraPin?: string;
-  businessLicense?: string;
-  bankName: string;
-  bankAccountNumber: string;
-  bankAccountName: string;
+  national_id: string;
+  kra_pin?: string;
+  business_license?: string;
+  bank_name: string;
+  bank_account_number: string;
+  bank_account_name: string;
 }

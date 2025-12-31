@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { 
   User, 
   Bell, 
@@ -35,7 +35,7 @@ import { useEnable2FA, useVerify2FA, useDisable2FA, useChangePassword } from "@/
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function SettingsPage() {
-  const { user } = useUser();
+  const { data: user } = useUser();
   const updateProfileMutation = useUpdateProfile();
   const uploadImageMutation = useUploadProfileImage();
   
@@ -48,9 +48,19 @@ export default function SettingsPage() {
   const changePasswordMutation = useChangePassword();
 
   const [formData, setFormData] = useState({
-      firstName: user?.first_name || "",
-      lastName: user?.last_name || "",
+      firstName: "",
+      lastName: "",
   });
+
+  // Sync form data when user is loaded
+  React.useEffect(() => {
+    if (user) {
+      setFormData({
+        firstName: user.first_name || "",
+        lastName: user.last_name || "",
+      });
+    }
+  }, [user]);
   
   const [passwordData, setPasswordData] = useState({
       current: "", 
@@ -168,8 +178,8 @@ export default function SettingsPage() {
                      <div className="flex items-center justify-between">
                          <Label>Marketing Emails</Label>
                          <Switch 
-                            checked={preferences?.marketingEmails} 
-                            onCheckedChange={(c) => updatePreferencesMutation.mutate({ ...preferences, marketingEmails: c } as any)} 
+                            checked={preferences?.data?.categories?.marketing} 
+                            onCheckedChange={(c) => updatePreferencesMutation.mutate({ marketingEmails: c } as any)} 
                          />
                      </div>
                      <div className="flex items-center justify-between">

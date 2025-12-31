@@ -14,9 +14,9 @@ const withSerwist = withSerwistInit({
 const nextConfig = {
   reactStrictMode: true,
   typescript: {
-    // Temporarily ignore TypeScript errors to allow PWA build
+    // Enable TypeScript errors to ensure build integrity
     // TODO: Fix remaining TypeScript errors in caretaker pages
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   images: {
     remotePatterns: [

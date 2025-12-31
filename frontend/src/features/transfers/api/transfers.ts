@@ -19,6 +19,14 @@ export const getMyTransfers = async (hostelId: string): Promise<TransferRequest[
 export const getTransfers = getMyTransfers;
 
 /**
+ * Get all transfers (Admin)
+ */
+export const getAllTransfers = async (): Promise<TransferRequest[]> => {
+  const response = await apiClient.axios.get<ApiResponse<TransferRequest[]>>('/transfers/');
+  return response.data.data || [];
+};
+
+/**
  * Get available rooms for transfer in a specific hostel
  */
 export const getAvailableRooms = async (

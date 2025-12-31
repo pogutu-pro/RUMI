@@ -10,83 +10,47 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FormField, PasswordField } from '@/components/ui/form-fields';
-import { useRegisterLandlord } from '../hooks/use-auth';
+import { useRegistrationForm } from '../hooks/use-registration-form';
 import {
   registerLandlordSchema,
   type RegisterLandlordFormData,
 } from '@/lib/validations/auth.schema';
-import { mapApiMessage } from '@/lib/api/error-mapping';
 
 export function LandlordRegisterForm() {
-  const registerMutation = useRegisterLandlord();
-
   const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    setError,
-    setFocus,
-  } = useForm<RegisterLandlordFormData>({
-    resolver: zodResolver(registerLandlordSchema),
+    form: {
+      register,
+      formState: { errors },
+      setFocus,
+    },
+    onSubmit,
+    apiMessage,
+    isSubmitting,
+  } = useRegistrationForm<RegisterLandlordFormData>({
+    schema: registerLandlordSchema,
     defaultValues: {
       role: 'landlord',
-      firstName: '',
-      lastName: '',
+      first_name: '',
+      last_name: '',
       email: '',
-      phone: '',
-      businessName: '',
-      nationalId: '',
-      bankName: '',
-      bankAccountNumber: '',
-      kraPin: '',
+      phone_number: '',
+      company_name: '',
+      national_id: '',
+      bank_name: '',
+      bank_account_number: '',
+      kra_pin: '',
       password: '',
-      confirmPassword: '',
-      agreeToTerms: false,
+      confirm_password: '',
+      agree_to_terms: false,
     },
-    mode: 'onTouched',
+    role: 'landlord',
   });
 
-  const submitting = isSubmitting || registerMutation.isPending;
-
-  const apiMessage = useMemo(
-    () => mapApiMessage(registerMutation.error),
-    [registerMutation.error],
-  );
-
   useEffect(() => {
-    if (errors.firstName) setFocus('firstName');
+    if (errors.first_name) setFocus('first_name');
     else if (errors.email) setFocus('email');
     else if (errors.password) setFocus('password');
   }, [errors, setFocus]);
-
-  const normalizePhone = (value?: string) =>
-    value ? value.replace(/[^\d+]/g, '') : '';
-
-  const onSubmit = handleSubmit(async (data) => {
-    const payload = { ...data, phone: normalizePhone(data.phone) };
-    try {
-      await registerMutation.mutateAsync(payload);
-    } catch (err: any) {
-      if (err?.errors && typeof err.errors === 'object') {
-        let focused = false;
-        for (const [field, msgs] of Object.entries(err.errors)) {
-          const message = Array.isArray(msgs) ? msgs.join(' ') : String(msgs);
-          try {
-            setError(field as keyof RegisterLandlordFormData, {
-              type: 'server',
-              message,
-            });
-            if (!focused) {
-              setFocus(field as keyof RegisterLandlordFormData);
-              focused = true;
-            }
-          } catch {
-            // ignore unknown fields
-          }
-        }
-      }
-    }
-  });
 
   return (
     <section className="space-y-6">
@@ -103,17 +67,17 @@ export function LandlordRegisterForm() {
             label="First name"
             placeholder="John"
             autoComplete="given-name"
-            error={errors.firstName?.message}
+            error={errors.first_name?.message}
             required
-            {...register('firstName')}
+            {...register('first_name')}
           />
           <FormField
             label="Last name"
             placeholder="Doe"
             autoComplete="family-name"
-            error={errors.lastName?.message}
+            error={errors.last_name?.message}
             required
-            {...register('lastName')}
+            {...register('last_name')}
           />
         </div>
 
@@ -132,50 +96,50 @@ export function LandlordRegisterForm() {
           type="tel"
           placeholder="+254712345678"
           autoComplete="tel"
-          error={errors.phone?.message}
+          error={errors.phone_number?.message}
           required
-          {...register('phone')}
+          {...register('phone_number')}
         />
 
         <FormField
           label="Business name"
           placeholder="Your property business"
-          error={errors.businessName?.message}
+          error={errors.company_name?.message}
           required
-          {...register('businessName')}
+          {...register('company_name')}
         />
 
         <FormField
           label="National ID"
           placeholder="12345678"
-          error={errors.nationalId?.message}
+          error={errors.national_id?.message}
           hint="Required for landlord verification"
           required
-          {...register('nationalId')}
+          {...register('national_id')}
         />
 
         <FormField
           label="Bank name"
           placeholder="Equity Bank"
-          error={errors.bankName?.message}
+          error={errors.bank_name?.message}
           required
-          {...register('bankName')}
+          {...register('bank_name')}
         />
 
         <FormField
           label="Bank account number"
           placeholder="0123456789"
-          error={errors.bankAccountNumber?.message}
+          error={errors.bank_account_number?.message}
           hint="Used for payouts"
           required
-          {...register('bankAccountNumber')}
+          {...register('bank_account_number')}
         />
 
         <FormField
           label="KRA PIN (optional)"
           placeholder="A123456789B"
-          error={errors.kraPin?.message}
-          {...register('kraPin')}
+          error={errors.kra_pin?.message}
+          {...register('kra_pin')}
         />
 
         <PasswordField
@@ -192,16 +156,16 @@ export function LandlordRegisterForm() {
           label="Confirm password"
           placeholder="Re-enter your password"
           autoComplete="new-password"
-          error={errors.confirmPassword?.message}
+          error={errors.confirm_password?.message}
           required
-          {...register('confirmPassword')}
+          {...register('confirm_password')}
         />
 
         <div className="flex items-start gap-3 rounded-xl border border-gray-200 p-4">
           <Checkbox
             id="landlord-terms"
-            disabled={submitting}
-            {...register('agreeToTerms')}
+            disabled={isSubmitting}
+            {...register('agree_to_terms')}
           />
           <label
             htmlFor="landlord-terms"
@@ -228,9 +192,9 @@ export function LandlordRegisterForm() {
         <Button
           type="submit"
           className="w-full h-12 text-base font-semibold bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg"
-          disabled={submitting}
+          disabled={isSubmitting}
         >
-          {submitting ? (
+          {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
               Creating landlord account...

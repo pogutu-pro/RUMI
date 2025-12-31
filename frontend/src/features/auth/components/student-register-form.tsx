@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FormField, PasswordField } from '@/components/ui/form-fields';
-import { useRegisterStudent } from '../hooks/use-auth';
+import { useRegistrationForm } from '../hooks/use-registration-form';
 import {
   registerStudentSchema,
   type RegisterStudentFormData,
@@ -18,74 +18,39 @@ import {
 import { mapApiMessage } from '@/lib/api/error-mapping';
 
 export function StudentRegisterForm() {
-  const registerMutation = useRegisterStudent();
-
   const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    setError,
-    setFocus,
-  } = useForm<RegisterStudentFormData>({
-    resolver: zodResolver(registerStudentSchema),
+    form: {
+      register,
+      formState: { errors },
+      setFocus,
+    },
+    onSubmit,
+    apiMessage,
+    isSubmitting,
+  } = useRegistrationForm<RegisterStudentFormData>({
+    schema: registerStudentSchema,
     defaultValues: {
       role: 'student',
-      firstName: '',
-      lastName: '',
+      first_name: '',
+      last_name: '',
       email: '',
-      phone: '',
+      phone_number: '',
       password: '',
-      confirmPassword: '',
+      confirm_password: '',
       university: '',
-      studentIdNumber: '',
-      yearOfStudy: 1,
+      student_id_number: '',
+      year_of_study: 1,
       course: '',
-      agreeToTerms: false,
+      agree_to_terms: false,
     },
-    mode: 'onTouched',
+    role: 'student',
   });
 
-  const submitting = isSubmitting || registerMutation.isPending;
-
-  const apiMessage = useMemo(
-    () => mapApiMessage(registerMutation.error),
-    [registerMutation.error],
-  );
-
   useEffect(() => {
-    if (errors.firstName) setFocus('firstName');
+    if (errors.first_name) setFocus('first_name');
     else if (errors.email) setFocus('email');
     else if (errors.password) setFocus('password');
   }, [errors, setFocus]);
-
-  const normalizePhone = (value?: string) =>
-    value ? value.replace(/[^\d+]/g, '') : '';
-
-  const onSubmit = handleSubmit(async (data) => {
-    const payload = { ...data, phone: normalizePhone(data.phone) };
-    try {
-      await registerMutation.mutateAsync(payload);
-    } catch (err: any) {
-      if (err?.errors && typeof err.errors === 'object') {
-        let focused = false;
-        for (const [field, msgs] of Object.entries(err.errors)) {
-          const message = Array.isArray(msgs) ? msgs.join(' ') : String(msgs);
-          try {
-            setError(field as keyof RegisterStudentFormData, {
-              type: 'server',
-              message,
-            });
-            if (!focused) {
-              setFocus(field as keyof RegisterStudentFormData);
-              focused = true;
-            }
-          } catch {
-            // ignore unknown field
-          }
-        }
-      }
-    }
-  });
 
   return (
     <section className="space-y-6">
@@ -101,17 +66,17 @@ export function StudentRegisterForm() {
             label="First name"
             placeholder="Jane"
             autoComplete="given-name"
-            error={errors.firstName?.message}
+            error={errors.first_name?.message}
             required
-            {...register('firstName')}
+            {...register('first_name')}
           />
           <FormField
             label="Last name"
             placeholder="Doe"
             autoComplete="family-name"
-            error={errors.lastName?.message}
+            error={errors.last_name?.message}
             required
-            {...register('lastName')}
+            {...register('last_name')}
           />
         </div>
 
@@ -130,9 +95,9 @@ export function StudentRegisterForm() {
           type="tel"
           placeholder="+254712345678"
           autoComplete="tel"
-          error={errors.phone?.message}
+          error={errors.phone_number?.message}
           required
-          {...register('phone')}
+          {...register('phone_number')}
         />
 
         <FormField
@@ -147,9 +112,9 @@ export function StudentRegisterForm() {
           <FormField
             label="Student ID"
             placeholder="STU/2025/001"
-            error={errors.studentIdNumber?.message}
+            error={errors.student_id_number?.message}
             required
-            {...register('studentIdNumber')}
+            {...register('student_id_number')}
           />
 
           <FormField
@@ -158,9 +123,9 @@ export function StudentRegisterForm() {
             min={1}
             max={7}
             placeholder="3"
-            error={errors.yearOfStudy?.message}
+            error={errors.year_of_study?.message}
             required
-            {...register('yearOfStudy', { valueAsNumber: true })}
+            {...register('year_of_study', { valueAsNumber: true })}
           />
         </div>
 
@@ -178,16 +143,16 @@ export function StudentRegisterForm() {
           label="Confirm password"
           placeholder="Re-enter your password"
           autoComplete="new-password"
-          error={errors.confirmPassword?.message}
+          error={errors.confirm_password?.message}
           required
-          {...register('confirmPassword')}
+          {...register('confirm_password')}
         />
 
         <div className="flex items-start gap-3 rounded-xl border border-gray-200 p-4">
           <Checkbox
             id="student-terms"
-            disabled={submitting}
-            {...register('agreeToTerms')}
+            disabled={isSubmitting}
+            {...register('agree_to_terms')}
           />
           <label
             htmlFor="student-terms"
@@ -214,9 +179,9 @@ export function StudentRegisterForm() {
         <Button
           type="submit"
           className="w-full h-12 text-base font-semibold bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg"
-          disabled={submitting}
+          disabled={isSubmitting}
         >
-          {submitting ? (
+          {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
               Creating account...

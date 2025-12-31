@@ -49,7 +49,7 @@ export function HostelCard({
   const availableRooms = hostel.available_rooms ?? hostel.roomsLeft ?? 0;
   const currency = hostel.currency ?? 'KSh';
 
-  const navigate = (newDirection: number) => {
+  const navigate = React.useCallback((newDirection: number) => {
     setDirection(newDirection);
     setCurrentImageIndex((prev) => {
       let next = prev + newDirection;
@@ -57,21 +57,21 @@ export function HostelCard({
       if (next >= images.length) next = 0;
       return next;
     });
-  };
+  }, [images.length]);
 
-  const nextImage = (e: React.MouseEvent) => {
+  const nextImage = React.useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     navigate(1);
-  };
+  }, [navigate]);
 
-  const prevImage = (e: React.MouseEvent) => {
+  const prevImage = React.useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     navigate(-1);
-  };
+  }, [navigate]);
 
-  const handleDragEnd = (e: any, { offset, velocity }: PanInfo) => {
+  const handleDragEnd = React.useCallback((e: any, { offset, velocity }: PanInfo) => {
     const swipe = Math.abs(offset.x) * velocity.x;
 
     if (swipe < -10000) {
@@ -79,21 +79,38 @@ export function HostelCard({
     } else if (swipe > 10000) {
       navigate(-1);
     }
-    setIsDragging(false); // Always reset after drag
-  };
+    setIsDragging(false);
+  }, [navigate]);
 
-  const handleDragStart = () => {
+  const handleDragStart = React.useCallback(() => {
     setIsDragging(true);
-  };
+  }, []);
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = React.useCallback((e: React.MouseEvent) => {
     if (isDragging) {
       e.preventDefault();
       e.stopPropagation();
     }
-  };
+  }, [isDragging]);
 
-  const variants = {
+  const handleCompareClick = React.useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isInCompare) {
+      removeFromCompare(hostel.id);
+      toast.info('Removed from comparison');
+    } else {
+      const added = addToCompare(hostel);
+      if (added) {
+        toast.success('Added to comparison');
+      } else {
+        toast.error('You can only compare up to 3 hostels');
+      }
+    }
+  }, [isInCompare, hostel, addToCompare, removeFromCompare]);
+
+  const variants = React.useMemo(() => ({
     enter: (direction: number) => ({
       x: direction > 0 ? 300 : -300,
       opacity: 0,
@@ -108,7 +125,7 @@ export function HostelCard({
       x: direction < 0 ? 300 : -300,
       opacity: 0,
     }),
-  };
+  }), []);
 
   return (
     <div
@@ -277,22 +294,8 @@ export function HostelCard({
                   ? "bg-primary text-primary-foreground hover:bg-primary/90" 
                   : "bg-muted hover:bg-muted/80 text-muted-foreground"
               )}
-             onClick={(e) => {
-               e.preventDefault();
-               e.stopPropagation();
-               
-               if (isInCompare) {
-                  removeFromCompare(hostel.id);
-                  toast.info('Removed from comparison');
-               } else {
-                  const added = addToCompare(hostel);
-                  if (added) {
-                      toast.success('Added to comparison');
-                  } else {
-                      toast.error('You can only compare up to 3 hostels');
-                  }
-               }
-             }}
+             onClick={handleCompareClick}
+             aria-label={isInCompare ? "Remove from comparison" : "Add to comparison"}
            >
              {isInCompare ? "Added" : "Compare"}
            </Button>

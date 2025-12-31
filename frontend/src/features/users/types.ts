@@ -2,23 +2,16 @@ import { UserRole } from '@/features/auth/types/types';
 
 export interface User {
   id: string;
-  name: string;
-  first_name?: string;
-  last_name?: string;
+  first_name: string;
+  last_name: string;
   email: string;
   role: UserRole;
-  status: 'active' | 'suspended' | 'pending';
-  avatar?: string;
-  profile_picture?: string;
-  phoneNumber?: string;
+  is_verified: boolean;
   phone_number?: string;
-  joinedAt: Date;
-  created_at?: Date | string;
-  lastActiveAt?: Date;
-  is_verified?: boolean;
-  bio?: string;
-  urls?: {
-    instagram?: string;
-    tiktok?: string;
-  };
+  profile_picture?: string;
+  avatar?: string;
+  status?: 'active' | 'suspended' | 'inactive';
+  is_2fa_enabled?: boolean;
+  created_at?: string;
+  last_login?: string;
 }

@@ -70,11 +70,11 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 const baseRegisterFields = {
   email: emailSchema,
   password: passwordSchema,
-  confirmPassword: z.string().min(1, 'Please confirm your password'),
-  firstName: nameSchema,
-  lastName: nameSchema,
-  phone: phoneSchema,
-  agreeToTerms: z
+  confirm_password: z.string().min(1, 'Please confirm your password'),
+  first_name: nameSchema,
+  last_name: nameSchema,
+  phone_number: phoneSchema,
+  agree_to_terms: z
     .boolean()
     .refine((val) => val, {
       message: 'You must agree to the terms and conditions',
@@ -83,12 +83,12 @@ const baseRegisterFields = {
 
 const passwordMatchRefinement = (data: {
   password: string;
-  confirmPassword: string;
-}) => data.password === data.confirmPassword;
+  confirm_password: string;
+}) => data.password === data.confirm_password;
 
 const passwordMatchOptions = {
   message: "Passwords don't match",
-  path: ['confirmPassword'],
+  path: ['confirm_password'],
 };
 
 export const registerStudentSchema = z
@@ -96,11 +96,11 @@ export const registerStudentSchema = z
     ...baseRegisterFields,
     role: z.literal(ROLES.STUDENT),
     university: requiredString(2, 100, 'University name'),
-    studentIdNumber: requiredString(3, 50, 'Student ID').regex(
+    student_id_number: requiredString(3, 50, 'Student ID').regex(
       /^[A-Z0-9/-]+$/i,
       'Invalid Student ID format',
     ),
-    yearOfStudy: z
+    year_of_study: z
       .number()
       .int()
       .min(1, 'Year must be at least 1')
@@ -115,18 +115,18 @@ export const registerLandlordSchema = z
   .object({
     ...baseRegisterFields,
     role: z.literal(ROLES.LANDLORD),
-    nationalId: requiredString(6, 20, 'National ID').regex(
+    national_id: requiredString(6, 20, 'National ID').regex(
       /^[a-zA-Z0-9]+$/,
       'Invalid National ID format',
     ),
-    businessName: requiredString(2, 100, 'Business Name'),
-    bankName: requiredString(2, 100, 'Bank Name'),
-    bankAccountNumber: z
+    company_name: requiredString(2, 100, 'Business Name'),
+    bank_name: requiredString(2, 100, 'Bank Name'),
+    bank_account_number: z
       .string()
       .min(10, 'Account number too short')
       .max(20, 'Account number too long')
       .regex(/^[0-9]+$/, 'Account number must contain only digits'),
-    kraPin: emptyStringToUndefined.pipe(
+    kra_pin: emptyStringToUndefined.pipe(
       z
         .string()
         .regex(/^[A-Z]\d{9}[A-Z]$/, 'Invalid KRA PIN format')
@@ -141,9 +141,9 @@ export const registerCaretakerSchema = z
   .object({
     ...baseRegisterFields,
     role: z.literal(ROLES.CARETAKER),
-    hostelId: z.string().uuid('Invalid Hostel ID').optional(),
-    employmentStartDate: z.coerce.date().optional(),
-    nationalId: requiredString(6, 20, 'National ID')
+    hostel_id: z.string().uuid('Invalid Hostel ID').optional(),
+    employment_start_date: z.coerce.date().optional(),
+    national_id: requiredString(6, 20, 'National ID')
       .regex(/^[0-9]+$/, 'National ID must contain only digits')
       .optional(),
   })
@@ -169,7 +169,7 @@ export const resetPasswordSchema = z
   .object({
     token: z.string().min(1, 'Token is missing'),
     password: passwordSchema,
-    confirmPassword: z.string().min(1, 'Please confirm your password'),
+    confirm_password: z.string().min(1, 'Please confirm your password'),
   })
   .refine(passwordMatchRefinement, passwordMatchOptions);
 
@@ -191,17 +191,20 @@ export type VerifyPhoneFormData = z.infer<typeof verifyPhoneSchema>;
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, 'Current password is required'),
-    newPassword: passwordSchema,
-    confirmPassword: z.string().min(1, 'Please confirm your new password'),
+    current_password: z.string().min(1, 'Current password is required'),
+    new_password: passwordSchema,
+    confirm_password: z.string().min(1, 'Please confirm your new password'),
   })
   .refine(
-    (data) => data.newPassword === data.confirmPassword,
-    passwordMatchOptions,
+    (data) => data.new_password === data.confirm_password,
+    {
+      message: "Passwords don't match",
+      path: ['confirm_password'],
+    },
   )
-  .refine((data) => data.currentPassword !== data.newPassword, {
+  .refine((data) => data.current_password !== data.new_password, {
     message: 'New password must be different from current password',
-    path: ['newPassword'],
+    path: ['new_password'],
   });
 
 export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
@@ -223,24 +226,20 @@ export type LifestylePreferencesFormData = z.infer<
 >;
 
 export const updateProfileSchema = z.object({
-  firstName: nameSchema.optional(),
-  lastName: nameSchema.optional(),
-  phone: phoneSchema.optional(),
-  profileImage: z.union([z.string().url(), z.literal('')]).optional(),
+  first_name: nameSchema.optional(),
+  last_name: nameSchema.optional(),
+  phone_number: phoneSchema.optional(),
+  profile_picture: z.union([z.string().url(), z.literal('')]).optional(),
 });
 
 export type UpdateProfileFormData = z.infer<typeof updateProfileSchema>;
 
 export const updateStudentProfileSchema = updateProfileSchema.extend({
   university: z.string().min(2).max(100).optional(),
-  yearOfStudy: z.coerce.number().min(1).max(7).optional(),
-  emergencyContact: z
-    .object({
-      name: nameSchema,
-      relationship: requiredString(2, 50, 'Relationship'),
-      phone: phoneSchema,
-    })
-    .optional(),
+  year_of_study: z.coerce.number().min(1).max(7).optional(),
+  emergency_contact_name: nameSchema.optional(),
+  emergency_contact_phone: phoneSchema.optional(),
+  emergency_contact_relationship: requiredString(2, 50, 'Relationship').optional(),
   preferences: lifestylePreferencesSchema.optional(),
 });
 
@@ -249,14 +248,14 @@ export type UpdateStudentProfileFormData = z.infer<
 >;
 
 export const updateLandlordProfileSchema = updateProfileSchema.extend({
-  bankAccountNumber: z
+  bank_account_number: z
     .string()
     .min(10)
     .max(20)
     .regex(/^[0-9]+$/)
     .optional(),
-  bankName: z.string().min(2).max(100).optional(),
-  businessLicense: emptyStringToUndefined,
+  bank_name: z.string().min(2).max(100).optional(),
+  business_license: emptyStringToUndefined,
 });
 
 export type UpdateLandlordProfileFormData = z.infer<

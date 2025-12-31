@@ -1,12 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTransfers, updateTransferStatus } from '@/features/transfers';
+import { getTransfers, getAllTransfers, updateTransferStatus } from '@/features/transfers';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { TransferRequest } from '@/features/transfers';
 
-export const useTransfers = () => {
+export const useTransfers = (hostelId: string) => {
   return useQuery({
-    queryKey: queryKeys.transfers.all,
-    queryFn: getTransfers,
+    queryKey: [...queryKeys.transfers.all, hostelId],
+    queryFn: () => getTransfers(hostelId),
+    enabled: !!hostelId,
+  });
+};
+
+export const useAllTransfers = () => {
+  return useQuery({
+    queryKey: ['transfers', 'all'],
+    queryFn: getAllTransfers,
   });
 };
 

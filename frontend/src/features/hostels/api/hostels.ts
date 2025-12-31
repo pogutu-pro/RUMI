@@ -20,6 +20,16 @@ export const hostelsApi = {
     return res.data;
   },
 
+  // Search Hostels
+  // GET /hostels/search/
+  searchHostels: async (params?: any) => {
+    const res = await apiClient.get<HostelsResponse>(
+      '/hostels/search/',
+      { params }
+    );
+    return res.data;
+  },
+
   // Create Hostel
   // POST /hostels/create/
   createHostel: async (data: Partial<Hostel>) => {
@@ -144,4 +154,6 @@ export const getFavorites = async (): Promise<Hostel[]> => {
     console.warn('getFavorites endpoint is missing in backend.');
     return []; 
 };
+
+export const searchHostels = hostelsApi.searchHostels;
 

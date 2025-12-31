@@ -14,13 +14,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useTransfers, useUpdateTransferStatus } from "@/features/transfers";
+import { useAllTransfers, useUpdateTransferStatus } from "@/features/transfers";
 import { TransferRequest } from '@/features/transfers';
 import { format } from "date-fns";
 
 export default function Page() {
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: transfers, isLoading } = useTransfers();
+  const { data: transfers, isLoading } = useAllTransfers();
   const updateStatus = useUpdateTransferStatus();
 
   const handleApprove = (id: string) => {

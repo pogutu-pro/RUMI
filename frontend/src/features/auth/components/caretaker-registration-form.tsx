@@ -10,83 +10,45 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FormField, PasswordField } from '@/components/ui/form-fields';
-import { useRegisterCaretaker } from '../hooks/use-auth';
+import { useRegistrationForm } from '../hooks/use-registration-form';
 import {
   registerCaretakerSchema,
   type RegisterCaretakerFormData,
 } from '@/lib/validations/auth.schema';
-import { mapApiMessage } from '@/lib/api/error-mapping';
 
 export function CaretakerRegistrationForm() {
-  const registerMutation = useRegisterCaretaker();
-
   const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    setError,
-    setFocus,
-  } = useForm<RegisterCaretakerFormData>({
-    resolver: zodResolver(
-      registerCaretakerSchema,
-    ) as Resolver<RegisterCaretakerFormData>,
+    form: {
+      register,
+      formState: { errors },
+      setFocus,
+    },
+    onSubmit,
+    apiMessage,
+    isSubmitting,
+  } = useRegistrationForm<RegisterCaretakerFormData>({
+    schema: registerCaretakerSchema,
     defaultValues: {
       role: 'caretaker',
-      hostelId: '',
-      firstName: '',
-      lastName: '',
+      hostel_id: '',
+      first_name: '',
+      last_name: '',
       email: '',
-      phone: '',
+      phone_number: '',
       password: '',
-      confirmPassword: '',
-      employmentStartDate: undefined,
-      nationalId: '',
-      agreeToTerms: false,
+      confirm_password: '',
+      employment_start_date: undefined,
+      national_id: '',
+      agree_to_terms: false,
     },
-    mode: 'onTouched',
+    role: 'caretaker',
   });
-
-  const submitting = isSubmitting || registerMutation.isPending;
-
-  const apiMessage = useMemo(
-    () => mapApiMessage(registerMutation.error),
-    [registerMutation.error],
-  );
 
   useEffect(() => {
-    if (errors.hostelId) setFocus('hostelId');
-    else if (errors.firstName) setFocus('firstName');
+    if (errors.hostel_id) setFocus('hostel_id');
+    else if (errors.first_name) setFocus('first_name');
     else if (errors.email) setFocus('email');
   }, [errors, setFocus]);
-
-  const normalizePhone = (value?: string) =>
-    value ? value.replace(/[^\d+]/g, '') : '';
-
-  const onSubmit = handleSubmit(async (data) => {
-    const payload = { ...data, phone: normalizePhone(data.phone) };
-    try {
-      await registerMutation.mutateAsync(payload);
-    } catch (err: any) {
-      if (err?.errors && typeof err.errors === 'object') {
-        let focused = false;
-        for (const [field, msgs] of Object.entries(err.errors)) {
-          const message = Array.isArray(msgs) ? msgs.join(' ') : String(msgs);
-          try {
-            setError(field as keyof RegisterCaretakerFormData, {
-              type: 'server',
-              message,
-            });
-            if (!focused) {
-              setFocus(field as keyof RegisterCaretakerFormData);
-              focused = true;
-            }
-          } catch {
-            // ignore unknown fields
-          }
-        }
-      }
-    }
-  });
 
   return (
     <section className="space-y-6">
@@ -109,9 +71,9 @@ export function CaretakerRegistrationForm() {
         <FormField
           label="Hostel ID / Invitation code"
           placeholder="RUMI-HST-0001"
-          error={errors.hostelId?.message}
+          error={errors.hostel_id?.message}
           required
-          {...register('hostelId')}
+          {...register('hostel_id')}
         />
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -119,17 +81,17 @@ export function CaretakerRegistrationForm() {
             label="First name"
             placeholder="Jane"
             autoComplete="given-name"
-            error={errors.firstName?.message}
+            error={errors.first_name?.message}
             required
-            {...register('firstName')}
+            {...register('first_name')}
           />
           <FormField
             label="Last name"
             placeholder="Doe"
             autoComplete="family-name"
-            error={errors.lastName?.message}
+            error={errors.last_name?.message}
             required
-            {...register('lastName')}
+            {...register('last_name')}
           />
         </div>
 
@@ -148,9 +110,9 @@ export function CaretakerRegistrationForm() {
           type="tel"
           placeholder="+254712345678"
           autoComplete="tel"
-          error={errors.phone?.message}
+          error={errors.phone_number?.message}
           required
-          {...register('phone')}
+          {...register('phone_number')}
         />
 
         <PasswordField
@@ -167,16 +129,16 @@ export function CaretakerRegistrationForm() {
           label="Confirm password"
           placeholder="Re-enter password"
           autoComplete="new-password"
-          error={errors.confirmPassword?.message}
+          error={errors.confirm_password?.message}
           required
-          {...register('confirmPassword')}
+          {...register('confirm_password')}
         />
 
         <div className="flex items-start gap-3 rounded-xl border border-gray-200 p-4">
           <Checkbox
             id="caretaker-terms"
-            disabled={submitting}
-            {...register('agreeToTerms')}
+            disabled={isSubmitting}
+            {...register('agree_to_terms')}
           />
           <label
             htmlFor="caretaker-terms"
@@ -203,9 +165,9 @@ export function CaretakerRegistrationForm() {
         <Button
           type="submit"
           className="w-full h-11 font-semibold"
-          disabled={submitting}
+          disabled={isSubmitting}
         >
-          {submitting ? (
+          {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
               Creating caretaker account...

@@ -38,10 +38,12 @@ export default function AdminReviewsPage() {
   const [statusFilter, setStatusFilter] = useState<ReviewStatus | 'all'>('all');
   const [selectedReviews, setSelectedReviews] = useState<string[]>([]);
 
-  const { data: reviews = [], isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['admin-reviews'],
     queryFn: getReviews,
   });
+
+  const reviews = data?.data || [];
 
   const stats = {
     total: reviews?.length || 0,

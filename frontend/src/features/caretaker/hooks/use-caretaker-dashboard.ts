@@ -17,6 +17,7 @@ import {
   rejectRoommateMatch,
 } from '@/features/caretaker';
 import type {
+  TenantInfo,
   TenantFilters,
   MaintenanceFilters,
   MaintenanceUpdate,
@@ -58,7 +59,7 @@ export function useUpdateTenant() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<any> }) => updateTenant(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<TenantInfo> }) => updateTenant(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['caretaker', 'tenants'] });
       toast({

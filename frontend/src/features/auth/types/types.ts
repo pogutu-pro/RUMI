@@ -28,8 +28,8 @@ export const UserRole = {
 import { StudentProfile, LandlordProfile, CaretakerProfile } from '@/features/profile/types';
 
 export interface AuthTokens {
-  access: string;
-  refresh: string;
+  access_token: string;
+  refresh_token: string;
 }
 
 // Re-export User for convenience in Auth context
@@ -38,15 +38,15 @@ export type { User };
 export type UserProfile = StudentProfile | LandlordProfile | CaretakerProfile;
 
 export interface AuthResponse {
-  access: string;
-  refresh: string;
+  access_token: string;
+  refresh_token: string;
   user: User;
   profile?: Nullable<UserProfile>;
 }
 
 export interface RefreshTokenResponse {
-  access: string;
-  refresh: string;
+  access_token: string;
+  refresh_token: string;
 }
 
 export interface LoginRequest {
@@ -58,10 +58,12 @@ export interface LoginRequest {
 export interface RegisterBaseRequest {
   email: string;
   password: string;
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
+  confirm_password: string;
+  first_name: string;
+  last_name: string;
+  phone_number?: string;
   role: UserRole;
+  agree_to_terms: boolean;
 }
 
 export interface RegisterRequest extends RegisterBaseRequest {
@@ -80,7 +82,7 @@ export interface ForgotPasswordResponse {
 export interface ResetPasswordRequest {
   token: string;
   password: string;
-  confirmPassword: string;
+  confirm_password: string;
 }
 
 export interface VerifyEmailRequest {

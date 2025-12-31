@@ -2,7 +2,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { queryKeys } from '@/lib/react-query/query-keys';
-import { getHostels, getHostel, getHostelById, createHostel } from '@/features/hostels';
+import { getHostels, getHostel, getHostelById, createHostel, searchHostels } from '@/features/hostels';
 import type { Hostel } from '@/types/entities.types';
 import { HostelsResponse } from '@/features/hostels/api/hostels';
 
@@ -35,6 +35,17 @@ export const useHostels = (params?: UseHostelsParams) => {
       params as Record<string, unknown> | undefined
     ),
     queryFn: () => getHostels(params),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+};
+
+export const useSearchHostels = (params?: UseHostelsParams) => {
+  return useQuery<HostelsResponse, Error>({
+    queryKey: queryKeys.hostels.list(
+      params as Record<string, unknown> | undefined
+    ),
+    queryFn: () => searchHostels(params),
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });

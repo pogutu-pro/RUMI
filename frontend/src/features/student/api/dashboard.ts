@@ -44,15 +44,9 @@ async function getDashboardData(): Promise<StudentDashboardData> {
   }
 }
 
-/**
- * Get rent payment status
- * If not provided by dashboard, we return a default "safe" status.
- * Future: Deduce from subscription or booking status.
- */
+
 export async function getRentStatus(): Promise<RentStatusInfo> {
-   // Ideally this comes from getDashboardData. 
-   // If called independently, we might need a specific endpoint not yet documented.
-   // returning default for now to prevent crashes.
+
    return getDefaultRentStatus();
 }
 
@@ -146,50 +140,3 @@ export const studentDashboardApi = {
   getActivityFeed,
 };
 
-
-/**
- * ================================================================================
- * README: Student Dashboard API (student-dashboard.ts)
- * ================================================================================
- *
- * OVERVIEW:
- * ---------
- * Provides comprehensive dashboard data for the student portal. Aggregates
- * data from multiple endpoints into a single dashboard view.
- *
- * ENDPOINTS:
- * ----------
- * | Method | Endpoint                        | Function                |
- * |--------|---------------------------------|-------------------------|
- * | GET    | /accounts/dashboard/            | getDashboardData()      |
- * | GET    | /payments/transactions/student/ | getRecentTransactions() |
- * | GET    | /accounts/messages/unread-count/ | getUnreadMessageCount() |
- * | GET    | /accounts/student/support/tickets/ | getActiveTickets()    |
- * | GET    | /accounts/student/activity/feed/ | getActivityFeed()      |
- *
- * DASHBOARD DATA:
- * ---------------
- * - rentStatus: Current rent payment status
- * - recentTransactions: Last N payment transactions
- * - activeTickets: Open support tickets count
- * - unreadMessages: Unread message count
- * - profileCompletion: Profile completion percentage
- * - hostelInfo: Current booking hostel details
- * - roommates: Current roommates info
- *
- * FALLBACK:
- * ---------
- * If dedicated dashboard endpoint fails, the module composes
- * data from individual endpoints using Promise.allSettled().
- *
- * USAGE:
- * ------
- * ```typescript
- * import { studentDashboardApi } from './student-dashboard';
- *
- * const dashboard = await studentDashboardApi.getDashboardData();
- * console.log(dashboard.rentStatus.daysUntilDue);
- * ```
- *
- * ================================================================================
- */

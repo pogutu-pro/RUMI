@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Pagination } from '@/components/ui/pagination';
 import { Search, Filter, SlidersHorizontal, Home } from 'lucide-react';
-import { useHostels } from '@/features/hostels';
+import { useSearchHostels } from '@/features/hostels';
 import {
   HostelCard,
   HostelFiltersPanel,
@@ -30,7 +30,7 @@ export default function StudentHostelsPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const { data, isLoading, error } = useHostels({
+  const { data, isLoading, error } = useSearchHostels({
     search: debouncedSearch,
     page: currentPage,
     ...filters,
