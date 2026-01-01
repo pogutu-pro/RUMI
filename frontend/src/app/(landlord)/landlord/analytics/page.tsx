@@ -234,32 +234,34 @@ export default function AnalyticsPage() {
               <CardDescription className="text-slate-700 dark:text-slate-400 font-bold text-base">Income performance over time</CardDescription>
             </CardHeader>
             <CardContent className="p-10 pt-6 flex-1 min-h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueTrends}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94a3b8" strokeOpacity={0.4} />
-                  <XAxis 
-                    dataKey="month" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{fill: '#475569', fontSize: 13, fontWeight: 800}} 
-                    dy={10}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{fill: '#475569', fontSize: 13, fontWeight: 800}} 
-                    tickFormatter={(value) => `K${value/1000}k`}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area type="monotone" dataKey="amount" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
-                </AreaChart>
-              </ResponsiveContainer>
+              <div style={{ width: '100%', height: '100%', minHeight: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={revenueTrends}>
+                    <defs>
+                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94a3b8" strokeOpacity={0.4} />
+                    <XAxis 
+                      dataKey="month" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fill: '#475569', fontSize: 13, fontWeight: 800}} 
+                      dy={10}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fill: '#475569', fontSize: 13, fontWeight: 800}} 
+                      tickFormatter={(value) => `K${value/1000}k`}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area type="monotone" dataKey="amount" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
@@ -272,25 +274,27 @@ export default function AnalyticsPage() {
               <CardDescription className="text-slate-700 dark:text-slate-400 font-bold text-base">Breakdown by category</CardDescription>
             </CardHeader>
             <CardContent className="p-10 pt-4 flex-1 min-h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={generalAnalytics?.revenueDistribution || []}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={80}
-                    outerRadius={110}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {(generalAnalytics?.revenueDistribution || []).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} strokeWidth={0} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                </PieChart>
-              </ResponsiveContainer>
+              <div style={{ width: '100%', height: '100%', minHeight: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={generalAnalytics?.revenueDistribution || []}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={80}
+                      outerRadius={110}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {(generalAnalytics?.revenueDistribution || []).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} strokeWidth={0} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
@@ -303,31 +307,33 @@ export default function AnalyticsPage() {
               <CardDescription className="text-slate-700 dark:text-slate-400 font-bold text-base">Occupancy levels by property</CardDescription>
             </CardHeader>
             <CardContent className="p-10 pt-6 h-[400px]">
-               <ResponsiveContainer width="100%" height="100%">
-                 <BarChart data={propertyPerformance} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#94a3b8" strokeOpacity={0.4} />
-                    <XAxis type="number" hide />
-                    <YAxis 
-                      dataKey="name" 
-                      type="category" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{fill: '#334155', fontSize: 13, fontWeight: 900}} 
-                      width={170}
-                    />
-                    <Tooltip 
-                      cursor={{fill: 'slate-100', opacity: 0.1}}
-                      content={<CustomTooltip />}
-                    />
-                    <Bar dataKey="occupancy" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={30}>
-                       {
-                         propertyPerformance.map((entry, index) => (
-                           <Cell key={`cell-${index}`} fill={entry.occupancy > 80 ? '#10b981' : entry.occupancy > 50 ? '#3b82f6' : '#ef4444'} />
-                         ))
-                       }
-                    </Bar>
-                 </BarChart>
-               </ResponsiveContainer>
+               <div style={{ width: '100%', height: '100%', minHeight: 300 }}>
+                 <ResponsiveContainer width="100%" height="100%">
+                   <BarChart data={propertyPerformance} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#94a3b8" strokeOpacity={0.4} />
+                      <XAxis type="number" hide />
+                      <YAxis 
+                        dataKey="name" 
+                        type="category" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{fill: '#334155', fontSize: 13, fontWeight: 900}} 
+                        width={170}
+                      />
+                      <Tooltip 
+                        cursor={{fill: 'slate-100', opacity: 0.1}}
+                        content={<CustomTooltip />}
+                      />
+                      <Bar dataKey="occupancy" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={30}>
+                         {
+                           propertyPerformance.map((entry, index) => (
+                             <Cell key={`cell-${index}`} fill={entry.occupancy > 80 ? '#10b981' : entry.occupancy > 50 ? '#3b82f6' : '#ef4444'} />
+                           ))
+                         }
+                      </Bar>
+                   </BarChart>
+                 </ResponsiveContainer>
+               </div>
             </CardContent>
           </Card>
         </motion.div>

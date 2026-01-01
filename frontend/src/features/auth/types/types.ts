@@ -25,7 +25,8 @@ export const UserRole = {
   SUPER_ADMIN: 'super_admin',
 } as const;
 
-import { StudentProfile, LandlordProfile, CaretakerProfile } from '@/features/profile/types';
+import { StudentProfile, LandlordProfile, CaretakerProfile, LifestylePreferences } from '@/features/profile/types';
+export type { StudentProfile, LandlordProfile, CaretakerProfile, LifestylePreferences };
 
 export interface AuthTokens {
   access_token: string;
@@ -129,7 +130,7 @@ export interface MessageResponse {
 }
 
 export interface RefreshTokenRequest {
-    refresh: string;
+    refresh_token: string;
 }
 
 // Aliases for compatibility with use-auth hooks

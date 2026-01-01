@@ -47,9 +47,11 @@ export interface PaymentMethod {
   id: string;
   type: 'mpesa' | 'bank' | 'card';
   label: string;
-  details: string;
+  name?: string;
+  details: any;
   isDefault: boolean;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface RecurringPayment {

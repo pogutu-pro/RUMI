@@ -172,21 +172,46 @@ export interface CaretakerProfile {
   updated_at: Timestamp;
 }
 
-export interface StudentProfileRequest {
-  university: string;
-  student_id_number: string;
-  year_of_study: number;
-  course?: string;
-  emergency_contact_name: string;
-  emergency_contact_phone: string;
-  emergency_contact_relationship: string;
+export interface UpdateProfileRequest {
+  first_name?: string;
+  last_name?: string;
+  phone_number?: string;
+  profile_picture?: string;
 }
 
-export interface LandlordProfileRequest {
-  national_id: string;
-  kra_pin?: string;
-  business_license?: string;
-  bank_name: string;
-  bank_account_number: string;
-  bank_account_name: string;
+export interface UpdateStudentProfileRequest {
+  university?: string;
+  student_id_number?: string;
+  year_of_study?: number;
+  course?: string;
+  bio?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_relationship?: string;
+  lifestyle_preferences?: LifestylePreferences;
+}
+
+export interface UpdateLandlordProfileRequest {
+  companyName?: string; // from form
+  company_name?: string; // backend
+  national_id?: string;
+  businessRegistrationNumber?: string; // from form
+  taxPin?: string; // from form
+  kra_pin?: string; // backend
+  numberOfProperties?: number; // from form
+  bank_name?: string;
+  bankAccount?: string; // from form
+  bank_account_number?: string; // backend
+  bank_account_name?: string;
+  bio?: string;
+}
+
+export interface UpdateCaretakerProfileRequest {
+  yearsOfExperience?: number;
+  specializations?: string;
+  certifications?: string;
+  availability?: string;
+  national_id?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
 }

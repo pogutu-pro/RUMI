@@ -7,7 +7,7 @@ export const getBookings = async (
   params?: { status?: string },
 ): Promise<Booking[]> => {
   try {
-    const response = await api.axios.get<ApiResponse<Booking[]>>('/bookings/', {
+    const response = await api.axios.get<ApiResponse<Booking[]>>('/accounts/student/activity/feed/', {
       params,
     });
     return response.data.data || [];
@@ -179,7 +179,7 @@ export const getStudentBookings = async (
   status?: Booking['status'],
 ): Promise<Booking[]> => {
   // Use the standard listings endpoint, backend should filter by current user
-  const response = await api.axios.get<ApiResponse<Booking[]>>('/bookings/', {
+  const response = await api.axios.get<ApiResponse<Booking[]>>('/accounts/student/activity/feed/', {
     params: { status }
   });
   return response.data.data || [];

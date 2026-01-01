@@ -3,13 +3,14 @@
 import { useEffect } from 'react';
 import { useAuthStore } from '../stores/auth.store';
 import { authApi } from '@/features/auth';
-import { getTokenExpiry, isTokenExpired } from '@/lib/auth/token';
+import { getTokenExpiry, getRefreshToken } from '@/lib/auth/token';
 
 const REFRESH_CHECK_INTERVAL = 60 * 1000; // Check every minute
 const REFRESH_THRESHOLD = 5 * 60 * 1000; // Refresh if expiring in 5 minutes
 
 export function TokenRefresher() {
-  const { accessToken, refreshToken, setTokens, logout } = useAuthStore();
+  const { accessToken, logout, login, user, profile } = useAuthStore();
+  const refreshToken = typeof window !== 'undefined' ? getRefreshToken() : null;
 
   useEffect(() => {
     if (!accessToken || !refreshToken) return;
@@ -26,23 +27,22 @@ export function TokenRefresher() {
           console.log('Token expiring soon, refreshing...');
           const response = await authApi.refreshToken(refreshToken);
           
-          if (response.access) {
-            const newRefresh = response.refresh || refreshToken;
-            setTokens(response.access, newRefresh);
-            // Update store as well
-            useAuthStore.setState({
-              accessToken: response.access,
+          if (response.access_token) {
+            const newRefresh = response.refresh_token || refreshToken;
+            
+            // Update store and cookies
+            login({
+              user: user!,
+              profile: profile || undefined,
+              accessToken: response.access_token,
               refreshToken: newRefresh,
             });
+            
             console.log('Token refreshed successfully');
           }
         }
       } catch (error) {
         console.error('Failed to refresh token:', error);
-        // If refresh fails with 401/403, it usually means refresh token is invalid
-        // The axios interceptor might handle this, but we can also handle it here
-        // However, we shouldn't aggressively logout here to avoid disrupting the user
-        // unless we are sure. Let the interceptor handle the logout on next API call.
       }
     };
 
@@ -53,7 +53,7 @@ export function TokenRefresher() {
     const intervalId = setInterval(checkAndRefreshToken, REFRESH_CHECK_INTERVAL);
 
     return () => clearInterval(intervalId);
-  }, [accessToken, refreshToken, setTokens]);
+  }, [accessToken, refreshToken, logout, login, user, profile]);
 
   return null;
 }

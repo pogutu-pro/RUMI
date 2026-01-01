@@ -65,7 +65,8 @@ export default function Page() {
       )
   }
 
-  const initials = user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+  const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+  const initials = fullName ? fullName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : '??';
 
   const handleStatusChange = () => {
       const newStatus = user.status === 'suspended' ? 'active' : 'suspended';
@@ -87,12 +88,12 @@ export default function Page() {
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
            <div className="flex items-center gap-6">
               <Avatar className="h-24 w-24 border-4 border-card shadow-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarImage src={user.avatar} alt={fullName} />
                   <AvatarFallback className="text-2xl bg-primary/10 text-primary">{initials}</AvatarFallback>
               </Avatar>
               <div>
                   <div className="flex items-center gap-3">
-                      <h1 className="text-3xl font-bold tracking-tight text-foreground">{user.name}</h1>
+                      <h1 className="text-3xl font-bold tracking-tight text-foreground">{fullName}</h1>
                        <Badge 
                            variant="outline"
                            className={cn(
@@ -160,14 +161,14 @@ export default function Page() {
                     <p className="text-sm font-medium text-muted-foreground mb-1">Joined Date</p>
                     <div className="flex items-center gap-2 text-sm">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
-                        {format(new Date(user.joinedAt), 'MMMM d, yyyy')}
+                        {user.created_at ? format(new Date(user.created_at), 'MMMM d, yyyy') : 'N/A'}
                     </div>
                 </div>
                 <div>
                     <p className="text-sm font-medium text-muted-foreground mb-1">Last Active</p>
                     <div className="flex items-center gap-2 text-sm">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
-                        {user.lastActiveAt ? format(new Date(user.lastActiveAt), 'MMM d, yyyy HH:mm') : 'Never'}
+                        {user.last_login ? format(new Date(user.last_login), 'MMM d, yyyy HH:mm') : 'Never'}
                     </div>
                 </div>
             </CardContent>

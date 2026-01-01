@@ -33,12 +33,12 @@ export function HostelTable() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {hostels?.map((hostel) => (
+        {hostels?.results?.map((hostel) => (
           <TableRow key={hostel.id}>
             <TableCell className="font-medium">{hostel.name}</TableCell>
-            <TableCell>{hostel.location}</TableCell>
-            <TableCell>{hostel.rooms?.length || 0} rooms</TableCell>
-            <TableCell>KES {hostel.priceRange?.min.toLocaleString()}</TableCell>
+            <TableCell>{hostel.city}</TableCell>
+            <TableCell>{hostel.total_rooms} rooms</TableCell>
+            <TableCell>KES {parseFloat(hostel.base_price || '0').toLocaleString()}</TableCell>
             <TableCell>
               <Badge variant="default">Active</Badge>
             </TableCell>

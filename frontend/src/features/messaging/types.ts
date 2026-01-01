@@ -87,7 +87,7 @@ export interface Conversation {
 // TYPING INDICATOR
 // ============================================================================
 
-export interface TypingIndicator {
+export interface TypingIndicatorData {
   conversationId: ID;
   userId: ID;
   userName: string;
@@ -103,7 +103,7 @@ export interface MessagingState {
   conversations: Conversation[];
   activeConversationId: ID | null;
   messages: Record<ID, Message[]>; // conversationId -> messages[]
-  typingIndicators: Record<ID, TypingIndicator[]>; // conversationId -> typing users
+  typingIndicators: Record<ID, TypingIndicatorData[]>; // conversationId -> typing users
   
   // UI State
   isLoading: boolean;

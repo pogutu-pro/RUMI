@@ -16,6 +16,7 @@ import { useRegister } from '../hooks/use-auth';
 import {
   registerStudentSchema,
   registerLandlordSchema,
+  registerCaretakerSchema,
   type RegisterFormData,
 } from '@/lib/validations/auth.schema';
 import { cn } from '@/lib/utils/cn';
@@ -28,7 +29,7 @@ interface RegisterFormProps {
 }
 
 type Step = 'email' | 'details';
-type Role = 'student' | 'landlord';
+type Role = 'student' | 'landlord' | 'caretaker';
 
 export function RegisterForm({ onSuccess, onError, className }: RegisterFormProps) {
   const [step, setStep] = useState<Step>('email');
@@ -43,6 +44,8 @@ export function RegisterForm({ onSuccess, onError, className }: RegisterFormProp
         return registerStudentSchema;
       case 'landlord':
         return registerLandlordSchema;
+      case 'caretaker':
+        return registerCaretakerSchema;
       default:
         return registerStudentSchema;
     }
@@ -55,16 +58,16 @@ export function RegisterForm({ onSuccess, onError, className }: RegisterFormProp
     trigger,
     watch,
   } = useForm<RegisterFormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     defaultValues: {
       email: '',
       password: '',
-      confirmPassword: '',
-      firstName: '',
-      lastName: '',
-      phone: '',
+      confirm_password: '',
+      first_name: '',
+      last_name: '',
+      phone_number: '',
       role,
-      agreeToTerms: false,
+      agree_to_terms: false,
     } as any,
     mode: 'onTouched',
   });
@@ -169,18 +172,18 @@ export function RegisterForm({ onSuccess, onError, className }: RegisterFormProp
                 label="First name"
                 placeholder="First name"
                 autoComplete="given-name"
-                error={errors.firstName?.message}
+                error={errors.first_name?.message}
                 required
-                {...registerField('firstName')}
+                {...registerField('first_name')}
               />
 
               <FormField
                 label="Last name"
                 placeholder="Last name"
                 autoComplete="family-name"
-                error={errors.lastName?.message}
+                error={errors.last_name?.message}
                 required
-                {...registerField('lastName')}
+                {...registerField('last_name')}
               />
             </div>
 
@@ -189,9 +192,9 @@ export function RegisterForm({ onSuccess, onError, className }: RegisterFormProp
               type="tel"
               placeholder="+254712345678"
               autoComplete="tel"
-              error={errors.phone?.message}
+              error={errors.phone_number?.message}
               required
-              {...registerField('phone')}
+              {...registerField('phone_number')}
             />
 
             <PasswordField
@@ -208,9 +211,9 @@ export function RegisterForm({ onSuccess, onError, className }: RegisterFormProp
               label="Confirm Password"
               placeholder="Confirm Password"
               autoComplete="new-password"
-              error={errors.confirmPassword?.message}
+              error={errors.confirm_password?.message}
               required
-              {...registerField('confirmPassword')}
+              {...registerField('confirm_password')}
             />
 
             <div className="pt-2">
@@ -218,7 +221,7 @@ export function RegisterForm({ onSuccess, onError, className }: RegisterFormProp
                 I am a...
               </label>
               <RoleSelector
-                value={role}
+                value={role as any}
                 onValueChange={(val) => {
                   setRole(val);
                 }}

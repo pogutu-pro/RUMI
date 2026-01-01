@@ -2,10 +2,7 @@ import apiClient from '@/lib/api/client';
 import type { PlatformAnalytics } from '@/types/entities.types';
 import type { ApiResponse } from '@/types/api.types';
 
-export interface CustomDateRange {
-  startDate: Date;
-  endDate: Date;
-}
+import { CustomDateRange } from '@/features/analytics/types/types';
 
 /**
  * Get generic platform analytics
@@ -115,7 +112,7 @@ export const exportAnalytics = async (
   dateRange?: CustomDateRange
 ): Promise<Blob> => {
   const response = await apiClient.axios.post(
-    '/analytics/export/',
+    '/landlord/payments/reports/generate/',
     {
       period,
       format,

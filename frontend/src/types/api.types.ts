@@ -38,8 +38,8 @@ export type {
 // Let's add them to features/profile/types.ts because they are profile update requests.
 
 export type {
-    StudentProfileRequest,
-    LandlordProfileRequest,
+    UpdateStudentProfileRequest,
+    UpdateLandlordProfileRequest,
     StudentProfile,
     LandlordProfile,
 } from '@/features/profile/types';

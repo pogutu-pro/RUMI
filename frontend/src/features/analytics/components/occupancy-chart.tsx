@@ -19,15 +19,17 @@ export function OccupancyChart() {
         <CardTitle>Occupancy Rate</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={mockData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="rate" fill="#82ca9d" />
-          </BarChart>
-        </ResponsiveContainer>
+        <div style={{ width: '100%', height: 350, minHeight: 350 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={mockData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="rate" fill="#82ca9d" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );

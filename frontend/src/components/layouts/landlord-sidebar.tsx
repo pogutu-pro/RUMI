@@ -29,6 +29,7 @@ import {
   Moon,
   Sun,
   LogOut,
+  Smartphone,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/features/auth';
@@ -101,6 +102,7 @@ const navItems: NavItem[] = [
     items: [
       { title: 'Payments', href: '/landlord/payments', icon: CreditCard },
       { title: 'Payouts', href: '/landlord/payments/payouts', icon: Wallet },
+      { title: 'M-Pesa Settings', href: '/landlord/payments/mpesa-settings', icon: Smartphone },
       { title: 'Reports', href: '/landlord/payments/reports', icon: FileText },
       { title: 'Analytics', href: '/landlord/analytics', icon: TrendingUp },
     ],
@@ -171,7 +173,6 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                 alt="RUMI Logo" 
                 width={32} 
                 height={32} 
-                className="object-contain" 
               />
            </Link>
         )}

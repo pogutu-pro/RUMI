@@ -36,7 +36,7 @@ export default function HostelSort() {
         <RadioGroup
           value={sort}
           onValueChange={(v) => {
-            setSort(v);
+            setSort(v as any);
             setOpen(false);
           }}
         >

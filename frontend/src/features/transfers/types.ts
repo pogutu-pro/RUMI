@@ -14,7 +14,8 @@ export type TransferRequestStatus =
   | 'pending'
   | 'approved'
   | 'rejected'
-  | 'cancelled';
+  | 'cancelled'
+  | 'completed';
 
 // Available room for transfer
 export interface AvailableRoom {

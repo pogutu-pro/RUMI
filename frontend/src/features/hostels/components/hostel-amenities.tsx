@@ -21,7 +21,6 @@ import type { LucideIcon } from 'lucide-react';
 
 const iconMap: Record<string, LucideIcon> = {
   WiFi: Wifi,
-  'WiFi': Wifi,
   Security: Shield,
   '24/7 Security': Lock,
   Electricity: Zap,

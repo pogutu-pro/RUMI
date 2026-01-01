@@ -46,7 +46,7 @@ export default function LandlordsPage() {
   });
 
   const updateUserStatus = useUpdateUserStatus();
-  const landlords = landlordsResponse?.results || landlordsResponse?.data || [];
+  const landlords = landlordsResponse?.data || [];
   const pendingVerifications = verifications.filter((v: any) => v.status === 'pending');
 
   const handleSuspendUser = (user: any) => {

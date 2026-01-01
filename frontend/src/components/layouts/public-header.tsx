@@ -77,7 +77,6 @@ export const PublicHeader = React.memo(function PublicHeader({
                   alt="RUMI"
                   width={36}
                   height={36}
-                  className="w-auto h-auto"
                   priority
                 />
               </div>
@@ -159,7 +158,7 @@ export const PublicHeader = React.memo(function PublicHeader({
                                     alt="RUMI"
                                     width={32}
                                     height={32}
-                                    className="object-cover w-auto h-auto"
+                                    className="object-contain"
                                     />
                                 </div>
                                 <span className="font-bold text-xl tracking-tight">RUMI</span>

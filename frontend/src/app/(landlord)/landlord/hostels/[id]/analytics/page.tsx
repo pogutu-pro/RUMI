@@ -235,29 +235,31 @@ export default function HostelAnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthlyData}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="month" className="text-xs" tick={{ fill: 'currentColor' }} />
-                  <YAxis className="text-xs" tickFormatter={(v) => `${(v / 1000)}K`} tick={{ fill: 'currentColor' }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#colorRevenue)"
-                    name="Revenue (KES)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <div style={{ width: '100%', height: '100%', minHeight: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={monthlyData}>
+                    <defs>
+                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="month" className="text-xs" tick={{ fill: 'currentColor' }} />
+                    <YAxis className="text-xs" tickFormatter={(v) => `${(v / 1000)}K`} tick={{ fill: 'currentColor' }} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#colorRevenue)"
+                      name="Revenue (KES)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -275,25 +277,27 @@ export default function HostelAnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={roomDistribution}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={90}
-                    paddingAngle={5}
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {roomDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <div style={{ width: '100%', height: '100%', minHeight: 250 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={roomDistribution}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label={({ name, value }) => `${name}: ${value}`}
+                    >
+                      {roomDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </div>
             <div className="flex justify-center gap-6 mt-4">
               {roomDistribution.map((item) => (
@@ -324,22 +328,24 @@ export default function HostelAnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="month" className="text-xs" tick={{ fill: 'currentColor' }} />
-                  <YAxis className="text-xs" tickFormatter={(v) => `${v}%`} domain={[0, 100]} tick={{ fill: 'currentColor' }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Line
-                    type="monotone"
-                    dataKey="occupancy"
-                    stroke="#8b5cf6"
-                    strokeWidth={3}
-                    dot={{ fill: '#8b5cf6', r: 5 }}
-                    name="Occupancy Rate"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <div style={{ width: '100%', height: '100%', minHeight: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="month" className="text-xs" tick={{ fill: 'currentColor' }} />
+                    <YAxis className="text-xs" tickFormatter={(v) => `${v}%`} domain={[0, 100]} tick={{ fill: 'currentColor' }} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line
+                      type="monotone"
+                      dataKey="occupancy"
+                      stroke="#8b5cf6"
+                      strokeWidth={3}
+                      dot={{ fill: '#8b5cf6', r: 5 }}
+                      name="Occupancy Rate"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -357,15 +363,17 @@ export default function HostelAnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="month" className="text-xs" tick={{ fill: 'currentColor' }} />
-                  <YAxis className="text-xs" tick={{ fill: 'currentColor' }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="bookings" fill="#f59e0b" name="New Bookings" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <div style={{ width: '100%', height: '100%', minHeight: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="month" className="text-xs" tick={{ fill: 'currentColor' }} />
+                    <YAxis className="text-xs" tick={{ fill: 'currentColor' }} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar dataKey="bookings" fill="#f59e0b" name="New Bookings" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </CardContent>
         </Card>

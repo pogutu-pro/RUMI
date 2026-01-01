@@ -56,14 +56,12 @@ import {
 import { cn } from '@/lib/utils';
 import { useLandlordTransactions, usePaymentStats } from '@/features/payments';
 import { useHostels } from '@/features/hostels';
-import { MpesaConfigModal } from '@/features/payments/components/mpesa-config-modal';
 import { toast } from 'sonner';
 
 export default function PaymentsPage() {
   const [selectedHostel, setSelectedHostel] = React.useState<string>("");
   const [searchTerm, setSearchTerm] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState<string>("all");
-  const [isMpesaModalOpen, setIsMpesaModalOpen] = React.useState(false);
 
   const { data: hostelsData } = useHostels();
   const hostels = hostelsData?.results || [];
@@ -109,13 +107,6 @@ export default function PaymentsPage() {
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
-          <Button 
-            className="h-12 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black shadow-md border-0"
-            onClick={() => setIsMpesaModalOpen(true)}
-          >
-            <Smartphone className="mr-2 h-5 w-5" /> M-Pesa Settings
-          </Button>
-          <MpesaConfigModal isOpen={isMpesaModalOpen} onClose={() => setIsMpesaModalOpen(false)} />
           <Button variant="outline" className="h-12 px-6 rounded-xl border-slate-300 dark:border-slate-800 font-extrabold text-slate-900 dark:text-slate-200 shadow-sm">
              <FileText className="mr-2 h-5 w-5" /> Export Ledger
           </Button>

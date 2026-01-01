@@ -49,7 +49,7 @@ export function ResetPasswordForm({
     defaultValues: {
       token: tokenFromUrl || '',
       password: '',
-      confirmPassword: '',
+      confirm_password: '',
     } as ResetPasswordFormData,
     mode: 'onTouched',
   });
@@ -124,10 +124,10 @@ export function ResetPasswordForm({
           label="Confirm new password"
           placeholder="Re-enter your new password"
           autoComplete="new-password"
-          error={errors.confirmPassword?.message}
+          error={errors.confirm_password?.message}
           required
-          aria-invalid={!!errors.confirmPassword}
-          {...registerField('confirmPassword')}
+          aria-invalid={!!errors.confirm_password}
+          {...registerField('confirm_password')}
         />
       </div>
 

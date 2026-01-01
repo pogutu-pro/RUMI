@@ -101,7 +101,18 @@ export const usersApi = {
     );
     return res.data;
   },
+
+  // Get Landlord's Tenants
+  // GET /landlord/tenants/
+  getLandlordTenants: async (params?: any) => {
+    const res = await apiClient.get<PaginatedResponse<User>>(
+      '/landlord/tenants/',
+      { params }
+    );
+    return res.data;
+  },
 };
+
 
 // Aliases for compatibility if needed, but direct usage of usersApi is preferred.
 export const getUsers = async (params?: any) => {

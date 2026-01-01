@@ -70,7 +70,7 @@ export function VerifyEmailForm({
   }, [resendCooldown]);
 
   const onSubmit = (data: VerifyEmailFormData) => {
-    verifyEmail(data, {
+    verifyEmail(data as any, {
       onSuccess: () => {
         onSuccess?.();
       },
@@ -86,7 +86,7 @@ export function VerifyEmailForm({
     if (resendCooldown > 0 || resendPending) return;
     try {
       const payload = token ? { token } : { email: email || '' };
-      resendVerification(payload, {
+      resendVerification(payload as any, {
         onSuccess: () => {
           setResendCooldown(60);
           clearErrors('otp');

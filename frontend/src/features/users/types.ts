@@ -12,6 +12,11 @@ export interface User {
   avatar?: string;
   status?: 'active' | 'suspended' | 'inactive';
   is_2fa_enabled?: boolean;
+  bio?: string;
+  urls?: {
+    instagram?: string;
+    tiktok?: string;
+  };
   created_at?: string;
   last_login?: string;
 }

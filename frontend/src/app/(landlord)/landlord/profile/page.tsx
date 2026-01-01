@@ -135,7 +135,7 @@ export default function ProfilePage() {
                 <Mail className="h-3.5 w-3.5" /> {user?.email}
               </p>
               <p className="flex items-center gap-2">
-                <Phone className="h-3.5 w-3.5" /> {user?.phone_number || user?.phone || 'No phone number'}
+                <Phone className="h-3.5 w-3.5" /> {user?.phone_number || 'No phone number'}
               </p>
             </div>
           </div>

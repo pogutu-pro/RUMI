@@ -68,7 +68,7 @@ export function VerifyPhoneForm({
   }, [resendCooldown]);
 
   const onSubmit = (data: VerifyPhoneFormData) => {
-    verifyPhone(data, {
+    verifyPhone(data as any, {
       onSuccess: () => {
         onSuccess?.();
         setTimeout(() => {
@@ -87,7 +87,7 @@ export function VerifyPhoneForm({
     if (resendCooldown > 0 || resendPending) return;
     try {
       const payload = { phone: phone || '' };
-      resendVerification(payload, {
+      resendVerification(payload as any, {
         onSuccess: () => {
           setResendCooldown(60);
           clearErrors('otp');

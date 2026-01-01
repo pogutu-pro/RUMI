@@ -11,12 +11,8 @@ import {
 } from '../api/analytics';
 import { toast } from 'sonner';
 
-import type { AnalyticsPeriod } from '@/features/analytics/types/types';
+import type { AnalyticsPeriod, CustomDateRange } from '@/features/analytics/types/types';
 
-export interface CustomDateRange {
-  startDate: Date;
-  endDate: Date;
-}
 
 /**
  * Hook to fetch platform analytics (Generic)

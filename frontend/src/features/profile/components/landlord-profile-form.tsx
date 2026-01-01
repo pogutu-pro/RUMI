@@ -11,11 +11,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUpdateLandlordProfile } from '@/features/profile';
 
 const schema = z.object({
-  companyName: z.string().optional(),
+  company_name: z.string().optional(),
   businessRegistrationNumber: z.string().optional(),
-  taxPin: z.string().optional(),
+  kra_pin: z.string().optional(),
   numberOfProperties: z.number().min(0),
-  bankAccount: z.string().optional(),
+  bank_account_number: z.string().optional(),
   bio: z.string().optional(),
 });
 
@@ -41,7 +41,7 @@ export function LandlordProfileForm({ initialData }: { initialData?: FormValues 
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={form.control} name="companyName" render={({ field }) => (
+            <FormField control={form.control} name="company_name" render={({ field }) => (
               <FormItem><FormLabel>Company Name (Optional)</FormLabel><FormControl>
                 <Input {...field} /></FormControl><FormMessage /></FormItem>
             )} />
@@ -49,14 +49,18 @@ export function LandlordProfileForm({ initialData }: { initialData?: FormValues 
               <FormItem><FormLabel>Business Registration Number</FormLabel><FormControl>
                 <Input {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-            <FormField control={form.control} name="taxPin" render={({ field }) => (
-              <FormItem><FormLabel>Tax PIN</FormLabel><FormControl>
+            <FormField control={form.control} name="kra_pin" render={({ field }) => (
+              <FormItem><FormLabel>Tax PIN (KRA)</FormLabel><FormControl>
                 <Input {...field} /></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="numberOfProperties" render={({ field }) => (
               <FormItem><FormLabel>Number of Properties</FormLabel><FormControl>
                 <Input type="number" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
               </FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="bank_account_number" render={({ field }) => (
+              <FormItem><FormLabel>Bank Account Number</FormLabel><FormControl>
+                <Input {...field} /></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="bio" render={({ field }) => (
               <FormItem><FormLabel>Bio</FormLabel><FormControl>

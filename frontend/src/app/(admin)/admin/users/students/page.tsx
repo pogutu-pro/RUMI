@@ -42,7 +42,7 @@ export default function StudentsPage() {
   });
 
   const updateUserStatus = useUpdateUserStatus();
-  const students = studentsResponse?.results || studentsResponse?.data || [];
+  const students = studentsResponse?.data || [];
 
   const handleSuspendUser = (user: any) => {
       const newStatus = user.status === "suspended" ? "active" : "suspended";

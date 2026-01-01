@@ -42,10 +42,13 @@ export const hostelsApi = {
 
   // Get Hostel By ID
   // GET /hostels/{hostel_id}/
-  getHostelById: async (id: string | number) => {
+  getHostelById: async (id: string | number): Promise<Hostel> => {
     const res = await apiClient.get<ApiResponse<Hostel>>(
       `/hostels/${id}/`
     );
+    if (!res.data.data) {
+        throw new Error('Hostel data not found in response');
+    }
     return res.data.data;
   },
 
@@ -127,14 +130,8 @@ export const hostelsApi = {
 // Aliases for compatibility
 export const getHostels = hostelsApi.getHostels;
 export const getHostelById = hostelsApi.getHostelById;
-export const getHostelBySlug = async (slug: string) => {
-     // Assuming API supports slug or we need to find by slug. 
-     // Usually IDs are numbers/uuids in path, but slug might work if backend supports it.
-  try {
-     return await hostelsApi.getHostelById(slug);
-  } catch (e) {
-     throw e;
-  }
+export const getHostelBySlug = async (slug: string): Promise<Hostel> => {
+  return await hostelsApi.getHostelById(slug);
 };
 export const getHostel = getHostelBySlug; 
 export const createHostel = hostelsApi.createHostel;

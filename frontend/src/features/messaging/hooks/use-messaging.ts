@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { messagesApi } from '../api/messages';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import type { Message, Conversation, SendMessageRequest } from '../types';
+import type { PaginatedResponse } from '@/types/api.types';
 
 // Queries
 export const useConversations = () => {
@@ -10,7 +11,14 @@ export const useConversations = () => {
     queryFn: async () => {
       try {
         const response = await messagesApi.getConversations();
-        return response.data;
+        return response || { 
+          data: [], 
+          current_page: 1, 
+          total_pages: 1, 
+          count: 0, 
+          next: null, 
+          previous: null 
+        };
       } catch (error) {
         console.warn('Failed to fetch conversations (Endpoint might be missing)', error);
         return { 
@@ -34,7 +42,7 @@ export const useMessages = (conversationId: string | null) => {
       if (!conversationId) return { data: [], current_page: 1, total_pages: 1, count: 0 };
       try {
         const response = await messagesApi.getMessages(conversationId);
-        return response.data;
+        return response || { data: [], current_page: 1, total_pages: 1, count: 0 };
       } catch (error) {
         console.warn('Failed to fetch messages (Endpoint might be missing)', error);
         return { data: [], current_page: 1, total_pages: 1, count: 0 };
@@ -94,7 +102,7 @@ export const useSendMessage = () => {
     },
     onSettled: (data, error, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.messaging.detail(variables.conversationId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.messaging.conversations });
+      queryClient.invalidateQueries({ queryKey: queryKeys.messaging.conversations() });
     },
   });
 };
@@ -104,7 +112,7 @@ export const useMarkAsRead = () => {
   return useMutation({
     mutationFn: (conversationId: string) => messagesApi.markConversationAsRead(conversationId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.messaging.conversations });
+      queryClient.invalidateQueries({ queryKey: queryKeys.messaging.conversations() });
     },
   });
 };
@@ -115,19 +123,22 @@ export const usePinConversation = () => {
   return useMutation({
     mutationFn: (id: string) => messagesApi.pinConversation(id),
     onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.messaging.conversations });
-      const previous = queryClient.getQueryData<Conversation[]>(queryKeys.messaging.conversations);
-      if (previous) {
-        queryClient.setQueryData(queryKeys.messaging.conversations, previous.map(c => 
-          c.id === id ? { ...c, isPinned: true } : c
-        ));
+      await queryClient.cancelQueries({ queryKey: queryKeys.messaging.conversations() });
+      const previous = queryClient.getQueryData<PaginatedResponse<Conversation>>(queryKeys.messaging.conversations());
+      if (previous && previous.data) {
+        queryClient.setQueryData(queryKeys.messaging.conversations(), {
+          ...previous,
+          data: previous.data.map(c => 
+            c.id === id ? { ...c, isPinned: true } : c
+          )
+        });
       }
       return { previous };
     },
     onError: (err, id, context) => {
-      if (context?.previous) queryClient.setQueryData(queryKeys.messaging.conversations, context.previous);
+      if (context?.previous) queryClient.setQueryData(queryKeys.messaging.conversations(), context.previous);
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.messaging.conversations }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.messaging.conversations() }),
   });
 };
 
@@ -136,19 +147,22 @@ export const useUnpinConversation = () => {
   return useMutation({
     mutationFn: (id: string) => messagesApi.unpinConversation(id),
     onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.messaging.conversations });
-      const previous = queryClient.getQueryData<Conversation[]>(queryKeys.messaging.conversations);
-      if (previous) {
-        queryClient.setQueryData(queryKeys.messaging.conversations, previous.map(c => 
-          c.id === id ? { ...c, isPinned: false } : c
-        ));
+      await queryClient.cancelQueries({ queryKey: queryKeys.messaging.conversations() });
+      const previous = queryClient.getQueryData<PaginatedResponse<Conversation>>(queryKeys.messaging.conversations());
+      if (previous && previous.data) {
+        queryClient.setQueryData(queryKeys.messaging.conversations(), {
+          ...previous,
+          data: previous.data.map(c => 
+            c.id === id ? { ...c, isPinned: false } : c
+          )
+        });
       }
       return { previous };
     },
     onError: (err, id, context) => {
-       if (context?.previous) queryClient.setQueryData(queryKeys.messaging.conversations, context.previous);
+       if (context?.previous) queryClient.setQueryData(queryKeys.messaging.conversations(), context.previous);
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.messaging.conversations }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.messaging.conversations() }),
   });
 };
 
@@ -157,12 +171,15 @@ export const useMuteConversation = () => {
   return useMutation({
      mutationFn: (id: string) => messagesApi.muteConversation(id),
      onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.messaging.conversations });
-      const previous = queryClient.getQueryData<Conversation[]>(queryKeys.messaging.conversations);
-      if (previous) {
-        queryClient.setQueryData(queryKeys.messaging.conversations, previous.map(c => 
-          c.id === id ? { ...c, isMuted: true } : c
-        ));
+      await queryClient.cancelQueries({ queryKey: queryKeys.messaging.conversations() });
+      const previous = queryClient.getQueryData<PaginatedResponse<Conversation>>(queryKeys.messaging.conversations());
+      if (previous && previous.data) {
+        queryClient.setQueryData(queryKeys.messaging.conversations(), {
+          ...previous,
+          data: previous.data.map(c => 
+            c.id === id ? { ...c, isMuted: true } : c
+          )
+        });
       }
       return { previous };
     },
@@ -174,12 +191,15 @@ export const useUnmuteConversation = () => {
   return useMutation({
      mutationFn: (id: string) => messagesApi.unmuteConversation(id),
      onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.messaging.conversations });
-      const previous = queryClient.getQueryData<Conversation[]>(queryKeys.messaging.conversations);
-      if (previous) {
-        queryClient.setQueryData(queryKeys.messaging.conversations, previous.map(c => 
-          c.id === id ? { ...c, isMuted: false } : c
-        ));
+      await queryClient.cancelQueries({ queryKey: queryKeys.messaging.conversations() });
+      const previous = queryClient.getQueryData<PaginatedResponse<Conversation>>(queryKeys.messaging.conversations());
+      if (previous && previous.data) {
+        queryClient.setQueryData(queryKeys.messaging.conversations(), {
+          ...previous,
+          data: previous.data.map(c => 
+            c.id === id ? { ...c, isMuted: false } : c
+          )
+        });
       }
       return { previous };
     },

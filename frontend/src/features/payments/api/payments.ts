@@ -9,7 +9,8 @@ import type {
   CreateMpesaConfigRequest,
   Payout,
   Refund,
-  RefundRequest
+  RefundRequest,
+  PaymentInitializeRequest
 } from '../types';
 import type { ApiResponse, PaginatedResponse } from '@/types/api.types';
 
@@ -97,15 +98,6 @@ export const getPaymentStats = async (): Promise<PaymentStats> => {
   };
 };
 
-/**
- * Initiate a payment
- */
-export interface PaymentInitializeRequest {
-  bookingId: string;
-  method: 'mpesa' | 'bank';
-  phoneNumber?: string;
-  amount?: number;
-}
 
 /**
  * Initiate a payment (Generic/Legacy)
@@ -191,7 +183,7 @@ export const createMpesaConfig = async (
   data: CreateMpesaConfigRequest
 ): Promise<MpesaConfig> => {
   const response = await apiClient.axios.post<ApiResponse<MpesaConfig>>(
-    '/api/v1/payments/mpesa/config/',
+    '/payments/mpesa/config/',
     data
   );
   return response.data.data || { 

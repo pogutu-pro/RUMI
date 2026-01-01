@@ -56,7 +56,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { useUsers } from '@/features/users';
+import { useLandlordTenants } from '@/features/users';
 import { Skeleton } from '@/components/ui/skeleton';
 import { User as UserEntity } from '@/features/users';
 import { useToast } from '@/hooks/use-toast';
@@ -88,7 +88,8 @@ export default function TenantsPage() {
   const [messageBody, setMessageBody] = useState('');
   const { toast } = useToast();
 
-  const { data: usersData, isLoading } = useUsers({ role: 'student' });
+  const { data: usersData, isLoading } = useLandlordTenants();
+
   
   // Safely extract results whether paginated or flat array
   const rawTenants = React.useMemo(() => {
@@ -101,7 +102,7 @@ export default function TenantsPage() {
   const tenants: LandlordTenant[] = rawTenants as LandlordTenant[];
 
   const filteredTenants = tenants.filter((tenant) => {
-    const name = `${tenant.first_name || ''} ${tenant.last_name || ''}`.trim() || tenant.name || 'Unknown';
+    const name = `${tenant.first_name || ''} ${tenant.last_name || ''}`.trim() || 'Unknown';
     const email = tenant.email || '';
     const phone = tenant.phone_number || '';
     const hostelName = tenant.hostel_name || 'N/A';
@@ -319,7 +320,7 @@ export default function TenantsPage() {
         ) : (
             <AnimatePresence mode='popLayout'>
                 {filteredTenants.map((tenant, index) => {
-                    const name = `${tenant.first_name || ''} ${tenant.last_name || ''}`.trim() || tenant.name;
+                    const name = `${tenant.first_name || ''} ${tenant.last_name || ''}`.trim() || 'Tenant';
                     const paymentStatus = tenant.payment_status || 'current';
                     const isLate = paymentStatus === 'late' || paymentStatus === 'overdue';
                     const occupancyStatus = tenant.occupancy_status || 'occupied';

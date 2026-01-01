@@ -25,11 +25,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 
 const schema = z.object({
-  bankName: z.string().min(1, 'Bank name is required'),
-  accountNumber: z.string().min(5, 'Invalid account number'),
-  accountName: z.string().min(1, 'Account name is required'),
-  branchCode: z.string().optional(),
-  swiftCode: z.string().optional(),
+  bank_name: z.string().min(1, 'Bank name is required'),
+  bank_account_number: z.string().min(5, 'Invalid account number'),
+  bank_account_name: z.string().min(1, 'Account holder name is required'),
+  branch_code: z.string().optional(),
+  swift_code: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -63,7 +63,7 @@ export function BankDetailsForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="bankName"
+              name="bank_name"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Bank Name</FormLabel>
@@ -88,10 +88,10 @@ export function BankDetailsForm() {
 
             <FormField
               control={form.control}
-              name="accountName"
+              name="bank_account_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Account Name</FormLabel>
+                  <FormLabel>Account Holder Name</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -102,7 +102,7 @@ export function BankDetailsForm() {
 
             <FormField
               control={form.control}
-              name="accountNumber"
+              name="bank_account_number"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Account Number</FormLabel>
@@ -116,7 +116,7 @@ export function BankDetailsForm() {
 
             <FormField
               control={form.control}
-              name="branchCode"
+              name="branch_code"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Branch Code (Optional)</FormLabel>

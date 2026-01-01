@@ -114,7 +114,7 @@ export default function HostelDetailPage() {
     // Use rooms from hostel response if available, otherwise use separately fetched rooms
     const rooms: Room[] = (rawHostel.rooms && rawHostel.rooms.length > 0)
       ? rawHostel.rooms
-      : (roomsResponse?.results || []);
+      : (roomsResponse?.data || []);
     
     return {
       ...rawHostel,

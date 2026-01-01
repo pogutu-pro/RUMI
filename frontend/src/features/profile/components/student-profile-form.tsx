@@ -10,12 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUpdateStudentProfile } from '@/features/profile';
 
 const schema = z.object({
-  institution: z.string().min(1, 'Institution is required'),
+  university: z.string().min(1, 'University is required'),
   course: z.string().min(1, 'Course is required'),
-  yearOfStudy: z.number().min(1).max(7),
-  studentId: z.string().min(1, 'Student ID is required'),
-  emergencyContact: z.string().min(10, 'Invalid phone number'),
-  emergencyContactName: z.string().min(1, 'Contact name is required'),
+  year_of_study: z.number().min(1).max(7),
+  student_id_number: z.string().min(1, 'Student ID number is required'),
+  emergency_contact_phone: z.string().min(10, 'Invalid phone number'),
+  emergency_contact_name: z.string().min(1, 'Contact name is required'),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -40,28 +40,28 @@ export function StudentProfileForm({ initialData }: { initialData?: FormValues }
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={form.control} name="institution" render={({ field }) => (
-              <FormItem><FormLabel>Institution</FormLabel><FormControl>
+            <FormField control={form.control} name="university" render={({ field }) => (
+              <FormItem><FormLabel>University</FormLabel><FormControl>
                 <Input {...field} /></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="course" render={({ field }) => (
               <FormItem><FormLabel>Course</FormLabel><FormControl>
                 <Input {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-            <FormField control={form.control} name="yearOfStudy" render={({ field }) => (
+            <FormField control={form.control} name="year_of_study" render={({ field }) => (
               <FormItem><FormLabel>Year of Study</FormLabel><FormControl>
                 <Input type="number" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
               </FormControl><FormMessage /></FormItem>
             )} />
-            <FormField control={form.control} name="studentId" render={({ field }) => (
-              <FormItem><FormLabel>Student ID</FormLabel><FormControl>
+            <FormField control={form.control} name="student_id_number" render={({ field }) => (
+              <FormItem><FormLabel>Student ID Number</FormLabel><FormControl>
                 <Input {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-            <FormField control={form.control} name="emergencyContactName" render={({ field }) => (
+            <FormField control={form.control} name="emergency_contact_name" render={({ field }) => (
               <FormItem><FormLabel>Emergency Contact Name</FormLabel><FormControl>
                 <Input {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-            <FormField control={form.control} name="emergencyContact" render={({ field }) => (
+            <FormField control={form.control} name="emergency_contact_phone" render={({ field }) => (
               <FormItem><FormLabel>Emergency Contact Phone</FormLabel><FormControl>
                 <Input {...field} /></FormControl><FormMessage /></FormItem>
             )} />

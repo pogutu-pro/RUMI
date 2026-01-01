@@ -157,13 +157,13 @@ axiosInstance.interceptors.response.use(
         // Use a separate partial instance or fetch to avoid interceptor loops
         const response = await axiosBase.post(
           `${BASE_URL}${REFRESH_PATH}`,
-          { refresh: refreshToken },
+          { refresh_token: refreshToken },
           { headers: { 'Content-Type': 'application/json' } }
         );
 
-        const { access, refresh } = response.data;
-        const newAccess = access || response.data?.data?.access;
-        const newRefresh = refresh || response.data?.data?.refresh || refreshToken;
+        const { access_token, refresh_token } = response.data;
+        const newAccess = access_token || response.data?.data?.access_token;
+        const newRefresh = refresh_token || response.data?.data?.refresh_token || refreshToken;
 
         setTokens(newAccess, newRefresh);
         useAuthStore.getState().login({

@@ -52,7 +52,7 @@ export default function TechSupportPage() {
 
   const deleteUserMutation = useDeleteUser();
 
-  const users = usersResponse?.results || usersResponse?.data || [];
+  const users = usersResponse?.data || [];
 
   const handleDelete = () => {
       if(userToDelete) {

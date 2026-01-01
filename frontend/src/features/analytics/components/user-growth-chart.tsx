@@ -19,15 +19,17 @@ export function UserGrowthChart() {
         <CardTitle>User Growth</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
-          <LineChart data={mockData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey="users" stroke="#82ca9d" strokeWidth={2} />
-          </LineChart>
-        </ResponsiveContainer>
+        <div style={{ width: '100%', height: 350, minHeight: 350 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={mockData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="users" stroke="#82ca9d" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );

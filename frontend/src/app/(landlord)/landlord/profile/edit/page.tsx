@@ -80,7 +80,7 @@ const kenyanBanks = [
 
 export default function EditProfilePage() {
   const router = useRouter();
-  const { user, updateUser } = useAuth();
+  const { user, updateProfile: updateUser } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = React.useState('personal');
   const [avatarPreview, setAvatarPreview] = React.useState<string | null>(null);
@@ -106,14 +106,14 @@ export default function EditProfilePage() {
       first_name: user?.first_name || '',
       last_name: user?.last_name || '',
       email: user?.email || '',
-      phone: user?.phone_number || user?.phone || '',
-      bio: '',
+      phone: user?.phone_number || '',
+      bio: user?.bio || '',
     },
   });
 
   // Business Details Form
   const businessDetailsForm = useForm<BusinessDetailsFormValues>({
-    resolver: zodResolver(businessDetailsSchema),
+    resolver: zodResolver(businessDetailsSchema) as any,
     defaultValues: {
       companyName: '',
       businessRegistrationNumber: '',
@@ -458,9 +458,9 @@ export default function EditProfilePage() {
             </CardHeader>
             <CardContent>
               <Form {...businessDetailsForm}>
-                <form onSubmit={businessDetailsForm.handleSubmit(onSubmitBusinessDetails)} className="space-y-4">
+                <form onSubmit={businessDetailsForm.handleSubmit(onSubmitBusinessDetails as any)} className="space-y-4">
                   <FormField
-                    control={businessDetailsForm.control}
+                    control={businessDetailsForm.control as any}
                     name="companyName"
                     render={({ field }) => (
                       <FormItem>
@@ -476,7 +476,7 @@ export default function EditProfilePage() {
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <FormField
-                      control={businessDetailsForm.control}
+                      control={businessDetailsForm.control as any}
                       name="businessRegistrationNumber"
                       render={({ field }) => (
                         <FormItem>
@@ -489,7 +489,7 @@ export default function EditProfilePage() {
                       )}
                     />
                     <FormField
-                      control={businessDetailsForm.control}
+                      control={businessDetailsForm.control as any}
                       name="taxPin"
                       render={({ field }) => (
                         <FormItem>
@@ -504,7 +504,7 @@ export default function EditProfilePage() {
                   </div>
 
                   <FormField
-                    control={businessDetailsForm.control}
+                    control={businessDetailsForm.control as any}
                     name="numberOfProperties"
                     render={({ field }) => (
                       <FormItem>
@@ -521,7 +521,7 @@ export default function EditProfilePage() {
                   />
 
                   <FormField
-                    control={businessDetailsForm.control}
+                    control={businessDetailsForm.control as any}
                     name="businessAddress"
                     render={({ field }) => (
                       <FormItem>
@@ -540,7 +540,7 @@ export default function EditProfilePage() {
                   />
 
                   <FormField
-                    control={businessDetailsForm.control}
+                    control={businessDetailsForm.control as any}
                     name="website"
                     render={({ field }) => (
                       <FormItem>

@@ -2,16 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api/client';
 import { toast } from 'sonner';
 import type { ApiResponse } from '@/types/api.types';
+import type { PaymentMethod } from '../types';
 
-export interface PaymentMethod {
-  id: string;
-  type: 'mpesa' | 'card' | 'bank';
-  name: string;
-  details: Record<string, string>;
-  isDefault: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 export interface AddPaymentMethodRequest {
   type: 'mpesa' | 'card' | 'bank';

@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useWebSocket } from './use-websocket';
-import { useAuthStore } from '@/features/auth';
+import { useAuth } from '@/features/auth';
 
 export type RealtimeEvent =
   | 'message.new'
@@ -31,8 +31,7 @@ export interface UseRealtimeOptions {
  */
 export const useRealtime = (options: UseRealtimeOptions = {}) => {
   const { channels = [], autoConnect = true } = options;
-  const user = useAuthUser();
-  const isAuthenticated = useIsAuthenticated();
+  const { user, isAuthenticated } = useAuth();
   
   const eventHandlersRef = useRef<
     Map<RealtimeEvent, Set<(data: any) => void>>

@@ -48,3 +48,8 @@ export interface PlatformAnalytics {
   platformMetrics: PerformanceMetric[];
   revenueDistribution: RevenueDistribution[];
 }
+
+export interface CustomDateRange {
+  startDate: Date;
+  endDate: Date;
+}

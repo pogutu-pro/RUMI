@@ -8,9 +8,9 @@ from django.db.models.functions import TruncMonth
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from accounts.models import User, LandlordProfile
-from hostels.models import Hostel, Booking
-from payments.models import Transaction
+from accounts.models import User, LandlordProfile, StudentProfile
+from hostels.models import Hostel, Booking, RoomOccupant
+from payments.models import Transaction, Payment
 
 @swagger_auto_schema(
     tags=['Landlord API']
@@ -767,4 +767,83 @@ class LandlordRecentTransactionsView(APIView):
         
         return Response({
             'transactions': transaction_data
+        }, status=status.HTTP_200_OK)
+
+
+@swagger_auto_schema(
+    tags=['Landlord API']
+)
+class LandlordStudentManagementView(APIView):
+    """
+    Landlord Student Management API
+    
+    Retrieve and manage students (tenants) currently residing in the landlord's hostels.
+    
+    GET: List active tenants with filtering
+    
+    Authentication Required: JWT Token
+    Permissions: Landlords only
+    """
+    
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        if request.user.role != 'landlord':
+            return Response({
+                'error': 'Access denied. Landlord role required.'
+            }, status=status.HTTP_403_FORBIDDEN)
+            
+        try:
+            landlord_profile = request.user.landlord_profile
+        except LandlordProfile.DoesNotExist:
+            return Response({
+                'error': 'Landlord profile not found.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Get active occupants in landlord's hostels
+        occupants = RoomOccupant.objects.filter(
+            room__hostel__landlord=landlord_profile,
+            is_active=True
+        ).select_related(
+            'student__user', 
+            'room', 
+            'room__hostel',
+            'booking'
+        )
+
+        students_data = []
+        for occupant in occupants:
+            student = occupant.student
+            user = student.user
+            room = occupant.room
+            hostel = room.hostel
+            booking = occupant.booking
+
+            # In a real app, payment status would be calculated based on transactions
+            # For now, we'll derive it from the booking or mock it consistently
+            payment_status = 'current'
+            if booking.balance_due > 0:
+                payment_status = 'overdue'
+
+            students_data.append({
+                'id': user.id,
+                'student_id': student.id,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'email': user.email,
+                'phone_number': user.phone_number if hasattr(user, 'phone_number') else '',
+                'profile_picture': user.profile_picture.url if hasattr(user, 'profile_picture') and user.profile_picture else None,
+                'hostel_name': hostel.name,
+                'room_number': room.room_number,
+                'monthly_rent': float(booking.monthly_rent),
+                'payment_status': payment_status,
+                'last_payment_date': booking.updated_at.isoformat(), # Placeholder
+                'occupancy_status': 'occupied',
+                'lease_start': booking.check_in_date.isoformat() if booking.check_in_date else None,
+                'lease_end': booking.check_out_date.isoformat() if booking.check_out_date else None,
+            })
+
+        return Response({
+            'total_tenants': len(students_data),
+            'results': students_data
         }, status=status.HTTP_200_OK)

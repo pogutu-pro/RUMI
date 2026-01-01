@@ -9,7 +9,7 @@ export default function NotFound() {
       <EmptyState
         title="No Hostels Found"
         description="We couldn't find any hostels matching your search. Try adjusting your filters or search for something else."
-        icon="search"
+        variant="search"
       />
       <Link href="/hostels">
         <Button variant="outline" size="lg" className="mt-6">

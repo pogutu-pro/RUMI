@@ -4,13 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, Smartphone, Building2 } from 'lucide-react';
 
-interface PaymentMethod {
-  id: string;
-  type: 'mpesa' | 'card' | 'bank';
-  name: string;
-  details: Record<string, string>;
-  isDefault: boolean;
-}
+import { PaymentMethod } from '../types';
 
 interface PaymentMethodCardProps {
   method: PaymentMethod;

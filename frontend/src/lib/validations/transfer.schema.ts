@@ -44,7 +44,7 @@ export const createTransferSchema = z.object({
 
 // Filter available rooms schema
 export const filterRoomsSchema = z.object({
-  hostelId: z.string().min(1),
+  hostelId: z.string().min(1).optional(),
   priceRange: z.object({
     min: z.number().min(0),
     max: z.number().min(0),
@@ -53,6 +53,7 @@ export const filterRoomsSchema = z.object({
   floors: z.array(z.number()).optional(),
   quietFloorOnly: z.boolean().optional(),
   roommatePreference: z.enum(['same', 'new', 'any']).optional(),
+  searchQuery: z.string().optional(),
 });
 
 export const approveTransferSchema = z.object({

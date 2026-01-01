@@ -11,4 +11,7 @@ urlpatterns = [
     path('payments/reports/generate/', views.LandlordPaymentReportsView.as_view(), name='landlord_generate_report'),
     path('payments/analytics/', views.LandlordPaymentAnalyticsView.as_view(), name='landlord_payment_analytics'),
     path('payments/transactions/recent/', views.LandlordRecentTransactionsView.as_view(), name='landlord_recent_transactions'),
+    
+    # Tenant Management
+    path('tenants/', views.LandlordStudentManagementView.as_view(), name='landlord_tenants'),
 ]

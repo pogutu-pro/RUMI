@@ -47,13 +47,13 @@ export const useUserProfile = (userId: string | null | undefined) => {
  */
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
-  const { setUser } = useAuthStore();
+  const { updateUser } = useAuthStore();
 
   return useMutation({
     mutationFn: (data: UpdateProfileRequest) => profilesApi.updateProfile(data),
     onSuccess: (response) => {
       if (response.data) {
-        setUser(response.data);
+        updateUser(response.data);
       }
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['user'] });

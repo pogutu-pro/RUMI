@@ -47,7 +47,7 @@ export default function ResetPasswordPage() {
     setError,
   } = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
-    defaultValues: { password: '', confirmPassword: '', token },
+    defaultValues: { password: '', confirm_password: '', token },
     mode: 'onTouched',
   });
 
@@ -233,27 +233,27 @@ export default function ResetPasswordPage() {
 
           <div className="space-y-2">
             <label
-              htmlFor="confirmPassword"
+              htmlFor="confirm_password"
               className="text-sm font-medium text-gray-700"
             >
               Confirm new password
             </label>
             <Controller
-              name="confirmPassword"
+              name="confirm_password"
               control={control}
               render={({ field }) => (
                 <PasswordInput
-                  id="confirmPassword"
+                  id="confirm_password"
                   placeholder="Re-enter your new password"
                   disabled={loading}
-                  className={cn(errors.confirmPassword && 'border-red-500')}
+                  className={cn(errors.confirm_password && 'border-red-500')}
                   {...field}
                 />
               )}
             />
-            {errors.confirmPassword && (
+            {errors.confirm_password && (
               <p className="text-sm text-red-600">
-                {errors.confirmPassword.message}
+                {errors.confirm_password.message}
               </p>
             )}
           </div>

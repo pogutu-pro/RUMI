@@ -10,8 +10,8 @@ import type {
   ResendOtpRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
-  StudentProfileRequest,
-  LandlordProfileRequest,
+  UpdateStudentProfileRequest,
+  UpdateLandlordProfileRequest,
   ProfileResponse,
   TokenResponse,
   PermissionsResponse,
@@ -178,7 +178,7 @@ async function uploadProfilePicture(file: File): Promise<ProfileResponse> {
  * Endpoint: PUT /api/v1/accounts/profile/
  */
 async function completeStudentProfile(
-  data: StudentProfileRequest,
+  data: UpdateStudentProfileRequest,
 ): Promise<ProfileResponse> {
   const res = await axios.put<ProfileResponse>('/accounts/profile/', {
     profile: { ...data, type: 'student' },
@@ -191,7 +191,7 @@ async function completeStudentProfile(
  * Endpoint: PUT /api/v1/accounts/profile/
  */
 async function completeLandlordProfile(
-  data: LandlordProfileRequest,
+  data: UpdateLandlordProfileRequest,
 ): Promise<ProfileResponse> {
   const res = await axios.put<ProfileResponse>('/accounts/profile/', {
     profile: { ...data, type: 'landlord' },
@@ -205,7 +205,7 @@ async function completeLandlordProfile(
  */
 async function refreshToken(refresh: string): Promise<TokenResponse> {
   const res = await axios.post<TokenResponse>('/accounts/refresh-token/', {
-    refresh,
+    refresh_token: refresh,
   });
   return res.data;
 }

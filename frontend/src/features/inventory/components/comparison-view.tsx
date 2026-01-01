@@ -27,7 +27,12 @@ interface ComparisonViewProps {
   ) => void;
 }
 
-// ... CONDTION_OPTS code (unchanged)
+const CONDITION_OPTS = [
+  { value: 'good', label: 'Good', icon: CheckCircle2, color: 'text-emerald-500' },
+  { value: 'worn', label: 'Worn / Minor Use', icon: HelpCircle, color: 'text-amber-500' },
+  { value: 'damaged', label: 'Damaged', icon: AlertTriangle, color: 'text-red-500' },
+  { value: 'missing', label: 'Missing', icon: XCircle, color: 'text-slate-500' },
+] as const;
 
 export function ComparisonView({ item, onVerify }: ComparisonViewProps) {
   const [caretakerCondition, setCaretakerCondition] = React.useState<ItemCondition>(
@@ -74,7 +79,7 @@ export function ComparisonView({ item, onVerify }: ComparisonViewProps) {
       onVerify(caretakerCondition, isFlagged, comment, isChargeable, num);
   };
 
-  const StudentIcon = CONDITION_OPTS.find(c => c.value === item.studentCondition)?.icon || HelpCircle;
+  const StudentIcon = (CONDITION_OPTS as unknown as readonly any[]).find(c => c.value === item.studentCondition)?.icon || HelpCircle;
 
   return (
     <div className={cn(
@@ -86,7 +91,7 @@ export function ComparisonView({ item, onVerify }: ComparisonViewProps) {
         <h4 className="text-xs font-bold text-muted-foreground uppercase mb-2">Student Reported</h4>
         <div className="flex items-start gap-3">
           <div className={cn("mt-1 p-1 rounded-full bg-white shadow-sm border")}>
-            <StudentIcon className={cn("h-5 w-5", CONDITION_OPTS.find(c => c.value === item.studentCondition)?.color)} />
+            <StudentIcon className={cn("h-5 w-5", (CONDITION_OPTS as unknown as readonly any[]).find(c => c.value === item.studentCondition)?.color)} />
           </div>
           <div className="space-y-1">
             <p className="font-semibold">{item.studentCondition.replace('_', ' ')}</p>

@@ -26,6 +26,7 @@ export interface InventoryItem {
   location: string;
   costPerfUnit?: number; // Replacement cost
   lastCheckedAt?: string; // ISO date string of last verification
+  notes?: string;
 }
 
 export type ReportType = 'check_in' | 'check_out';
@@ -55,6 +56,7 @@ export interface InventoryReportItem {
   // Landlord/Damage Logic
   damageCost?: number;
   isChargeable?: boolean;
+  notes?: string;
 }
 
 export interface InventoryReport {
@@ -127,7 +129,7 @@ export const getInventoryItems = async (
   // SETUP_GUIDE: /api/v1/hostels/{hostel_id}/inventory/template/
   const path = params?.hostelId 
     ? `/hostels/${params.hostelId}/inventory/template/`
-    : '/hostels/inventory/items/'; // Fallback or if needed
+    : '/caretaker/inventory/'; // Aligned with Backend/caretaker_operations/urls.py
     
   const response = await api.axios.get<ApiResponse<InventoryItem[]>>(
     path,

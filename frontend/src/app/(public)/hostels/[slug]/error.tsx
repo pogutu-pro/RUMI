@@ -19,7 +19,6 @@ export default function Error({ error, reset }: ErrorProps) {
   return (
     <div className="container mx-auto py-24 px-4 sm:px-6 lg:px-8 text-center">
       <ErrorState
-        statusCode={404}
         title="Hostel Not Found"
         message="We couldn't find the hostel you're looking for. It may have been removed or the link is incorrect."
       />

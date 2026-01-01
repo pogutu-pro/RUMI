@@ -8,47 +8,14 @@ import type {
   CaretakerProfile,
   LifestylePreferences,
 } from '@/types/auth.types';
+import type {
+  UpdateProfileRequest,
+  UpdateStudentProfileRequest,
+  UpdateLandlordProfileRequest,
+  UpdateCaretakerProfileRequest,
+} from '../types';
 
-export interface UpdateProfileRequest {
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-  phoneNumber?: string;
-  profileImage?: string;
-  avatar?: string;
-}
-
-export interface UpdateStudentProfileRequest {
-  university?: string;
-  studentIdNumber?: string;
-  yearOfStudy?: number | string;
-  course?: string;
-  lifestylePreferences?: LifestylePreferences;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
-  emergencyContactRelationship?: string;
-}
-
-export interface UpdateLandlordProfileRequest {
-  nationalId?: string;
-  businessName?: string;
-  kraPin?: string;
-  bankAccountNumber?: string;
-  bankName?: string;
-  bankAccountName?: string;
-}
-
-export interface UpdateCaretakerProfileRequest {
-  hostelId?: string;
-  permissions?: {
-    viewInventory?: boolean;
-    manageInventory?: boolean;
-    viewTenants?: boolean;
-    approveCheckOut?: boolean;
-    handleMaintenance?: boolean;
-    viewFinancials?: boolean;
-  };
-}
+// Request types are now imported from ../types
 
 export interface ProfileResponse {
   user: User;

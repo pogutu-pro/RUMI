@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { AuthCard } from '@/features/auth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { OTPInput } from '@/components/ui/otp-input';
-import { useVerifyEmail, useResendVerification } from '@/features/auth';
+import { useVerifyEmail, useResendVerification, type ResendOtpRequest } from '@/features/auth';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 import {
   verifyEmailSchema,
@@ -54,15 +54,16 @@ export default function VerifyEmailPage() {
   }, [resendCooldown]);
 
   const onSubmit = (data: VerifyEmailFormData) => {
-    verifyHook.mutate(data);
+    verifyHook.mutate({
+      ...data,
+      token: tokenFromQuery,
+    });
   };
 
   const handleResend = async () => {
     if (resendCooldown > 0 || resendHook.isPending) return;
     try {
-      const payload = tokenFromQuery
-        ? { token: tokenFromQuery }
-        : { email: emailFromQuery };
+      const payload: ResendOtpRequest = { email: emailFromQuery };
       await resendHook.mutateAsync(payload);
       setResendCooldown(60);
       clearErrors('otp');

@@ -6,7 +6,9 @@ import {
   updateUserStatus,
   deleteUser,
   getUser,
+  usersApi,
 } from '@/features/users';
+
 import { useAuthStore, useIsAuthenticated } from '@/features/auth';
 import type { User } from '@/types/entities.types';
 
@@ -32,6 +34,15 @@ export const useUsers = (params?: UseUsersParams) => {
   });
 };
 
+export const useLandlordTenants = (params?: Partial<UseUsersParams>) => {
+    return useQuery({
+      queryKey: queryKeys.users.list({ ...params, type: 'landlord_tenants' }),
+      queryFn: () => usersApi.getLandlordTenants(params),
+      staleTime: 5 * 60 * 1000,
+    });
+};
+
+
 export const useUser = (
   id?: string | null,
   options?: UseUserOptions
@@ -42,7 +53,7 @@ export const useUser = (
     const targetUserId = id || currentUser?.id;
 
   return useQuery({
-    queryKey: targetUserId ? queryKeys.users.detail(targetUserId) : ['user', 'unknown'],
+    queryKey: targetUserId ? queryKeys.users.detail(targetUserId as string) : ['user', 'unknown'],
     queryFn: () => {
         if (!targetUserId) throw new Error('User ID is required');
         return getUserById(targetUserId);
