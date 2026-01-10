@@ -64,13 +64,13 @@ export function SmsTemplateEditor() {
                 </div>
                 <div className="flex gap-2 flex-wrap mt-2">
                   <Badge variant="secondary" className="cursor-pointer" onClick={() => setMessage(message + '{{name}}')}>
-                    {{name}}
+                    {"{{name}}"}
                   </Badge>
                   <Badge variant="secondary" className="cursor-pointer" onClick={() => setMessage(message + '{{booking_id}}')}>
-                    {{booking_id}}
+                    {"{{booking_id}}"}
                   </Badge>
                   <Badge variant="secondary" className="cursor-pointer" onClick={() => setMessage(message + '{{amount}}')}>
-                    {{amount}}
+                    {"{{amount}}"}
                   </Badge>
                 </div>
               </div>

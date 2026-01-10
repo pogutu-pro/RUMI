@@ -44,7 +44,7 @@ function FieldWrapper({
           {/* Required asterisk could be added here if needed */}
         </label>
       )}
-      {React.cloneElement(children as React.ReactElement, {
+      {React.cloneElement(children as React.ReactElement<any>, {
         id: fieldId,
         'aria-invalid': !!error,
         'aria-describedby': error
@@ -82,17 +82,15 @@ interface InputFieldProps<TFieldValues extends FieldValues>
 /**
  * Text input component connected to RHF that forwards refs and integrates accessibility.
  */
-const InputField = React.forwardRef(
-  <TFieldValues extends FieldValues>(
-    { name, label, description, ...props }: InputFieldProps<TFieldValues>,
-    ref: React.Ref<HTMLInputElement>,
-  ) => {
+const InputField = React.forwardRef<HTMLInputElement, InputFieldProps<any>>(
+  ({ name, label, description, ...props }, ref) => {
     const {
       register,
       formState: { errors },
-    } = useFormContext<TFieldValues>();
+    } = useFormContext();
 
-    const errorMessage = errors[name]?.message as string | undefined;
+    const errorMessage = (errors[name] as any)?.message as string | undefined;
+    const { ref: registerRef, ...registerProps } = register(name);
 
     return (
       <FieldWrapper
@@ -102,8 +100,12 @@ const InputField = React.forwardRef(
         error={errorMessage}
       >
         <Input
-          {...register(name)}
-          ref={ref}
+          {...registerProps}
+          ref={(e) => {
+            registerRef(e);
+            if (typeof ref === 'function') ref(e);
+            else if (ref) (ref as React.MutableRefObject<HTMLInputElement | null>).current = e;
+          }}
           {...props}
           className={cn(
             'h-11 transition-colors',
@@ -120,7 +122,7 @@ const InputField = React.forwardRef(
 
 InputField.displayName = 'InputField';
 
-interface FormFieldProps extends React.ComponentPropsWithoutRef<typeof Input> {
+interface FormFieldProps extends Omit<React.ComponentPropsWithoutRef<typeof Input>, 'error'> {
   label?: string;
   error?: string;
   description?: string;
@@ -132,9 +134,9 @@ interface FormFieldProps extends React.ComponentPropsWithoutRef<typeof Input> {
  * Used with react-hook-form's register function.
  */
 const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
-  ({ label, error, description, hint, className, id, ...props }, ref) => {
+  ({ label, error: errorMessage, description, hint, className, id, ...props }, ref) => {
     const fieldId = id || React.useId();
-    const errorId = error ? `${fieldId}-error` : undefined;
+    const errorId = errorMessage ? `${fieldId}-error` : undefined;
     const fieldDescription = description || hint;
     const descriptionId = fieldDescription
       ? `${fieldId}-description`
@@ -154,27 +156,27 @@ const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
         <Input
           ref={ref}
           id={fieldId}
-          error={!!error}
+          error={!!errorMessage}
           className={className}
-          aria-invalid={!!error}
+          aria-invalid={!!errorMessage}
           aria-describedby={
-            error ? errorId : fieldDescription ? descriptionId : undefined
+            errorMessage ? errorId : fieldDescription ? descriptionId : undefined
           }
           {...props}
         />
-        {!error && fieldDescription && (
+        {!errorMessage && fieldDescription && (
           <p id={descriptionId} className="text-xs text-muted-foreground">
             {fieldDescription}
           </p>
         )}
-        {error && (
+        {errorMessage && (
           <p
             id={errorId}
             role="alert"
             className="text-sm text-destructive flex items-center gap-1"
           >
             <AlertCircle className="h-4 w-4" aria-hidden />
-            {error}
+            {errorMessage}
           </p>
         )}
       </div>
@@ -195,7 +197,7 @@ const PasswordField = React.forwardRef<HTMLInputElement, PasswordFieldProps>(
   (
     {
       label,
-      error,
+      error: errorMessage,
       description,
       showStrength = false,
       minLength,
@@ -206,7 +208,7 @@ const PasswordField = React.forwardRef<HTMLInputElement, PasswordFieldProps>(
     ref,
   ) => {
     const fieldId = id || React.useId();
-    const errorId = error ? `${fieldId}-error` : undefined;
+    const errorId = errorMessage ? `${fieldId}-error` : undefined;
     const descriptionId = description ? `${fieldId}-description` : undefined;
 
     const passwordInput = (
@@ -215,11 +217,11 @@ const PasswordField = React.forwardRef<HTMLInputElement, PasswordFieldProps>(
         id={fieldId}
         showStrength={showStrength}
         minLength={minLength}
-        error={!!error}
+        error={!!errorMessage}
         className={className}
-        aria-invalid={!!error}
+        aria-invalid={!!errorMessage}
         aria-describedby={
-          error ? errorId : description ? descriptionId : undefined
+          errorMessage ? errorId : description ? descriptionId : undefined
         }
         {...props}
       />
@@ -237,19 +239,19 @@ const PasswordField = React.forwardRef<HTMLInputElement, PasswordFieldProps>(
           </label>
         )}
         {passwordInput}
-        {!error && description && (
+        {!errorMessage && description && (
           <p id={descriptionId} className="text-xs text-muted-foreground">
             {description}
           </p>
         )}
-        {error && (
+        {errorMessage && (
           <p
             id={errorId}
             role="alert"
             className="text-sm text-destructive flex items-center gap-1"
           >
             <AlertCircle className="h-4 w-4" aria-hidden />
-            {error}
+            {errorMessage}
           </p>
         )}
       </div>

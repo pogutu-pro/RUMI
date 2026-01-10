@@ -4,7 +4,7 @@ import * as React from 'react';
 import { AlertCircle, PlusCircle, Search } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Icon } from '@/components/ui/icons';
+import { Icon, type IconName } from '@/components/ui/icons';
 import { cn } from '@/lib/utils/cn';
 
 type EmptyStateVariant = 'default' | 'search' | 'add' | 'alert';
@@ -17,10 +17,10 @@ interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const variantConfig = {
-  default: { icon: 'Frown' as const },
-  search: { icon: 'Search' as const },
-  add: { icon: 'PlusCircle' as const },
-  alert: { icon: 'AlertCircle' as const },
+  default: { icon: 'Frown' as IconName },
+  search: { icon: 'Search' as IconName },
+  add: { icon: 'CirclePlus' as IconName },
+  alert: { icon: 'CircleAlert' as IconName },
 } satisfies Record<EmptyStateVariant, { icon: IconName }>;
 
 export function EmptyState({

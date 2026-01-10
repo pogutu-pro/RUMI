@@ -40,8 +40,8 @@ export default function Page() {
             {booking.hostel.name}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Room {booking.room.name} • Move-in{' '}
-            {new Date(booking.moveInDate).toLocaleDateString()}
+            Room {(booking.room as any)?.name || (booking.room as any)?.number} • Move-in{' '}
+            {new Date(booking.check_in_date).toLocaleDateString()}
           </p>
         </div>
         <Badge variant="outline" className="text-[11px]">
@@ -56,9 +56,9 @@ export default function Page() {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 text-xs text-muted-foreground space-y-1">
-          <p>Duration: {booking.durationMonths} months</p>
-          <p>Total: KES {booking.totalPrice}</p>
-          <p>Payment method: {booking.paymentMethod}</p>
+          <p>Duration: {booking.duration_months} months</p>
+          <p>Total: KES {booking.total_amount}</p>
+          <p>Check-in: {new Date(booking.check_in_date).toLocaleDateString()}</p>
         </CardContent>
       </Card>
 

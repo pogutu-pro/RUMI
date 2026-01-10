@@ -87,7 +87,7 @@ export default function TenantProfilePage() {
                    <div className="space-y-1">
                        <p className="text-sm font-medium text-slate-500">Joined Date</p>
                        <p className="font-semibold text-slate-900 dark:text-white">
-                           {format(new Date(user.date_joined || new Date()), 'MMM dd, yyyy')}
+                           {format(new Date(user.created_at || new Date()), 'MMM dd, yyyy')}
                        </p>
                    </div>
                    <div className="space-y-1">

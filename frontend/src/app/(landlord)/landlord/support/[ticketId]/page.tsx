@@ -44,7 +44,6 @@ export default function TicketDetailsPage() {
       addReply.mutate({
           ticketId: ticketId as string,
           message: reply,
-          isInternal: false
       }, {
           onSuccess: () => {
               setReply('');
@@ -54,7 +53,7 @@ export default function TicketDetailsPage() {
   };
 
   const handleResolve = () => {
-      updateStatus.mutate({ id: ticketId as string, status: 'resolved' });
+      updateStatus.mutate({ ticketId: ticketId as string, status: 'resolved' });
   };
 
   if (isLoading) return <div className="p-8"><Skeleton className="h-[500px] w-full" /></div>;
@@ -74,7 +73,7 @@ export default function TicketDetailsPage() {
                       <Badge variant="outline" className="text-xs uppercase font-normal">{ticket.priority}</Badge>
                   </h1>
                   <p className="text-sm text-slate-500 flex items-center gap-2">
-                      Ticket #{ticket.id.slice(0,8)} • {format(new Date(ticket.created_at), 'MMM dd, HH:mm')}
+                      Ticket #{ticket.id.slice(0,8)} • {format(new Date(ticket.createdAt), 'MMM dd, HH:mm')}
                   </p>
               </div>
           </div>
@@ -103,7 +102,7 @@ export default function TicketDetailsPage() {
                           <div className="space-y-1 max-w-[85%]">
                               <div className="flex items-baseline gap-2">
                                   <span className="font-semibold text-sm">Tenant</span>
-                                  <span className="text-xs text-slate-400">{format(new Date(ticket.created_at), 'HH:mm')}</span>
+                                  <span className="text-xs text-slate-400">{format(new Date(ticket.createdAt), 'HH:mm')}</span>
                               </div>
                               <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl rounded-tl-none shadow-sm text-sm leading-relaxed border border-slate-100 dark:border-slate-700">
                                   {ticket.description}

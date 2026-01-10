@@ -56,11 +56,11 @@ export default function BookingHistoryPage() {
                     {booking.hostel.name}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Room {booking.room.name} • {booking.durationMonths} months
+                    Room {(booking.room as any).name || (booking.room as any).number} • {booking.duration_months} months
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(booking.moveInDate).toLocaleDateString()} -{' '}
-                    {new Date(booking.moveOutDate).toLocaleDateString()}
+                    {new Date(booking.check_in_date).toLocaleDateString()} -{' '}
+                    {booking.check_out_date ? new Date(booking.check_out_date).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

@@ -36,8 +36,11 @@ export default function StudentMessagesPage() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
 
   // Queries & Mutations
-  const { data: conversations = [], isLoading: isLoadingConversations, refetch: refetchConversations } = useConversations();
-  const { data: messages = [], isLoading: isLoadingMessages } = useMessages(activeConversationId);
+  const { data: conversationsData, isLoading: isLoadingConversations, refetch: refetchConversations } = useConversations();
+  const conversations = (conversationsData as any)?.data || [];
+  
+  const { data: messagesData, isLoading: isLoadingMessages } = useMessages(activeConversationId);
+  const messages = (messagesData as any)?.data || [];
   const { mutate: sendMessage, isPending: isSending } = useSendMessage();
   const { mutate: markAsRead } = useMarkAsRead();
   const { mutate: pinConversation } = usePinConversation();
@@ -86,7 +89,7 @@ export default function StudentMessagesPage() {
   }, [handleScroll]);
 
   const activeConversation = activeConversationId 
-    ? conversations.find(c => c.id === activeConversationId) 
+    ? conversations.find((c: Conversation) => c.id === activeConversationId) 
     : null;
 
   // Sort conversations: pinned → recent
@@ -219,7 +222,7 @@ export default function StudentMessagesPage() {
                 <EmptyState />
               ) : (
                 <>
-                  {messages.map((message, index) => {
+                  {messages.map((message: any, index: number) => {
                     const prevMessage = messages[index - 1];
                     const isGrouped =
                       prevMessage &&
@@ -231,7 +234,7 @@ export default function StudentMessagesPage() {
                     return (
                       <MessageBubble
                         key={message.id}
-                        message={message}
+                        message={message as any}
                         isOwnMessage={message.isOwnMessage || false}
                         isGrouped={isGrouped}
                       />

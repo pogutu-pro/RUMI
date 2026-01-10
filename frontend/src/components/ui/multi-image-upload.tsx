@@ -87,6 +87,7 @@ const SortableList = SortableContainer(
           <SortableItem
             key={file.id}
             index={index}
+            // @ts-ignore
             file={file}
             onRemove={onRemove}
           />
@@ -201,6 +202,7 @@ export function MultiImageUpload({
             <span>Manage Photos (Drag to Reorder)</span>
           </h3>
           <SortableList
+            // @ts-ignore
             files={files}
             onRemove={handleRemove}
             onSortEnd={onSortEnd}

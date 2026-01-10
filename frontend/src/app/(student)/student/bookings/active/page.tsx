@@ -71,7 +71,7 @@ export default function ActiveBookingsPage() {
                     <div>
                       <p className="text-xs text-muted-foreground">Room</p>
                       <p className="text-sm font-medium text-foreground">
-                        {booking.room.name} • {booking.room.type}
+                        {(booking.room as any).name || (booking.room as any).number} • {(booking.room as any).room_type || (booking.room as any).type || 'Room'}
                       </p>
                     </div>
                   </div>
@@ -81,7 +81,7 @@ export default function ActiveBookingsPage() {
                     <div>
                       <p className="text-xs text-muted-foreground">Duration</p>
                       <p className="text-sm font-medium text-foreground">
-                        {booking.durationMonths} months
+                        {booking.duration_months} months
                       </p>
                     </div>
                   </div>
@@ -91,7 +91,7 @@ export default function ActiveBookingsPage() {
                     <div>
                       <p className="text-xs text-muted-foreground">Check-in Date</p>
                       <p className="text-sm font-medium text-foreground">
-                        {new Date(booking.moveInDate).toLocaleDateString('en-US', {
+                        {new Date(booking.check_in_date).toLocaleDateString('en-US', {
                           month: 'long',
                           day: 'numeric',
                           year: 'numeric',
@@ -105,7 +105,7 @@ export default function ActiveBookingsPage() {
                     <div>
                       <p className="text-xs text-muted-foreground">Total Amount</p>
                       <p className="text-sm font-medium text-foreground">
-                        KES {booking.totalAmount.toLocaleString()}
+                        KES {booking.total_amount.toLocaleString()}
                       </p>
                     </div>
                   </div>

@@ -64,13 +64,13 @@ export function UserTable({ users, isLoading, onViewDetails, onSuspendUser }: Us
                     "bg-secondary text-secondary-foreground"
                   )}>
                     {user.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="h-9 w-9 rounded-full object-cover" />
+                      <img src={user.avatar} alt={`${user.first_name} ${user.last_name}`} className="h-9 w-9 rounded-full object-cover" />
                     ) : (
                       <User className="w-4 h-4" />
                     )}
                   </div>
                   <div>
-                    <div className="font-medium text-foreground">{user.name}</div>
+                    <div className="font-medium text-foreground">{user.first_name} {user.last_name}</div>
                     <div className="text-xs text-muted-foreground">{user.email}</div>
                   </div>
                 </div>
@@ -103,7 +103,7 @@ export function UserTable({ users, isLoading, onViewDetails, onSuspendUser }: Us
                 {(user as any).hostel_name || '-'}
               </TableCell>
               <TableCell className="text-muted-foreground text-sm">
-                {format(new Date(user.joinedAt), "MMM d, yyyy")}
+                {user.created_at ? format(new Date(user.created_at), "MMM d, yyyy") : '-'}
               </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>

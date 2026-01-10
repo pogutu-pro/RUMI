@@ -48,12 +48,12 @@ export default function NotificationsPage() {
   const [filter, setFilter] = React.useState<'all' | 'unread' | 'read'>('all');
 
   const filteredNotifications = notifications.filter((n: Notification) => {
-    if (filter === 'unread') return !n.is_read;
-    if (filter === 'read') return n.is_read;
+    if (filter === 'unread') return !n.isRead;
+    if (filter === 'read') return n.isRead;
     return true;
   });
 
-  const unreadCount = notifications.filter((n: Notification) => !n.is_read).length;
+  const unreadCount = notifications.filter((n: Notification) => !n.isRead).length;
 
   const handleMarkAsRead = (id: string) => {
     markAsReadMutation.mutate(id);
@@ -175,7 +175,7 @@ export default function NotificationsPage() {
               key={notification.id}
               className={cn(
                 'border-l-4 transition-all',
-                !notification.is_read && 'bg-muted/30',
+                !notification.isRead && 'bg-muted/30',
                 getTypeBgColor(notification.type)
               )}
             >
@@ -187,7 +187,7 @@ export default function NotificationsPage() {
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <h3 className="font-semibold text-sm">{notification.title}</h3>
                       <div className="flex items-center gap-2">
-                        {!notification.is_read && (
+                        {!notification.isRead && (
                           <span className="h-2 w-2 rounded-full bg-blue-600 flex-shrink-0" />
                         )}
                       </div>
@@ -200,11 +200,11 @@ export default function NotificationsPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        {formatRelativeTime(notification.created_at)}
+                        {formatRelativeTime(notification.createdAt)}
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {!notification.is_read && (
+                        {!notification.isRead && (
                           <Button
                             size="sm"
                             variant="ghost"

@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useBooking } from '@/features/bookings';
@@ -47,10 +48,14 @@ export default function CheckOutProcessPage() {
       
       // Simulate payload
       processCheckOut.mutate({
-          bookingId: booking.id,
-          damageReport: damages,
-          deductions: deductions,
-          // assuming endpoint handles final math
+          tenantId: typeof booking.student === 'object' ? booking.student.id : booking.student,
+          roomId: typeof booking.room === 'object' ? booking.room.id : '',
+          actualCheckOutDate: new Date().toISOString(),
+          reason: 'semester_end', // Default for now
+          roomCondition: deductions > 0 ? 'damaged' : 'clean',
+          notes: damages,
+          processedBy: 'LANDLORD',
+          processedAt: new Date().toISOString()
       }, {
           onSuccess: () => {
               toast.success("Check-out processed successfully!");
@@ -76,7 +81,7 @@ export default function CheckOutProcessPage() {
 
   const studentName = typeof booking.student === 'object' ? `${booking.student.first_name} ${booking.student.last_name}` : 'Student';
   const hostelName = typeof booking.hostel === 'object' ? booking.hostel.name : 'Hostel';
-  const roomNumber = typeof booking.room === 'object' ? booking.room.number : (booking.room_number || 'N/A');
+  const roomNumber = typeof booking.room === 'object' ? booking.room.number : (booking.roomNumber || 'N/A');
   const deposit = 10000; // Mock deposit amount since it might not be in basic booking object in frontend yet.
 
   return (

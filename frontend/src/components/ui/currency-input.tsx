@@ -89,7 +89,7 @@ export const CurrencyInputField = React.memo(
     props: CurrencyInputFieldProps<TFieldValues> & {
       ref?: React.Ref<HTMLInputElement>;
     },
-  ) => JSX.Element,
+  ) => React.ReactElement,
 );
 
 CurrencyInputField.displayName = 'CurrencyInputField';

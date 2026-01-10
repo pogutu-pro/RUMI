@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useTheme } from '@/providers/theme-provider';
+import { useTheme } from 'next-themes';
 
 interface DashboardSidebarProps {
   userRole?: 'student' | 'landlord' | 'caretaker' | 'admin';
@@ -79,7 +79,8 @@ const navigationConfig = {
 
 export function DashboardSidebar({ userRole = 'admin', onSignOut }: DashboardSidebarProps) {
   const pathname = usePathname();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
   const sidebarItems = navigationConfig[userRole] || navigationConfig.admin;
 
   const roleLabel = userRole.charAt(0).toUpperCase() + userRole.slice(1);

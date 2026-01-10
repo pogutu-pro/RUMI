@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import maplibregl from 'maplibre-gl';
-import { Map, Marker } from 'react-map-gl'; // React wrapper for MapLibre GL
+import { Map, Marker } from 'react-map-gl/maplibre'; // React wrapper for MapLibre GL
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { BrandedLoader } from '@/components/ui/branded-loader';
 import { cn } from '@/lib/utils/cn';
@@ -82,7 +82,6 @@ export function MapPicker({
           onDragEnd={onDragEnd}
           anchor="bottom"
           color="#007aff"
-          title="Selected Location"
         />
       </Map>
     </div>

@@ -5,8 +5,31 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Check, Trash2, Filter } from 'lucide-react';
+import { 
+  Bell, 
+  Check, 
+  Trash2, 
+  Filter, 
+  Info, 
+  CheckCircle2, 
+  AlertCircle, 
+  XCircle 
+} from 'lucide-react';
 import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead, useDeleteNotification } from '@/features/notifications/hooks/use-notifications';
+
+const getIcon = (type: string) => {
+  switch (type) {
+    case 'success':
+      return <CheckCircle2 className="h-4 w-4" />;
+    case 'warning':
+      return <AlertCircle className="h-4 w-4" />;
+    case 'error':
+      return <XCircle className="h-4 w-4" />;
+    case 'info':
+    default:
+      return <Info className="h-4 w-4" />;
+  }
+};
 
 export default function NotificationsPage() {
   const { data: notificationsData, isLoading } = useNotifications();
@@ -16,7 +39,7 @@ export default function NotificationsPage() {
   const { mutate: markAllAsRead } = useMarkAllNotificationsAsRead();
   const { mutate: deleteNotification } = useDeleteNotification();
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   if (isLoading) {
     return (
@@ -110,7 +133,6 @@ export default function NotificationsPage() {
                     size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                     onClick={() => deleteNotification(notification.id)}
-                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                     title="Delete"
                   >
                     <Trash2 className="h-4 w-4" />

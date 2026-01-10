@@ -68,10 +68,10 @@ export function EmailTemplateEditor() {
                   className="font-mono text-sm"
                 />
                 <div className="flex gap-2 flex-wrap">
-                  <Badge variant="secondary">{{name}}</Badge>
-                  <Badge variant="secondary">{{email}}</Badge>
-                  <Badge variant="secondary">{{booking_id}}</Badge>
-                  <Badge variant="secondary">{{amount}}</Badge>
+                  <Badge variant="secondary">{"{{name}}"}</Badge>
+                  <Badge variant="secondary">{"{{email}}"}</Badge>
+                  <Badge variant="secondary">{"{{booking_id}}"}</Badge>
+                  <Badge variant="secondary">{"{{amount}}"}</Badge>
                 </div>
               </div>
 

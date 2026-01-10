@@ -42,13 +42,14 @@ export default function SearchPage() {
   const hostels = hostelsResponse?.results || [];
   
   const { data: bookings, isLoading: bookingsLoading } = useBookings();
-  const { data: payments, isLoading: paymentsLoading } = usePayments();
+  const { data: paymentsResponse, isLoading: paymentsLoading } = usePayments();
+  const payments = (paymentsResponse as any)?.results || (paymentsResponse as any)?.data || [];
 
   // Filter results based on search query
   const filteredBookings = React.useMemo(() => {
     if (!bookings || !debouncedQuery) return [];
     const query = debouncedQuery.toLowerCase();
-    return bookings.filter(booking => 
+    return (bookings as any[]).filter((booking: any) => 
       booking.hostelName?.toLowerCase().includes(query) ||
       booking.roomNumber?.toLowerCase().includes(query) ||
       booking.status?.toLowerCase().includes(query)
@@ -58,10 +59,10 @@ export default function SearchPage() {
   const filteredPayments = React.useMemo(() => {
     if (!payments || !debouncedQuery) return [];
     const query = debouncedQuery.toLowerCase();
-    return payments.filter(payment => 
-      payment.description?.toLowerCase().includes(query) ||
+    return payments.filter((payment: any) => 
+      payment.reference?.toLowerCase().includes(query) ||
       payment.status?.toLowerCase().includes(query) ||
-      payment.transactionId?.toLowerCase().includes(query)
+      payment.type?.toLowerCase().includes(query)
     );
   }, [payments, debouncedQuery]);
 
@@ -223,7 +224,7 @@ export default function SearchPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {hostels.slice(0, 5).map((hostel) => (
+                {hostels.slice(0, 5).map((hostel: any) => (
                   <Link
                     key={hostel.id}
                     href={`/student/hostels/${hostel.slug || hostel.id}`}
@@ -234,7 +235,7 @@ export default function SearchPage() {
                         {hostel.name}
                       </h4>
                       <p className="text-xs text-muted-foreground line-clamp-1">
-                        {hostel.location || hostel.address}
+                        {hostel.city || hostel.address}
                       </p>
                       {hostel.pricePerMonth && (
                         <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1">
@@ -267,7 +268,7 @@ export default function SearchPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {filteredBookings.slice(0, 5).map((booking) => (
+                {filteredBookings.slice(0, 5).map((booking: any) => (
                   <Link
                     key={booking.id}
                     href={`/student/bookings/${booking.id}`}
@@ -275,7 +276,7 @@ export default function SearchPage() {
                   >
                     <div className="flex-1">
                       <h4 className="font-semibold text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                        {booking.hostelName} - Room {booking.roomNumber}
+                        {booking.hostelName || (booking.hostel as any)?.name} - Room {booking.roomNumber || (booking.room as any)?.number}
                       </h4>
                       <p className="text-xs text-muted-foreground">
                         Status: <span className={cn(
@@ -313,7 +314,7 @@ export default function SearchPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {filteredPayments.slice(0, 5).map((payment) => (
+                {filteredPayments.slice(0, 5).map((payment: any) => (
                   <Link
                     key={payment.id}
                     href={`/student/payments/${payment.id}`}
@@ -321,7 +322,7 @@ export default function SearchPage() {
                   >
                     <div className="flex-1">
                       <h4 className="font-semibold text-sm group-hover:text-purple-600 dark:group-hover:text-purple-400">
-                        {payment.description || 'Payment'}
+                        {payment.reference || 'Payment'}
                       </h4>
                       <p className="text-xs text-muted-foreground">
                         KES {payment.amount?.toLocaleString()} • {payment.status}

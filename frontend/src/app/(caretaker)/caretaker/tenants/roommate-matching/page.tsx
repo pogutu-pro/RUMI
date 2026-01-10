@@ -46,7 +46,7 @@ interface RoommateMatchRequest {
   requestedRoommate: Student;
   compatibilityScore: number;
   requestDate: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   reason: string;
   sharedInterests: string[];
   lifestyleCompatibility: {
@@ -66,7 +66,7 @@ export default function RoommateMatchingPage() {
   
   const [searchQuery, setSearchQuery] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
-  const [selectedRequest, setSelectedRequest] = React.useState<RoommateRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = React.useState<RoommateMatchRequest | null>(null);
   
   // Map API data to component format
   const requests: RoommateMatchRequest[] = apiRequests.map(req => ({
@@ -168,6 +168,7 @@ export default function RoommateMatchingPage() {
       pending: { label: 'Pending Review', className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400' },
       approved: { label: 'Approved', className: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
       rejected: { label: 'Rejected', className: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' },
+      cancelled: { label: 'Cancelled', className: 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400' },
     };
     
     const variant = variants[status];
@@ -460,9 +461,9 @@ export default function RoommateMatchingPage() {
               <Button
                 className="bg-green-600 hover:bg-green-700 text-white"
                 onClick={() => handleApprove(selectedRequest)}
-                disabled={isLoading}
+                disabled={approveRequest.isPending}
               >
-                {isLoading ? 'Approving...' : 'Confirm Approval'}
+                {approveRequest.isPending ? 'Approving...' : 'Confirm Approval'}
               </Button>
             </DialogFooter>
           </DialogContent>

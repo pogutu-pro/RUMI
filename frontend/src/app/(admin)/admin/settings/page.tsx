@@ -161,7 +161,13 @@ export default function SettingsPage() {
                </div>
             </CardContent>
             <CardFooter className="bg-muted/30 px-6 py-4 flex justify-end">
-                <Button onClick={() => updateProfileMutation.mutate(formData)} disabled={isProfileLoading}>
+                <Button 
+                    onClick={() => updateProfileMutation.mutate({
+                        first_name: formData.firstName,
+                        last_name: formData.lastName
+                    })} 
+                    disabled={isProfileLoading}
+                >
                     {isProfileLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save
                 </Button>
             </CardFooter>

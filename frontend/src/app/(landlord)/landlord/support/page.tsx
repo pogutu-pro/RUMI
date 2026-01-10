@@ -40,7 +40,7 @@ export default function SupportPage() {
   // but let's assume specific status fetching is more performant.
   // We'll fake stats for now or better, use a separate query for counts if API supported it.
   
-  const tickets = ticketsData?.results || [];
+  const tickets = ticketsData?.data || [];
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {

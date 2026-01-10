@@ -80,7 +80,7 @@ export default function BookingsPage() {
                       <CardTitle className="text-xl">{booking.hostel.name}</CardTitle>
                       <CardDescription className="flex items-center gap-1 mt-1">
                         <MapPin className="h-3.5 w-3.5" />
-                        {booking.hostel.address || 'Nairobi, Kenya'}
+                        {(booking.hostel as any).address || 'Nairobi, Kenya'}
                       </CardDescription>
                     </div>
                     <DropdownMenu>
@@ -104,21 +104,21 @@ export default function BookingsPage() {
                     <p className="text-xs text-muted-foreground uppercase tracking-wider">Room</p>
                     <div className="flex items-center gap-2 font-medium">
                       <Home className="h-4 w-4 text-emerald-600" />
-                      {booking.room.name}
+                      {(booking.room as any).name || (booking.room as any).number}
                     </div>
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground uppercase tracking-wider">Duration</p>
                     <div className="flex items-center gap-2 font-medium">
                       <Clock className="h-4 w-4 text-emerald-600" />
-                      {booking.durationMonths} Months
+                      {booking.duration_months} Months
                     </div>
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground uppercase tracking-wider">Check-in</p>
                     <div className="flex items-center gap-2 font-medium">
                       <Calendar className="h-4 w-4 text-emerald-600" />
-                      {new Date(booking.moveInDate).toLocaleDateString()}
+                      {new Date(booking.moveInDate || booking.check_in_date).toLocaleDateString()}
                     </div>
                   </div>
                   <div className="space-y-1">
@@ -171,7 +171,7 @@ export default function BookingsPage() {
                         Pending Approval
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(booking.moveInDate).toLocaleDateString()}
+                        {new Date(booking.moveInDate || booking.check_in_date).toLocaleDateString()}
                       </span>
                     </div>
                     <CardTitle className="text-base mt-2">{booking.hostel.name}</CardTitle>
@@ -179,11 +179,11 @@ export default function BookingsPage() {
                   <CardContent className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Room Type</span>
-                      <span className="font-medium">{booking.room.name}</span>
+                      <span className="font-medium">{(booking.room as any).name || (booking.room as any).number}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Total Amount</span>
-                      <span className="font-medium">KES {booking.totalPrice.toLocaleString()}</span>
+                      <span className="font-medium">KES {booking.total_amount.toLocaleString()}</span>
                     </div>
                   </CardContent>
                   <CardFooter>
@@ -226,7 +226,7 @@ export default function BookingsPage() {
                     <div>
                       <p className="font-medium">{booking.hostel.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(booking.moveInDate).toLocaleDateString()} • {booking.durationMonths} months
+                        {new Date(booking.moveInDate || booking.check_in_date).toLocaleDateString()} • {booking.duration_months} months
                       </p>
                     </div>
                   </div>

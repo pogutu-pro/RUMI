@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Review } from '@/types/entities.types';
+import type { Review, ReviewReaction } from '@/types/entities.types';
 
 // Import our new components
 import VerifiedStayBadge from './verified-stay-badge';
@@ -20,7 +20,7 @@ import LandlordResponseCard from './landlord-response-card';
 interface ReviewCardProps {
   review: Review;
   onHelpfulToggle?: () => void;
-  onReact?: (emoji: Review['reactions'][0]['emoji']) => void;
+  onReact?: (emoji: ReviewReaction['emoji']) => void;
   isHelpful?: boolean;
 }
 

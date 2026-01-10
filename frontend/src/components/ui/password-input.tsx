@@ -17,6 +17,7 @@ export interface PasswordInputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
   showStrength?: boolean;
   minLength?: number;
+  error?: boolean;
 }
 
 const levelToColors = (level: StrengthLevel) => {
@@ -40,7 +41,7 @@ const levelToColors = (level: StrengthLevel) => {
 };
 
 const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ className, showStrength = false, minLength, value, ...props }, ref) => {
+  ({ className, showStrength = false, minLength, value, error, ...props }, ref) => {
     const [showPassword, setShowPassword] = React.useState(false);
 
     const passwordValue =
@@ -74,6 +75,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
             type={showPassword ? 'text' : 'password'}
             className={cn('pr-10', className)}
             value={value}
+            error={error}
             aria-label={props['aria-label'] ?? 'Password input'}
             {...props}
           />

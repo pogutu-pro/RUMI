@@ -141,7 +141,7 @@ export function DataTable<TData, TValue>({
                     title={emptyStateTitle}
                     description={emptyStateDescription}
                     className="border-none bg-transparent h-full p-0"
-                    icon="search"
+                    variant="search"
                   />
                 </TableCell>
               </TableRow>

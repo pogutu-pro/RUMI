@@ -162,7 +162,7 @@ export default function CheckInPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Room Inventory Check-In</h1>
           <p className="text-muted-foreground mt-1">
-            Please verify the condition of items in Room {currentBooking.room.name}.
+            Please verify the condition of items in Room {(currentBooking.room as any).name || (currentBooking.room as any).number}.
           </p>
         </div>
         <div className="flex items-center gap-2">

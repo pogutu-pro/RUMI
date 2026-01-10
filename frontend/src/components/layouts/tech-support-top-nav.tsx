@@ -33,6 +33,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/features/auth';
 import { useNotifications } from '@/features/notifications';
+import { Notification as AppNotification } from '@/features/auth/types/types';
 import { getUserInitials } from '@/lib/utils/user';
 import { sanitizeImageUrl } from '@/lib/utils/security';
 import { cn } from '@/lib/utils/cn';
@@ -89,7 +90,7 @@ export function TechSupportTopNav({
 
   // Fetch real notifications from API
   const { data: notificationsData, isLoading: isLoadingNotifications } = useNotifications({ page: 1 });
-  const notifications = notificationsData?.results || [];
+  const notifications = notificationsData?.data || [];
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const displayName = React.useMemo(() => {
@@ -231,7 +232,7 @@ export function TechSupportTopNav({
                     <p className="text-sm">No notifications yet</p>
                   </div>
                 ) : (
-                  notifications.slice(0, 5).map((notification) => {
+                  notifications.slice(0, 5).map((notification: AppNotification) => {
                     const style = getNotificationStyle(notification.type);
                     const IconComponent = style.icon;
                     return (

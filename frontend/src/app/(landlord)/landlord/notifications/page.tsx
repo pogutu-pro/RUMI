@@ -41,8 +41,8 @@ export default function NotificationsPage() {
   const markAsRead = useMarkNotificationAsRead();
   const deleteNotification = useDeleteNotification();
 
-  const notifications = notificationsData?.results || [];
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const notifications = notificationsData?.data || [];
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -125,7 +125,7 @@ export default function NotificationsPage() {
                     transition={{ duration: 0.2, delay: index * 0.05 }}
                     className={cn(
                       "group relative p-4 rounded-xl border transition-all duration-200 hover:shadow-md",
-                      !notification.is_read
+                      !notification.isRead
                         ? "bg-white dark:bg-slate-800 border-emerald-100 dark:border-emerald-900/50 shadow-sm"
                         : "bg-slate-50/50 dark:bg-slate-900/30 border-transparent hover:bg-white dark:hover:bg-slate-800 hover:border-border"
                     )}
@@ -134,7 +134,7 @@ export default function NotificationsPage() {
                       {/* Icon */}
                       <div className={cn(
                         "p-2.5 rounded-full shrink-0",
-                        !notification.is_read 
+                        !notification.isRead 
                           ? "bg-emerald-100 dark:bg-emerald-900/30" 
                           : "bg-slate-100 dark:bg-slate-800"
                       )}>
@@ -146,17 +146,17 @@ export default function NotificationsPage() {
                         <div className="flex items-start justify-between gap-4">
                           <h4 className={cn(
                             "text-base font-medium leading-none mb-1.5",
-                            !notification.is_read ? "text-slate-900 dark:text-slate-100" : "text-slate-700 dark:text-slate-300"
+                            !notification.isRead ? "text-slate-900 dark:text-slate-100" : "text-slate-700 dark:text-slate-300"
                           )}>
                             {notification.title}
                           </h4>
                           <span className="text-xs text-slate-500 whitespace-nowrap shrink-0">
-                            {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                           </span>
                         </div>
                         <p className={cn(
                           "text-sm leading-relaxed",
-                          !notification.is_read ? "text-slate-600 dark:text-slate-300" : "text-slate-500 dark:text-slate-500"
+                          !notification.isRead ? "text-slate-600 dark:text-slate-300" : "text-slate-500 dark:text-slate-500"
                         )}>
                           {notification.message}
                         </p>
@@ -164,7 +164,7 @@ export default function NotificationsPage() {
 
                       {/* Actions */}
                       <div className="flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                         {!notification.is_read && (
+                         {!notification.isRead && (
                             <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -200,7 +200,7 @@ export default function NotificationsPage() {
                         </TooltipProvider>
                       </div>
                     </div>
-                    {!notification.is_read && (
+                    {!notification.isRead && (
                         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-emerald-500 rounded-r-full" />
                     )}
                   </motion.div>

@@ -83,17 +83,17 @@ export default function PaymentsPage() {
   };
 
   const rentStatus = dashboardData?.rentStatus;
-  const hostelName = dashboardData?.hostelInfo?.name || 'Your Property';
+  const hostelName = (dashboardData as any)?.hostelInfo?.name || 'Your Property';
 
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
-  };
+  } as any;
 
   const itemVariants = {
     hidden: { opacity: 0, y: 15 },
     visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }
-  };
+  } as any;
 
   return (
     <motion.div 
@@ -121,7 +121,7 @@ export default function PaymentsPage() {
             className="bg-emerald-600 hover:bg-emerald-700 text-white font-black h-12 px-6 rounded-xl shadow-lg shadow-emerald-500/20 group"
             asChild
           >
-            <Link href={`/student/payments/new?bookingId=${dashboardData?.hostelInfo?.booking_id || 'current'}&amount=${rentStatus?.totalOutstanding || 15000}`}>
+            <Link href={`/student/payments/new?bookingId=${(dashboardData as any)?.hostelInfo?.booking_id || 'current'}&amount=${rentStatus?.totalOutstanding || 15000}`}>
               <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform" />
               Make a Payment
             </Link>

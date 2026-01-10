@@ -12,10 +12,11 @@ export interface SubscriptionPlan {
 export interface UserSubscription {
   id: string;
   plan: SubscriptionPlan;
-  status: 'active' | 'cancelled' | 'expired';
+  status: 'active' | 'cancelled' | 'expired' | 'trialing';
   startDate: string;
   endDate: string;
   autoRenew: boolean;
+  current_period_end?: string;
 }
 
 export interface Payment {

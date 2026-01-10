@@ -42,6 +42,7 @@ export interface TechSupportTicket {
   status: 'open' | 'in_progress' | 'resolved';
   category: string;
   created_at: string;
+  description: string;
 }
 
 export interface TechSupportLog {

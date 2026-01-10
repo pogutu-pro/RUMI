@@ -35,7 +35,7 @@ export const useFlagReview = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: flagReview,
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => flagReview(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.reviews.all });
     },

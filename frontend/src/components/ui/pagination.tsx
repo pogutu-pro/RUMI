@@ -25,7 +25,7 @@ interface PaginationProps {
   totalItems: number;
   onPageChange: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
-  pageSizeOptions?: number[];
+  pageSizeOptions?: number[] | readonly number[];
 }
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
