@@ -4,7 +4,6 @@ export * from './components/activity-log-table';
 export * from './components/user-table';
 export * from './components/hostel-table';
 export * from './components/complaint-table';
-export * from './components/chat-interface';
 export * from './components/ticket-detail-dialog';
 export * from './components/user-profile-dialog';
 export * from './components/blog/blog-stats';

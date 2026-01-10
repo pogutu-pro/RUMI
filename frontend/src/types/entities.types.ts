@@ -42,5 +42,3 @@ export type {
   AvailabilityPreferences,
 } from '@/features/profile/types';
 
-// Messaging
-export * from '@/features/messaging/types';

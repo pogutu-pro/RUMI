@@ -178,10 +178,6 @@ export default function SupportPage() {
                       <Phone className="h-4 w-4 mr-2" />
                       Call
                     </Button>
-                    <Button size="sm" variant="outline" className="bg-transparent border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 w-full">
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Message
-                    </Button>
                   </div>
                 </>
               ) : (

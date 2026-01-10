@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ArrowRight, MessageCircle, HelpCircle, ArrowUpRight, Sparkles } from 'lucide-react';
+import { Check, ArrowRight, Phone, HelpCircle, ArrowUpRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -350,7 +350,7 @@ export default function PricingPage() {
           <div className="mt-24 p-8 md:p-10 rounded-[2.5rem] bg-slate-50 flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="flex items-center gap-5">
               <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center">
-                <MessageCircle className="h-7 w-7 text-emerald-600" />
+                <Phone className="h-7 w-7 text-emerald-600" />
               </div>
               <div>
                 <p className="text-base font-bold text-slate-900">Still have questions?</p>
@@ -358,7 +358,7 @@ export default function PricingPage() {
               </div>
             </div>
             <Link href="/contact">
-              <Button variant="outline" className="h-12 px-8 rounded-xl border-slate-200 font-bold hover:bg-white hover:border-slate-300 transition-all">Chat with us</Button>
+              <Button variant="outline" className="h-12 px-8 rounded-xl border-slate-200 font-bold hover:bg-white hover:border-slate-300 transition-all">Contact us</Button>
             </Link>
           </div>
         </div>

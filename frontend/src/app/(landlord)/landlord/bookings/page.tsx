@@ -397,7 +397,6 @@ export default function BookingsPage() {
                                           <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Manage Status</DropdownMenuLabel>
                                             <DropdownMenuItem>Change Room</DropdownMenuItem>
-                                            <DropdownMenuItem>Message Student</DropdownMenuItem>
                                           </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>

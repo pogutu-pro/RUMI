@@ -46,9 +46,6 @@ export default function RequestsPage() {
     }
   };
 
-  const handleMessage = (userId: string) => {
-    router.push(`/student/messages?user=${userId}`);
-  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -117,7 +114,6 @@ export default function RequestsPage() {
                   type="received"
                   onAccept={() => handleAccept(request.id)}
                   onReject={() => handleReject(request.id)}
-                  onMessage={() => handleMessage(request.otherUser.id)}
                 />
               ))}
             </div>
@@ -146,7 +142,6 @@ export default function RequestsPage() {
                   request={request}
                   type="sent"
                   onWithdraw={() => handleReject(request.id)}
-                  onMessage={() => handleMessage(request.otherUser.id)}
                 />
               ))}
             </div>
@@ -187,7 +182,6 @@ export default function RequestsPage() {
                     key={request.id}
                     request={request}
                     type={request.type}
-                    onMessage={() => handleMessage(request.otherUser.id)}
                   />
                 ))}
               </div>

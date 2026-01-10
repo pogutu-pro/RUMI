@@ -18,7 +18,6 @@ import {
   AlertTriangle,
   History,
   Info,
-  Send,
   LogOut,
   Bell
 } from 'lucide-react';
@@ -71,7 +70,7 @@ interface LandlordTenant extends UserEntity {
     lease_start?: string;
     lease_end?: string;
     monthly_rent?: number;
-    occupancy_status?: 'occupied' | 'vacating' | 'reserved'; 
+    occupancy_status?: 'occupied' | 'vacating' | 'reserved';
     emergency_contact?: string;
     university?: string;
 }
@@ -82,10 +81,6 @@ export default function TenantsPage() {
   const [occupancyFilter, setOccupancyFilter] = useState('all');
   const [hostelFilter, setHostelFilter] = useState('all');
   
-  // Broadcast message state
-  const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
-  const [messageSubject, setMessageSubject] = useState('');
-  const [messageBody, setMessageBody] = useState('');
   const { toast } = useToast();
 
   const { data: usersData, isLoading } = useLandlordTenants();
@@ -139,17 +134,6 @@ export default function TenantsPage() {
   const overdueCount = tenants.filter(t => t.payment_status === 'overdue').length;
   const vacatingCount = tenants.filter(t => t.occupancy_status === 'vacating').length;
 
-  const handleBroadcast = () => {
-    // API Call would go here
-    console.log("Broadcasting:", { subject: messageSubject, body: messageBody, filters: { hostelFilter, paymentFilter } });
-    toast({
-        title: "Message Sent",
-        description: `Broadcast sent to ${filteredTenants.length} tenants.`,
-    });
-    setIsBroadcastOpen(false);
-    setMessageSubject('');
-    setMessageBody('');
-  };
 
   const handleSendReminder = (tenantId: string) => {
       toast({
@@ -176,42 +160,10 @@ export default function TenantsPage() {
             Tenants
           </h1>
           <p className="mt-2 text-muted-foreground text-lg">
-            Manage tenancy agreements, payments, and communication.
+            Manage tenancy agreements and payments.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
-            <Dialog open={isBroadcastOpen} onOpenChange={setIsBroadcastOpen}>
-                <DialogTrigger asChild>
-                    <Button size="lg" className="gap-2 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white shadow-lg shadow-emerald-900/10 transition-all hover:scale-[1.02]">
-                        <Mail className="h-5 w-5" />
-                        Broadcast Message
-                    </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                        <DialogTitle>Broadcast Message</DialogTitle>
-                        <DialogDescription>
-                            Send a message to all <strong>{filteredTenants.length}</strong> currently filtered tenants.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                            <label htmlFor="subject" className="text-sm font-medium">Subject</label>
-                            <Input id="subject" placeholder="e.g. Building Maintenance Notice" value={messageSubject} onChange={e => setMessageSubject(e.target.value)} />
-                        </div>
-                         <div className="grid gap-2">
-                            <label htmlFor="message" className="text-sm font-medium">Message</label>
-                            <Textarea id="message" placeholder="Type your message here..." rows={5} value={messageBody} onChange={e => setMessageBody(e.target.value)} />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsBroadcastOpen(false)}>Cancel</Button>
-                        <Button onClick={handleBroadcast} disabled={!messageSubject || !messageBody}>
-                            <Send className="w-4 h-4 mr-2" /> Send Broadcast
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
       </div>
 
@@ -425,10 +377,6 @@ export default function TenantsPage() {
                                                     <DropdownMenuItem onClick={() => handleSendReminder(tenant.id)}>
                                                       <Bell className="h-4 w-4 mr-2" />
                                                       Send Rent Reminder
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem>
-                                                        <Mail className="h-4 w-4 mr-2" />
-                                                        Message Tenant
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem asChild>
                                                        <Link href={`/landlord/bookings/new?student_id=${tenant.id}`}>

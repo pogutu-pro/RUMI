@@ -103,11 +103,6 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    title: 'Messages',
-    href: '/caretaker/message',
-    icon: MessageSquare,
-  },
-  {
     title: 'Settings',
     icon: Settings,
     items: [

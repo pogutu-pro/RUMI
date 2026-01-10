@@ -123,14 +123,6 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    title: 'Inbox',
-    icon: Inbox,
-    items: [
-      { title: 'Messages', href: '/student/messages', icon: MessageSquare },
-      { title: 'Notifications', href: '/student/notifications', icon: Bell },
-    ],
-  },
-  {
     title: 'Security',
     icon: Shield,
     items: [
@@ -157,6 +149,7 @@ const navItems: NavItem[] = [
     icon: User,
     items: [
       { title: 'Profile', href: '/student/profile', icon: UserCheck },
+      { title: 'Notifications', href: '/student/notifications', icon: Bell },
       { title: 'Settings', href: '/student/settings', icon: Settings },
     ],
   },

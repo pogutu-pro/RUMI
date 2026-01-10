@@ -108,18 +108,11 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    title: 'Inbox',
-    icon: MessageSquare,
-    items: [
-      { title: 'Messages', href: '/landlord/messages', icon: MessageSquare },
-      { title: 'Notifications', href: '/landlord/notifications', icon: Bell },
-    ],
-  },
-  {
     title: 'Account',
     icon: Settings,
     items: [
       { title: 'My Profile', href: '/landlord/profile', icon: UserCheck },
+      { title: 'Notifications', href: '/landlord/notifications', icon: Bell },
       { title: 'Settings', href: '/landlord/settings', icon: Settings },
       { title: 'Support', href: '/landlord/support', icon: LifeBuoy },
     ],

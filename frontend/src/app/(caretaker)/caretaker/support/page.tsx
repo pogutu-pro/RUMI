@@ -47,7 +47,7 @@ export default function Page() {
       </div>
 
       {/* Contact Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardContent className="pt-6 text-center">
             <Phone className="h-8 w-8 mx-auto text-primary mb-3" />
@@ -66,17 +66,6 @@ export default function Page() {
             <p className="text-sm text-muted-foreground mb-3">Response within 24hrs</p>
             <Button variant="outline" size="sm" className="w-full">
               support@rumi.com
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <MessageSquare className="h-8 w-8 mx-auto text-primary mb-3" />
-            <h3 className="font-semibold mb-1">Live Chat</h3>
-            <p className="text-sm text-muted-foreground mb-3">Instant help</p>
-            <Button variant="outline" size="sm" className="w-full">
-              Start Chat
             </Button>
           </CardContent>
         </Card>

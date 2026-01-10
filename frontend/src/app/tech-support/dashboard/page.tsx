@@ -14,7 +14,7 @@ import {
   Calendar,
   ShieldCheck,
   TrendingUp,
-  MessageSquare,
+  LifeBuoy,
   Server
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -71,7 +71,7 @@ export default function TechSupportDashboard() {
   const pendingVerifications = stats.pending_verifications || 0;
   const criticalCount = tickets.filter((t: any) => t.priority === 'critical').length || 0;
 
-  // Process Analytics Data for Chat
+  // Process Analytics Data for Tickets
   const ticketVolumeData = useMemo(() => {
      if (Array.isArray(analytics) && analytics.length > 0) {
          return analytics.map((day: any) => ({
@@ -129,7 +129,7 @@ export default function TechSupportDashboard() {
             className="hidden md:flex shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90"
             onClick={() => router.push('/tech-support/complaints')}
           >
-            <MessageSquare className="mr-2 h-4 w-4" />
+            <LifeBuoy className="mr-2 h-4 w-4" />
             View Ticket Queue
           </Button>
         </div>
@@ -141,7 +141,7 @@ export default function TechSupportDashboard() {
           title="Active Tickets" 
           value={activeTicketsCount}
           subtitle="Requires attention"
-          icon={MessageSquare}
+          icon={LifeBuoy}
           colorClass="text-blue-500"
           bgClass="bg-blue-500/10"
           trend="+12% vs last week"

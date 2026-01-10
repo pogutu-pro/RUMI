@@ -66,7 +66,6 @@ const ACCOUNT_ITEMS = [
   
   // App & Profile
   { icon: User, label: 'Profile', href: '/student/profile' },
-  { icon: MessageSquare, label: 'Messages', href: '/student/messages' },
   { icon: Bell, label: 'Notifications', href: '/student/notifications' },
   { icon: LifeBuoy, label: 'Support', href: '/student/support' },
   { icon: Settings, label: 'Settings', href: '/student/settings' },

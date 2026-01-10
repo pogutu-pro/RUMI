@@ -68,7 +68,6 @@ export default function TechSupportSettingsPage() {
   const [pushNotifications, setPushNotifications] = React.useState({
     newTickets: true,
     criticalAlerts: true,
-    chatMessages: true,
   });
 
   // Platform preferences
@@ -474,21 +473,6 @@ export default function TechSupportSettingsPage() {
                   checked={pushNotifications.newTickets}
                   onCheckedChange={(checked) => 
                     setPushNotifications({ ...pushNotifications, newTickets: checked })
-                  }
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <label className="text-sm font-medium">Chat Messages</label>
-                  <p className="text-xs text-muted-foreground">
-                    Notifications for new chat messages
-                  </p>
-                </div>
-                <Switch
-                  checked={pushNotifications.chatMessages}
-                  onCheckedChange={(checked) => 
-                    setPushNotifications({ ...pushNotifications, chatMessages: checked })
                   }
                 />
               </div>

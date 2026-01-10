@@ -6,7 +6,6 @@ import { useAuth } from '@/features/auth';
 import { 
   useRentStatus, 
   useRecentTransactions, 
-  useUnreadMessages, 
   useActiveTickets, 
   useActivityFeed 
 } from '@/features/student';
@@ -20,7 +19,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { 
-  MessageSquare, 
   LifeBuoy, 
   Home, 
   TrendingUp, 
@@ -36,7 +34,6 @@ export default function Page() {
   // Fetch dashboard data
   const { data: rentStatus, isLoading: rentLoading } = useRentStatus();
   const { data: transactions = [], isLoading: transactionsLoading } = useRecentTransactions(3);
-  const { data: unreadMessages = 0, isLoading: messagesLoading } = useUnreadMessages();
   const { data: activeTickets = [], isLoading: ticketsLoading } = useActiveTickets();
   const { data: activityEvents = [], isLoading: activityLoading } = useActivityFeed(5);
 
@@ -76,17 +73,6 @@ export default function Page() {
             <RentStatusIndicator rentStatus={rentStatus} className="h-full" />
           </div>
         ) : null}
-
-        <DashboardStat
-          title="Messages"
-          value={messagesLoading ? '...' : unreadMessages}
-          icon={<MessageSquare className="h-4 w-4 md:h-5 md:w-5" />}
-          trend={{
-            value: 0,
-            label: "new",
-            direction: "neutral"
-          }}
-        />
 
         <DashboardStat
           title="Tickets"

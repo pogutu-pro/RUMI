@@ -97,11 +97,6 @@ const navItems: NavItem[] = [
     href: '/tech-support/blog',
     icon: FileEdit,
   },
-  {
-    title: 'Messages',
-    href: '/tech-support/messages',
-    icon: MessageSquare,
-  },
 ];
 
 export function TechSupportSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {

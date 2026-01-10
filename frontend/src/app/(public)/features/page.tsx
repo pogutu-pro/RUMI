@@ -57,12 +57,6 @@ const FEATURES = [
         description:
           'Get notified when new hostels match your preferences or when prices drop.',
       },
-      {
-        icon: <MessageSquare className="h-8 w-8 text-green-600" />,
-        title: 'Direct Messaging',
-        description:
-          'Chat directly with landlords to ask questions before booking.',
-      },
     ],
   },
   {
@@ -84,7 +78,7 @@ const FEATURES = [
         icon: <Users className="h-8 w-8 text-green-600" />,
         title: 'Booking Management',
         description:
-          'Manage all your bookings, availability, and communications in one dashboard.',
+          'Manage all your bookings and availability in one dashboard.',
       },
       {
         icon: <CreditCard className="h-8 w-8 text-green-600" />,
