@@ -14,8 +14,8 @@ async function HostelsPageContent() {
   try {
     await queryClient.prefetchQuery({
       queryKey: ['hostels'],
-      queryFn: () => getHostels(),
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      queryFn: getHostels,
+      staleTime: 5 * 60 * 1000,
     });
   } catch (error) {
     console.error('Failed to prefetch hostels:', error);

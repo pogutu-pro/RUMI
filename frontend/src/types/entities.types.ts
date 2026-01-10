@@ -2,9 +2,7 @@
 // Users
 export * from '@/features/users/types';
 
-// Auth / Profiles (some overlap in entities)
-// Note: entities.types.ts had RoommateProfile etc which are now in features.
-// We need to map them carefully.
+
 
 // Hostels
 export * from '@/features/hostels/types';

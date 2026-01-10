@@ -19,7 +19,7 @@ const actions = [
   {
     icon: CreditCard,
     label: 'Pay Rent',
-    href: '/student/payments',
+    href: '/student/payments/new',
     color: 'bg-primary/5 text-primary border-primary/20 hover:bg-primary/10'
   },
   {

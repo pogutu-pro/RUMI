@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { usePayments, PayRentModal } from '@/features/payments';
+import { usePayments } from '@/features/payments';
 import { useStudentDashboard } from '@/features/student/hooks/use-student-dashboard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -33,7 +33,6 @@ import { toast } from 'sonner';
 import { paymentsApi } from '@/features/payments';
 
 export default function PaymentsPage() {
-  const [isPayModalOpen, setIsPayModalOpen] = React.useState(false);
   const [isDownloading, setIsDownloading] = React.useState<string | null>(null);
   const { data: payments, isLoading: isPaymentsLoading } = usePayments();
   const { data: dashboardData, isLoading: isDashboardLoading } = useStudentDashboard();
@@ -103,13 +102,6 @@ export default function PaymentsPage() {
       animate="visible"
       variants={containerVariants}
     >
-      <PayRentModal 
-        isOpen={isPayModalOpen}
-        onClose={() => setIsPayModalOpen(false)}
-        bookingId={dashboardData?.hostelInfo?.booking_id || 'current'}
-        amount={rentStatus?.totalOutstanding || 15000}
-        hostelName={hostelName}
-      />
 
       {/* Header Section */}
       <motion.div variants={itemVariants} className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pt-4">
@@ -127,10 +119,12 @@ export default function PaymentsPage() {
           <Button 
             size="lg"
             className="bg-emerald-600 hover:bg-emerald-700 text-white font-black h-12 px-6 rounded-xl shadow-lg shadow-emerald-500/20 group"
-            onClick={() => setIsPayModalOpen(true)}
+            asChild
           >
-            <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform" />
-            Make a Payment
+            <Link href={`/student/payments/new?bookingId=${dashboardData?.hostelInfo?.booking_id || 'current'}&amount=${rentStatus?.totalOutstanding || 15000}`}>
+              <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform" />
+              Make a Payment
+            </Link>
           </Button>
           <Button 
             variant="outline" 

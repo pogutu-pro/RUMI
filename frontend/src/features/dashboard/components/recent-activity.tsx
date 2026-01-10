@@ -75,9 +75,9 @@ export function RecentActivity({ activities, className }: RecentActivityProps) {
             >
               {getActivityIcon(activity.type)}
             </div>
-            <div className="flex flex-col gap-1 pt-1">
-              <p className="text-sm font-bold leading-none text-foreground">{activity.title}</p>
-              <p className="text-xs font-medium text-foreground/90">
+            <div className="flex flex-col gap-1 pt-1 min-w-0 flex-1">
+              <p className="text-sm font-bold leading-none text-foreground truncate">{activity.title}</p>
+              <p className="text-xs font-medium text-foreground/90 line-clamp-2">
                 {activity.description}
               </p>
               <p className="text-xs font-medium text-muted-foreground">

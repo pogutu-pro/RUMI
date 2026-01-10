@@ -60,7 +60,7 @@ export default function Layout({ children }: StudentLayoutProps) {
           {/* Main Content */}
           <main
             className={cn(
-              "flex-1 relative z-0 transition-all duration-300 ease-in-out",
+              "flex-1 relative z-0 transition-all duration-300 ease-in-out overflow-hidden",
               // Mobile: edge-to-edge
               "px-3 pt-4 pb-24 sm:px-4",
               // Desktop: consistent padding

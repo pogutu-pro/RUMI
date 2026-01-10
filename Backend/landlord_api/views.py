@@ -10,7 +10,7 @@ from drf_yasg import openapi
 
 from accounts.models import User, LandlordProfile, StudentProfile
 from hostels.models import Hostel, Booking, RoomOccupant
-from payments.models import Transaction, Payment
+from payments.models import Transaction
 
 @swagger_auto_schema(
     tags=['Landlord API']

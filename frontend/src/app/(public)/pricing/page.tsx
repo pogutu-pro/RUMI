@@ -1,11 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
-import { Check, X, ArrowRight, Sparkles, Building2, Zap, Shield, Star } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Check, ArrowRight, MessageCircle, HelpCircle, ArrowUpRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
@@ -16,558 +15,380 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
+      staggerChildren: 0.1,
     },
   },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.6,
-      ease: [0.25, 0.4, 0.25, 1] as const,
+      duration: 0.5,
+      ease: [0.215, 0.61, 0.355, 1] as const,
     },
   },
 };
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 40, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      duration: 0.7,
-      ease: [0.34, 1.56, 0.64, 1] as const,
-    },
-  },
-};
-
-type BillingCycle = 'monthly' | 'yearly';
-
-interface PlanFeature {
-  text: string;
-  included: boolean;
-}
 
 interface PricingPlan {
   id: string;
   name: string;
-  description: string;
-  price: {
-    monthly: number;
-    yearly: number;
-  };
-  features: PlanFeature[];
+  tagline: string;
+  price: number;
+  features: string[];
   cta: string;
   ctaLink: string;
   popular?: boolean;
-  comingSoon?: boolean;
-  icon: React.ElementType;
-  gradientFrom: string;
-  gradientTo: string;
-  glowColor: string;
+  footerNote: string;
+  variant: 'outline' | 'primary' | 'dark';
 }
 
 const PLANS: PricingPlan[] = [
   {
-    id: 'free',
-    name: 'Free',
-    description: 'Perfect for testing and light usage.',
-    price: { monthly: 0, yearly: 0 },
+    id: 'core',
+    name: 'CORE — Order & Records',
+    tagline: 'Run your hostel without paperwork or confusion.',
+    price: 50,
     features: [
-      { text: 'Browse all hostels', included: true },
-      { text: 'Basic search filters', included: true },
-      { text: 'Direct messaging', included: true },
-      { text: 'Premium analytics', included: false },
-      { text: 'Priority support', included: false },
-      { text: 'Verified badge', included: false },
+      'Student & bed records',
+      'Occupancy & rent status',
+      'Caretaker & landlord dashboards',
+      'Hostel listing & visibility',
     ],
-    cta: 'Try Free',
-    ctaLink: `${AUTH_ROUTES.REGISTER}?plan=free`,
-    icon: Building2,
-    gradientFrom: '#6B7280',
-    gradientTo: '#9CA3AF',
-    glowColor: 'rgba(107, 114, 128, 0.3)',
+    cta: 'Start Core',
+    ctaLink: `${AUTH_ROUTES.REGISTER}?plan=core`,
+    footerNote: 'Small hostels getting organized.',
+    variant: 'outline',
   },
   {
-    id: 'pro',
-    name: 'Pro',
-    description: 'For serious students and landlords.',
-    price: { monthly: 1200, yearly: 12240 },
+    id: 'control',
+    name: 'CONTROL — Truth & Verification',
+    tagline: 'Know what’s paid, what’s not, and why.',
+    price: 80,
     features: [
-      { text: 'Everything in Free', included: true },
-      { text: 'Advanced search filters', included: true },
-      { text: 'Priority booking', included: true },
-      { text: 'Verified badge', included: true },
-      { text: 'Premium analytics', included: false },
-      { text: 'Dedicated account manager', included: false },
+      'Everything in Core',
+      'Rent verification & payment history',
+      'Room transfers & student movement',
+      'Advanced reports & exports',
     ],
-    cta: 'Get Started',
-    ctaLink: `${AUTH_ROUTES.REGISTER}?plan=pro`,
+    cta: 'Start Control',
+    ctaLink: `${AUTH_ROUTES.REGISTER}?plan=control`,
     popular: true,
-    icon: Zap,
-    gradientFrom: '#10B981',
-    gradientTo: '#059669',
-    glowColor: 'rgba(16, 185, 129, 0.4)',
+    footerNote: 'For landlords managing operations.',
+    variant: 'primary',
   },
   {
-    id: 'advanced',
-    name: 'Advanced',
-    description: 'Power users who need more control.',
-    price: { monthly: 2400, yearly: 24480 },
+    id: 'finance',
+    name: 'FINANCE — Financial Reporting & Priority Support',
+    tagline: 'Financial records and priority onboarding.',
+    price: 150,
     features: [
-      { text: 'Everything in Pro', included: true },
-      { text: 'Premium analytics', included: true },
-      { text: 'Bulk messaging', included: true },
-      { text: 'Multiple property listings', included: true },
-      { text: 'Priority 24/7 support', included: true },
-      { text: 'API access', included: false },
+      'Everything in Control',
+      'Compliance-ready financial reports',
+      'Priority onboarding & support',
+      'Collections onboarding (by application)',
     ],
-    cta: 'Upgrade Now',
-    ctaLink: `${AUTH_ROUTES.REGISTER}?plan=advanced`,
-    icon: Shield,
-    gradientFrom: '#3B82F6',
-    gradientTo: '#1D4ED8',
-    glowColor: 'rgba(59, 130, 246, 0.4)',
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    description: 'Custom solutions for large organizations.',
-    price: { monthly: 0, yearly: 0 },
-    features: [
-      { text: 'Everything in Advanced', included: true },
-      { text: 'Custom API integration', included: true },
-      { text: 'Dedicated account manager', included: true },
-      { text: 'SLA guarantees', included: true },
-      { text: 'Custom contracts', included: true },
-      { text: 'White-labeling', included: true },
-    ],
-    cta: 'Contact Sales',
-    ctaLink: '/contact',
-    comingSoon: true,
-    icon: Sparkles,
-    gradientFrom: '#A855F7',
-    gradientTo: '#7C3AED',
-    glowColor: 'rgba(168, 85, 247, 0.4)',
+    cta: 'Apply for Finance',
+    ctaLink: '/contact?subject=Finance%20Application',
+    footerNote: 'For operators who require financial rigor.',
+    variant: 'dark',
   },
 ];
 
-// Animated gradient background component
-const AnimatedBackground = () => {
-  return (
-    <div className="absolute inset-0 -z-10 overflow-hidden">
-      {/* Gradient mesh */}
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/80 via-teal-50/50 to-cyan-50/80" />
-      
-      {/* Animated orbs */}
-      <motion.div
-        className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-400/20 blur-3xl"
-        animate={{
-          x: [0, 100, 0],
-          y: [0, 50, 0],
-          scale: [1, 1.1, 1],
-        }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
-      <motion.div
-        className="absolute top-1/4 -right-24 h-96 w-96 rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-400/20 blur-3xl"
-        animate={{
-          x: [0, -80, 0],
-          y: [0, 100, 0],
-          scale: [1, 1.2, 1],
-        }}
-        transition={{
-          duration: 25,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
-      <motion.div
-        className="absolute bottom-0 left-1/3 h-96 w-96 rounded-full bg-gradient-to-br from-teal-400/20 to-emerald-400/20 blur-3xl"
-        animate={{
-          x: [0, -60, 0],
-          y: [0, -80, 0],
-          scale: [1, 1.15, 1],
-        }}
-        transition={{
-          duration: 22,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
-      
-      {/* Grid pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:24px_24px]" />
-    </div>
-  );
-};
+const FAQS = [
+  {
+    q: 'Does KES 50 include SMS and email?',
+    a: 'Yes. All tenant notifications are included—no separate communication fees.',
+  },
+  {
+    q: 'When does Finance (collections) become available?',
+    a: 'Collections are available by application after a short onboarding review. Apply from the Finance card.',
+  },
+  {
+    q: 'Can I switch tiers?',
+    a: 'Yes. Upgrade or downgrade from your dashboard; billing adjusts next invoice.',
+  },
+];
 
-// Pricing card component with 3D tilt effect
-const PricingCard = ({ plan, billingCycle }: { plan: PricingPlan; billingCycle: BillingCycle }) => {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  
-  const rotateX = useTransform(y, [-100, 100], [5, -5]);
-  const rotateY = useTransform(x, [-100, 100], [-5, 5]);
-
-  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    x.set(event.clientX - centerX);
-    y.set(event.clientY - centerY);
-  };
-
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
+const PricingCard = ({ plan }: { plan: PricingPlan }) => {
   return (
     <motion.div
-      variants={cardVariants}
+      variants={itemVariants}
       className={cn(
-        "group relative h-full",
-        plan.popular && "md:scale-105"
+        "relative flex flex-col p-8 rounded-[2rem] transition-all duration-300",
+        plan.variant === 'primary' 
+          ? "bg-emerald-600 text-white shadow-2xl shadow-emerald-200 ring-4 ring-emerald-50 lg:scale-105 z-10" 
+          : plan.variant === 'dark'
+          ? "bg-slate-900 text-white"
+          : "bg-white border border-slate-200 text-slate-900 shadow-sm hover:shadow-xl hover:border-slate-300"
       )}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      style={{
-        perspective: 1000,
-      }}
     >
-      <motion.div
-        style={{
-          rotateX,
-          rotateY,
-          transformStyle: "preserve-3d",
-        }}
-        className={cn(
-          "relative h-full flex flex-col rounded-3xl border transition-all duration-500",
-          "bg-white shadow-lg",
-          plan.popular 
-            ? "border-emerald-200/50 shadow-2xl shadow-emerald-500/10 hover:shadow-emerald-500/20" 
-            : "border-gray-200/50 shadow-lg hover:shadow-xl",
-          plan.comingSoon && "opacity-75"
-        )}
-      >
-        {/* Gradient border overlay */}
-        <div 
-          className={cn(
-            "absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10",
-            "bg-gradient-to-br p-[2px]"
-          )}
-          style={{
-            backgroundImage: `linear-gradient(135deg, ${plan.gradientFrom}, ${plan.gradientTo})`,
-          }}
-        >
-          <div className="h-full w-full rounded-3xl bg-white" />
+      {plan.popular && (
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+          <Badge className="bg-amber-400 hover:bg-amber-400 text-slate-900 font-bold px-4 py-1 rounded-full border-none shadow-lg whitespace-nowrap">
+            MOST POPULAR
+          </Badge>
         </div>
+      )}
 
-        {/* Glow effect on popular card */}
-        {plan.popular && (
-          <motion.div
-            className="absolute -inset-1 rounded-3xl opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500 -z-20"
-            style={{
-              background: `radial-gradient(circle at center, ${plan.glowColor}, transparent 70%)`,
-            }}
-            animate={{
-              scale: [1, 1.05, 1],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        )}
-
-        <div className="relative p-8 flex flex-col h-full">
-          {/* Popular badge */}
-          {plan.popular && (
-            <div className="absolute -top-5 left-1/2 -translate-x-1/2 z-10">
-              <motion.div
-                initial={{ y: -10, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-              >
-                <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 border-0 shadow-lg text-white px-5 py-1.5 text-sm font-semibold">
-                  <Star className="h-3.5 w-3.5 mr-1 fill-current" />
-                  Most Popular
-                </Badge>
-              </motion.div>
-            </div>
-          )}
-
-          {/* Coming soon badge */}
-          {plan.comingSoon && (
-            <div className="absolute top-6 right-6">
-              <Badge variant="secondary" className="bg-gray-100 text-gray-600 text-xs px-3 py-1">
-                Coming Soon
-              </Badge>
-            </div>
-          )}
-
-          {/* Icon and title */}
-          <div className="mb-6">
-            <motion.div 
-              className={cn(
-                "mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl",
-                "bg-gradient-to-br shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl"
-              )}
-              style={{
-                backgroundImage: `linear-gradient(135deg, ${plan.gradientFrom}, ${plan.gradientTo})`,
-              }}
-              whileHover={{ rotate: [0, -10, 10, -10, 0] }}
-              transition={{ duration: 0.5 }}
-            >
-              <plan.icon className="h-7 w-7 text-white" />
-            </motion.div>
-            <h3 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">{plan.name}</h3>
-            <p className="text-base font-bold text-gray-800 leading-relaxed tracking-tight">{plan.description}</p>
-          </div>
-
-          {/* Price */}
-          <div className="mb-8">
-            {plan.comingSoon ? (
-              <div className="text-5xl font-black text-gray-900 tracking-tight">
-                Custom
-              </div>
-            ) : (
-              <div className="flex items-baseline gap-1">
-                <span className="text-base font-black text-gray-700">KES</span>
-                <AnimatePresence mode="wait">
-                  <motion.span
-                    key={billingCycle}
-                    initial={{ opacity: 0, y: 20, filter: "blur(4px)" }}
-                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                    exit={{ opacity: 0, y: -20, filter: "blur(4px)" }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
-                    className="text-6xl font-black text-gray-900 tracking-tight"
-                  >
-                    {plan.price[billingCycle].toLocaleString()}
-                  </motion.span>
-                </AnimatePresence>
-                <span className="text-base font-black text-gray-700 ml-1">
-                  /{billingCycle === 'monthly' ? 'mo' : 'yr'}
-                </span>
-              </div>
-            )}
-            {!plan.comingSoon && plan.id === 'free' && (
-              <p className="mt-2 text-sm font-bold text-gray-600">No credit card required</p>
-            )}
-            {!plan.comingSoon && plan.id !== 'free' && billingCycle === 'yearly' && (
-              <motion.p 
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="mt-2 text-xs text-emerald-600 font-semibold flex items-center gap-1"
-              >
-                <Sparkles className="h-3 w-3" />
-                Save {Math.round((1 - (plan.price.yearly / (plan.price.monthly * 12))) * 100)}%
-              </motion.p>
-            )}
-          </div>
-
-          {/* Features */}
-          <ul className="mb-8 space-y-4 flex-1">
-            {plan.features.map((feature, idx) => (
-              <motion.li 
-                key={idx}
-                initial={{ opacity: 0, x: -10 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.05, duration: 0.3 }}
-                className="flex items-start gap-3"
-              >
-                {feature.included ? (
-                  <motion.div 
-                    className="mt-0.5 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 p-1 shadow-sm"
-                    whileHover={{ scale: 1.2, rotate: 360 }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                  >
-                    <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
-                  </motion.div>
-                ) : (
-                  <div className="mt-0.5 rounded-full bg-gray-100 p-1">
-                    <X className="h-3.5 w-3.5 text-gray-400" strokeWidth={2} />
-                  </div>
-                )}
-                <span className={cn(
-                  "text-base leading-relaxed font-bold tracking-tight",
-                  feature.included ? "text-gray-900" : "text-gray-400"
-                )}>
-                  {feature.text}
-                </span>
-              </motion.li>
-            ))}
-          </ul>
-
-          {/* CTA Button */}
-          <Link href={plan.ctaLink} className={cn("mt-auto", plan.comingSoon && "pointer-events-none")}>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button 
-                className={cn(
-                  "w-full h-12 text-base font-semibold transition-all duration-300 shadow-lg",
-                  plan.popular 
-                    ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white hover:shadow-xl hover:shadow-emerald-500/30" 
-                    : "bg-white text-gray-900 border-2 border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-xl",
-                  plan.comingSoon && "opacity-50 cursor-not-allowed"
-                )}
-                disabled={plan.comingSoon}
-              >
-                <span className="flex items-center justify-center gap-2">
-                  {plan.cta}
-                  {!plan.comingSoon && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />}
-                </span>
-              </Button>
-            </motion.div>
-          </Link>
+      <div className="mb-8">
+        <h3 className={cn(
+          "text-xs font-bold uppercase tracking-wider mb-2",
+          plan.variant === 'outline' ? "text-emerald-600" : "text-emerald-300"
+        )}>
+          {plan.name.split(' — ')[0]}
+        </h3>
+        <p className={cn(
+          "text-[10px] font-medium opacity-70 mb-6",
+          plan.variant === 'outline' ? "text-slate-500" : "text-slate-300"
+        )}>
+          {plan.name.split(' — ')[1]}
+        </p>
+        
+        <div className="flex items-baseline gap-1 mb-4">
+          <span className="text-sm font-bold opacity-70">KES</span>
+          <span className="text-5xl font-black tracking-tight">{plan.price}</span>
+          <span className="text-sm font-medium opacity-70">/ bed / mo</span>
         </div>
-      </motion.div>
+        
+        <p className={cn(
+          "text-sm font-medium leading-relaxed min-h-[40px]",
+          plan.variant === 'outline' ? "text-slate-600" : "text-slate-200"
+        )}>
+          {plan.tagline}
+        </p>
+      </div>
+
+      <div className="space-y-4 mb-10 flex-1">
+        <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">What&apos;s included</p>
+        {plan.features.map((feature, i) => (
+          <div key={i} className="flex items-start gap-3">
+            <div className={cn(
+              "mt-1 p-0.5 rounded-full",
+              plan.variant === 'outline' ? "bg-emerald-100 text-emerald-600" : "bg-white/20 text-white"
+            )}>
+              <Check className="h-3 w-3" />
+            </div>
+            <span className="text-sm font-medium leading-tight">{feature}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-auto space-y-4">
+        <Link href={plan.ctaLink} className="block w-full">
+          <Button 
+            className={cn(
+              "w-full h-14 rounded-2xl text-base font-bold transition-all duration-300 group",
+              plan.variant === 'primary' 
+                ? "bg-white text-emerald-600 hover:bg-slate-50 shadow-lg" 
+                : plan.variant === 'dark'
+                ? "bg-emerald-500 text-white hover:bg-emerald-400 border-none"
+                : "bg-slate-900 text-white hover:bg-slate-800"
+            )}
+          >
+            {plan.cta}
+            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Button>
+        </Link>
+        <p className={cn(
+          "text-[10px] text-center font-bold uppercase tracking-widest opacity-40",
+          plan.variant === 'outline' ? "text-slate-500" : "text-white"
+        )}>
+          {plan.footerNote}
+        </p>
+      </div>
     </motion.div>
   );
 };
 
 export default function PricingPage() {
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
-
   return (
-    <div className="min-h-screen bg-white font-sans selection:bg-emerald-100 selection:text-emerald-900 overflow-hidden">
+    <div className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-emerald-100 selection:text-emerald-900">
       {/* Hero Section */}
-      <section className="relative pt-8 pb-8 md:pt-12 md:pb-10">
-        <AnimatedBackground />
-        
-        <motion.div 
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-          className="container mx-auto px-4 text-center relative z-10"
-        >
-          <motion.div variants={itemVariants} className="mb-6 flex justify-center">
-            <Badge variant="secondary" className="rounded-full px-5 py-2 text-sm font-semibold text-emerald-700 bg-emerald-50/80 backdrop-blur-sm border-emerald-200/50 shadow-sm">
-              💎 Pricing Plans
-            </Badge>
+      <section className="relative pt-24 pb-16 px-4">
+        <div className="container mx-auto max-w-4xl text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 mb-8"
+          >
+            <Badge variant="secondary" className="bg-emerald-500 text-white border-none text-[10px] px-2">PLAN</Badge>
+            <span className="text-xs font-bold tracking-tight">Simple Pricing. Per occupied bed.</span>
           </motion.div>
           
           <motion.h1 
-            variants={itemVariants} 
-            className="mb-6 text-5xl font-extrabold tracking-tight text-gray-900 sm:text-6xl md:text-7xl lg:text-8xl"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-5xl md:text-7xl font-black text-slate-900 tracking-tight mb-6"
           >
-            Choose the plan that <br className="hidden md:block" />
-            <span className="relative inline-block">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 animate-gradient">
-                fits your ambition
-              </span>
-              <motion.span
-                className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-full"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ delay: 0.8, duration: 0.8, ease: "easeOut" }}
-              />
-            </span>
+            Pay only for beds that <br className="hidden md:block" />
+            <span className="text-emerald-600">generate rent.</span>
           </motion.h1>
           
           <motion.p 
-            variants={itemVariants} 
-            className="mx-auto mb-12 max-w-2xl text-lg text-gray-600 md:text-xl leading-relaxed"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-lg md:text-xl text-slate-600 font-medium max-w-2xl mx-auto mb-10 leading-relaxed"
           >
-            Simple, transparent pricing that grows with you. Try any plan free for 14 days. 
-            No hidden fees. Cancel anytime.
+            Start at KES 50 / occupied bed / month. All tenant notifications (SMS & email) are included. No surprise fees.
           </motion.p>
 
-          {/* Billing Toggle */}
           <motion.div 
-            variants={itemVariants} 
-            className="flex items-center justify-center gap-4 mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <span className={cn(
-              "text-base font-semibold transition-all duration-300",
-              billingCycle === 'monthly' ? "text-gray-900 scale-105" : "text-gray-500"
-            )}>
-              Monthly
-            </span>
-            <div className="relative">
-              <Switch
-                checked={billingCycle === 'yearly'}
-                onCheckedChange={(checked) => setBillingCycle(checked ? 'yearly' : 'monthly')}
-                className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-emerald-600 data-[state=checked]:to-teal-600 shadow-lg"
-              />
-            </div>
-            <span className={cn(
-              "text-base font-semibold transition-all duration-300 flex items-center gap-2",
-              billingCycle === 'yearly' ? "text-gray-900 scale-105" : "text-gray-500"
-            )}>
-              Yearly
-              <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-700 text-xs px-2.5 py-0.5 rounded-full font-bold">
-                Save 15%
-              </Badge>
-            </span>
+            <Button size="lg" className="h-14 px-8 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-base font-bold shadow-xl shadow-emerald-200">
+              Get started
+            </Button>
+            <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-900 font-bold group">
+              Request demo <ArrowUpRight className="ml-1 h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </Button>
           </motion.div>
-        </motion.div>
+        </div>
       </section>
 
-      {/* Pricing Cards */}
-      <section className="pb-16 md:pb-20 relative">
-        <div className="container mx-auto px-4">
+      {/* Pricing Cards Section */}
+      <section className="py-12 px-4">
+        <div className="container mx-auto max-w-7xl">
+          {/* Trial Banner */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="max-w-4xl mx-auto mb-16 px-6 py-6 rounded-[2rem] bg-emerald-50 border border-emerald-100 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm"
+          >
+            <div className="flex items-center gap-5">
+              <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm">
+                <Sparkles className="h-6 w-6 text-emerald-600" />
+              </div>
+              <div className="text-left">
+                <h3 className="text-lg font-bold text-slate-900 leading-tight">30-day free trial</h3>
+                <p className="text-sm font-medium text-slate-600">Full access to Core and Control. No payment required.</p>
+              </div>
+            </div>
+            <Link href={AUTH_ROUTES.REGISTER}>
+              <Button className="h-12 px-8 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-all">
+                Claim trial
+              </Button>
+            </Link>
+          </motion.div>
           <motion.div 
             variants={containerVariants}
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto"
+            animate="visible"
+            className="grid lg:grid-cols-3 gap-8 items-stretch"
           >
             {PLANS.map((plan) => (
-              <PricingCard key={plan.id} plan={plan} billingCycle={billingCycle} />
+              <PricingCard key={plan.id} plan={plan} />
             ))}
+          </motion.div>
+
+          {/* Factual Notes */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="mt-24 max-w-4xl mx-auto text-center"
+          >
+            <div className="grid md:grid-cols-3 gap-8 mb-12">
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Communications</p>
+                <p className="text-sm font-medium text-slate-600">SMS & email tenant notifications included.</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Billing Model</p>
+                <p className="text-sm font-medium text-slate-600">Billed monthly per occupied bed at invoice time.</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Discounts</p>
+                <p className="text-sm font-medium text-slate-600">Multi-property & enterprise terms available.</p>
+              </div>
+            </div>
+            
+            <Link href="/contact" className="inline-flex items-center text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-colors group">
+              Contact sales <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-1" />
+            </Link>
           </motion.div>
         </div>
       </section>
 
-      {/* Social Proof / Trusted By */}
-      <section className="py-16 border-t border-gray-100 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-50/30 via-transparent to-transparent" />
-        <div className="container mx-auto px-4 text-center relative z-10">
-          <motion.p 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-sm font-bold text-gray-500 mb-8 uppercase tracking-widest"
-          >
-            Trusted by students from
-          </motion.p>
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ staggerChildren: 0.1 }}
-            className="flex flex-wrap justify-center items-center gap-12 md:gap-20"
-          >
-            {['UoN', 'Strathmore', 'KU', 'JKUAT', 'Daystar'].map((university, idx) => (
-              <motion.span 
-                key={university}
+      {/* Micro FAQ Section */}
+      <section className="py-32 px-4 bg-white border-t border-slate-100">
+        <div className="container mx-auto max-w-3xl">
+          <div className="text-center mb-20">
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-4">Quick Questions</h2>
+            <p className="text-slate-500 font-medium">Everything you need to know about our billing.</p>
+          </div>
+          
+          <div className="space-y-16">
+            {FAQS.map((faq, i) => (
+              <motion.div 
+                key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-                whileHover={{ scale: 1.1, opacity: 1 }}
-                className="text-2xl md:text-3xl font-bold text-gray-400 hover:text-gray-600 transition-all duration-300 cursor-default"
+                transition={{ delay: i * 0.1 }}
+                className="flex gap-6 md:gap-8"
               >
-                {university}
-              </motion.span>
+                <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center">
+                  <HelpCircle className="h-6 w-6 text-slate-300" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-slate-900 mb-2">{faq.q}</h4>
+                  <p className="text-slate-600 leading-relaxed font-medium">{faq.a}</p>
+                </div>
+              </motion.div>
             ))}
-          </motion.div>
+          </div>
+          
+          <div className="mt-24 p-8 md:p-10 rounded-[2.5rem] bg-slate-50 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center">
+                <MessageCircle className="h-7 w-7 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-base font-bold text-slate-900">Still have questions?</p>
+                <p className="text-sm font-medium text-slate-500">We&apos;re here to help you get started.</p>
+              </div>
+            </div>
+            <Link href="/contact">
+              <Button variant="outline" className="h-12 px-8 rounded-xl border-slate-200 font-bold hover:bg-white hover:border-slate-300 transition-all">Chat with us</Button>
+            </Link>
+          </div>
         </div>
       </section>
+
+      {/* Footer / Legal */}
+      <footer className="py-16 border-t border-slate-100 text-center px-4 bg-white">
+        <div className="container mx-auto">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">
+            Prices exclude VAT where applicable. <Link href="/terms" className="underline hover:text-slate-600 transition-colors">Terms and service apply</Link>.
+          </p>
+        </div>
+      </footer>
+
+      {/* Product Education Link */}
+      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
+        <Link href="/how-it-works">
+          <motion.div 
+            whileHover={{ y: -4, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="bg-white/80 backdrop-blur-md px-6 py-3.5 rounded-full border border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex items-center gap-4 cursor-pointer group"
+          >
+            <span className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Curious how it works?</span>
+            <div className="h-4 w-[1px] bg-slate-200" />
+            <span className="text-[11px] font-bold text-emerald-600 flex items-center uppercase tracking-wider">
+              See the tour <ArrowRight className="ml-1.5 h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+            </span>
+          </motion.div>
+        </Link>
+      </div>
     </div>
   );
 }

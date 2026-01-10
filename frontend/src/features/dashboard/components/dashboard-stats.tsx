@@ -15,15 +15,22 @@ interface DashboardStatProps {
 
 export function DashboardStat({ title, value, icon, trend, className }: DashboardStatProps) {
   return (
-    <div className={cn("rounded-xl border bg-transparent p-4 md:p-6 shadow-none transition-all hover:bg-muted/30", className)}>
-      <div className="flex items-center justify-between">
-        <h3 className="text-xs md:text-sm font-bold text-foreground truncate mr-2">{title}</h3>
-        <div className="rounded-full bg-primary/10 p-1.5 md:p-2 text-primary shrink-0">
+    <div className={cn(
+      "rounded-xl border bg-card shadow-sm p-4 md:p-6 transition-all hover:shadow-md",
+      className
+    )}>
+      <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <h3 className="text-xs md:text-sm font-bold text-muted-foreground truncate mr-2">
+          {title}
+        </h3>
+        <div className="shrink-0 text-muted-foreground">
           {icon}
         </div>
       </div>
-      <div className="mt-3 md:mt-4">
-        <div className="text-xl md:text-2xl font-black text-foreground truncate">{value}</div>
+      <div className="space-y-1">
+        <div className="text-2xl md:text-3xl font-bold text-foreground">
+          {value}
+        </div>
         {trend && (
           <div className="mt-1 flex items-center text-xs font-medium">
             {trend.direction === 'up' && <ArrowUpIcon className="mr-1 h-3 w-3 text-emerald-600 dark:text-emerald-500" />}
