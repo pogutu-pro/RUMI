@@ -2,379 +2,249 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useRoommates } from '@/features/roommates';
+import { useAuth } from '@/features/auth';
+import { useRoommates, useRoommateMatches } from '@/features/roommates/hooks/use-roommates';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
 import { 
-  Search, 
-  UserPlus, 
-  Heart, 
   Users, 
-  MessageSquare,
-  Settings,
-  TrendingUp,
-  Sparkles,
-  AlertCircle,
-  CheckCircle
+  UserSearch,
+  Settings, 
+  MessageSquare, 
+  CheckCircle,
+  ArrowRight,
+  School,
+  Lock,
+  Search,
+  Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Progress } from '@/components/ui/progress';
 
-export default function RoommatesPage() {
-  const { data: roommates, isLoading } = useRoommates();
-  // Calculate quiz completion from user preferences (would come from API)
-  const [quizCompleted, setQuizCompleted] = React.useState(false);
-  const [quizProgress, setQuizProgress] = React.useState(0);
-
-  React.useEffect(() => {
-    // This would be populated from actual user preferences API
-    // For now, check if user has viewed the quiz
-    const savedProgress = localStorage.getItem('roommate-quiz-progress');
-    if (savedProgress) {
-      try {
-        const parsed = JSON.parse(savedProgress);
-        setQuizProgress((parsed.answers?.length || 0) * 10);
-        setQuizCompleted(parsed.isComplete || false);
-      } catch (e) {
-        setQuizProgress(0);
-      }
-    }
-  }, []);
-
-  const currentRoommates = React.useMemo(() => {
-    return roommates?.filter((r: any) => r.status === 'active') || [];
-  }, [roommates]);
+export default function RoommateHubPage() {
+  const { user, profile } = useAuth();
+  const { data: household = [], isLoading: householdLoading } = useRoommates();
+  const { data: matches = [], isLoading: matchesLoading } = useRoommateMatches();
+  
+  const completionPercentage = (profile as any)?.profile_completion_percentage || 0;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="space-y-8 max-w-6xl mx-auto pb-20 px-4 md:px-0">
+      
+      {/* 1. Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 pb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Roommates</h1>
-          <p className="text-muted-foreground mt-1">
-            Connect with compatible roommates and manage your living community.
-          </p>
+           <h1 className="text-3xl font-bold tracking-tight text-foreground">Roommate Management</h1>
+           <p className="text-muted-foreground text-sm font-medium">Manage your current household and discover potential roommate connections.</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/student/profile/preferences">
-              <Settings className="h-4 w-4 mr-2" />
-              Preferences
+        <Button variant="outline" asChild className="gap-2 font-bold h-10 border-border/50">
+            <Link href="/student/roommates/preferences">
+               <Settings className="h-4 w-4" />
+               Match Profile & Settings
             </Link>
-          </Button>
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm" asChild>
-            <Link href="/student/roommates/matches">
-              <Search className="h-4 w-4 mr-2" />
-              Find Matches
-            </Link>
-          </Button>
-        </div>
+        </Button>
       </div>
 
-      {/* Quiz CTA (if not completed) */}
-      {!quizCompleted && quizProgress < 100 && (
-        <Card className="border border-border bg-muted/20">
-          <CardHeader>
-            <div className="flex items-start gap-4">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Heart className="h-6 w-6 text-primary" />
-              </div>
-              <div className="flex-1">
-                <CardTitle className="text-xl mb-2 flex items-center gap-2">
-                  {quizProgress > 0 ? (
-                    <>
-                      <AlertCircle className="h-5 w-5 text-warning" />
-                      Complete Your Personality Quiz
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-5 w-5 text-primary" />
-                      Find Your Perfect Roommate Match
-                    </>
-                  )}
-                </CardTitle>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {quizProgress > 0 
-                    ? `You're ${quizProgress}% done! Complete the quiz to unlock your top compatible matches.`
-                    : 'Take our fun 10-question personality quiz to discover roommates who match your lifestyle and preferences.'
-                  }
-                </p>
-                {quizProgress > 0 && (
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Progress</span>
-                      <span className="font-medium">{quizProgress}%</span>
+      {/* 2. Main Interface */}
+      <Tabs defaultValue="discovery" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 lg:w-[400px] h-11 p-1 bg-muted/50 border border-border/50">
+          <TabsTrigger value="discovery" className="gap-2 font-bold text-xs uppercase tracking-wider">
+             <UserSearch className="h-4 w-4" />
+             Discover
+          </TabsTrigger>
+          <TabsTrigger value="household" className="gap-2 font-bold text-xs uppercase tracking-wider">
+             <Users className="h-4 w-4" />
+             Household
+          </TabsTrigger>
+        </TabsList>
+
+        {/* --- DISCOVERY MODE --- */}
+        <TabsContent value="discovery" className="mt-8 space-y-8">
+           
+           {/* Profile Strength Nudge */}
+           {completionPercentage < 100 && (
+             <Card className="bg-muted/30 border border-border/50 shadow-none">
+                <CardContent className="flex flex-col md:flex-row items-center gap-8 p-6">
+                    <div className="p-4 bg-background rounded-xl border border-border/50 shadow-sm">
+                        <CheckCircle className="h-6 w-6 text-primary" />
                     </div>
-                    <Progress value={quizProgress} className="h-2" />
-                  </div>
-                )}
-                <Button 
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
-                  asChild
-                >
-                  <Link href="/student/roommates/matches">
-                    <Heart className="h-4 w-4 mr-2" />
-                    {quizProgress > 0 ? 'Continue Quiz' : 'Start Personality Quiz'}
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
-      )}
-
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-transparent border border-border transition-all hover:bg-muted/10">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Current Roommates</p>
-                <p className="text-3xl font-black text-foreground mt-2">
-                  {currentRoommates.length}
-                </p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Users className="h-6 w-6 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-transparent border border-border transition-all hover:bg-muted/10">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Avg Compatibility</p>
-                <p className="text-3xl font-black text-foreground mt-2">
-                  {currentRoommates.length > 0 ? currentRoommates[0]?.compatibilityScore || 85 : 0}%
-                </p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center">
-                <Heart className="h-6 w-6 text-pink-600 dark:text-pink-400" />
-              </div>
-            </div>
-            {currentRoommates.length > 0 && (
-              <div className="mt-3 flex items-center text-xs text-emerald-600 font-medium">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                <span>Good Match</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-transparent border border-border transition-all hover:bg-muted/10">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Pending Requests</p>
-                <p className="text-3xl font-black text-foreground mt-2">0</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <UserPlus className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-              </div>
-            </div>
-            <Button variant="link" className="mt-3 h-auto p-0 text-xs text-muted-foreground hover:text-primary" asChild>
-              <Link href="/student/roommates/requests">View all requests →</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content */}
-      <div className="grid gap-8 lg:grid-cols-3">
-        {/* Current Roommates (2/3) */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2 text-foreground">
-              <Users className="h-6 w-6 text-primary" />
-              Your Roommates
-            </h2>
-          </div>
-
-          {isLoading ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {[1, 2].map((i) => (
-                <Card key={i} className="bg-transparent border border-border">
-                  <CardHeader>
-                    <div className="flex items-center gap-4">
-                      <Skeleton className="h-16 w-16 rounded-full" />
-                      <div className="space-y-2">
-                        <Skeleton className="h-5 w-32" />
-                        <Skeleton className="h-4 w-24" />
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
-          ) : currentRoommates.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {currentRoommates.map((roommate: any) => (
-                <Card key={roommate.id} className="bg-transparent border border-border hover:border-primary/50 transition-all duration-300">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start gap-4">
-                      <Avatar className="h-16 w-16 border-2 border-background ring-2 ring-border">
-                        <AvatarImage src={roommate.avatar} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
-                          {roommate.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-bold text-lg truncate group-hover:text-primary transition-colors">
-                              {roommate.name}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                              {roommate.program}
+                    <div className="flex-1 space-y-3 text-center md:text-left">
+                        <div className="space-y-1">
+                            <h3 className="font-bold text-lg">Incomplete Match Profile</h3>
+                            <p className="text-muted-foreground text-sm font-medium">
+                                Your profile is currently <span className="text-foreground font-bold">{completionPercentage}% complete</span>. 
+                                Completing your profile increases visibility to compatible roommates.
                             </p>
-                          </div>
-                          {roommate.isPrimaryContact && (
-                            <Badge variant="secondary" className="text-[10px]">
-                              Primary
-                            </Badge>
-                          )}
                         </div>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge variant="outline" className="text-xs font-semibold">
-                            Year {roommate.year}
-                          </Badge>
-                          {roommate.compatibilityScore && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Heart className="h-3 w-3 text-pink-500 fill-pink-500" />
-                              <span className="font-bold">{roommate.compatibilityScore}%</span>
-                            </div>
-                          )}
+                        <div className="w-full max-w-md h-2 bg-muted rounded-full overflow-hidden border border-border/10">
+                             <div className="h-full bg-primary rounded-full transition-all duration-700" style={{ width: `${completionPercentage}%` }} />
                         </div>
-                      </div>
                     </div>
-                  </CardHeader>
-                  <CardFooter className="bg-muted/50 p-3 flex gap-2 border-t border-border">
-                    <Button size="sm" variant="outline" className="flex-1 h-8 text-xs bg-background hover:bg-accent">
-                      <MessageSquare className="h-3 w-3 mr-1" />
-                      Message
+                    <Button asChild className="font-bold px-8 h-11 shrink-0">
+                        <Link href="/student/roommates/preferences">Optimize Profile</Link>
                     </Button>
-                    <Button size="sm" variant="outline" className="flex-1 h-8 text-xs bg-background hover:bg-accent" asChild>
-                      <Link href={`/student/roommates/${roommate.id}`}>
-                        View Profile
-                      </Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card className="border border-dashed bg-transparent shadow-none">
-              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                  <Users className="h-8 w-8 text-muted-foreground" />
+                </CardContent>
+             </Card>
+           )}
+
+           {/* Match Grid */}
+           <div className="space-y-4">
+               <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-70">Recommended Connections</h2>
+               
+               {matchesLoading ? (
+                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                       {[1,2,3].map(i => <Skeleton key={i} className="h-[400px] rounded-xl" />)}
+                   </div>
+               ) : matches.length > 0 ? (
+                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                       {matches.map((match: any) => (
+                           <MatchCard key={match.id} match={match} />
+                       ))}
+                   </div>
+               ) : (
+                   <EmptyState 
+                      icon={<Search className="h-10 w-10 text-muted-foreground/30" />}
+                      title="No matches found"
+                      description="We couldn't identify matches based on your current preferences. Consider expanding your criteria or completing your profile."
+                      actionLabel="Adjust Preferences"
+                      actionLink="/student/roommates/preferences"
+                   />
+               )}
+           </div>
+        </TabsContent>
+
+        {/* --- HOUSEHOLD MODE --- */}
+        <TabsContent value="household" className="mt-8">
+            {householdLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {[1,2].map(i => <Skeleton key={i} className="h-[180px] rounded-xl" />)}
                 </div>
-                <h3 className="text-lg font-bold mb-2 text-foreground">No roommates yet</h3>
-                <p className="text-muted-foreground max-w-sm mb-6">
-                  Start by finding compatible roommates through our matching system.
-                </p>
-                <Button className="bg-primary text-primary-foreground hover:bg-primary/90" asChild>
-                  <Link href="/student/roommates/matches">
-                    <Search className="h-4 w-4 mr-2" />
-                    Find Roommates
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Sidebar Actions (1/3) */}
-        <div className="space-y-6">
-          {/* Quick Actions */}
-          <Card className="bg-transparent border border-border">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold text-foreground">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start h-auto py-3 bg-background hover:bg-accent border-border" asChild>
-                <Link href="/student/roommates/matches">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
-                      <Search className="h-4 w-4" />
-                    </div>
-                    <div className="text-left flex-1">
-                      <div className="font-bold text-sm text-foreground">Browse Matches</div>
-                      <div className="text-xs text-muted-foreground">Find compatible roommates</div>
-                    </div>
-                  </div>
-                </Link>
-              </Button>
-
-              <Button variant="outline" className="w-full justify-start h-auto py-3 bg-background hover:bg-accent border-border" asChild>
-                <Link href="/student/roommates/requests">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600">
-                      <UserPlus className="h-4 w-4" />
-                    </div>
-                    <div className="text-left flex-1">
-                      <div className="font-bold text-sm text-foreground">Manage Requests</div>
-                      <div className="text-xs text-muted-foreground">View sent & received</div>
-                    </div>
-                    <Badge variant="secondary" className="bg-muted text-foreground">
-                      0
-                    </Badge>
-                  </div>
-                </Link>
-              </Button>
-
-              <Button variant="outline" className="w-full justify-start h-auto py-3 bg-background hover:bg-accent border-border" asChild>
-                <Link href="/student/profile/preferences">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600">
-                      <Settings className="h-4 w-4" />
-                    </div>
-                    <div className="text-left flex-1">
-                      <div className="font-bold text-sm text-foreground">Preferences</div>
-                      <div className="text-xs text-muted-foreground">Update matching criteria</div>
-                    </div>
-                  </div>
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Tips Card */}
-          <Card className="bg-muted/10 border-border">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2 font-bold text-foreground">
-                <CheckCircle className="h-5 w-5 text-primary" />
-                Pro Tips
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                <p className="text-muted-foreground">
-                  Complete your profile to get better matches
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                <p className="text-muted-foreground">
-                  Update preferences regularly for accurate matching
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                <p className="text-muted-foreground">
-                  Message potential roommates before sending requests
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            ) : household.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {household.map((roommate) => (
+                        <Card key={roommate.id} className="overflow-hidden border border-border/50 shadow-sm bg-card transition-shadow hover:shadow-md">
+                             <CardHeader className="flex flex-row items-center gap-5 pb-4 border-b border-border/50 bg-muted/20 px-6">
+                                <Avatar className="h-14 w-14 border border-border/50 shadow-sm">
+                                    <AvatarImage src={roommate.avatar || ''} />
+                                    <AvatarFallback className="bg-muted text-muted-foreground font-bold">{roommate.name[0]}</AvatarFallback>
+                                </Avatar>
+                                <div className="space-y-0.5">
+                                    <CardTitle className="text-lg font-bold">{roommate.name}</CardTitle>
+                                    <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-70">
+                                        Room {roommate.room_number || 'Unassigned'}
+                                    </CardDescription>
+                                </div>
+                             </CardHeader>
+                             <CardContent className="p-6">
+                                 <div className="flex gap-3">
+                                     <Button variant="secondary" size="sm" className="flex-1 font-bold h-10" asChild>
+                                         <Link href={`/student/chat/${roommate.id}`} className="gap-2">
+                                            <MessageSquare className="h-4 w-4" /> Message
+                                         </Link>
+                                     </Button>
+                                     <Button variant="outline" size="sm" className="flex-1 font-bold h-10 border-border/50" asChild>
+                                         <Link href={`/student/roommates/${roommate.id}`} className="gap-2">
+                                            View Profile
+                                         </Link>
+                                     </Button>
+                                 </div>
+                             </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            ) : (
+                 <EmptyState 
+                  icon={<Users className="h-10 w-10 text-muted-foreground/30" />}
+                  title="No household members"
+                  description="You are currently registered as a single occupant. Discover potential roommates to share your living space."
+                  actionLabel="Discover Connections"
+                  actionLink="/student/roommates"
+               />
+            )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
+}
+
+// --- Sub-components ---
+
+function MatchCard({ match }: { match: any }) {
+    return (
+        <Card className="group overflow-hidden border border-border/50 bg-card shadow-sm hover:shadow-md transition-shadow">
+            <div className="aspect-[4/3] relative bg-muted/30 flex items-center justify-center overflow-hidden border-b border-border/50">
+                {match.profile_picture ? (
+                    <img 
+                      src={match.profile_picture} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover" 
+                    />
+                ) : (
+                     <div className="text-5xl font-black text-muted-foreground/10 uppercase tracking-widest">
+                         {match.first_name?.[0]}
+                     </div>
+                )}
+                
+                {/* Compatibility Badge */}
+                <div className="absolute top-4 right-4 bg-background/90 border border-border/50 px-3 py-1.5 rounded-lg shadow-sm">
+                    <span className="text-sm font-black text-foreground">{match.match_percentage || 85}%</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1 opacity-70">Match</span>
+                </div>
+            </div>
+
+            <CardContent className="p-6 space-y-6">
+                <div className="space-y-1">
+                     <h3 className="font-bold text-xl text-foreground">{match.first_name} <span className="text-muted-foreground font-medium text-sm ml-1">({match.age || 'Student'})</span></h3> 
+                     <div className="flex items-center gap-1.5 text-muted-foreground text-xs font-bold uppercase tracking-widest opacity-70">
+                         <School className="h-3.5 w-3.5" />
+                         <span className="truncate">{match.profile?.course || 'Academic Profile'}</span>
+                     </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                     <Badge variant="secondary" className="bg-muted text-foreground/80 font-bold text-[10px] uppercase tracking-wider px-2.5 py-1">
+                        {match.profile?.year_of_study ? `Year ${match.profile?.year_of_study}` : 'Undergraduate'}
+                     </Badge>
+                     {match.profile?.lifestyle_preferences?.socials && (
+                         <Badge variant="outline" className="border-border/50 text-muted-foreground bg-transparent font-bold text-[10px] uppercase tracking-wider px-2.5 py-1">Social</Badge>
+                     )}
+                </div>
+
+                {/* Privacy Information */}
+                <div className="p-3 bg-muted/30 rounded-lg flex items-start gap-3 border border-border/20">
+                    <Lock className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0 opacity-50" />
+                    <p className="text-[10px] text-muted-foreground font-medium leading-relaxed">
+                        Identity verified. Private contact information is restricted until a mutual connection is established.
+                    </p>
+                </div>
+
+                <Button className="w-full gap-2 font-bold h-11 shadow-sm">
+                    View Compatibility <ArrowRight className="h-4 w-4" />
+                </Button>
+            </CardContent>
+        </Card>
+    )
+}
+
+function EmptyState({ icon, title, description, actionLabel, actionLink }: any) {
+    return (
+        <Card className="border border-dashed border-border/50 py-16 bg-muted/5 shadow-none">
+            <CardContent className="flex flex-col items-center text-center space-y-5">
+                <div className="p-5 bg-background border border-border/50 rounded-full shadow-sm mb-2">
+                    {icon}
+                </div>
+                <div className="max-w-md space-y-2">
+                     <h3 className="font-bold text-xl text-foreground">{title}</h3>
+                     <p className="text-muted-foreground text-sm font-medium leading-relaxed">{description}</p>
+                </div>
+                <Button asChild variant="default" className="mt-4 font-bold px-8 h-11">
+                    <Link href={actionLink}>{actionLabel}</Link>
+                </Button>
+            </CardContent>
+        </Card>
+    )
 }

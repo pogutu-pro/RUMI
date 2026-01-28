@@ -101,8 +101,11 @@ export interface StudentProfile extends User { // Needs reconciliation: User fie
   university?: string;
   student_id_number?: string;
   year_of_study?: YearOfStudy;
+  graduation_year?: number; // Added
   course?: Nullable<string>;
   program?: string;
+  campus?: string; // Added
+  high_school?: string; // Added
   
   lifestyle_preferences?: Nullable<LifestylePreferences>;
   
@@ -183,7 +186,10 @@ export interface UpdateStudentProfileRequest {
   university?: string;
   student_id_number?: string;
   year_of_study?: number;
+  graduation_year?: number; // Added
   course?: string;
+  campus?: string; // Added
+  high_school?: string; // Added
   bio?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;

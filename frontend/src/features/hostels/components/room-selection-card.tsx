@@ -21,7 +21,7 @@ export default function RoomSelectionCard({
   pricePerMonth
 }: RoomSelectionCardProps) {
   const isFull = !room.available;
-  const isFewLeft = room.available && room.capacity - room.beds <= 2; // Assuming beds = occupied beds? Or beds = total beds? 
+  const isFewLeft = room.available && room.capacity - (room.beds || 0) <= 2; // Assuming beds = occupied beds? Or beds = total beds? 
   // Let's assume 'beds' in Room type is total capacity, and we need a way to know occupied.
   // Actually, looking at the type: beds: number, capacity: number. 
   // Let's assume 'available' boolean is the source of truth for now, and we simulate 'few left' randomly or if we had real data.

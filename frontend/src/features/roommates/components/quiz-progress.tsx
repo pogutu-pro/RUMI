@@ -1,10 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import Confetti from 'react-confetti';
-import { useWindowSize } from '@/hooks/use-window-size';
 
 interface QuizProgressProps {
   current: number;
@@ -21,121 +18,59 @@ export function QuizProgress({
   isComplete = false,
   className,
 }: QuizProgressProps) {
-  const { width, height } = useWindowSize();
-  const [showConfetti, setShowConfetti] = React.useState(false);
-
-  React.useEffect(() => {
-    if (isComplete) {
-      setShowConfetti(true);
-      const timer = setTimeout(() => setShowConfetti(false), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [isComplete]);
-
   return (
-    <div className={cn('space-y-3', className)}>
-      {/* Confetti Celebration */}
-      {showConfetti && width && height && (
-        <Confetti
-          width={width}
-          height={height}
-          recycle={false}
-          numberOfPieces={500}
-          gravity={0.3}
-        />
-      )}
-
+    <div className={cn('space-y-4', className)}>
       {/* Question Counter */}
-      <div className="flex items-center justify-between text-sm font-medium">
-        <span className="text-muted-foreground">
-          Question {current} of {total}
+      <div className="flex items-center justify-between text-sm font-bold uppercase tracking-widest text-muted-foreground opacity-70">
+        <span>
+          Question {current} / {total}
         </span>
-        <motion.span
-          key={percentage}
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className={cn(
-            'font-bold',
-            isComplete
-              ? 'text-emerald-600'
-              : percentage >= 50
-              ? 'text-blue-600'
-              : 'text-muted-foreground'
-          )}
-        >
-          {percentage}%
-        </motion.span>
+        <span className={cn(isComplete ? 'text-primary' : 'text-foreground')}>
+          {percentage}% Complete
+        </span>
       </div>
 
-      {/* Progress Bar */}
-      <div className="relative h-3 bg-muted rounded-full overflow-hidden">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${percentage}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
+      {/* Progress Bar Container */}
+      <div className="relative h-2 bg-muted rounded-full overflow-hidden border border-border/20">
+        <div
           className={cn(
-            'h-full rounded-full relative',
-            isComplete
-              ? 'bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500'
-              : 'bg-gradient-to-r from-emerald-500 to-blue-500'
+            'h-full rounded-full transition-all duration-500 ease-out',
+            isComplete ? 'bg-primary' : 'bg-primary'
           )}
-        >
-          {/* Shimmer Effect */}
-          <motion.div
-            animate={{
-              x: ['-100%', '100%'],
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              ease: 'linear',
-            }}
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-          />
-        </motion.div>
+          style={{ width: `${percentage}%` }}
+        />
       </div>
 
       {/* Completion Message */}
       {isComplete && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center py-2"
-        >
-          <p className="text-emerald-600 font-bold text-lg">
-            🎉 Quiz Complete! Great job!
+        <div className="text-center py-2 animate-in fade-in slide-in-from-top-2">
+          <p className="text-primary font-bold text-base">
+            Assessment Completed
           </p>
-        </motion.div>
+        </div>
       )}
 
-      {/* Motivational Messages */}
+      {/* Status Message */}
       {!isComplete && (
-        <motion.div
-          key={current}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center text-xs text-muted-foreground"
-        >
-          {getMotivationalMessage(current, total)}
-        </motion.div>
+        <div className="text-center">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider opacity-60">
+            {getStatusMessage(current, total)}
+          </p>
+        </div>
       )}
     </div>
   );
 }
 
-function getMotivationalMessage(current: number, total: number): string {
+function getStatusMessage(current: number, total: number): string {
   const progress = current / total;
   
   if (current === 1) {
-    return "You've got this! 💪";
-  } else if (progress < 0.3) {
-    return 'Just getting started...';
+    return "Beginning Assessment";
   } else if (progress < 0.5) {
-    return "You're doing great! Keep going! ⭐";
-  } else if (progress < 0.8) {
-    return "Halfway there! You're on fire! 🔥";
+    return 'Processing Inputs...';
   } else if (progress < 1) {
-    return 'Almost done! Just a few more! 🚀';
+    return 'Analysis in Progress';
   }
   return '';
 }

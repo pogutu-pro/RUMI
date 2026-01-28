@@ -180,7 +180,7 @@ async function getProfile(): Promise<ProfileResponse> {
 async function updateProfile(
   data: UpdateProfileFormData,
 ): Promise<ProfileResponse> {
-  const res = await axios.put<ProfileResponse>('/accounts/profile/', data);
+  const res = await axios.patch<ProfileResponse>('/accounts/profile/', data);
   return res.data;
 }
 

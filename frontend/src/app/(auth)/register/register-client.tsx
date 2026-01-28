@@ -15,11 +15,11 @@ type RegisterableRole = Extract<UserRole, 'student' | 'landlord'>;
 
 export function RegisterClientPage() {
   const [selectedRole, setSelectedRole] =
-    useState<RegisterableRole>('student');
+    useState<RegisterableRole | null>(null);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-      <section className="w-full max-w-2xl mx-auto">
+    <main className="flex min-h-screen items-center justify-center bg-gray-50 p-4 pt-12">
+      <section className="w-full max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -27,21 +27,20 @@ export function RegisterClientPage() {
         >
           <AuthCard
             title="Create your account"
-            description="Join thousands of students and landlords on RUMI"
+            description="Choose your role to get started"
           >
             <div className="space-y-6">
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-gray-700">
-                  I am a...
-                </label>
                 <RoleSelector
                   value={selectedRole}
                   onValueChange={setSelectedRole}
                 />
-              </div>
 
-              {selectedRole === 'student' && <StudentRegisterForm />}
-              {selectedRole === 'landlord' && <LandlordRegisterForm />}
+              {selectedRole && (
+                <div className="pt-8 border-t border-gray-100 animate-in fade-in slide-in-from-top-6 duration-700">
+                  {selectedRole === 'student' && <StudentRegisterForm />}
+                  {selectedRole === 'landlord' && <LandlordRegisterForm />}
+                </div>
+              )}
 
               <div className="pt-4 border-t text-center text-sm text-gray-600">
                 Already have an account?{' '}

@@ -30,14 +30,10 @@ from .models import (
 # Import security models from hostels app
 from hostels.models import LateEntryLog, VisitorInvitation
 
-# Import security models
-try:
-    from hostels.models import LateEntryLog, VisitorInvitation
-except ImportError:
-    LateEntryLog = None
-    VisitorInvitation = None
+
 from .serializers import (
-    UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer,
+    UserRegistrationSerializer, UserLoginSerializer, BasicUserProfileSerializer, 
+    FullUserProfileSerializer, PublicUserProfileSerializer,
     CaretakerCreateSerializer, CaretakerUpdateSerializer, UserActivityLogSerializer,
     LandlordVerificationSerializer, PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer, OTPVerificationSerializer,
@@ -139,14 +135,25 @@ class UserRegistrationView(APIView):
                     first_name=first_name,
                     last_name=last_name,
                     phone_number=phone_number,
-                    role=role
+                    role=role,
+                    gender=serializer.validated_data.get('gender'),
+                    date_of_birth=serializer.validated_data.get('date_of_birth')
                 )
 
                 # Create role-specific profile
                 if role == 'student':
-                    StudentProfile.objects.create(user=user)
+                    StudentProfile.objects.create(
+                        user=user,
+                        university=serializer.validated_data.get('university'),
+                        preferred_hostel_id=serializer.validated_data.get('preferred_hostel_id'),
+                        preferred_room_number=serializer.validated_data.get('room_number')
+                    )
                 elif role == 'landlord':
-                    LandlordProfile.objects.create(user=user)
+                    LandlordProfile.objects.create(
+                        user=user,
+                        company_name=serializer.validated_data.get('company_name'),
+                        total_units=serializer.validated_data.get('total_units', 0)
+                    )
 
                 # Generate OTP
                 otp = OTPVerification.objects.create(
@@ -821,36 +828,16 @@ class UserProfileView(APIView):
         - Verification status
         - Account creation and login timestamps
         
-        The response structure varies based on user role:
-        - Students: Include profile completion status
-        - Landlords: Include verification and hostel listing permissions
-        - Caretakers: Include assigned hostel information
+        Caretakers: Include assigned hostel information
         """
         user = request.user
-        serializer = UserProfileSerializer(user)
+        serializer = FullUserProfileSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request):
-        """
-        Update User Profile
-        
-        Update the authenticated user's profile information.
-        
-        Optional Fields (partial updates allowed):
-        - first_name, last_name: Name updates
-        - phone_number: Contact number
-        - profile_picture: Profile image URL
-        - Role-specific fields based on user type
-        
-        On successful update:
-        - Saves changes to database
-        - Calculates new profile completion status
-        - Logs profile update activity
-        
-        Returns update confirmation and completion status.
-        """
+        """Update User Profile"""
         user = request.user
-        serializer = UserProfileSerializer(user, data=request.data, partial=True)
+        serializer = FullUserProfileSerializer(user, data=request.data, partial=True)
 
         if not serializer.is_valid():
             return Response({
@@ -871,8 +858,13 @@ class UserProfileView(APIView):
 
             return Response({
                 'message': 'Profile updated successfully',
+                'user': serializer.data,
                 'profile_complete': self._is_profile_complete(user)
             }, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        """Partial Update User Profile"""
+        return self.put(request)
 
     def _is_profile_complete(self, user):
         """Check if user profile is complete"""

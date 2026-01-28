@@ -157,7 +157,7 @@ export function StudentTopNav({
               alt="RUMI Logo" 
               width={32} 
               height={32} 
-              className="object-contain w-auto h-auto" 
+              className="object-contain" 
             />
           </div>
           <span className="font-bold text-lg text-emerald-600 dark:text-emerald-400">RUMI</span>

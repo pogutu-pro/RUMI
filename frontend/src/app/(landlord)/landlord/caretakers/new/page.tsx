@@ -69,7 +69,7 @@ export default function NewCaretakerPage() {
 
         {!isLoading && !error && hostels && (
           <LandlordCreateCaretakerForm
-            hostels={hostels.map((h) => ({ id: String(h.id), name: h.name }))}
+            hostels={hostels.results?.map((h) => ({ id: String(h.id), name: h.name })) || []}
             onSuccess={handleSuccess}
           />
         )}

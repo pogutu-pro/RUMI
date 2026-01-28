@@ -1,7 +1,7 @@
 export { LoginForm } from './components/login-form';
 export { LoginForm as LoginFormNew } from './components/login-form-new';
-export { RegisterForm } from './components/register-form';
-export { RegisterFormNew } from './components/register-form-new';
+// export { RegisterForm } from './components/register-form'; // Removed
+// export { RegisterFormNew } from './components/register-form-new'; // Removed
 export * from './components/auth-card';
 export * from './components/forgot-password-form';
 export * from './components/reset-password-form';

@@ -48,6 +48,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('super_admin', 'Super Admin'),
     ]
 
+    GENDER_CHOICES = [
+        ('male', 'Male'),
+        ('female', 'Female'),
+        ('other', 'Other'),
+    ]
+
     email = models.EmailField(
         unique=True,
         validators=[RegexValidator(
@@ -63,6 +69,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         choices=ROLE_CHOICES,
         default='student'
     )
+    gender = models.CharField(
+        max_length=10,
+        choices=GENDER_CHOICES,
+        blank=True,
+        null=True
+    )
+    date_of_birth = models.DateField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
     is_verified = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
@@ -117,9 +130,24 @@ class StudentProfile(models.Model):
     year_of_study = models.IntegerField(
         blank=True,
         null=True,
-        validators=[MinValueValidator(1), MaxValueValidator(6)]
+        validators=[MinValueValidator(1), MaxValueValidator(7)]
+    )
+    graduation_year = models.IntegerField(
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(2020), MaxValueValidator(2030)]
     )
     course = models.CharField(max_length=255, blank=True, null=True)
+    campus = models.CharField(max_length=255, blank=True, null=True)
+    high_school = models.CharField(max_length=255, blank=True, null=True)
+    preferred_hostel = models.ForeignKey(
+        'hostels.Hostel',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='prospective_students'
+    )
+    preferred_room_number = models.CharField(max_length=20, blank=True, null=True)
     lifestyle_preferences = models.JSONField(blank=True, null=True)
     bio = models.TextField(
         blank=True,
@@ -149,6 +177,31 @@ class StudentProfile(models.Model):
             models.Index(fields=['student_id_number'], name='idx_student_id_number'),
             models.Index(fields=['is_profile_complete'], name='idx_student_complete'),
         ]
+
+    @property
+    def profile_completion_percentage(self):
+        """Calculate percentage of profile completion"""
+        fields_to_check = [
+            self.university,
+            self.student_id_number,
+            self.year_of_study,
+            self.course,
+            self.campus,
+            self.high_school,
+            self.bio,
+            self.emergency_contact_name,
+            self.emergency_contact_phone,
+            self.emergency_contact_relationship,
+            self.user.first_name,
+            self.user.last_name,
+            self.user.phone_number,
+            self.user.profile_picture or self.user.avatar,
+        ]
+        
+        filled_fields = [f for f in fields_to_check if f]
+        if not fields_to_check:
+            return 0
+        return int((len(filled_fields) / len(fields_to_check)) * 100)
 
     def save(self, *args, **kwargs):
         """Auto-calculate profile completion status"""
@@ -186,6 +239,7 @@ class LandlordProfile(models.Model):
     bank_account_number = models.CharField(max_length=20)
     bank_code = models.CharField(max_length=10)
     paystack_subaccount_code = models.CharField(max_length=100, unique=True, blank=True, null=True)
+    total_units = models.IntegerField(default=0, validators=[MinValueValidator(0)], blank=True, null=True)
     is_verified = models.BooleanField(default=False)
     verification_documents = models.JSONField(blank=True, null=True)
     verified_at = models.DateTimeField(blank=True, null=True)

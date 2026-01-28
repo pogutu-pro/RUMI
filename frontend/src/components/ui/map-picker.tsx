@@ -1,9 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import maplibregl from 'maplibre-gl';
-import { Map, Marker } from 'react-map-gl/maplibre'; // React wrapper for MapLibre GL
-import 'maplibre-gl/dist/maplibre-gl.css';
+import { Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
 import { BrandedLoader } from '@/components/ui/branded-loader';
 import { cn } from '@/lib/utils/cn';
 
@@ -18,8 +16,13 @@ interface MapPickerProps extends React.HTMLAttributes<HTMLDivElement> {
   onLocationChange: (coords: LatLng) => void;
   zoom?: number;
   height?: string | number;
+  mapId?: string;
 }
 
+/**
+ * Enterprise-grade Location Picker.
+ * Features a draggable AdvancedMarker and polished interactions.
+ */
 export function MapPicker({
   initialCenter,
   currentLocation,
@@ -27,63 +30,66 @@ export function MapPicker({
   zoom = 15,
   height = '400px',
   className,
+  mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID',
   ...props
 }: MapPickerProps) {
-  const [loaded, setLoaded] = React.useState(false);
+  const [isTilesLoaded, setIsTilesLoaded] = React.useState(false);
 
-  const handleLoad = () => setLoaded(true);
-
-  // Map viewport state could be controlled internally or lifted if needed
-  const [viewport, setViewport] = React.useState({
-    longitude: currentLocation.lng,
-    latitude: currentLocation.lat,
-    zoom,
-  });
-
-  // Sync viewport if currentLocation prop changes
-  React.useEffect(() => {
-    setViewport({
-      longitude: currentLocation.lng,
-      latitude: currentLocation.lat,
-      zoom,
-    });
-  }, [currentLocation, zoom]);
-
-  const onDragEnd = (evt: any) => {
-    const { lngLat } = evt;
-    onLocationChange({ lat: lngLat.lat, lng: lngLat.lng });
+  // Synchronize internal state with dragged position
+  const handleMarkerDragEnd = (e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      onLocationChange({
+        lat: e.latLng.lat(),
+        lng: e.latLng.lng(),
+      });
+    }
   };
 
   return (
     <div
-      className={cn('relative rounded-xl shadow-lg', className)}
+      className={cn('relative rounded-xl shadow-lg border border-border bg-muted overflow-hidden', className)}
       style={{ height, width: '100%' }}
       {...props}
     >
-      {!loaded && (
-        <div className="flex items-center justify-center h-full w-full bg-muted rounded-xl">
-          <BrandedLoader text="Loading Map" />
+      {/* Branded Loading Overlay */}
+      {!isTilesLoaded && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm transition-opacity duration-300">
+          <BrandedLoader size={48} text="Loading Location..." />
         </div>
       )}
+
       <Map
-        mapLib={maplibregl}
-        initialViewState={viewport}
-        mapStyle="https://demotiles.maplibre.org/style.json" // Free OpenStreetMap style
-        style={{ width: '100%', height }}
-        onLoad={handleLoad}
-        onMove={(evt) => setViewport(evt.viewState)}
-        onDragEnd={onDragEnd}
-        dragRotate={false}
+        defaultCenter={initialCenter || currentLocation}
+        defaultZoom={zoom}
+        mapId={mapId}
+        onTilesLoaded={() => setIsTilesLoaded(true)}
+        disableDefaultUI={false}
+        gestureHandling={'greedy'}
+        reuseMaps={true}
+        className="h-full w-full"
       >
-        <Marker
-          longitude={viewport.longitude}
-          latitude={viewport.latitude}
-          draggable
-          onDragEnd={onDragEnd}
-          anchor="bottom"
-          color="#007aff"
-        />
+        <AdvancedMarker
+          position={currentLocation}
+          draggable={true}
+          onDragEnd={handleMarkerDragEnd}
+        >
+          <Pin
+            background={'#007aff'}
+            borderColor={'#005bb7'}
+            glyphColor={'#ffffff'}
+            scale={1.4}
+          />
+        </AdvancedMarker>
       </Map>
+
+      {/* Helper Prompt */}
+      {isTilesLoaded && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-background/90 backdrop-blur shadow-md border border-border rounded-full text-xs font-medium text-muted-foreground pointer-events-none transition-all hover:opacity-0 animate-in fade-in slide-in-from-bottom-2">
+          Drag the marker to pinpoint the exact location
+        </div>
+      )}
     </div>
   );
 }
+
+export default MapPicker;

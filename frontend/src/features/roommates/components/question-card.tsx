@@ -1,11 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { QuizQuestion, QuizOption } from '@/lib/constants/roommate-quiz-constants';
 import { cn } from '@/lib/utils';
-import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Check } from 'lucide-react';
 import Image from 'next/image';
 
 interface QuestionCardProps {
@@ -23,7 +22,7 @@ export function QuestionCard({
   onSelect,
   onNext,
   onRandom,
-  showRandomButton = true,
+  showRandomButton = false,
 }: QuestionCardProps) {
   const [justSelected, setJustSelected] = React.useState<string | null>(null);
 
@@ -35,126 +34,86 @@ export function QuestionCard({
     setTimeout(() => {
       onNext?.();
       setJustSelected(null);
-    }, 600);
+    }, 400);
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="w-full max-w-4xl mx-auto px-4"
-    >
+    <div className="w-full max-w-4xl mx-auto px-4">
       {/* Question Header */}
-      <div className="text-center mb-8 space-y-2">
-        <motion.h2
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-600 bg-clip-text text-transparent"
-        >
+      <div className="text-center mb-10 space-y-3">
+        <h2 className="text-3xl md:text-4xl font-bold text-foreground">
           {question.question}
-        </motion.h2>
+        </h2>
         {question.subtitle && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-muted-foreground text-lg"
-          >
+          <p className="text-muted-foreground text-lg font-medium">
             {question.subtitle}
-          </motion.p>
+          </p>
         )}
       </div>
 
       {/* Options Grid */}
       <div
         className={cn(
-          'grid gap-4 mb-6',
+          'grid gap-6 mb-8',
           question.options.length === 4 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-3'
         )}
       >
-        {question.options.map((option, index) => (
+        {question.options.map((option) => (
           <OptionCard
             key={option.id}
             option={option}
             isSelected={selectedAnswer === option.id}
-            justSelected={justSelected === option.id}
             onClick={() => handleSelect(option.id)}
-            delay={index * 0.05}
           />
         ))}
       </div>
 
       {/* Random Button */}
       {showRandomButton && onRandom && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="flex justify-center"
-        >
+        <div className="flex justify-center">
           <Button
             variant="outline"
             onClick={onRandom}
-            className="group hover:border-purple-500 hover:text-purple-600 transition-colors"
+            className="font-bold border-border/50 hover:bg-muted"
           >
-            <Sparkles className="h-4 w-4 mr-2 group-hover:animate-spin" />
-            Surprise Me
+            Select for me
           </Button>
-        </motion.div>
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 }
 
 interface OptionCardProps {
   option: QuizOption;
   isSelected: boolean;
-  justSelected: boolean;
   onClick: () => void;
-  delay: number;
 }
 
-function OptionCard({ option, isSelected, justSelected, onClick, delay }: OptionCardProps) {
+function OptionCard({ option, isSelected, onClick }: OptionCardProps) {
   const IconComponent = option.icon;
 
   return (
-    <motion.button
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay }}
-      whileHover={{ scale: 1.03 }}
-      whileTap={{ scale: 0.97 }}
+    <button
       onClick={onClick}
       className={cn(
-        'relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300',
-        'border-2 bg-card hover:shadow-2xl',
+        'relative overflow-hidden rounded-xl p-6 text-left transition-all duration-200',
+        'border-2 bg-card hover:bg-muted/50',
         isSelected
-          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 shadow-lg shadow-emerald-500/20'
-          : 'border-border hover:border-emerald-300 dark:hover:border-emerald-700'
+          ? 'border-primary ring-1 ring-primary/20 bg-primary/5'
+          : 'border-border'
       )}
     >
-      {/* Selection Glow Effect */}
-      <AnimatePresence>
-        {justSelected && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 2 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-blue-500/20 to-purple-500/20 rounded-2xl"
-          />
-        )}
-      </AnimatePresence>
-
       {/* Image Background (if available) */}
       {option.image && (
-        <div className="absolute inset-0 opacity-10 dark:opacity-5">
+        <div className="absolute inset-0 opacity-5">
           <Image
             src={option.image}
             alt={option.label}
             fill
-            className="object-cover rounded-2xl"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover rounded-xl"
+            priority={false}
           />
         </div>
       )}
@@ -164,27 +123,27 @@ function OptionCard({ option, isSelected, justSelected, onClick, delay }: Option
         {/* Icon */}
         <div
           className={cn(
-            'flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center transition-colors',
+            'flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center transition-colors',
             isSelected
-              ? 'bg-emerald-500 text-white'
-              : 'bg-muted text-muted-foreground group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/30'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground'
           )}
         >
-          <IconComponent className="w-7 h-7" />
+          <IconComponent className="w-6 h-6" />
         </div>
 
         {/* Text */}
         <div className="flex-1 min-w-0">
           <h3
             className={cn(
-              'font-bold text-lg mb-1 transition-colors',
-              isSelected ? 'text-emerald-700 dark:text-emerald-400' : 'text-foreground'
+              'font-bold text-lg mb-1',
+              isSelected ? 'text-foreground' : 'text-foreground'
             )}
           >
             {option.label}
           </h3>
           {option.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2">
+            <p className="text-xs text-muted-foreground font-medium leading-relaxed">
               {option.description}
             </p>
           )}
@@ -192,27 +151,11 @@ function OptionCard({ option, isSelected, justSelected, onClick, delay }: Option
 
         {/* Selection Indicator */}
         {isSelected && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={3}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </motion.div>
+          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center animate-in zoom-in-50 duration-200">
+            <Check className="w-4 h-4" strokeWidth={3} />
+          </div>
         )}
       </div>
-    </motion.button>
+    </button>
   );
 }

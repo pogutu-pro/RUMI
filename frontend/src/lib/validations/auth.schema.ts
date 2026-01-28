@@ -67,24 +67,29 @@ export const loginSchema = z.object({
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 
-const baseRegisterFields = {
+const commonRegisterFields = {
   email: emailSchema,
   password: passwordSchema,
   confirm_password: z.string().min(1, 'Please confirm your password'),
   first_name: nameSchema,
   last_name: nameSchema,
   phone_number: phoneSchema,
-  agree_to_terms: z
-    .boolean()
-    .refine((val) => val, {
-      message: 'You must agree to the terms and conditions',
-    }),
+  agree_to_terms: z.boolean().default(true),
 };
 
-const passwordMatchRefinement = (data: {
-  password: string;
-  confirm_password: string;
-}) => data.password === data.confirm_password;
+const studentIdentityFields = {
+  gender: z.enum(['male', 'female', 'other'], {
+    message: 'Please select your gender',
+  }),
+  date_of_birth: z.coerce.date({
+    message: 'Please enter a valid date of birth',
+  }).refine((date) => {
+    const age = new Date().getFullYear() - date.getFullYear();
+    return age >= 16;
+  }, 'You must be at least 16 years old to register'),
+};
+
+const passwordMatchRefinement = (data: any) => data.password === data.confirm_password;
 
 const passwordMatchOptions = {
   message: "Passwords don't match",
@@ -93,19 +98,12 @@ const passwordMatchOptions = {
 
 export const registerStudentSchema = z
   .object({
-    ...baseRegisterFields,
+    ...commonRegisterFields,
+    ...studentIdentityFields,
     role: z.literal(ROLES.STUDENT),
     university: requiredString(2, 100, 'University name'),
-    student_id_number: requiredString(3, 50, 'Student ID').regex(
-      /^[A-Z0-9/-]+$/i,
-      'Invalid Student ID format',
-    ),
-    year_of_study: z
-      .number()
-      .int()
-      .min(1, 'Year must be at least 1')
-      .max(7, 'Year must not exceed 7'),
-    course: requiredString(2, 100, 'Course name').optional(),
+    preferred_hostel_id: z.coerce.number().int().optional(),
+    room_number: z.string().max(20).optional(),
   })
   .refine(passwordMatchRefinement, passwordMatchOptions);
 
@@ -113,25 +111,10 @@ export type RegisterStudentFormData = z.infer<typeof registerStudentSchema>;
 
 export const registerLandlordSchema = z
   .object({
-    ...baseRegisterFields,
+    ...commonRegisterFields,
     role: z.literal(ROLES.LANDLORD),
-    national_id: requiredString(6, 20, 'National ID').regex(
-      /^[a-zA-Z0-9]+$/,
-      'Invalid National ID format',
-    ),
-    company_name: requiredString(2, 100, 'Business Name'),
-    bank_name: requiredString(2, 100, 'Bank Name'),
-    bank_account_number: z
-      .string()
-      .min(10, 'Account number too short')
-      .max(20, 'Account number too long')
-      .regex(/^[0-9]+$/, 'Account number must contain only digits'),
-    kra_pin: emptyStringToUndefined.pipe(
-      z
-        .string()
-        .regex(/^[A-Z]\d{9}[A-Z]$/, 'Invalid KRA PIN format')
-        .optional(),
-    ),
+    company_name: requiredString(2, 100, 'Property Name'),
+    total_units: z.coerce.number().int().min(0).optional(),
   })
   .refine(passwordMatchRefinement, passwordMatchOptions);
 
@@ -139,7 +122,7 @@ export type RegisterLandlordFormData = z.infer<typeof registerLandlordSchema>;
 
 export const registerCaretakerSchema = z
   .object({
-    ...baseRegisterFields,
+    ...commonRegisterFields,
     role: z.literal(ROLES.CARETAKER),
     hostel_id: z.string().uuid('Invalid Hostel ID').optional(),
     employment_start_date: z.coerce.date().optional(),

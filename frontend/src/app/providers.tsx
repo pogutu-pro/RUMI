@@ -8,6 +8,8 @@ import { AuthProvider } from '@/providers/auth-provider';
 import { ToastProvider } from '@/providers/toast-provider';
 import { TokenRefresher } from '@/features/auth';
 
+import { APIProvider } from '@vis.gl/react-google-maps';
+
 interface ProvidersProps {
   children: React.ReactNode;
 }
@@ -17,12 +19,14 @@ export function Providers({ children }: ProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}>
         <AuthProvider>
           <TokenRefresher />
           {children}
         </AuthProvider>
-        <ToastProvider />
-        <ReactQueryDevtools initialIsOpen={false} />
+      </APIProvider>
+      <ToastProvider />
+      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 }

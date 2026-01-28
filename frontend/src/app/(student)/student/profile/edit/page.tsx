@@ -27,23 +27,24 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import { Loader2, Upload, User, ArrowLeft, Save } from 'lucide-react';
+import { Loader2, Upload, User, ArrowLeft, Save, ShieldCheck, Lock, Phone } from 'lucide-react';
 import Link from 'next/link';
 
+// Profile Settings Schema - Focused on Private Data
 const profileFormSchema = z.object({
-  first_name: z.string().min(2, {
-    message: 'First name must be at least 2 characters.',
-  }),
-  last_name: z.string().min(2, {
-    message: 'Last name must be at least 2 characters.',
-  }),
-  email: z.string().email({
-    message: 'Please enter a valid email address.',
-  }),
-  phone_number: z.string().min(10, {
-    message: 'Phone number must be at least 10 characters.',
-  }),
-  bio: z.string().max(160).optional(),
+  // Private Personal Details
+  first_name: z.string().min(2, { message: 'First name is required.' }),
+  last_name: z.string().min(2, { message: 'Last name is required.' }),
+  email: z.string().email(),
+  phone_number: z.string().min(10, { message: 'Valid phone number is required.' }),
+  bio: z.string().max(500).optional(),
+  
+  // Emergency Contact (Private - Critical for Safety)
+  emergency_contact_name: z.string().min(2, { message: 'Emergency contact name is required.' }),
+  emergency_contact_phone: z.string().min(10, { message: 'Emergency contact phone is required.' }),
+  emergency_contact_relationship: z.string().min(2, { message: 'Relationship is required (e.g. Parent, Sibling).' }),
+
+  // Socials (Can be edited here too)
   urls: z.object({
     instagram: z.string().optional().or(z.literal('')),
     tiktok: z.string().optional().or(z.literal('')),
@@ -54,21 +55,27 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function EditProfilePage() {
   const router = useRouter();
-  const { user, updateProfile, uploadPhoto } = useAuth();
+  const { user, profile, updateProfile, uploadPhoto } = useAuth();
   const [isLoading, setIsLoading] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
-  const [avatarKey, setAvatarKey] = React.useState(Date.now()); // Force image refresh
+  const [avatarKey, setAvatarKey] = React.useState(Date.now());
 
-  // Default values for the form
+  // Default values
   const defaultValues: Partial<ProfileFormValues> = {
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
     email: user?.email || '',
     phone_number: user?.phone_number || '',
-    bio: user?.bio || '',
+    bio: (profile as any)?.bio || user?.bio || '',
+    
+    // Emergency Contact Defaults
+    emergency_contact_name: (profile as any)?.emergency_contact_name || '',
+    emergency_contact_phone: (profile as any)?.emergency_contact_phone || '',
+    emergency_contact_relationship: (profile as any)?.emergency_contact_relationship || '',
+
     urls: {
-      instagram: user?.urls?.instagram || '',
-      tiktok: user?.urls?.tiktok || '',
+      instagram: (user?.urls as any)?.instagram || '',
+      tiktok: (user?.urls as any)?.tiktok || '',
     },
   };
 
@@ -77,6 +84,19 @@ export default function EditProfilePage() {
     defaultValues,
     mode: 'onChange',
   });
+
+  // Hydrate form
+  React.useEffect(() => {
+    if (profile || user) {
+      form.reset({
+        ...defaultValues,
+        bio: (profile as any)?.bio || user?.bio || '',
+        emergency_contact_name: (profile as any)?.emergency_contact_name || user?.emergency_contact_name || '',
+        emergency_contact_phone: (profile as any)?.emergency_contact_phone || user?.emergency_contact_phone || '',
+        emergency_contact_relationship: (profile as any)?.emergency_contact_relationship || user?.emergency_contact_relationship || '',
+      });
+    }
+  }, [profile, user]);
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -91,19 +111,12 @@ export default function EditProfilePage() {
     try {
       if (uploadPhoto) {
           await uploadPhoto(file);
-          console.log('User after upload:', user);
-          setAvatarKey(Date.now()); // Force image refresh
-          toast.success('Photo updated', { description: 'Your profile picture has been updated.' });
-      } else {
-          toast.error('Upload feature not available');
+          setAvatarKey(Date.now());
+          toast.success('Photo updated', { description: 'Profile picture changed successfully.' });
+          router.refresh();
       }
     } catch (error) {
-      console.error('Upload error:', error);
-      if ((error as any)?.response?.status === 404) {
-        toast.error('Upload feature not available', { description: 'Profile picture upload will be available soon.' });
-      } else {
         toast.error('Upload failed', { description: 'Could not upload profile picture.' });
-      }
     } finally {
       setIsUploading(false);
     }
@@ -111,22 +124,18 @@ export default function EditProfilePage() {
 
   async function onSubmit(data: ProfileFormValues) {
     setIsLoading(true);
-
     try {
       if (updateProfile) {
         await updateProfile(data);
-        toast.success('Profile updated', {
-            description: 'Your profile has been updated.',
+        toast.success('Settings Saved', {
+            description: 'Your private profile settings have been updated.',
+            icon: <ShieldCheck className="h-5 w-5 text-emerald-500" />,
         });
         router.refresh();
-      } else {
-           toast.success('Profile updated (Local Only)', {
-            description: 'Your profile has been updated.',
-          });
       }
     } catch (error) {
-      toast.error('Something went wrong', {
-        description: 'Your profile was not updated. Please try again.',
+      toast.error('Update Failed', {
+        description: 'Failed to save settings. Please try again.',
       });
     } finally {
       setIsLoading(false);
@@ -134,28 +143,30 @@ export default function EditProfilePage() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto pb-10">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+    <div className="space-y-6 max-w-3xl mx-auto pb-20">
+      <div className="flex items-center gap-4 border-b pb-6">
+        <Button variant="ghost" size="icon" asChild className="rounded-full">
           <Link href="/student/profile">
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Edit Profile</h1>
-          <p className="text-muted-foreground">
-            Make changes to your profile here. Click save when you're done.
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Account Settings</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your personal information and security details.
           </p>
         </div>
       </div>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          
+          {/* Avatar Section */}
           <Card>
             <CardHeader>
               <CardTitle>Profile Picture</CardTitle>
               <CardDescription>
-                This will be displayed on your profile and in search results.
+                Visible to roommates and landlords.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col sm:flex-row items-center gap-6">
@@ -185,7 +196,7 @@ export default function EditProfilePage() {
                     disabled={isUploading}
                   >
                     {isUploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-                    {isUploading ? 'Uploading...' : 'Change Picture'}
+                    Change Picture
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -195,11 +206,12 @@ export default function EditProfilePage() {
             </CardContent>
           </Card>
 
+          {/* Personal Info */}
           <Card>
             <CardHeader>
               <CardTitle>Personal Information</CardTitle>
               <CardDescription>
-                Your contact information and bio.
+                Basic contact details for your account.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -211,7 +223,7 @@ export default function EditProfilePage() {
                     <FormItem>
                       <FormLabel>First Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="John" {...field} />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -224,7 +236,7 @@ export default function EditProfilePage() {
                     <FormItem>
                       <FormLabel>Last Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Doe" {...field} />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -238,12 +250,12 @@ export default function EditProfilePage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Email Address</FormLabel>
                       <FormControl>
-                        <Input placeholder="john.doe@example.com" {...field} disabled />
+                        <Input {...field} disabled className="bg-muted" />
                       </FormControl>
                       <FormDescription>
-                        Email cannot be changed directly. Contact support.
+                        Contact support to change your email.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -256,7 +268,7 @@ export default function EditProfilePage() {
                     <FormItem>
                       <FormLabel>Phone Number</FormLabel>
                       <FormControl>
-                        <Input placeholder="+254 7..." {...field} />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -277,10 +289,6 @@ export default function EditProfilePage() {
                         {...field}
                       />
                     </FormControl>
-                    <FormDescription>
-                      You can <span>@mention</span> other users and organizations to
-                      link to them.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -288,60 +296,76 @@ export default function EditProfilePage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Social Links</CardTitle>
-              <CardDescription className="flex flex-col gap-1">
-                <span>Add your usernames to connect with other students.</span>
-                <span className="text-emerald-600 dark:text-emerald-500 font-medium italic">
-                  "Building a community starts with connection."
-                </span>
-              </CardDescription>
+           {/* Emergency Contact - Private Section */}
+           <Card className="border-l-4 border-l-rose-500 shadow-sm">
+            <CardHeader className="bg-rose-50/50 dark:bg-rose-950/10">
+              <div className="flex items-center gap-2 mb-2">
+                 <div className="p-2 rounded-full bg-rose-100 dark:bg-rose-900/30">
+                    <ShieldCheck className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+                 </div>
+                 <div>
+                    <CardTitle className="text-lg">Emergency Contact</CardTitle>
+                    <CardDescription className="text-rose-700/80 dark:text-rose-400/80">
+                        <Lock className="h-3 w-3 inline mr-1" />
+                        Private & Confidential. Only used for emergencies.
+                    </CardDescription>
+                 </div>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6 pt-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="emergency_contact_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Parent/Guardian Name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="emergency_contact_relationship"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Relationship</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. Mother, Father, Friend" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
-                control={form.control}
-                name="urls.instagram"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Instagram Username</FormLabel>
-                    <FormControl>
+                  control={form.control}
+                  name="emergency_contact_phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Emergency Phone Number</FormLabel>
                       <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-muted-foreground select-none">@</span>
-                        <Input placeholder="username" className="pl-8" {...field} />
+                        <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="+254 7..." className="pl-9" {...field} />
                       </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="urls.tiktok"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>TikTok Username</FormLabel>
-                    <FormControl>
-                        <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-muted-foreground select-none">@</span>
-                        <Input placeholder="username" className="pl-8" {...field} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-4">
-            <Button variant="outline" asChild>
+          <div className="flex items-center justify-end gap-4 py-4 sticky bottom-0 bg-background/95 backdrop-blur z-10 p-4 border-t mt-8 shadow-lg rounded-lg">
+             <Button variant="outline" asChild type="button">
               <Link href="/student/profile">Cancel</Link>
             </Button>
-            <Button type="submit" disabled={isLoading} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button type="submit" disabled={isLoading} className="bg-emerald-600 hover:bg-emerald-700 min-w-[200px] shadow-emerald-500/20 shadow-lg">
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <Save className="mr-2 h-4 w-4" />
-              Save Changes
+              Save Settings
             </Button>
           </div>
         </form>

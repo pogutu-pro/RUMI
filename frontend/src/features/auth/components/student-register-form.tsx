@@ -11,6 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FormField, PasswordField } from '@/components/ui/form-fields';
 import { useRegistrationForm } from '../hooks/use-registration-form';
+import { useQuery } from '@tanstack/react-query';
+import { hostelsApi } from '@/features/hostels/api/hostels';
 import {
   registerStudentSchema,
   type RegisterStudentFormData,
@@ -38,9 +40,10 @@ export function StudentRegisterForm() {
       password: '',
       confirm_password: '',
       university: '',
-      student_id_number: '',
-      year_of_study: 1,
-      course: '',
+      preferred_hostel_id: undefined,
+      room_number: '',
+      gender: 'male',
+      date_of_birth: '',
       agree_to_terms: false,
     },
     role: 'student',
@@ -51,6 +54,12 @@ export function StudentRegisterForm() {
     else if (errors.email) setFocus('email');
     else if (errors.password) setFocus('password');
   }, [errors, setFocus]);
+
+  const { data: hostelsData } = useQuery({
+    queryKey: ['hostels_list_minimal'],
+    queryFn: () => hostelsApi.getHostels({ per_page: 100 }),
+  });
+  const hostels = hostelsData?.results || [];
 
   return (
     <section className="space-y-6">
@@ -81,9 +90,9 @@ export function StudentRegisterForm() {
         </div>
 
         <FormField
-          label="University email"
+          label="Email"
           type="email"
-          placeholder="you@university.ac.ke"
+          placeholder="you@example.com"
           autoComplete="email"
           error={errors.email?.message}
           required
@@ -100,8 +109,35 @@ export function StudentRegisterForm() {
           {...register('phone_number')}
         />
 
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground flex items-center gap-1">
+              Gender <span className="text-destructive">*</span>
+            </label>
+            <select
+              {...register('gender')}
+              className="flex h-11 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+            >
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+            {errors.gender && (
+              <p className="text-sm text-destructive">{errors.gender.message}</p>
+            )}
+          </div>
+
+          <FormField
+            label="Date of Birth"
+            type="date"
+            error={errors.date_of_birth?.message}
+            required
+            {...register('date_of_birth')}
+          />
+        </div>
+
         <FormField
-          label="University"
+          label="School (University)"
           placeholder="University of Nairobi"
           error={errors.university?.message}
           required
@@ -109,23 +145,26 @@ export function StudentRegisterForm() {
         />
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
-            label="Student ID"
-            placeholder="STU/2025/001"
-            error={errors.student_id_number?.message}
-            required
-            {...register('student_id_number')}
-          />
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              Hostel (Optional)
+            </label>
+            <select
+              {...register('preferred_hostel_id')}
+              className="flex h-11 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-colors"
+            >
+              <option value="">I haven't picked one yet</option>
+              {hostels.map((h) => (
+                <option key={h.id} value={h.id}>{h.name}</option>
+              ))}
+            </select>
+          </div>
 
           <FormField
-            label="Year of study"
-            type="number"
-            min={1}
-            max={7}
-            placeholder="3"
-            error={errors.year_of_study?.message}
-            required
-            {...register('year_of_study', { valueAsNumber: true })}
+            label="Room Number (Optional)"
+            placeholder="A12"
+            error={errors.room_number?.message}
+            {...register('room_number')}
           />
         </div>
 
@@ -148,32 +187,22 @@ export function StudentRegisterForm() {
           {...register('confirm_password')}
         />
 
-        <div className="flex items-start gap-3 rounded-xl border border-gray-200 p-4">
-          <Checkbox
-            id="student-terms"
-            disabled={isSubmitting}
-            {...register('agree_to_terms')}
-          />
-          <label
-            htmlFor="student-terms"
-            className="text-sm text-gray-700 leading-relaxed"
+        <div className="text-xs text-center text-gray-500">
+          By selecting <strong>Create student account</strong>, I agree to the{' '}
+          <Link
+            href="/terms"
+            className="text-emerald-600 underline-offset-2 hover:underline"
           >
-            I agree to the{' '}
-            <Link
-              href="/terms"
-              className="text-emerald-600 underline-offset-2 hover:underline"
-            >
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link
-              href="/privacy"
-              className="text-emerald-600 underline-offset-2 hover:underline"
-            >
-              Privacy Policy
-            </Link>
-            .
-          </label>
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link
+            href="/privacy"
+            className="text-emerald-600 underline-offset-2 hover:underline"
+          >
+            Privacy Policy
+          </Link>
+          .
         </div>
 
         <Button

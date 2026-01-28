@@ -35,10 +35,7 @@ export function LandlordRegisterForm() {
       email: '',
       phone_number: '',
       company_name: '',
-      national_id: '',
-      bank_name: '',
-      bank_account_number: '',
-      kra_pin: '',
+      total_units: 0,
       password: '',
       confirm_password: '',
       agree_to_terms: false,
@@ -101,46 +98,23 @@ export function LandlordRegisterForm() {
           {...register('phone_number')}
         />
 
-        <FormField
-          label="Business name"
-          placeholder="Your property business"
-          error={errors.company_name?.message}
-          required
-          {...register('company_name')}
-        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            label="Property name"
+            placeholder="Sunshine Residency"
+            error={errors.company_name?.message}
+            required
+            {...register('company_name')}
+          />
 
-        <FormField
-          label="National ID"
-          placeholder="12345678"
-          error={errors.national_id?.message}
-          hint="Required for landlord verification"
-          required
-          {...register('national_id')}
-        />
-
-        <FormField
-          label="Bank name"
-          placeholder="Equity Bank"
-          error={errors.bank_name?.message}
-          required
-          {...register('bank_name')}
-        />
-
-        <FormField
-          label="Bank account number"
-          placeholder="0123456789"
-          error={errors.bank_account_number?.message}
-          hint="Used for payouts"
-          required
-          {...register('bank_account_number')}
-        />
-
-        <FormField
-          label="KRA PIN (optional)"
-          placeholder="A123456789B"
-          error={errors.kra_pin?.message}
-          {...register('kra_pin')}
-        />
+          <FormField
+            label="Number of units (Optional)"
+            type="number"
+            placeholder="20"
+            error={errors.total_units?.message}
+            {...register('total_units', { valueAsNumber: true })}
+          />
+        </div>
 
         <PasswordField
           label="Password"
@@ -161,32 +135,22 @@ export function LandlordRegisterForm() {
           {...register('confirm_password')}
         />
 
-        <div className="flex items-start gap-3 rounded-xl border border-gray-200 p-4">
-          <Checkbox
-            id="landlord-terms"
-            disabled={isSubmitting}
-            {...register('agree_to_terms')}
-          />
-          <label
-            htmlFor="landlord-terms"
-            className="text-sm text-gray-700 leading-relaxed"
+        <div className="text-xs text-center text-gray-500">
+          By selecting <strong>Create landlord account</strong>, I agree to the{' '}
+          <Link
+            href="/terms"
+            className="text-emerald-600 underline-offset-2 hover:underline"
           >
-            I agree to the{' '}
-            <Link
-              href="/terms"
-              className="text-emerald-600 underline-offset-2 hover:underline"
-            >
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link
-              href="/privacy"
-              className="text-emerald-600 underline-offset-2 hover:underline"
-            >
-              Privacy Policy
-            </Link>
-            .
-          </label>
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link
+            href="/privacy"
+            className="text-emerald-600 underline-offset-2 hover:underline"
+          >
+            Privacy Policy
+          </Link>
+          .
         </div>
 
         <Button

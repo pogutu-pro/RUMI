@@ -52,12 +52,16 @@ export interface Room {
   number?: string;
   room_number?: string;
   roomNumber?: string;
-  price: number;
-  beds: number;
+  price?: number;
+  base_price?: number; // Alias
+  beds?: number;
   capacity: number;
-  images: string[];
+  images?: string[];
   available: boolean;
-  bookedDates: Date[];
+  is_available?: boolean; // Alias
+  description?: string;
+  amenities?: Record<string, any>;
+  bookedDates?: Date[];
 }
 
 export interface HostelInfo {

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Shield, UserPlus, Clock, AlertTriangle, CheckCircle, Calendar } from 'lucide-react';
+import { Shield, UserPlus, Clock, AlertTriangle, CheckCircle, Calendar, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,29 +38,31 @@ export default function StudentSecurityPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-8 pb-16">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-          Security & Visitors
+      <div className="border-b border-border/50 pb-8 pt-4">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          Security & Access Control
         </h1>
-        <p className="mt-1 text-sm md:text-base text-muted-foreground">
-          Manage visitor invitations and view security notifications
+        <p className="mt-2 text-sm font-medium text-muted-foreground">
+          Manage guest authorizations and review institutional security notifications.
         </p>
       </div>
 
       {/* Alert for pending late entries */}
       {pendingEntries.length > 0 && (
-        <Card className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+        <Card className="border-amber-500/30 bg-amber-500/5 shadow-none">
           <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-amber-500/10 rounded-lg">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+              </div>
               <div className="flex-1">
-                <p className="font-semibold text-amber-900 dark:text-amber-100">
-                  {pendingEntries.length} Late Entry {pendingEntries.length === 1 ? 'Report' : 'Reports'} Pending Acknowledgement
+                <p className="font-bold text-amber-900 dark:text-amber-100">
+                  Acknowledgement Required: {pendingEntries.length} Late Entry {pendingEntries.length === 1 ? 'Report' : 'Reports'}
                 </p>
-                <p className="text-sm text-amber-800 dark:text-amber-200 mt-1">
-                  Please review and acknowledge your late entry reports below
+                <p className="text-xs font-medium text-amber-800/80 dark:text-amber-200/80 mt-1">
+                  You have pending late entry records that require your immediate review and formal acknowledgement.
                 </p>
               </div>
             </div>
@@ -70,59 +72,57 @@ export default function StudentSecurityPage() {
 
       {/* Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="visitor-invitations" className="gap-2">
+        <TabsList className="grid w-full grid-cols-2 lg:w-[500px] h-11 p-1 bg-muted/50 border border-border/50">
+          <TabsTrigger value="visitor-invitations" className="gap-2 font-bold text-xs uppercase tracking-wider">
             <UserPlus className="h-4 w-4" />
-            Visitor Invitations
+            Visitor Registry
           </TabsTrigger>
-          <TabsTrigger value="late-entries" className="gap-2">
+          <TabsTrigger value="late-entries" className="gap-2 font-bold text-xs uppercase tracking-wider">
             <Clock className="h-4 w-4" />
-            Late Entry Reports
+            Curfew Reports
             {pendingEntries.length > 0 && (
-              <Badge variant="destructive" className="ml-2 h-5 px-1.5 text-[10px]">
+              <Badge variant="destructive" className="ml-2 h-5 px-1.5 text-[10px] font-black">
                 {pendingEntries.length}
               </Badge>
             )}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="visitor-invitations" className="mt-6 space-y-4">
+        <TabsContent value="visitor-invitations" className="mt-8 space-y-6">
           {/* Quick Link to Visitor Invitations */}
-          <Link href="/student/security/visitor-invitations">
-            <Card className="hover:shadow-lg transition-all cursor-pointer">
-              <CardHeader>
+          <Link href="/student/security/visitor-invitations" className="block">
+            <Card className="hover:bg-muted/30 transition-colors cursor-pointer border-border/50 group">
+              <CardHeader className="p-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <UserPlus className="h-6 w-6 text-primary" />
+                  <div className="flex items-center gap-5">
+                    <div className="h-12 w-12 rounded-xl bg-muted border border-border/50 flex items-center justify-center group-hover:bg-background transition-colors">
+                      <UserPlus className="h-6 w-6 text-foreground opacity-70" />
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">Manage Visitor Invitations</CardTitle>
-                      <CardDescription>Invite guests and track their check-in status</CardDescription>
+                    <div className="space-y-0.5">
+                      <CardTitle className="text-lg font-bold">Authorized Guest Invitations</CardTitle>
+                      <CardDescription className="text-xs font-medium">Issue and manage secure digital invitations for your guests.</CardDescription>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm">
-                    View All →
-                  </Button>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-all" />
                 </div>
               </CardHeader>
             </Card>
           </Link>
 
           {/* Info Card */}
-          <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
-            <CardContent className="pt-6">
-              <div className="flex gap-3">
-                <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-                <div className="space-y-2 text-sm">
-                  <p className="font-semibold text-blue-900 dark:text-blue-100">
-                    Visitor Invitation Process
+          <Card className="border-border/50 bg-muted/20 shadow-none">
+            <CardContent className="p-6">
+              <div className="flex gap-4">
+                <Shield className="h-5 w-5 text-muted-foreground mt-0.5 opacity-70" />
+                <div className="space-y-3 text-sm">
+                  <p className="font-bold text-foreground">
+                    Visitor Authorization Protocol
                   </p>
-                  <ul className="space-y-1 text-blue-800 dark:text-blue-200">
-                    <li>• Fill in visitor details including ID number and expected arrival time</li>
-                    <li>• Caretaker will check them in when they arrive at the gate</li>
-                    <li>• Caretaker will check them out when they leave</li>
-                    <li>• All visitor activity is logged for security purposes</li>
+                  <ul className="space-y-2 text-muted-foreground font-medium text-xs leading-relaxed">
+                    <li className="flex gap-2"><span>•</span> <span>Register guest identification and projected arrival window prior to visit.</span></li>
+                    <li className="flex gap-2"><span>•</span> <span>Gate security will verify credentials and record check-in events.</span></li>
+                    <li className="flex gap-2"><span>•</span> <span>Check-out events must be recorded upon physical departure.</span></li>
+                    <li className="flex gap-2"><span>•</span> <span>All access events are logged in the institutional security registry.</span></li>
                   </ul>
                 </div>
               </div>
@@ -130,20 +130,19 @@ export default function StudentSecurityPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="late-entries" className="mt-6 space-y-4">
+        <TabsContent value="late-entries" className="mt-8 space-y-6">
           {/* Info */}
-          <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
-            <CardContent className="pt-6">
-              <div className="flex gap-3">
-                <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+          <Card className="border-border/50 bg-muted/20 shadow-none">
+            <CardContent className="p-6">
+              <div className="flex gap-4">
+                <Clock className="h-5 w-5 text-muted-foreground mt-0.5 opacity-70" />
                 <div className="space-y-2 text-sm">
-                  <p className="font-semibold text-blue-900 dark:text-blue-100">
-                    About Late Entry Reports
+                  <p className="font-bold text-foreground">
+                    Curfew Compliance Policy
                   </p>
-                  <p className="text-blue-800 dark:text-blue-200">
-                    Caretakers log late-night entries (after curfew) for security purposes. 
-                    You can view these reports and provide explanations if needed. 
-                    Hostel curfew is typically 11:00 PM unless otherwise specified.
+                  <p className="text-muted-foreground font-medium text-xs leading-relaxed">
+                    Institutional access after curfew (typically 23:00) is logged by security personnel for regulatory compliance. 
+                    Residents must review these logs and provide secondary verification when requested.
                   </p>
                 </div>
               </div>
@@ -152,142 +151,117 @@ export default function StudentSecurityPage() {
 
           {/* Late Entries List */}
           {isLoading ? (
-             <div className="p-8 text-center text-sm text-muted-foreground">
-               <span className="loading loading-spinner loading-lg"></span>
-               <p>Loading reports...</p>
+             <div className="py-20 text-center text-sm font-medium text-muted-foreground">
+               <p>Retrieving registry records...</p>
              </div>
           ) : lateEntries.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <CheckCircle className="h-12 w-12 mx-auto text-green-600 dark:text-green-400 mb-4" />
-                <h3 className="font-semibold mb-2">No Late Entry Reports</h3>
-                <p className="text-sm text-muted-foreground">
-                  You have no late entry reports. Keep up the good work!
-                </p>
+            <Card className="border border-dashed border-border/50 bg-muted/5 shadow-none py-16">
+              <CardContent className="text-center space-y-4">
+                <div className="h-16 w-16 mx-auto rounded-full bg-muted/50 flex items-center justify-center">
+                    <CheckCircle className="h-8 w-8 text-muted-foreground opacity-30" />
+                </div>
+                <div className="space-y-1">
+                    <h3 className="font-bold text-lg">No Regulatory Incidents</h3>
+                    <p className="text-xs font-medium text-muted-foreground max-w-xs mx-auto">
+                        Your account has no recorded late entry events for the current period.
+                    </p>
+                </div>
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-4">
+               <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-70 px-1">Verification History</h2>
               {lateEntries.map((entry) => (
                 <Card
                   key={entry.id}
                   className={cn(
-                    'transition-all',
-                    entry.status === 'pending' && 'border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10'
+                    'border-border/50 shadow-sm transition-shadow hover:shadow-md',
+                    entry.status === 'pending' && 'border-amber-500/30 bg-amber-500/5'
                   )}
                 >
-                  <CardContent className="pt-6">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 space-y-3">
+                  <CardContent className="p-6">
+                    <div className="grid md:grid-cols-[1fr,auto] items-start gap-6">
+                      <div className="space-y-5">
                         {/* Header */}
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-between border-b border-border/20 pb-4">
+                          <div className="flex items-center gap-4">
                             <div className={cn(
-                              'h-10 w-10 rounded-full flex items-center justify-center',
+                              'h-10 w-10 rounded-lg flex items-center justify-center border',
                               entry.status === 'pending'
-                                ? 'bg-amber-100 dark:bg-amber-900/20'
-                                : 'bg-green-100 dark:bg-green-900/20'
+                                ? 'bg-amber-500/10 border-amber-500/20 text-amber-600'
+                                : 'bg-muted border-border/50 text-muted-foreground opacity-70'
                             )}>
-                              <Clock className={cn(
-                                'h-5 w-5',
-                                entry.status === 'pending'
-                                  ? 'text-amber-600 dark:text-amber-400'
-                                  : 'text-green-600 dark:text-green-400'
-                              )} />
+                              <Clock className="h-5 w-5" />
                             </div>
-                            <div>
-                              <p className="font-semibold">
-                                Late Entry - {new Date(entry.createdAt).toLocaleDateString()}
+                            <div className="space-y-0.5">
+                              <p className="font-bold text-foreground">
+                                Curfew Log - {new Date(entry.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                               </p>
-                              <p className="text-sm text-muted-foreground">
-                                Reported by {entry.loggedByName}
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-70">
+                                Verified by {entry.loggedByName}
                               </p>
                             </div>
                           </div>
-                          <Badge className={cn(
+                          <Badge variant="outline" className={cn(
+                            "text-[10px] font-black uppercase tracking-wider px-2.5 h-6",
                             entry.status === 'pending'
-                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400'
-                              : 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                              ? 'border-amber-500/30 text-amber-600 bg-amber-500/5'
+                              : 'border-border/50 text-muted-foreground font-bold'
                           )}>
-                            {entry.status === 'pending' ? 'Pending' : 'Acknowledged'}
+                            {entry.status === 'pending' ? 'Pending Action' : 'Logged'}
                           </Badge>
                         </div>
 
                         {/* Details */}
-                        <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-muted">
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">Entry Time</p>
-                            <p className="font-semibold">
-                              {new Date(entry.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <div className="grid grid-cols-2 gap-8">
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Entry Time</p>
+                            <p className="font-bold text-sm">
+                              {new Date(entry.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
                             </p>
                           </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">Date</p>
-                            <p className="font-semibold">
-                              {new Date(entry.entryTime).toLocaleDateString()}
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Entry Date</p>
+                            <p className="font-bold text-sm">
+                              {new Date(entry.entryTime).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
                             </p>
                           </div>
                         </div>
 
                         {/* Reason */}
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1">Reason Provided</p>
-                          <p className="text-sm">{entry.reason}</p>
+                        <div className="space-y-1 bg-muted/30 p-4 rounded-lg border border-border/50">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Official Reason</p>
+                          <p className="text-sm font-medium leading-relaxed">{entry.reason}</p>
                         </div>
-
-                        {/* Notes */}
-                        {entry.notes && (
-                          <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                            <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">Notes</p>
-                            <p className="text-sm text-blue-900 dark:text-blue-100">{entry.notes}</p>
-                          </div>
-                        )}
                       </div>
 
                       {/* Action */}
-                      {entry.status === 'pending' && (
-                        <Button
-                          onClick={() => handleAcknowledge(entry.id)}
-                          size="sm"
-                          disabled={acknowledgeMutation.isPending}
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          {acknowledgeMutation.isPending ? 'Saving...' : 'Acknowledge'}
+                      <div className="flex flex-col gap-3 min-w-[160px]">
+                        {entry.status === 'pending' ? (
+                            <Button
+                                onClick={() => handleAcknowledge(entry.id)}
+                                size="sm"
+                                disabled={acknowledgeMutation.isPending}
+                                className="font-bold h-10 w-full"
+                            >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                {acknowledgeMutation.isPending ? 'Processing...' : 'Acknowledge'}
+                            </Button>
+                        ) : (
+                            <Button variant="outline" size="sm" className="font-bold h-10 w-full border-border/50 pointer-events-none" disabled>
+                                Verified Record
+                            </Button>
+                        )}
+                        <Button variant="ghost" size="sm" className="font-bold text-xs h-9">
+                            Request Review
                         </Button>
-                      )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
           )}
-
-          {/* Summary Stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Late Entry Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg bg-muted">
-                  <p className="text-sm text-muted-foreground mb-1">Total Reports</p>
-                  <p className="text-2xl font-bold">{lateEntries.length}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-muted">
-                  <p className="text-sm text-muted-foreground mb-1">This Month</p>
-                  <p className="text-2xl font-bold">
-                    {lateEntries.filter(e => {
-                      const entryDate = new Date(e.entryTime);
-                      const now = new Date();
-                      return entryDate.getMonth() === now.getMonth() &&
-                             entryDate.getFullYear() === now.getFullYear();
-                    }).length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

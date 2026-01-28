@@ -27,9 +27,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Bell, Moon, Sun, Globe, Smartphone, Mail, Shield, Key, Lock } from 'lucide-react';
+import { Bell, Moon, Sun, Globe, Smartphone, Mail, Shield, Key, Lock, Monitor, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { PasswordSetupModal } from '@/features/auth/components/password-setup-modal';
+import { cn } from '@/lib/utils';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -45,7 +46,7 @@ export default function SettingsPage() {
   const hasPassword = passwordStatus?.has_password ?? false;
 
   const handleNotificationToggle = (type: string, enabled: boolean) => {
-    toast.success(`${type} notifications ${enabled ? 'enabled' : 'disabled'}`);
+    // Silent update or toast with professional language
   };
 
   const handleSetPassword = () => {
@@ -57,79 +58,73 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-10">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your application preferences and notifications
+    <div className="space-y-10 max-w-4xl mx-auto pb-16">
+      <div className="border-b border-border/50 pb-8 pt-4">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Account Configuration</h1>
+        <p className="text-sm font-medium text-muted-foreground mt-2">
+          Manage your institutional preferences, security protocols, and system-wide notifications.
         </p>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="privacy">Privacy</TabsTrigger>
+      <Tabs defaultValue="general" className="space-y-8">
+        <TabsList className="h-11 p-1 bg-muted/50 border border-border/50">
+          <TabsTrigger value="general" className="font-bold text-xs uppercase tracking-wider px-8">General</TabsTrigger>
+          <TabsTrigger value="notifications" className="font-bold text-xs uppercase tracking-wider px-8">Alerts</TabsTrigger>
+          <TabsTrigger value="privacy" className="font-bold text-xs uppercase tracking-wider px-8">Security</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="general" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sun className="h-5 w-5 text-emerald-600" />
-                Appearance
+        <TabsContent value="general" className="space-y-8">
+          <Card className="border border-border/50 shadow-sm">
+            <CardHeader className="bg-muted/30 border-b border-border/50">
+              <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-widest text-muted-foreground">
+                <Monitor className="h-4 w-4" />
+                Interface Settings
               </CardTitle>
-              <CardDescription>
-                Customize how the application looks on your device.
-              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between space-x-2">
-                <div className="flex flex-col space-y-1">
-                  <Label>Theme</Label>
-                  <span className="text-sm text-muted-foreground">
-                    Select your preferred theme for the dashboard.
-                  </span>
+            <CardContent className="p-8 space-y-8">
+              <div className="flex items-center justify-between gap-8">
+                <div className="space-y-1">
+                  <Label className="text-sm font-bold">System Theme</Label>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Select the visual mode for the application environment.
+                  </p>
                 </div>
                 <Select value={theme} onValueChange={setTheme}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-[200px] h-10 border-border/50 font-bold">
                     <SelectValue placeholder="Select theme" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
+                    <SelectItem value="light" className="font-medium">Standard (Light)</SelectItem>
+                    <SelectItem value="dark" className="font-medium">High Contrast (Dark)</SelectItem>
+                    <SelectItem value="system" className="font-medium">System Default</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5 text-emerald-600" />
-                Language & Region
+          <Card className="border border-border/50 shadow-sm">
+            <CardHeader className="bg-muted/30 border-b border-border/50">
+              <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-widest text-muted-foreground">
+                <Globe className="h-4 w-4" />
+                Localization
               </CardTitle>
-              <CardDescription>
-                Set your preferred language and regional settings.
-              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between space-x-2">
-                <div className="flex flex-col space-y-1">
-                  <Label>Language</Label>
-                  <span className="text-sm text-muted-foreground">
-                    The language used throughout the interface.
-                  </span>
+            <CardContent className="p-8 space-y-8">
+              <div className="flex items-center justify-between gap-8">
+                <div className="space-y-1">
+                  <Label className="text-sm font-bold">Primary Language</Label>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    The language setting for the institutional interface.
+                  </p>
                 </div>
                 <Select defaultValue="en">
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-[200px] h-10 border-border/50 font-bold">
                     <SelectValue placeholder="Select language" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="sw">Swahili</SelectItem>
+                    <SelectItem value="en" className="font-medium">English (Universal)</SelectItem>
+                    <SelectItem value="sw" className="font-medium">Swahili (Regional)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -137,54 +132,51 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="notifications" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-emerald-600" />
-                Notification Preferences
+        <TabsContent value="notifications" className="space-y-8">
+          <Card className="border border-border/50 shadow-sm">
+            <CardHeader className="bg-muted/30 border-b border-border/50">
+              <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-widest text-muted-foreground">
+                <Bell className="h-4 w-4" />
+                Alert Routing
               </CardTitle>
-              <CardDescription>
-                Choose how and when you want to be notified.
-              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between space-x-2">
-                <div className="flex flex-col space-y-1">
-                  <Label className="flex items-center gap-2">
-                    <Mail className="h-4 w-4" /> Email Notifications
+            <CardContent className="p-8 space-y-8 divide-y divide-border/50">
+              <div className="flex items-center justify-between gap-8 pt-0">
+                <div className="space-y-1">
+                  <Label className="text-sm font-bold flex items-center gap-2">
+                     Electronic Mail
                   </Label>
-                  <span className="text-sm text-muted-foreground">
-                    Receive emails about bookings, payments, and account updates.
-                  </span>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Official communications regarding bookings, billing, and system updates.
+                  </p>
                 </div>
                 <Switch 
                   defaultChecked 
                   onCheckedChange={(checked) => handleNotificationToggle('Email', checked)}
                 />
               </div>
-              <div className="flex items-center justify-between space-x-2">
-                <div className="flex flex-col space-y-1">
-                  <Label className="flex items-center gap-2">
-                    <Smartphone className="h-4 w-4" /> SMS Notifications
+              <div className="flex items-center justify-between gap-8 pt-8">
+                <div className="space-y-1">
+                  <Label className="text-sm font-bold flex items-center gap-2">
+                     SMS / Mobile Text
                   </Label>
-                  <span className="text-sm text-muted-foreground">
-                    Get text messages for urgent alerts and reminders.
-                  </span>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Critical alerts and urgent facility notifications.
+                  </p>
                 </div>
                 <Switch 
                   defaultChecked 
                   onCheckedChange={(checked) => handleNotificationToggle('SMS', checked)}
                 />
               </div>
-              <div className="flex items-center justify-between space-x-2">
-                <div className="flex flex-col space-y-1">
-                  <Label className="flex items-center gap-2">
-                    <Bell className="h-4 w-4" /> Push Notifications
+              <div className="flex items-center justify-between gap-8 pt-8">
+                <div className="space-y-1">
+                  <Label className="text-sm font-bold flex items-center gap-2">
+                     Desktop Push
                   </Label>
-                  <span className="text-sm text-muted-foreground">
-                    Receive push notifications on your device.
-                  </span>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Real-time operational alerts within the browser environment.
+                  </p>
                 </div>
                 <Switch 
                   defaultChecked 
@@ -195,57 +187,54 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="privacy" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5 text-emerald-600" />
-                Password & Security
+        <TabsContent value="privacy" className="space-y-8">
+          <Card className="border border-border/50 shadow-sm">
+            <CardHeader className="bg-muted/30 border-b border-border/50">
+              <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-widest text-muted-foreground">
+                <Lock className="h-4 w-4" />
+                Authentication Protocols
               </CardTitle>
-              <CardDescription>
-                Manage your password and authentication preferences.
-              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="p-8">
               {!hasPassword ? (
-                <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50 border-blue-200">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-blue-100 text-blue-600">
-                      <Key className="h-4 w-4" />
+                <div className="flex items-center justify-between p-6 border-2 border-primary/20 bg-primary/5 rounded-xl">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-lg bg-background border border-border/50 text-primary flex items-center justify-center">
+                      <Key className="h-5 w-5" />
                     </div>
-                    <div>
-                      <h4 className="font-medium">Set Up Password</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Add a password for email sign-in convenience
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-sm">Initialize Account Password</h4>
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Secure your account access with a primary password.
                       </p>
                     </div>
                   </div>
-                  <Button onClick={handleSetPassword}>
-                    Set Password
+                  <Button onClick={handleSetPassword} size="sm" className="font-bold h-9 px-6 rounded-lg">
+                    Setup Now
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col space-y-1">
-                      <Label>Current Password</Label>
-                      <span className="text-sm text-muted-foreground">
-                        You have a password set for your account
-                      </span>
+                <div className="space-y-8 divide-y divide-border/50">
+                  <div className="flex items-center justify-between pt-0">
+                    <div className="space-y-1">
+                      <Label className="text-sm font-bold">Primary Credentials</Label>
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Your account is currently secured with a set password.
+                      </p>
                     </div>
-                    <Button variant="outline">
-                      Change Password
+                    <Button variant="outline" size="sm" className="font-bold h-9 border-border/50">
+                      Update Password
                     </Button>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col space-y-1">
-                      <Label>Two-Factor Authentication</Label>
-                      <span className="text-sm text-muted-foreground">
-                        Add an extra layer of security to your account
-                      </span>
+                  <div className="flex items-center justify-between pt-8">
+                    <div className="space-y-1">
+                      <Label className="text-sm font-bold">Secondary Verification (2FA)</Label>
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Add an additional layer of security to your authentication flow.
+                      </p>
                     </div>
-                    <Button variant="outline">
-                      Enable 2FA
+                    <Button variant="outline" size="sm" className="font-bold h-9 border-border/50">
+                      Configure MFA
                     </Button>
                   </div>
                 </div>
@@ -253,32 +242,29 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-emerald-600" />
-                Data & Privacy
+          <Card className="border border-border/50 shadow-sm">
+            <CardHeader className="bg-muted/30 border-b border-border/50">
+              <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-widest text-muted-foreground">
+                <Shield className="h-4 w-4" />
+                Privacy & Visibility
               </CardTitle>
-              <CardDescription>
-                Manage your data sharing and privacy settings.
-              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between space-x-2">
-                <div className="flex flex-col space-y-1">
-                  <Label>Profile Visibility</Label>
-                  <span className="text-sm text-muted-foreground">
-                    Allow your profile to be seen by other students.
-                  </span>
+            <CardContent className="p-8 space-y-8 divide-y divide-border/50">
+              <div className="flex items-center justify-between pt-0">
+                <div className="space-y-1">
+                  <Label className="text-sm font-bold">Registry Visibility</Label>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Control how your profile is indexed within the student directory.
+                  </p>
                 </div>
                 <Switch defaultChecked />
               </div>
-              <div className="flex items-center justify-between space-x-2">
-                <div className="flex flex-col space-y-1">
-                  <Label>Activity Status</Label>
-                  <span className="text-sm text-muted-foreground">
-                    Show when you are active on the platform.
-                  </span>
+              <div className="flex items-center justify-between pt-8">
+                <div className="space-y-1">
+                  <Label className="text-sm font-bold">Operational Status</Label>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Display your current active status to other institutional members.
+                  </p>
                 </div>
                 <Switch defaultChecked />
               </div>

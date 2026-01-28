@@ -181,11 +181,13 @@ class RoommateMatchingView(APIView):
                 'error': 'Student profile not found'
             }, status=status.HTTP_404_NOT_FOUND)
         
-        # Get other students for matching
+        # Get other students for matching - STRICT GENDER FILTER
+        # Mixed gender housing is not supported
         other_students = StudentProfile.objects.filter(
             user__role='student',
             user__is_active=True,
-            user__is_verified=True
+            user__is_verified=True,
+            user__gender=request.user.gender
         ).exclude(user=request.user)
         
         # Calculate compatibility scores
@@ -200,11 +202,15 @@ class RoommateMatchingView(APIView):
                 ).select_related('room__hostel').first()
                 
                 # Calculate common interests
-                common_interests = list(set(current_student.interests or []) & set(student.interests or []))
+                student_interests = getattr(student, 'interests', []) or []
+                current_interests = getattr(current_student, 'interests', []) or []
+                common_interests = list(set(current_interests) & set(student_interests))
                 
                 match_data = {
                     'user_id': student.user.id,
                     'student_id': student.id,
+                    'first_name': student.user.first_name,
+                    'last_name': student.user.last_name,
                     'name': student.user.get_full_name(),
                     'university': getattr(student, 'university', 'Not specified'),
                     'year_of_study': getattr(student, 'year_of_study', 1),
@@ -212,7 +218,7 @@ class RoommateMatchingView(APIView):
                     'compatibility_score': score,
                     'compatibility_factors': self._get_compatibility_factors(current_student, student),
                     'profile_picture': student.user.profile_picture,
-                    'age': self._calculate_age(student.date_of_birth) if student.date_of_birth else None,
+                    'age': self._calculate_age(getattr(student.user, 'date_of_birth', None)),
                     'hostel': current_booking.room.hostel.name if current_booking and current_booking.room else None,
                     'room_type_preference': getattr(student, 'room_type_preference', 'any'),
                     'budget_range': {
@@ -267,7 +273,10 @@ class RoommateMatchingView(APIView):
         score = 0
         
         # Age compatibility (20 points max)
-        age_diff = abs(self._calculate_age(student1.date_of_birth) - self._calculate_age(student2.date_of_birth))
+        age1 = self._calculate_age(getattr(student1.user, 'date_of_birth', None))
+        age2 = self._calculate_age(getattr(student2.user, 'date_of_birth', None))
+        age_diff = abs(age1 - age2)
+
         if age_diff <= 2:
             score += 20
         elif age_diff <= 4:
@@ -278,38 +287,25 @@ class RoommateMatchingView(APIView):
         # Study habits compatibility (15 points max)
         if getattr(student1, 'study_habits_preference', '') == getattr(student2, 'study_habits_preference', ''):
             score += 15
-        elif abs(hash(getattr(student1, 'study_habits_preference', '')) - hash(getattr(student2, 'study_habits_preference', ''))) < 100:
-            score += 10
         
-        # Budget compatibility (15 points max)
-        if (getattr(student1, 'min_budget', 0) <= getattr(student2, 'max_budget', 0) and 
-            getattr(student2, 'min_budget', 0) <= getattr(student1, 'max_budget', 0)):
+        # Sleep schedule compatibility (15 points max)
+        if getattr(student1, 'sleep_schedule_preference', '') == getattr(student2, 'sleep_schedule_preference', ''):
             score += 15
         
-        # Social level compatibility (10 points max)
-        if getattr(student1, 'social_level_preference', '') == getattr(student2, 'social_level_preference', ''):
-            score += 10
-        
-        # Cleanliness compatibility (10 points max)
+        # Cleanliness compatibility (15 points max)
         if getattr(student1, 'cleanliness_preference', '') == getattr(student2, 'cleanliness_preference', ''):
-            score += 10
+            score += 15
         
-        # Sleep schedule compatibility (10 points max)
-        if getattr(student1, 'sleep_schedule_preference', '') == getattr(student2, 'sleep_schedule_preference', ''):
-            score += 10
+        # Social level compatibility (15 points max)
+        if getattr(student1, 'social_level_preference', '') == getattr(student2, 'social_level_preference', ''):
+            score += 15
         
         # Interests overlap (10 points max)
-        interests1 = set(student1.interests or [])
-        interests2 = set(student2.interests or [])
+        interests1 = set(getattr(student1, 'interests', []) or [])
+        interests2 = set(getattr(student2, 'interests', []) or [])
         if interests1 and interests2:
             overlap = len(interests1 & interests2)
             score += min(overlap * 2, 10)
-        
-        # Gender preference compatibility (5 points max)
-        if (getattr(student1, 'gender_preference', 'any') == 'any' or 
-            getattr(student2, 'gender_preference', 'any') == 'any' or
-            student1.user.gender == student2.user.gender):
-            score += 5
         
         # Lifestyle compatibility (5 points max)
         smoking_match = getattr(student1, 'smoking_preference', False) == getattr(student2, 'smoking_preference', False)
@@ -321,14 +317,17 @@ class RoommateMatchingView(APIView):
     
     def _get_compatibility_factors(self, student1, student2):
         """Get detailed compatibility factors"""
+        age1 = self._calculate_age(getattr(student1.user, 'date_of_birth', None))
+        age2 = self._calculate_age(getattr(student2.user, 'date_of_birth', None))
+        
         return {
-            'age_compatibility': abs(self._calculate_age(student1.date_of_birth) - self._calculate_age(student2.date_of_birth)) <= 3,
+            'age_compatibility': abs(age1 - age2) <= 3,
             'study_habits_match': getattr(student1, 'study_habits_preference', '') == getattr(student2, 'study_habits_preference', ''),
             'budget_compatibility': (getattr(student1, 'min_budget', 0) <= getattr(student2, 'max_budget', 0) and 
                                    getattr(student2, 'min_budget', 0) <= getattr(student1, 'max_budget', 0)),
             'social_level_match': getattr(student1, 'social_level_preference', '') == getattr(student2, 'social_level_preference', ''),
             'cleanliness_match': getattr(student1, 'cleanliness_preference', '') == getattr(student2, 'cleanliness_preference', ''),
-            'interests_overlap': len(set(student1.interests or []) & set(student2.interests or [])),
+            'interests_overlap': len(set(getattr(student1, 'interests', []) or []) & set(getattr(student2, 'interests', []) or [])),
             'lifestyle_compatibility': (getattr(student1, 'smoking_preference', False) == getattr(student2, 'smoking_preference', False) and
                                       getattr(student1, 'drinking_preference', False) == getattr(student2, 'drinking_preference', False))
         }
@@ -337,6 +336,7 @@ class RoommateMatchingView(APIView):
         """Calculate age from birth date"""
         if not birth_date:
             return 20  # Default age
+            
         today = timezone.now().date()
         return today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
     

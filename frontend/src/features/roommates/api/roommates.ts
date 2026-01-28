@@ -117,15 +117,17 @@ const respondToRequest = async (
 
 /**
  * Update roommate preferences
- * Note: Endpoint /roommates/preferences/ not explicitly listed in SETUP_GUIDE.md.
+ * Note: Consistently using /accounts/profile/ as the Single Point of Truth
  */
 const updatePreferences = async (
   preferences: any,
 ): Promise<RoommateProfile> => {
-  // Using /roommates/settings/ as per backend audit
+  // Use the robust accounts profile endpoint
   const response = await api.axios.patch<ApiResponse<RoommateProfile>>(
-    '/roommates/settings/',
-    { preferences },
+    '/accounts/profile/',
+    { 
+      lifestyle_preferences: preferences 
+    },
   );
   if (!response.data.data) {
     throw new Error('Failed to update preferences');

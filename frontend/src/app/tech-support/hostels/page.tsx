@@ -28,7 +28,7 @@ export default function HostelSupportPage({ defaultStatus = "all" }: HostelSuppo
   
   // Transform hostels data to match TechSupportHostel interface
   const hostels = rawHostels.map(hostel => ({
-    id: hostel.id,
+    id: String(hostel.id),
     name: hostel.name,
     landlord_name: `Landlord ${hostel.id}`, // Mock landlord name since it's not in the API
     location: `${hostel.address}, ${hostel.city}`,

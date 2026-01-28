@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { usePayments } from '@/features/payments';
 import { useStudentDashboard } from '@/features/student/hooks/use-student-dashboard';
 import { Button } from '@/components/ui/button';
@@ -23,10 +22,10 @@ import {
   History,
   Info,
   TrendingUp,
-  CreditCard as PaymentIcon,
   ShieldCheck,
   ChevronRight,
-  Loader2
+  Loader2,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -73,320 +72,279 @@ export default function PaymentsPage() {
       if (receipt?.pdf_file) {
         window.open(receipt.pdf_file, '_blank');
       } else {
-        toast.error('Receipt PDF not available yet');
+        toast.error('Receipt record not yet generated');
       }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to download receipt');
+      toast.error('Failed to retrieve receipt document');
     } finally {
       setIsDownloading(null);
     }
   };
 
   const rentStatus = dashboardData?.rentStatus;
-  const hostelName = (dashboardData as any)?.hostelInfo?.name || 'Your Property';
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
-  } as any;
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }
-  } as any;
+  const hostelName = (dashboardData as any)?.hostelInfo?.name || 'Assigned Property';
 
   return (
-    <motion.div 
-      className="max-w-7xl mx-auto space-y-8 pb-12 px-4 sm:px-6"
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-    >
+    <div className="max-w-7xl mx-auto space-y-10 pb-16 px-4 sm:px-6">
 
       {/* Header Section */}
-      <motion.div variants={itemVariants} className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pt-4">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-border/50 pb-10 pt-4">
         <div className="space-y-1">
-          <Badge variant="outline" className="px-3 py-1 text-xs font-black uppercase tracking-wider text-emerald-700 bg-emerald-500/10 dark:text-emerald-400 border-emerald-500/20 mb-2">
-            Billing & Ledger
-          </Badge>
-          <h1 className="text-4xl font-black tracking-tight text-foreground">Payments</h1>
-          <p className="text-muted-foreground max-w-xl text-balance font-bold">
-            Manage your lease payments, view transaction logs, and handle recurring settings for <span className="text-foreground font-black">{hostelName}</span>.
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Financial Ledger</h1>
+          <p className="text-muted-foreground text-sm font-medium">
+            Review your rental obligations, transaction history, and payment configurations for <span className="text-foreground font-bold">{hostelName}</span>.
           </p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
           <Button 
             size="lg"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-black h-12 px-6 rounded-xl shadow-lg shadow-emerald-500/20 group"
+            className="font-bold h-11 px-6 rounded-xl shadow-sm group"
             asChild
           >
             <Link href={`/student/payments/new?bookingId=${(dashboardData as any)?.hostelInfo?.booking_id || 'current'}&amount=${rentStatus?.totalOutstanding || 15000}`}>
-              <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform" />
-              Make a Payment
+              <Plus className="h-4 w-4 mr-2" />
+              Initiate Payment
             </Link>
           </Button>
           <Button 
             variant="outline" 
             size="lg"
-            className="h-12 px-6 rounded-xl border-border font-black text-foreground hover:bg-muted"
+            className="h-11 px-6 rounded-xl border-border/50 font-bold"
             asChild
           >
             <Link href="/student/payments/receipts">
-              <Download className="h-4 w-4 mr-2" />
-              Get Statement
+              <FileText className="h-4 w-4 mr-2" />
+              Export Statement
             </Link>
           </Button>
         </div>
-      </motion.div>
+      </div>
 
       {/* Main Grid: Stats & Quick Actions */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
         {/* Left Column: Stats Cards */}
-        <div className="xl:col-span-8 space-y-6">
+        <div className="xl:col-span-8 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Total Paid */}
-            <motion.div variants={itemVariants}>
-              <Card className="relative overflow-hidden border-border bg-card shadow-sm hover:shadow-md transition-all active:scale-[0.98] group h-full">
-                <CardContent className="p-6 relative">
-                  <div className="flex items-start justify-between">
+            <Card className="border border-border/50 bg-card shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
                     <div className="space-y-4">
-                      <div className="p-2.5 bg-emerald-500/10 rounded-xl w-fit">
-                        <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Total Paid</p>
-                        <p className="text-2xl font-black text-foreground">
-                          <span className="text-xs font-black mr-1 text-muted-foreground/60">KES</span>
-                          {stats.completed.toLocaleString()}
-                        </p>
-                      </div>
+                        <div className="p-2.5 bg-muted rounded-xl w-fit border border-border/50">
+                            <TrendingUp className="h-4 w-4 text-foreground" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1 opacity-70">Total Remitted</p>
+                            <p className="text-2xl font-black text-foreground">
+                                <span className="text-xs font-bold mr-1 text-muted-foreground opacity-60">KES</span>
+                                {stats.completed.toLocaleString()}
+                            </p>
+                        </div>
                     </div>
-                  </div>
                 </CardContent>
-              </Card>
-            </motion.div>
+            </Card>
 
             {/* Overdue/Balance */}
-            <motion.div variants={itemVariants}>
-              <Card className="relative overflow-hidden border-border bg-card shadow-sm hover:shadow-md transition-all active:scale-[0.98] group h-full">
-                <CardContent className="p-6 relative">
-                  <div className="flex items-start justify-between">
+            <Card className="border border-border/50 bg-card shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-6 text-foreground bg-primary/5 border-2 border-primary/20 rounded-xl relative overflow-hidden">
                     <div className="space-y-4">
-                      <div className="p-2.5 bg-amber-500/10 rounded-xl w-fit">
-                        <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Balance Due</p>
-                        <p className="text-3xl font-black text-foreground">
-                          <span className="text-sm font-black mr-1 text-muted-foreground/60">KES</span>
-                          {(rentStatus?.totalOutstanding || stats.pending).toLocaleString()}
-                        </p>
-                      </div>
+                        <div className="p-2.5 bg-background rounded-xl w-fit border border-border/50 shadow-sm">
+                            <Clock className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-primary/70 uppercase tracking-widest mb-1">Outstanding Balance</p>
+                            <p className="text-3xl font-black">
+                                <span className="text-sm font-bold mr-1 opacity-60">KES</span>
+                                {(rentStatus?.totalOutstanding || stats.pending).toLocaleString()}
+                            </p>
+                        </div>
                     </div>
-                  </div>
                 </CardContent>
-              </Card>
-            </motion.div>
+            </Card>
 
             {/* Records */}
-            <motion.div variants={itemVariants}>
-              <Card className="relative overflow-hidden border-border bg-card shadow-sm hover:shadow-md transition-all active:scale-[0.98] group h-full">
-                <CardContent className="p-6 relative">
-                  <div className="flex items-start justify-between">
+            <Card className="border border-border/50 bg-card shadow-sm hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
                     <div className="space-y-4">
-                      <div className="p-2.5 bg-blue-500/10 rounded-xl w-fit">
-                        <Receipt className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Total Logs</p>
-                        <p className="text-2xl font-black text-foreground">
-                          {Array.isArray(payments) ? (payments as any[]).length : 0}
-                          <span className="text-sm font-black ml-1.5 text-muted-foreground/60">payments</span>
-                        </p>
-                      </div>
+                        <div className="p-2.5 bg-muted rounded-xl w-fit border border-border/50">
+                            <Receipt className="h-4 w-4 text-foreground" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1 opacity-70">Transaction Volume</p>
+                            <p className="text-2xl font-black text-foreground">
+                                {Array.isArray(payments) ? (payments as any[]).length : 0}
+                                <span className="text-sm font-bold ml-1.5 text-muted-foreground opacity-60">Entries</span>
+                            </p>
+                        </div>
                     </div>
-                  </div>
                 </CardContent>
-              </Card>
-            </motion.div>
+            </Card>
           </div>
 
           {/* Activity Section */}
-          <motion.div variants={itemVariants} className="pt-2">
-            <Card className="border-border bg-card overflow-hidden shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between py-6 px-6 border-b border-border">
-                <div className="space-y-1">
-                  <CardTitle className="text-xl font-black flex items-center gap-2 text-foreground">
-                    <History className="h-6 w-6 text-emerald-600" />
-                    Transaction History
-                  </CardTitle>
-                  <CardDescription className="text-muted-foreground font-bold">Review your recent apartment billing activities.</CardDescription>
-                </div>
-                <Button variant="ghost" size="sm" className="text-emerald-700 font-black hover:bg-emerald-500/10" asChild>
-                  <Link href="/student/payments/receipts">
-                    View All
-                  </Link>
-                </Button>
-              </CardHeader>
-              <CardContent className="p-0">
-                {isLoading ? (
-                  <div className="p-6 space-y-6">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center gap-4">
-                        <Skeleton className="h-12 w-12 rounded-xl" />
-                        <div className="flex-1 space-y-2">
-                          <Skeleton className="h-4 w-1/3" />
-                          <Skeleton className="h-3 w-1/4" />
-                        </div>
-                        <Skeleton className="h-6 w-20" />
+          <Card className="border border-border/50 bg-card overflow-hidden shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between py-6 px-6 border-b border-border/50 bg-muted/20">
+              <div className="space-y-1">
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  Recent Activity
+                </CardTitle>
+                <CardDescription className="text-xs font-medium">Verified transaction logs for your current rental period.</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" className="font-bold text-xs" asChild>
+                <Link href="/student/payments/receipts">
+                  View Full Statement
+                </Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              {isLoading ? (
+                <div className="p-6 space-y-6">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <Skeleton className="h-10 w-10 rounded-lg" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-3 w-1/3" />
+                        <Skeleton className="h-2 w-1/4" />
                       </div>
-                    ))}
-                  </div>
-                ) : recentPayments.length > 0 ? (
-                  <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {recentPayments.map((payment: any, index: number) => (
-                      <div
-                        key={payment.id}
-                        className="flex items-center gap-4 p-5 hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors group cursor-pointer"
-                      >
-                        <div className={cn(
-                          "h-11 w-11 rounded-full flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105",
-                          payment.status === 'completed' && "bg-emerald-500/10 text-emerald-600",
-                          payment.status === 'pending' && "bg-amber-500/10 text-amber-600",
-                          payment.status === 'failed' && "bg-red-500/10 text-red-600"
-                        )}>
-                          {payment.status === 'completed' && <CheckCircle className="h-5 w-5" />}
-                          {payment.status === 'pending' && <Clock className="h-5 w-5" />}
-                          {payment.status === 'failed' && <XCircle className="h-5 w-5" />}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-black text-sm text-foreground truncate">
-                              {payment.type === 'initial' ? 'Booking Deposit' : payment.type.toUpperCase() + ' Payment'}
-                            </p>
-                          </div>
-                          <p className="text-xs text-muted-foreground flex items-center gap-2 mt-1 font-bold">
-                            <span>{new Date(payment.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>
-                            <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-                            <span className="uppercase tracking-wide">{payment.method}</span>
-                          </p>
-                        </div>
-
-                        <div className="text-right flex flex-col items-end gap-2">
-                          <div>
-                            <p className="text-lg font-black text-foreground">
-                              KES {payment.amount.toLocaleString()}
-                            </p>
-                            <Badge 
-                              variant="secondary"
-                              className={cn(
-                                "text-[9px] h-4.5 px-1.5 rounded-md font-black uppercase mt-1",
-                                (payment.status === 'completed' || payment.status === 'success') && "bg-emerald-500/10 text-emerald-600",
-                                (payment.status === 'pending' || payment.status === 'pending_stk_push') && "bg-amber-500/10 text-amber-600",
-                                (payment.status === 'failed' || payment.status === 'cancelled') && "bg-red-500/10 text-red-600"
-                              )}
-                            >
-                              {payment.status === 'pending_stk_push' ? 'Pending STK' : payment.status}
-                            </Badge>
-                          </div>
-                          
-                          {(payment.status === 'completed' || payment.status === 'success') && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-8 px-2 text-[10px] font-bold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg group/receipt"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDownloadReceipt(payment.id);
-                              }}
-                              disabled={isDownloading === String(payment.id)}
-                            >
-                              {isDownloading === String(payment.id) ? (
-                                <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                              ) : (
-                                <Download className="h-3 w-3 mr-1 group-hover/receipt:scale-110 transition-transform" />
-                              )}
-                              Receipt
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <div className="h-16 w-16 rounded-3xl bg-muted/50 flex items-center justify-center mb-4 text-muted-foreground/50">
-                      <Wallet className="h-8 w-8" />
+                      <Skeleton className="h-5 w-16" />
                     </div>
-                    <h3 className="text-base font-black text-foreground">No history found</h3>
-                    <p className="text-xs text-muted-foreground max-w-[200px] mt-1 font-bold">Make your first payment to see records here.</p>
+                  ))}
+                </div>
+              ) : recentPayments.length > 0 ? (
+                <div className="divide-y divide-border/50">
+                  {recentPayments.map((payment: any) => (
+                    <div
+                      key={payment.id}
+                      className="flex items-center gap-4 p-5 hover:bg-muted/30 transition-colors"
+                    >
+                      <div className={cn(
+                        "h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 border",
+                        payment.status === 'completed' && "bg-background border-border/50 text-foreground",
+                        payment.status === 'pending' && "bg-muted border-border/50 text-muted-foreground",
+                        payment.status === 'failed' && "bg-destructive/10 border-destructive/20 text-destructive"
+                      )}>
+                        {payment.status === 'completed' && <CheckCircle className="h-4 w-4" />}
+                        {payment.status === 'pending' && <Clock className="h-4 w-4" />}
+                        {payment.status === 'failed' && <XCircle className="h-4 w-4" />}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm text-foreground truncate">
+                          {payment.type === 'initial' ? 'Initial Deposit' : payment.type.toUpperCase() + ' Payment'}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                             {new Date(payment.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                           </p>
+                           <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+                           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                             {payment.method}
+                           </p>
+                        </div>
+                      </div>
+
+                      <div className="text-right flex flex-col items-end gap-1.5 min-w-[120px]">
+                        <p className="text-base font-black text-foreground">
+                            KES {payment.amount.toLocaleString()}
+                        </p>
+                        <div className="flex items-center gap-2">
+                            {(payment.status === 'completed' || payment.status === 'success') && (
+                                <button 
+                                    className="text-[9px] font-bold uppercase tracking-widest text-primary hover:underline px-2"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDownloadReceipt(payment.id);
+                                    }}
+                                    disabled={isDownloading === String(payment.id)}
+                                >
+                                    {isDownloading === String(payment.id) ? 'Downloading...' : 'Receipt'}
+                                </button>
+                            )}
+                            <Badge 
+                                variant="outline"
+                                className={cn(
+                                    "text-[9px] h-4.5 px-2 rounded-md font-bold uppercase",
+                                    (payment.status === 'completed' || payment.status === 'success') && "border-emerald-500/30 text-emerald-600 bg-emerald-50/50",
+                                    (payment.status === 'pending' || payment.status === 'pending_stk_push') && "border-amber-500/30 text-amber-600 bg-amber-50/50",
+                                    (payment.status === 'failed' || payment.status === 'cancelled') && "border-destructive/30 text-destructive bg-destructive/5"
+                                )}
+                            >
+                                {payment.status === 'pending_stk_push' ? 'STK Pending' : payment.status}
+                            </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4 text-muted-foreground/30">
+                    <Wallet className="h-8 w-8" />
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+                  <h3 className="text-base font-bold text-foreground">No records detected</h3>
+                  <p className="text-xs text-muted-foreground max-w-[200px] mt-1 font-medium">All financial transactions will be cataloged here.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right Column: Actions & Services */}
-        <div className="xl:col-span-4 space-y-6">
-          <motion.div variants={itemVariants}>
-            <Card className="border border-border bg-card text-card-foreground shadow-xl rounded-2xl overflow-hidden relative group">
-              <CardContent className="p-8 relative z-10">
-                <ShieldCheck className="h-10 w-10 text-emerald-600 dark:text-emerald-400 mb-6" />
-                <h3 className="text-2xl font-black mb-2 text-foreground">Secure Gateway</h3>
-                <p className="text-muted-foreground text-sm font-black leading-relaxed mb-8">
-                  Fast and encrypted payments directly via M-Pesa. Your data is always protected.
-                </p>
-                <div className="space-y-3">
-                   <div className="flex items-center gap-3 bg-muted/30 border border-border p-3 rounded-xl">
-                    <div className="h-8 w-8 rounded-lg bg-emerald-500/20 flex items-center justify-center font-black text-xs text-emerald-700 dark:text-emerald-400">P</div>
-                    <div>
-                      <p className="text-xs font-black text-foreground">Property Verified</p>
-                      <p className="text-[10px] text-muted-foreground font-black">{hostelName}</p>
+        <div className="xl:col-span-4 space-y-8">
+          <Card className="border border-border/50 bg-card shadow-sm rounded-xl overflow-hidden relative group">
+            <CardContent className="p-8">
+              <ShieldCheck className="h-8 w-8 text-foreground mb-6 opacity-80" />
+              <h3 className="text-xl font-bold mb-2">Verified Ledger</h3>
+              <p className="text-muted-foreground text-xs font-medium leading-relaxed mb-8">
+                All financial data is encrypted and reconciled in real-time. Direct integration with official payment gateways ensures structural integrity.
+              </p>
+              <div className="space-y-3">
+                 <div className="flex items-center gap-3 bg-muted/30 border border-border/50 p-4 rounded-xl">
+                    <div className="h-8 w-8 rounded-lg bg-background border border-border/50 flex items-center justify-center font-bold text-xs">01</div>
+                    <div className="space-y-0.5">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-70">Secured Node</p>
+                      <p className="text-xs font-bold text-foreground">{hostelName}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 bg-muted/30 border border-border p-3 rounded-xl">
-                    <div className="h-8 w-8 rounded-lg bg-emerald-500/20 flex items-center justify-center font-black text-xs text-emerald-700 dark:text-emerald-400">S</div>
-                    <div>
-                      <p className="text-xs font-black text-foreground">STK Immediate</p>
-                      <p className="text-[10px] text-muted-foreground font-black">Powered by Daraja API</p>
+                  <div className="flex items-center gap-3 bg-muted/30 border border-border/50 p-4 rounded-xl">
+                    <div className="h-8 w-8 rounded-lg bg-background border border-border/50 flex items-center justify-center font-bold text-xs">02</div>
+                    <div className="space-y-0.5">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-70">Processor</p>
+                      <p className="text-xs font-bold text-foreground">STK Push / Daraja Core</p>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <motion.div variants={itemVariants} className="space-y-4">
-            <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Quick Links</h3>
+          <div className="space-y-4">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-70 px-1">Functional Links</h3>
             <div className="grid grid-cols-1 gap-3">
               {[
-                { title: 'Payment Methods', subtitle: 'Manage cards & M-Pesa', icon: CreditCard, link: '/student/payments/methods' },
-                { title: 'Billing History', subtitle: 'View past invoices', icon: History, link: '/student/payments/receipts' },
-                { title: 'Auto-Pay', subtitle: 'Setup recurring rent', icon: Clock, link: '/student/payments/recurring' },
-                { title: 'Support Desk', subtitle: 'Help with billing issues', icon: Info, link: '/student/support' },
+                { title: 'Payment Registry', subtitle: 'Method management', icon: CreditCard, link: '/student/payments/methods' },
+                { title: 'Billing Archives', subtitle: 'Historical records', icon: History, link: '/student/payments/receipts' },
+                { title: 'Recurring Setup', subtitle: 'Automatic billing', icon: Clock, link: '/student/payments/recurring' },
+                { title: 'Support Terminal', subtitle: 'Financial assistance', icon: Info, link: '/student/support' },
               ].map((item, idx) => (
                 <Link 
                   key={idx} 
                   href={item.link}
-                  className="flex items-center gap-4 p-4 bg-card border border-border rounded-xl hover:border-emerald-500/50 hover:shadow-md transition-all active:scale-[0.98] group"
+                  className="flex items-center gap-4 p-4 bg-card border border-border/50 rounded-xl hover:bg-muted/20 transition-all group"
                 >
-                  <div className="p-2.5 bg-muted/50 group-hover:bg-emerald-500/10 rounded-xl transition-colors">
-                    <item.icon className="h-5 w-5 text-muted-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400" />
+                  <div className="p-2.5 bg-muted rounded-lg transition-colors group-hover:bg-background group-hover:border border-border/50">
+                    <item.icon className="h-4 w-4 text-foreground opacity-70" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-black text-foreground">{item.title}</p>
-                    <p className="text-[10px] text-muted-foreground font-black">{item.subtitle}</p>
+                    <p className="text-sm font-bold text-foreground">{item.title}</p>
+                    <p className="text-[10px] text-muted-foreground font-medium">{item.subtitle}</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-emerald-600 transition-colors" />
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-foreground transition-colors" />
                 </Link>
               ))}
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

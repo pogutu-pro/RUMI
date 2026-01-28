@@ -111,12 +111,12 @@ export function HostelBookingWidget({
   });
 
   const availableRooms = useMemo(
-    () => roomsData?.rooms?.filter((room) => room.is_available) || [],
-    [roomsData?.rooms],
+    () => roomsData?.data?.filter((room) => room.available) || [],
+    [roomsData?.data],
   );
 
   const selectedRoom = useMemo(
-    () => availableRooms.find((r) => String(r.room_id) === selectedRoomId) || null,
+    () => availableRooms.find((r) => String(r.id) === selectedRoomId) || null,
     [availableRooms, selectedRoomId],
   );
 
@@ -353,19 +353,11 @@ export function HostelBookingWidget({
           <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
             {availableRooms.map((room) => (
               <RoomSelectionCard
-                key={room.room_id}
-                room={{
-                  id: room.room_id,
-                  name: room.room_number,
-                  price: room.base_price,
-                  capacity: room.capacity,
-                  available: room.is_available,
-                  description: room.description || `Room ${room.room_number}`,
-                  amenities: room.amenities || {},
-                }}
-                isSelected={selectedRoomId === String(room.room_id)}
+                key={room.id}
+                room={room}
+                isSelected={selectedRoomId === String(room.id)}
                 onSelect={(roomId) => selectRoom(roomId)}
-                pricePerMonth={room.base_price}
+                pricePerMonth={room.price}
               />
             ))}
             {availableRooms.length === 0 && (

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Pagination } from '@/components/ui/pagination';
-import { Search, Filter, SlidersHorizontal, Home } from 'lucide-react';
+import { Search, SlidersHorizontal, Building2 } from 'lucide-react';
 import { useHostels } from '@/features/hostels';
 import {
   HostelCard,
@@ -20,6 +20,7 @@ export default function StudentHostelsPage() {
   const [debouncedSearch, setDebouncedSearch] = React.useState('');
   const [currentPage, setCurrentPage] = React.useState(1);
   const [filters, setFilters] = React.useState<FiltersState>({});
+  
   // Debounce search
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -55,43 +56,40 @@ export default function StudentHostelsPage() {
   );
 
   return (
-    <div className="min-h-screen space-y-8 animate-in fade-in duration-500">
-      {/* Hero Section */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5 text-foreground p-8 md:p-12 lg:p-16 border border-border/50">
-        <div className="relative z-10 max-w-3xl space-y-4">
-          <Badge className="bg-primary/10 text-primary border-primary/20">
-            <Home className="h-3 w-3 mr-1" />
-            Find Your Perfect Home
-          </Badge>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
-            Student Accommodation Made Easy
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl">
-            Browse verified hostels near your campus with premium amenities and
-            transparent pricing.
-          </p>
+    <div className="min-h-screen space-y-10 pb-16">
+      {/* Search & Header Section */}
+      <div className="border-b border-border/50 pb-10">
+        <div className="max-w-4xl space-y-6">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Hostel Directory
+            </h1>
+            <p className="text-muted-foreground text-sm font-medium">
+              Browse and filter through verified student accommodations near your academic institution.
+            </p>
+          </div>
+          
           {/* Search Bar */}
-          <div className="flex gap-2 pt-4 max-w-2xl">
+          <div className="flex flex-col sm:flex-row gap-3 max-w-3xl pt-2">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by hostel name, university, or city..."
+                placeholder="Search by name, university, or region..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-12 bg-background border text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/30 rounded-xl"
+                className="pl-11 h-11 bg-muted/20 border-border/50 text-foreground font-medium rounded-xl"
               />
             </div>
             <Sheet>
               <SheetTrigger asChild>
                 <Button
-                  size="lg"
-                  variant="secondary"
-                  className="h-12 px-6 rounded-xl"
+                  variant="outline"
+                  className="h-11 px-5 rounded-xl font-bold border-border/50"
                 >
                   <SlidersHorizontal className="h-4 w-4 mr-2" />
-                  Filters
+                  Filter Options
                   {hasActiveFilters && (
-                    <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-xs">
+                    <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-black">
                       {
                         Object.values(filters).filter(
                           (v) => v !== undefined && v !== '',
@@ -117,110 +115,103 @@ export default function StudentHostelsPage() {
         </div>
       </div>
 
-      {/* Results Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">
-            {data ? `${data.count} Hostels Found` : 'Available Hostels'}
+      {/* Results Section */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-70">
+            {data ? `${data.count} Verified Listings` : 'Available Listings'}
           </h2>
-          {hasActiveFilters && (
-            <p className="text-sm text-muted-foreground mt-1">
-              Showing filtered results
-            </p>
-          )}
         </div>
-      </div>
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="overflow-hidden rounded-2xl border bg-card">
-              <Skeleton className="h-64 w-full rounded-t-2xl" />
-              <div className="p-4 space-y-3">
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-2/3" />
-                <div className="flex gap-2 pt-2">
-                  <Skeleton className="h-8 w-20 rounded-full" />
-                  <Skeleton className="h-8 w-20 rounded-full" />
+        {/* Loading State */}
+        {isLoading && (
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="overflow-hidden rounded-xl border border-border/50 bg-card">
+                <Skeleton className="h-56 w-full rounded-t-xl" />
+                <div className="p-5 space-y-4">
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <div className="flex gap-2 pt-2">
+                    <Skeleton className="h-8 w-24 rounded-lg" />
+                    <Skeleton className="h-8 w-24 rounded-lg" />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Error State */}
-      {error && (
-        <div className="text-center py-20 rounded-3xl bg-destructive/10 border-2 border-destructive/20">
-          <div className="mx-auto h-16 w-16 rounded-full bg-destructive/20 flex items-center justify-center mb-4">
-            <Search className="h-8 w-8 text-destructive" />
-          </div>
-          <h3 className="text-lg font-semibold">Error loading hostels</h3>
-          <p className="text-muted-foreground max-w-sm mx-auto mt-2">
-            {error instanceof Error
-              ? error.message
-              : 'Something went wrong. Please try again.'}
-          </p>
-          <Button
-            variant="outline"
-            className="mt-6"
-            onClick={() => window.location.reload()}
-          >
-            Retry
-          </Button>
-        </div>
-      )}
-
-      {/* Hostels Grid */}
-      {!isLoading && !error && hostels.length > 0 && (
-        <>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {hostels.map((hostel) => (
-              <HostelCard
-                key={hostel.id}
-                hostel={hostel}
-                basePath="/student/hostels"
-              />
             ))}
           </div>
+        )}
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center pt-8 w-full">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                pageSize={20}
-                totalItems={data?.count ?? 0}
-                onPageChange={setCurrentPage}
-              />
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-20 rounded-2xl bg-muted/20 border-2 border-dashed border-border/50">
+            <div className="mx-auto h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+              <Search className="h-8 w-8 text-muted-foreground/30" />
             </div>
-          )}
-        </>
-      )}
-
-      {/* Empty State */}
-      {!isLoading && !error && data && hostels.length === 0 && (
-        <div className="text-center py-20 rounded-3xl bg-muted/30 border-2 border-dashed">
-          <div className="mx-auto h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-            <Search className="h-8 w-8 text-muted-foreground" />
+            <h3 className="text-lg font-bold">Failed to load listings</h3>
+            <p className="text-muted-foreground text-sm font-medium max-w-sm mx-auto mt-2">
+              {error instanceof Error
+                ? error.message
+                : 'An unexpected error occurred while fetching the hostel directory.'}
+            </p>
+            <Button
+              variant="outline"
+              className="mt-8 font-bold px-8 h-10 border-border/50"
+              onClick={() => window.location.reload()}
+            >
+              Retry Connection
+            </Button>
           </div>
-          <h3 className="text-lg font-semibold">No hostels found</h3>
-          <p className="text-muted-foreground max-w-sm mx-auto mt-2">
-            We couldn&apos;t find any hostels matching your criteria. Try
-            adjusting your filters or search terms.
-          </p>
-          <Button
-            variant="outline"
-            className="mt-6"
-            onClick={handleClearFilters}
-          >
-            Clear All Filters
-          </Button>
-        </div>
-      )}
+        )}
+
+        {/* Hostels Grid */}
+        {!isLoading && !error && hostels.length > 0 && (
+          <>
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+              {hostels.map((hostel) => (
+                <HostelCard
+                  key={hostel.id}
+                  hostel={hostel}
+                  basePath="/student/hostels"
+                />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center pt-12 w-full">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  pageSize={20}
+                  totalItems={data?.count ?? 0}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && !error && data && hostels.length === 0 && (
+          <div className="text-center py-20 rounded-2xl bg-muted/20 border-2 border-dashed border-border/50">
+            <div className="mx-auto h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+              <Building2 className="h-8 w-8 text-muted-foreground/30" />
+            </div>
+            <h3 className="text-lg font-bold">No results found</h3>
+            <p className="text-muted-foreground text-sm font-medium max-w-sm mx-auto mt-2">
+              No accommodations match your current search parameters. Provide a different inquiry or adjust your filtering criteria.
+            </p>
+            <Button
+              variant="outline"
+              className="mt-8 font-bold px-8 h-10 border-border/50"
+              onClick={handleClearFilters}
+            >
+              Clear All Filters
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

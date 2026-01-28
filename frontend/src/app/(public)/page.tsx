@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,31 +8,24 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { ArrowRight, Search, CheckCircle2, Sparkles } from 'lucide-react';
-import {
-  FadeIn,
-  FadeInStagger,
-  FadeInItem,
-} from '@/components/animations/fade-in';
-import { AnimatedCounterGrid } from '@/components/animations/animated-counter';
+import { ArrowRight, Search, CheckCircle2 } from 'lucide-react';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 import RumiVideo from '@/components/ui/RumiVideo/rumivideo';
-import { PlatformCarousel } from '@/components/ui/platform-carousel';
 
 export const metadata: Metadata = {
-  title: 'Rumi - Your Campus Accommodation, Simplified',
+  title: 'Rumi - Student Hostel Management Platform Kenya',
   description:
-    'Find verified campus hostels with safe bookings and trusted landlords. Rumi makes student housing simple.',
+    'Rental management platform for student hostels. Track rent payments, manage occupancy, handle tenant records. Replace WhatsApp and Excel with digital hostel operations.',
   openGraph: {
-    title: 'Rumi - Your Campus Life, Simplified',
+    title: 'Rumi - Student Hostel Management Platform',
     description:
-      'Find verified campus hostels with safe bookings and trusted landlords. Rumi makes student housing simple.',
+      'Digital rental management for student hostels in Kenya. Rent tracking, M-PESA payments, occupancy management, and tenant records in one system.',
     url: 'https://rumi.co.ke',
     siteName: 'Rumi',
     images: [
       {
         url: '/og-image.png',
-        alt: 'Rumi student accommodation platform',
+        alt: 'Rumi hostel management platform',
         width: 1200,
         height: 630,
       },
@@ -42,64 +34,46 @@ export const metadata: Metadata = {
     type: 'website',
   },
   keywords: [
-    'student accommodation Kenya',
-    'campus hostels Nairobi',
-    'verified student housing',
-    'hostel booking platform',
-    'university rentals',
-    'affordable student apartments',
-    'M-PESA payments hostels',
+    'student hostel management Kenya',
+    'rental management system',
+    'hostel operations software',
+    'student housing management',
+    'rent payment tracking',
+    'occupancy management',
+    'tenant management system',
+    'hostel booking Kenya',
+    'student accommodation Nairobi',
   ],
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
   },
 };
 
 export default function HomePage() {
   return (
-    <main className="flex flex-col bg-white text-gray-900 antialiased">
-      {/* Hero Section - Optimized for SEO with h1 */}
+    <main className="flex flex-col bg-white text-gray-900 font-sans">
+      {/* Hero Section */}
       <section
-        className="relative overflow-hidden bg-white"
+        className="relative border-b border-gray-200 bg-white"
         aria-label="Hero introduction"
       >
-        <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 xs:pt-24 xs:pb-28 md:pt-32 md:pb-40">
-          <div className="mx-auto max-w-4xl text-center">
-            <Badge
-              className="mb-6 xs:mb-8 inline-flex items-center gap-2 border-gray-200 bg-gray-50 px-3 py-1.5 xs:px-4 text-xs xs:text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-              variant="outline"
-            >
-              <Sparkles className="h-3 w-3 xs:h-3.5 xs:w-3.5" />
-              Trusted by all landlords and students
-            </Badge>
-            <h1 className="mb-5 xs:mb-6 text-4xl xs:text-5xl font-bold tracking-tight text-gray-900 sm:text-6xl md:text-7xl lg:text-8xl">
-              Your Accommodation,
-              <br />
-              <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                Simplified
-              </span>
+        <div className="container mx-auto px-4 py-16 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl">
+            <h1 className="mb-6 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+              Student Hostel Management Platform
             </h1>
-            <p className="mb-8 xs:mb-10 text-lg xs:text-xl text-gray-600 sm:text-2xl max-w-2xl mx-auto leading-relaxed">
-              Find verified hostels, connect with trusted landlords, and book
-              accommodation with confidence — all in one easy platform.
+            <p className="mb-8 text-xl text-gray-700 leading-relaxed">
+              Digital rental management for student hostels. Track rent payments, manage occupancy, handle tenant records. Replace WhatsApp, Excel, and cash payments with dedicated hostel operations software.
             </p>
-            <div className="flex flex-col gap-3 xs:gap-4 sm:flex-row sm:justify-center">
+            <div className="flex flex-col gap-4 sm:flex-row">
               <Link href="/hostels" prefetch className="w-full sm:w-auto">
                 <Button
                   size="lg"
-                  className="w-full sm:w-auto h-12 xs:h-14 px-6 xs:px-8 text-sm xs:text-base font-semibold shadow-lg hover:shadow-xl transition-all"
-                  aria-label="Find hostels"
+                  className="w-full sm:w-auto"
                 >
-                  <Search className="mr-2 h-4 w-4 xs:h-5 xs:w-5" />
-                  Find Hostels
+                  <Search className="mr-2 h-5 w-5" />
+                  View All Hostels
                 </Button>
               </Link>
               <Link
@@ -109,498 +83,313 @@ export default function HomePage() {
               >
                 <Button
                   size="lg"
-                  variant="charcoal"
-                  className="w-full sm:w-auto h-12 xs:h-14 px-6 xs:px-8 text-sm xs:text-base"
-                  aria-label="Get started"
+                  variant="outline"
+                  className="w-full sm:w-auto"
                 >
-                  Get Started
-                  <ArrowRight className="ml-2 h-4 w-4 xs:h-5 xs:w-5" />
+                  Create Student Account
+                </Button>
+              </Link>
+              <Link
+                href={`${AUTH_ROUTES.REGISTER}?role=landlord`}
+                prefetch
+                className="w-full sm:w-auto"
+              >
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="w-full sm:w-auto"
+                >
+                    List Property
                 </Button>
               </Link>
             </div>
           </div>
-        </FadeIn>
+        </div>
       </section>
 
-      {/* Social Proof / Stats - Animated counters for live feel */}
+      {/* Platform Overview */}
       <section
-        className="border-y border-gray-100 bg-gray-50/50 py-12 xs:py-16 md:py-20"
-        aria-label="Platform statistics"
-      >
-        <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-5xl">
-            <AnimatedCounterGrid
-              stats={[
-                { value: '10,000+', label: 'Active Students' },
-                { value: '500+', label: 'Verified Hostels' },
-                { value: '98%', label: 'Satisfaction Rate' },
-                { value: '24/7', label: 'Support Available' },
-              ]}
-            />
-          </div>
-        </FadeIn>
-      </section>
-
-      {/* Why Rumi? - Replaced with Video Section */}
-      <section
-        className="py-16 xs:py-20 md:py-24 lg:py-32 bg-white"
-        aria-label="Why choose Rumi"
-      >
-        <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-5xl text-center">
-            <h2 className="mb-6 xs:mb-8 text-3xl xs:text-4xl font-bold text-gray-900 sm:text-5xl">
-              Why Rumi?
-            </h2>
-            <RumiVideo
-              url="https://www.youtube.com/watch?v=sBY5a0QZKUk"
-              title="Why Choose Rumi - Platform Overview"
-              autoplay
-              muted
-              loop
-              className="shadow-2xl"
-            />
-          </div>
-        </FadeIn>
-      </section>
-
-      {/* Dashboard Preview / Core USP - Replaced icons with real dashboard previews */}
-      <section
-        className="bg-gray-50 py-16 xs:py-20 md:py-24 lg:py-32"
-        aria-label="Platform dashboards preview"
+        className="py-16 bg-white border-b border-gray-200"
+        aria-label="How it works"
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-6xl">
-            <FadeIn className="mb-12 xs:mb-16 text-center">
-              <h2 className="mb-3 xs:mb-4 text-3xl xs:text-4xl font-bold text-gray-900 sm:text-5xl">
-                Your Dashboards, Simplified
-              </h2>
-              <p className="text-lg text-gray-600">
-                Everything you need, right where you need it
-              </p>
-            </FadeIn>
-            <FadeInStagger>
-              <PlatformCarousel
-                slides={[
-                  {
-                    src: '/images/dashboards/student-dashboard.png',
-                    alt: 'Rumi Student Dashboard preview',
-                    title: 'Student Dashboard',
-                    description:
-                      'View booking history, manage your profile, and track payments all in one place.',
-                  },
-                  {
-                    src: '/images/dashboards/landlord-dashboard.png',
-                    alt: 'Rumi Landlord Dashboard preview',
-                    title: 'Landlord Dashboard',
-                    description:
-                      'Manage your listings, bookings, and earnings. Grow your business by reaching thousands of students.',
-                  },
-                  {
-                    src: '/images/dashboards/caretaker-dashboard.png',
-                    alt: 'Rumi Caretaker Dashboard preview',
-                    title: 'Caretaker Dashboard',
-                    description:
-                      'Organize tasks and oversee hostel property management efficiently with powerful tools.',
-                  },
-                ]}
-                autoPlayInterval={5000}
-              />
-            </FadeInStagger>
+          <div className="mx-auto max-w-3xl">
+            <h2 className="mb-6 text-2xl font-bold text-gray-900">
+              How Rumi Simplifies Hostel Management
+            </h2>
+            <div className="border border-gray-200 bg-gray-50">
+                <RumiVideo
+                url="https://www.youtube.com/watch?v=sBY5a0QZKUk"
+                title="Rumi Hostel Management Demo"
+                autoplay={false}
+                muted
+                loop={false}
+                className=""
+                />
+            </div>
           </div>
         </div>
       </section>
 
       {/* How It Works Section */}
       <section
-        className="py-16 xs:py-20 md:py-24 lg:py-32 bg-white"
+        className="py-16 bg-white border-b border-gray-200"
         aria-label="How Rumi works"
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-5xl">
-            <FadeIn className="mb-12 xs:mb-16 text-center">
-              <h2 className="mb-3 xs:mb-4 text-3xl xs:text-4xl font-bold text-gray-900 sm:text-5xl">
-                How It Works
-              </h2>
-              <p className="text-lg text-gray-600">
-                Get started in four simple steps
-              </p>
-            </FadeIn>
-            <FadeInStagger className="grid gap-8 xs:gap-10 sm:gap-12 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+          <div className="mx-auto max-w-4xl">
+            <h2 className="mb-12 text-2xl font-bold text-gray-900">
+              How Students Use Rumi
+            </h2>
+            <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
               {[
                 {
                   number: '1',
-                  title: 'Sign Up & Create Profile',
+                  title: 'Browse Hostels',
                   description:
-                    'Register to access your personalized dashboard.',
+                    'Search verified hostels by location and price.',
                 },
                 {
                   number: '2',
-                  title: 'Discover or Manage Hostels',
-                  description: 'Search as a student or manage as a landlord.',
+                  title: 'Book Room',
+                  description: 'Pay rent via M-PESA. Instant confirmation.',
                 },
                 {
                   number: '3',
-                  title: 'Make or Receive Bookings',
-                  description: 'Use secure M-PESA payments and booking system.',
+                  title: 'Track Payments',
+                  description: 'View rent history and payment receipts.',
                 },
                 {
                   number: '4',
-                  title: 'Track Activity & Payments',
-                  description: 'Stay updated with your transactions and tasks.',
+                  title: 'Manage Tenancy',
+                  description: 'Request room transfers and view roommates.',
                 },
               ].map(({ number, title, description }) => (
-                <FadeInItem
+                <div
                   key={number}
-                  className="flex flex-col items-center text-center"
+                  className="flex flex-col items-start"
                 >
-                  <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-2xl font-bold text-green-700">
+                  <span className="mb-4 text-xl font-bold text-gray-900 border-b-2 border-gray-900 pb-1">
                     {number}
-                  </div>
-                  <h3 className="mb-3 text-xl font-semibold text-gray-900">
+                  </span>
+                  <h3 className="mb-2 text-lg font-semibold text-gray-900">
                     {title}
                   </h3>
-                  <p className="text-gray-600 leading-relaxed">{description}</p>
-                </FadeInItem>
+                  <p className="text-gray-700 text-sm">{description}</p>
+                </div>
               ))}
-            </FadeInStagger>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Platform Benefits - Modern Carousel */}
+      {/* For Students */}
       <section
-        className="bg-gray-50 py-16 xs:py-20 md:py-24 lg:py-32"
-        aria-label="Platform benefits showcase"
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-6xl">
-            <FadeIn className="mb-12 xs:mb-16 text-center">
-              <h2 className="mb-3 xs:mb-4 text-3xl xs:text-4xl font-bold text-gray-900 sm:text-5xl">
-                Platform Benefits
-              </h2>
-              <p className="text-lg text-gray-600">
-                Experience the best of student accommodation
-              </p>
-            </FadeIn>
-            <FadeIn>
-              <PlatformCarousel
-                slides={[
-                  {
-                    src: '/images/carousel/carousel-01.jpeg',
-                    alt: 'Verified and trustworthy hostels',
-                  },
-                  {
-                    src: '/images/carousel/carousel-02.jpeg',
-                    alt: 'Easy dashboard management',
-                  },
-                  {
-                    src: '/images/carousel/carousel-03.jpeg',
-                    alt: 'Mobile friendly design',
-                  },
-                  {
-                    src: '/images/carousel/carousel-04.jpeg',
-                    alt: 'Secure M-PESA payments',
-                  },
-                ]}
-                autoPlayInterval={5000}
-              />
-            </FadeIn>
-          </div>
-        </div>
-      </section>
-
-      {/* Students Section - Video on the right (desktop) */}
-      <section
-        className="py-16 xs:py-20 md:py-24 lg:py-32 bg-white"
+        className="py-16 bg-white border-b border-gray-200"
         aria-label="For students"
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="grid gap-12 md:gap-16 lg:grid-cols-2 lg:items-center">
-              {/* Left Column - Content */}
-              <FadeIn>
-                <Badge
-                  className="mb-6 inline-flex border-gray-200 bg-gray-50 px-4 py-1.5 text-sm font-medium text-gray-700"
-                  variant="outline"
-                >
-                  For Students
-                </Badge>
-                <h2 className="mb-6 text-4xl font-bold text-gray-900 sm:text-5xl">
-                  Your Journey Starts Here
-                </h2>
-                <div className="mb-10 space-y-6 text-gray-700">
-                  {[
-                    {
-                      title: 'Safe & Secure',
-                      desc: 'All hostels are verified with proper licenses and safety standards.',
-                    },
-                    {
-                      title: 'Student-Friendly',
-                      desc: 'Close to universities, affordable prices, and flexible terms.',
-                    },
-                    {
-                      title: 'Community First',
-                      desc: 'Connect with other students and build lasting friendships.',
-                    },
-                  ].map(({ title, desc }) => (
-                    <div key={title} className="flex gap-4 items-start">
-                      <CheckCircle2
-                        className="mt-1 h-6 w-6 shrink-0 text-green-600"
-                        aria-hidden="true"
-                      />
-                      <div>
-                        <h3 className="mb-1 text-lg font-semibold text-gray-900">
-                          {title}
-                        </h3>
-                        <p className="text-gray-600 leading-relaxed">{desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Link href="/hostels" prefetch>
-                  <Button
-                    size="lg"
-                    className="h-12 px-8 text-base font-semibold"
-                    aria-label="Start searching hostels"
-                  >
-                    Start Searching
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-              </FadeIn>
-
-              {/* Right Column - Video */}
-              <FadeIn className="lg:order-last">
-                <div className="w-full max-w-3xl mx-auto lg:mx-0">
-                  <RumiVideo
-                    url="https://www.youtube.com/watch?v=sBY5a0QZKUk"
-                    title="Student Experience on Rumi"
-                    autoplay
-                    muted
-                    loop
-                    className="shadow-2xl"
+          <div className="mx-auto max-w-4xl">
+            <Badge
+                className="mb-4 inline-flex border-gray-900 text-gray-900 rounded-none bg-transparent hover:bg-transparent"
+                variant="outline"
+            >
+                STUDENTS
+            </Badge>
+            <h2 className="mb-8 text-3xl font-bold text-gray-900">
+                For Students: Digital Rent Management
+            </h2>
+            {/* Features in compact grid */}
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              {[
+                {
+                  title: 'Digital Payments',
+                  desc: 'Pay rent via M-PESA with instant digital receipts.',
+                },
+                {
+                  title: 'Payment History',
+                  desc: 'Access all rent payments and receipts in your dashboard.',
+                },
+                {
+                  title: 'Room Management',
+                  desc: 'Request room transfers and report maintenance issues.',
+                },
+              ].map(({ title, desc }) => (
+                <div key={title} className="flex gap-3 items-start">
+                  <CheckCircle2
+                    className="mt-1 h-5 w-5 shrink-0 text-gray-900"
+                    aria-hidden="true"
                   />
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      {title}
+                    </h3>
+                    <p className="text-gray-600 text-sm">{desc}</p>
+                  </div>
                 </div>
-              </FadeIn>
+              ))}
+            </div>
+            <div className="mb-8">
+              <Link href="/hostels" prefetch>
+                  <Button size="lg">
+                  Search Hostels
+                  </Button>
+              </Link>
+            </div>
+            {/* Student Screenshots - larger, full width */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="border border-gray-200 bg-gray-50 p-2">
+                <img src="/images/carousel/carousel-01.jpeg" alt="Student dashboard" className="w-full" />
+              </div>
+              <div className="border border-gray-200 bg-gray-50 p-2">
+                <img src="/images/carousel/carousel-02.jpeg" alt="Rent payment interface" className="w-full" />
+              </div>
+              <div className="border border-gray-200 bg-gray-50 p-2 md:col-span-2">
+                <img src="/images/carousel/carousel-03.jpeg" alt="Room booking" className="w-full" />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Landlords Section - Video on the right (desktop) */}
+      {/* For Landlords */}
       <section
-        className="bg-gray-50 py-16 xs:py-20 md:py-24 lg:py-32"
+        className="bg-gray-50 py-16 border-b border-gray-200"
         aria-label="For landlords"
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="grid gap-12 md:gap-16 lg:grid-cols-2 lg:items-center">
-              {/* Left Column - Content */}
-              <FadeIn>
-                <Badge
-                  className="mb-6 inline-flex border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-700"
-                  variant="outline"
-                >
-                  For Landlords
-                </Badge>
-                <h2 className="mb-6 text-4xl font-bold text-gray-900 sm:text-5xl">
-                  Grow Your Business
-                </h2>
-                <div className="mb-10 space-y-6 text-gray-700">
-                  {[
-                    {
-                      title: 'Reach More Students',
-                      desc: 'List your property and connect with thousands of students looking for accommodation.',
-                    },
-                    {
-                      title: 'Easy Management',
-                      desc: 'Manage bookings, payments, and communications all in one place.',
-                    },
-                    {
-                      title: 'Secure Payments',
-                      desc: 'Get paid instantly through M-PESA with zero hassle.',
-                    },
-                  ].map(({ title, desc }) => (
-                    <div key={title} className="flex gap-4 items-start">
-                      <CheckCircle2
-                        className="mt-1 h-6 w-6 shrink-0 text-green-600"
-                        aria-hidden="true"
-                      />
-                      <div>
-                        <h3 className="mb-1 text-lg font-semibold text-gray-900">
-                          {title}
-                        </h3>
-                        <p className="text-gray-600 leading-relaxed">{desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Link href={`${AUTH_ROUTES.REGISTER}?role=landlord`} prefetch>
-                  <Button
-                    size="lg"
-                    className="h-12 px-8 text-base font-semibold"
-                    aria-label="List your property"
-                  >
-                    List Your Property
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-              </FadeIn>
-
-              {/* Right Column - Video */}
-              <FadeIn className="lg:order-last">
-                <div className="w-full max-w-3xl mx-auto lg:mx-0">
-                  <RumiVideo
-                    url="https://www.youtube.com/watch?v=sBY5a0QZKUk"
-                    title="Landlord Experience on Rumi"
-                    autoplay
-                    muted
-                    loop
-                    className="shadow-2xl"
+          <div className="mx-auto max-w-4xl">
+             <Badge
+                className="mb-4 inline-flex border-gray-900 text-gray-900 rounded-none bg-transparent hover:bg-transparent"
+                variant="outline"
+            >
+                LANDLORDS
+            </Badge>
+            <h2 className="mb-8 text-3xl font-bold text-gray-900">
+              For Landlords: Operations Management
+            </h2>
+            {/* Features in compact grid */}
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              {[
+                {
+                  title: 'Rent Tracking',
+                  desc: 'Track all rent payments, arrears, and payment status.',
+                },
+                {
+                  title: 'Occupancy Management',
+                  desc: 'Manage room occupancy, vacancies, and tenant records.',
+                },
+                {
+                  title: 'Tenant Onboarding',
+                  desc: 'Digital tenant registration and document management.',
+                },
+              ].map(({ title, desc }) => (
+                <div key={title} className="flex gap-3 items-start">
+                  <CheckCircle2
+                    className="mt-1 h-5 w-5 shrink-0 text-gray-900"
+                    aria-hidden="true"
                   />
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      {title}
+                    </h3>
+                    <p className="text-gray-600 text-sm">{desc}</p>
+                  </div>
                 </div>
-              </FadeIn>
+              ))}
+            </div>
+            <div className="mb-8">
+              <Link href={`${AUTH_ROUTES.REGISTER}?role=landlord`} prefetch>
+                  <Button size="lg" variant="outline" className="bg-white">
+                      Register Property
+                  </Button>
+              </Link>
+            </div>
+            {/* Landlord Screenshots - larger, full width */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="border border-gray-200 bg-white p-2">
+                <img src="/images/carousel/carousel-04.jpeg" alt="Landlord dashboard" className="w-full" />
+              </div>
+              <div className="border border-gray-200 bg-white p-2">
+                <img src="/images/carousel/carousel-05.jpeg" alt="Property management" className="w-full" />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* FAQ Preview */}
+      {/* FAQ Section */}
       <section
-        className="py-16 xs:py-20 md:py-24 lg:py-32 bg-white"
-        aria-label="Frequently asked questions preview"
+        className="py-16 bg-white"
+        aria-label="Frequently asked questions"
       >
-        <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-4xl">
-            <div className="mb-16 text-center">
-              <h2 className="mb-4 text-4xl font-bold text-gray-900 sm:text-5xl">
-                Frequently Asked Questions
-              </h2>
-              <p className="text-lg text-gray-600">
-                Got questions? We have got answers.
-              </p>
-            </div>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl">
+            <h2 className="mb-8 text-2xl font-bold text-gray-900">
+              Questions
+            </h2>
             <Accordion
               type="single"
               collapsible
               className="w-full space-y-4"
-              role="list"
-              aria-label="FAQ list"
             >
               <AccordionItem
                 value="booking"
-                role="listitem"
-                className="rounded-lg border border-gray-200 px-6"
+                className="border border-gray-200 px-4"
               >
-                <AccordionTrigger className="text-left font-semibold">
+                <AccordionTrigger className="text-left font-semibold text-gray-900 no-underline hover:underline">
                   How do I book a hostel?
                 </AccordionTrigger>
-                <AccordionContent className="text-gray-600">
-                  Simply browse our listings, select your preferred hostel,
-                  choose your room type, and complete the booking with M-PESA.
-                  You will receive instant confirmation and can move in on your
-                  selected date.
+                <AccordionContent className="text-gray-700">
+                  Select a hostel, choose room type, and pay via M-PESA. You receive instant confirmation.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem
                 value="verification"
-                role="listitem"
-                className="rounded-lg border border-gray-200 px-6"
+                className="border border-gray-200 px-4"
               >
-                <AccordionTrigger className="text-left font-semibold">
-                  Are all hostels verified?
+                <AccordionTrigger className="text-left font-semibold text-gray-900 no-underline hover:underline">
+                  Verification Process
                 </AccordionTrigger>
-                <AccordionContent className="text-gray-600">
-                  Yes! Every hostel on Rumi undergoes a verification process. We
-                  check licenses, visit the property, verify photos, and ensure
-                  safety standards are met before listing.
+                <AccordionContent className="text-gray-700">
+                  We physically inspect properties and verify ownership documents before listing.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem
                 value="payments"
-                role="listitem"
-                className="rounded-lg border border-gray-200 px-6"
+                className="border border-gray-200 px-4"
               >
-                <AccordionTrigger className="text-left font-semibold">
-                  What payment methods do you accept?
+                <AccordionTrigger className="text-left font-semibold text-gray-900 no-underline hover:underline">
+                  Payment Methods
                 </AccordionTrigger>
-                <AccordionContent className="text-gray-600">
-                  We currently accept M-PESA payments for instant booking. All
-                  transactions are secure and you will receive a payment
-                  confirmation immediately.
+                <AccordionContent className="text-gray-700">
+                  M-PESA (Paybill/Till) only. Cash updates are not supported for initial booking security.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem
                 value="cancellation"
-                role="listitem"
-                className="rounded-lg border border-gray-200 px-6"
+                className="border border-gray-200 px-4"
               >
-                <AccordionTrigger className="text-left font-semibold">
-                  Can I cancel my booking?
+                <AccordionTrigger className="text-left font-semibold text-gray-900 no-underline hover:underline">
+                  Cancellation Policy
                 </AccordionTrigger>
-                <AccordionContent className="text-gray-600">
-                  Cancellation policies vary by hostel. Most offer free
-                  cancellation up to 7 days before move-in. Check the specific
-                  hostel cancellation policy on their listing page.
+                <AccordionContent className="text-gray-700">
+                  Defined by individual landlords. See specific hostel page for details.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
-            <div className="mt-12 text-center">
+             <div className="mt-8">
               <Link href="/faq" prefetch>
                 <Button
-                  variant="charcoal"
-                  size="lg"
-                  className="h-12 px-8"
-                  aria-label="View all frequently asked questions"
+                  variant="link"
+                  className="pl-0 text-gray-900 underline"
                 >
                   View All FAQs
-                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             </div>
           </div>
-        </FadeIn>
-      </section>
-
-      {/* CTA Section */}
-      <section
-        className="bg-gradient-to-br from-green-600 to-emerald-600 py-16 xs:py-20 md:py-24 lg:py-32"
-        aria-label="Call to action"
-      >
-        <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="mb-6 text-4xl font-bold text-white sm:text-5xl">
-              Ready to Get Started?
-            </h2>
-            <p className="mb-10 text-xl text-green-50">
-              Join thousands of students and landlords already using Rumi
-            </p>
-            <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
-              <Link href="/hostels" prefetch>
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="h-14 px-8 text-base font-semibold bg-white text-green-600 hover:bg-gray-50"
-                  aria-label="Find hostels"
-                >
-                  <Search className="mr-2 h-5 w-5" />
-                  Find Hostels
-                </Button>
-              </Link>
-              <Link href={AUTH_ROUTES.REGISTER} prefetch>
-                <Button
-                  size="lg"
-                  variant="charcoal"
-                  className="h-14 px-8 text-base"
-                  aria-label="Get started"
-                >
-                  Get Started Free
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </FadeIn>
+        </div>
       </section>
     </main>
   );
