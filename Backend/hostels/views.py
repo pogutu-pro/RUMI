@@ -101,7 +101,7 @@ class HostelCreateView(APIView):
             }, status=status.HTTP_403_FORBIDDEN)
 
         # Validate required fields
-        required_fields = ['name', 'description', 'address', 'city', 'university', 'gender_policy']
+        required_fields = ['name', 'description', 'address', 'city', 'university', 'gender_policy', 'hostel_type', 'base_price']
         for field in required_fields:
             if not request.data.get(field):
                 return Response({
@@ -115,6 +115,13 @@ class HostelCreateView(APIView):
                 'error': 'Invalid gender policy'
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        # Validate hostel type
+        valid_types = ['single_rooms', 'shared_rooms', 'mixed']
+        if request.data['hostel_type'] not in valid_types:
+            return Response({
+                'error': 'Invalid hostel type'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             with transaction.atomic():
                 hostel = Hostel.objects.create(
@@ -125,9 +132,11 @@ class HostelCreateView(APIView):
                     city=request.data['city'],
                     university=request.data['university'],
                     distance_from_university=request.data.get('distance_from_university'),
+                    latitude=request.data.get('latitude'),
+                    longitude=request.data.get('longitude'),
                     gender_policy=request.data['gender_policy'],
-                    amenities=request.data.get('amenities', {}),
-                    rules=request.data.get('rules'),
+                    hostel_type=request.data['hostel_type'],
+                    base_price=request.data['base_price'],
                     images=request.data.get('images', [])
                 )
 
@@ -140,8 +149,7 @@ class HostelCreateView(APIView):
                     'name': hostel.name,
                     'landlord_name': landlord_profile.company_name or landlord_profile.user.get_full_name(),
                     'total_rooms': 0,
-                    'is_active': hostel.is_active,
-                    'has_inventory_template': False,
+                    'status': hostel.status,
                     'created_at': hostel.created_at,
                     'message': 'Hostel created successfully. Next steps: Add rooms and create inventory template.'
                 }, status=status.HTTP_201_CREATED)
@@ -170,7 +178,33 @@ class HostelDetailView(APIView):
                 'error': 'Hostel not found'
             }, status=status.HTTP_404_NOT_FOUND)
 
-        return Response(HostelSerializer(hostel).data, status=status.HTTP_200_OK)
+        # Calculate room stats
+        total_rooms = hostel.total_rooms
+        available_rooms = hostel.available_rooms
+        
+        return Response({
+            'data': {
+                'id': hostel.id,
+                'name': hostel.name,
+                'description': hostel.description,
+                'address': hostel.address,
+                'city': hostel.city,
+                'university': hostel.university,
+                'gender_policy': hostel.gender_policy,
+                'hostel_type': hostel.hostel_type,
+                'status': hostel.status,
+                'total_rooms': total_rooms,
+                'available_rooms': available_rooms,
+                'base_price': str(hostel.base_price),
+                'currency': hostel.currency,
+                'rating': float(hostel.rating),
+                'review_count': hostel.review_count,
+                'images': hostel.images or [],
+                'is_verified': hostel.is_verified,
+                'created_at': hostel.created_at.isoformat(),
+                'updated_at': hostel.updated_at.isoformat(),
+            }
+        }, status=status.HTTP_200_OK)
 
 
 @swagger_auto_schema(
@@ -1454,27 +1488,32 @@ class HostelsListView(APIView):
             ).select_related('amenity').values_list('amenity__name', flat=True)
 
             results.append({
-                'hostel_id': hostel.id,
+                'id': hostel.id,
                 'name': hostel.name,
                 'description': hostel.description,
                 'address': hostel.address,
+                'city': hostel.city,
+                'university': hostel.university,
+                'gender_policy': hostel.gender_policy,
                 'hostel_type': hostel.hostel_type,
-                'base_price': float(hostel.base_price),
+                'status': hostel.status,
                 'total_rooms': total_rooms,
                 'available_rooms': available_rooms,
-                'amenities': list(amenities),
-                'landlord': {
-                    'company_name': hostel.landlord.company_name,
-                    'phone': hostel.landlord.user.phone_number
-                },
-                'rating': 4.5,  # Mock rating
-                'review_count': 15,  # Mock review count
-                'is_verified': hostel.is_verified
+                'base_price': str(hostel.base_price),
+                'currency': hostel.currency,
+                'rating': float(hostel.rating),
+                'review_count': hostel.review_count,
+                'images': hostel.images or [],
+                'is_verified': hostel.is_verified,
+                'created_at': hostel.created_at.isoformat(),
+                'updated_at': hostel.updated_at.isoformat(),
             })
 
         return Response({
-            'total_hostels': total_hostels,
-            'hostels': results
+            'current_page': 1,
+            'total_pages': 1,
+            'count': total_hostels,
+            'results': results
         }, status=status.HTTP_200_OK)
 
 

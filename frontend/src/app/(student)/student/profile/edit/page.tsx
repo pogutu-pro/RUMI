@@ -57,6 +57,7 @@ export default function EditProfilePage() {
   const { user, updateProfile, uploadPhoto } = useAuth();
   const [isLoading, setIsLoading] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
+  const [avatarKey, setAvatarKey] = React.useState(Date.now()); // Force image refresh
 
   // Default values for the form
   const defaultValues: Partial<ProfileFormValues> = {
@@ -66,8 +67,8 @@ export default function EditProfilePage() {
     phone_number: user?.phone_number || '',
     bio: user?.bio || '',
     urls: {
-      instagram: (user?.urls as any)?.instagram || '',
-      tiktok: (user?.urls as any)?.tiktok || '',
+      instagram: user?.urls?.instagram || '',
+      tiktok: user?.urls?.tiktok || '',
     },
   };
 
@@ -90,14 +91,19 @@ export default function EditProfilePage() {
     try {
       if (uploadPhoto) {
           await uploadPhoto(file);
+          console.log('User after upload:', user);
+          setAvatarKey(Date.now()); // Force image refresh
           toast.success('Photo updated', { description: 'Your profile picture has been updated.' });
-          router.refresh();
       } else {
           toast.error('Upload feature not available');
       }
     } catch (error) {
-      console.error(error);
-      toast.error('Upload failed', { description: 'Could not upload profile picture.' });
+      console.error('Upload error:', error);
+      if ((error as any)?.response?.status === 404) {
+        toast.error('Upload feature not available', { description: 'Profile picture upload will be available soon.' });
+      } else {
+        toast.error('Upload failed', { description: 'Could not upload profile picture.' });
+      }
     } finally {
       setIsUploading(false);
     }
@@ -154,7 +160,7 @@ export default function EditProfilePage() {
             </CardHeader>
             <CardContent className="flex flex-col sm:flex-row items-center gap-6">
               <Avatar className="h-24 w-24 border-4 border-muted">
-                <AvatarImage src={user?.avatar} />
+                <AvatarImage src={user?.profile_picture || user?.avatar ? `${user.profile_picture || user.avatar}?t=${avatarKey}` : undefined} />
                 <AvatarFallback className="text-2xl">
                   {user?.first_name?.[0]}
                   {user?.last_name?.[0]}

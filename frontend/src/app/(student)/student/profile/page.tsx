@@ -47,32 +47,17 @@ export default function ProfilePage() {
   const profileCompletion = React.useMemo(() => {
     if (!user) return 0;
     let score = 0;
-    const totalWeight = 100;
     
-    // Basic Info (40%)
-    if (user.first_name) score += 10;
-    if (user.last_name) score += 10;
-    if (user.email) score += 10;
-    if (user.phone_number) score += 10;
+    // Basic Info (80%)
+    if (user.first_name) score += 20;
+    if (user.last_name) score += 20;
+    if (user.email) score += 20;
+    if (user.phone_number) score += 20;
     
     // Profile Picture (20%)
-    if (user.avatar || (user as any).profile?.avatar) score += 20;
-
-    // Check for educational details
-    if ((user as any).university) score += 20;
-    if ((user as any).student_id) score += 20;
-
-    // Cap at 100
-    // Simplify for now: Just check basic fields
-    const filledFields = [
-        user.first_name, 
-        user.last_name, 
-        user.email, 
-        user.phone_number,
-        user.avatar
-    ].filter(Boolean).length;
+    if (user.profile_picture || user.avatar) score += 20;
     
-    return Math.min(Math.round((filledFields / 5) * 100), 100);
+    return Math.min(score, 100);
   }, [user]);
 
   const handleLogout = () => {
@@ -98,14 +83,14 @@ export default function ProfilePage() {
       title: 'Personal Information',
       description: 'Update your name, email, and contact details',
       href: '/student/profile/edit',
-      completion: user?.first_name && user?.last_name && user?.email ? 100 : 50,
+      completion: user?.first_name && user?.last_name && user?.email && user?.phone_number ? 100 : 0,
     },
     {
       icon: School,
       title: 'Student Details',
       description: 'University, program, and year of study',
       href: '/student/profile/student-info',
-      completion: (user as any)?.university ? 100 : 0,
+      completion: 0,
     },
     {
       icon: Settings,
@@ -168,7 +153,7 @@ export default function ProfilePage() {
         <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center md:items-start">
           <div className="relative">
             <Avatar className="h-32 w-32 border-4 border-background shadow-xl">
-              <AvatarImage src={user?.avatar} className="object-cover" />
+              <AvatarImage src={user?.profile_picture || user?.avatar} className="object-cover" />
               <AvatarFallback className="bg-primary/10 text-primary text-4xl font-bold">
                 {user?.first_name?.[0]}
                 {user?.last_name?.[0]}
@@ -285,7 +270,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">University</p>
-                    <p className="text-xs text-muted-foreground">{(user as any)?.university || 'Not set'}</p>
+                    <p className="text-xs text-muted-foreground">Not set</p>
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0" asChild>

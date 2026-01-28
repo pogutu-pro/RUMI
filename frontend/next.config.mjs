@@ -29,7 +29,19 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
     ],
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/media/:path*',
+        destination: 'http://localhost:8000/media/:path*',
+      },
+    ];
   },
   turbopack: {
     root: __dirname,

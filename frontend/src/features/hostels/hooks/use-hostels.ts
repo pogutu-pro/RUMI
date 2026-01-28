@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { getHostels, getHostel, getHostelById, createHostel, searchHostels } from '@/features/hostels';
+import apiClient from '@/lib/api/client';
 import type { Hostel } from '@/types/entities.types';
 import { HostelsResponse } from '@/features/hostels/api/hostels';
 
@@ -35,6 +36,18 @@ export const useHostels = (params?: UseHostelsParams) => {
       params as Record<string, unknown> | undefined
     ),
     queryFn: () => getHostels(params),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+};
+
+export const useLandlordHostels = () => {
+  return useQuery<HostelsResponse, Error>({
+    queryKey: queryKeys.hostels.landlordHostels(),
+    queryFn: async () => {
+      const res = await apiClient.get<HostelsResponse>('/landlord/hostels/');
+      return res.data;
+    },
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
@@ -75,22 +88,6 @@ export const useHostel = (
   });
 };
 
-/**
- * Hook to fetch landlord's own hostels
- * Used for landlord dashboard operations like assigning caretakers
- */
-export const useLandlordHostels = () => {
-  return useQuery<Hostel[], Error>({
-    queryKey: queryKeys.hostels.landlordHostels(),
-    queryFn: async () => {
-      const response = await getHostels({});
-      return response.results;
-    },
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
-  });
-};
-
 export const usePrefetchHostel = () => {
   const queryClient = useQueryClient();
   
@@ -115,8 +112,9 @@ export const useCreateHostel = () => {
   return useMutation({
     mutationFn: (data: Partial<Hostel>) => createHostel(data),
     onSuccess: () => {
-      // Invalidate hostels list to refetch
+      // Invalidate both general and landlord hostels lists
       queryClient.invalidateQueries({ queryKey: queryKeys.hostels.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.hostels.landlordHostels() });
       toast.success('Hostel created successfully!');
     },
     onError: (error: any) => {

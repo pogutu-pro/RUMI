@@ -250,8 +250,8 @@ export default function HostelDetailPage() {
           <div>
             <h2 className="text-xl font-semibold mb-4">Amenities</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {hostel.amenities_list.map((amenity) => (
-                <div key={amenity} className="flex items-center gap-3 text-sm">
+              {(hostel.amenities_list || hostel.amenities || []).map((amenity, index) => (
+                <div key={`${amenity}-${index}`} className="flex items-center gap-3 text-sm">
                   <div className="h-8 w-8 rounded-full bg-emerald-50 dark:bg-emerald-950 flex items-center justify-center">
                     {amenity.toLowerCase().includes('wifi') && <Wifi className="h-4 w-4 text-emerald-600" />}
                     {amenity.toLowerCase().includes('security') && <Shield className="h-4 w-4 text-emerald-600" />}
@@ -262,6 +262,11 @@ export default function HostelDetailPage() {
                   <span>{amenity}</span>
                 </div>
               ))}
+              {(!hostel.amenities_list && !hostel.amenities) && (
+                <div className="col-span-full text-muted-foreground text-sm">
+                  No amenities listed
+                </div>
+              )}
             </div>
           </div>
 

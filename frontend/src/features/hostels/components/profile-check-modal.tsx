@@ -43,7 +43,7 @@ export default function ProfileCheckModal({
             <User className="h-8 w-8 text-emerald-600" />
           </div>
           <DialogTitle className="text-2xl font-bold text-center">
-            Create Your Student Profile
+            Complete Your Student Profile
           </DialogTitle>
           <DialogDescription className="text-center text-base">
             To continue with your booking at <strong>{hostelName}</strong>
@@ -109,7 +109,7 @@ export default function ProfileCheckModal({
             onClick={onCreateProfile}
             className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
           >
-            Create Profile
+            Complete Profile
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         </div>

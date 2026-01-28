@@ -8,21 +8,39 @@ import { useGoogleLogin } from '../hooks/use-auth';
 
 interface GoogleAuthButtonProps {
   mode: 'login' | 'register';
-  onSuccess?: () => void;
+  onSuccess?: (userData: any) => void;
   onError?: (error: any) => void;
+  skipRoleSelection?: boolean; // For existing users
 }
 
-export function GoogleAuthButton({ mode, onSuccess, onError }: GoogleAuthButtonProps) {
+export function GoogleAuthButton({ mode, onSuccess, onError, skipRoleSelection = false }: GoogleAuthButtonProps) {
   const { mutate: googleLogin, isPending } = useGoogleLogin();
 
   const login = useReactGoogleLogin({
     onSuccess: async (codeResponse) => {
-      // Send the access token to the backend
-      // Note: For better security, consider using authorization code flow instead
-      googleLogin(codeResponse.access_token, {
-        onSuccess: () => onSuccess?.(),
-        onError: (err) => onError?.(err),
-      });
+      if (skipRoleSelection) {
+        // For existing users, complete login directly
+        googleLogin({ token: codeResponse.access_token, role: 'student' }, {
+          onSuccess: (response) => onSuccess?.(response),
+          onError: (err) => onError?.(err),
+        });
+      } else {
+        // For new users, get user info first for role selection
+        try {
+          const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: { Authorization: `Bearer ${codeResponse.access_token}` }
+          });
+          const userInfo = await response.json();
+          
+          // Call onSuccess with Google user data for role selection
+          onSuccess?.({
+            userInfo,
+            accessToken: codeResponse.access_token
+          });
+        } catch (error) {
+          onError?.(error);
+        }
+      }
     },
     onError: (errorResponse) => {
       console.error('Google Login Failed:', errorResponse);

@@ -41,14 +41,14 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { useHostels } from '@/features/hostels';
+import { useHostels, useLandlordHostels } from '@/features/hostels';
 
 export default function HostelsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('occupancy');
 
-  const { data: hostelsData, isLoading } = useHostels();
+  const { data: hostelsData, isLoading } = useLandlordHostels();
   const hostels = hostelsData?.results || [];
 
   // Filter hostels based on search and status

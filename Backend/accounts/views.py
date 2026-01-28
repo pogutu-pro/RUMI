@@ -1,5 +1,6 @@
 import uuid
 import re
+import requests
 from decimal import Decimal
 from django.conf import settings
 from django.core.cache import cache
@@ -508,7 +509,6 @@ class UserLoginView(APIView):
         response.set_cookie(
             key='rumi_access_token',
             value=access_token,
-            max_age=15 * 60,  # 15 minutes
             path='/',
             domain=None,
             secure=False,  # Set to True in production with HTTPS
@@ -3083,3 +3083,325 @@ class StudentActivityFeedView(APIView):
                 'activities': [],
                 'total': 0
             }, status=status.HTTP_200_OK)
+
+
+class CheckPasswordView(APIView):
+    """
+    Check if user has a usable password set
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        try:
+            user = request.user
+            has_password = user.has_usable_password()
+            
+            return Response({
+                'has_password': has_password,
+                'can_set_password': not has_password
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'error': 'Failed to check password status',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class SetPasswordView(APIView):
+    """
+    Set password for Google users who want to add email/password login
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        password = request.data.get('password')
+        
+        if not password:
+            return Response({
+                'error': 'Password is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = request.user
+            
+            # Check if user already has a password
+            if user.has_usable_password():
+                return Response({
+                    'error': 'You already have a password set. Use change password instead.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validate password strength
+            from .utils import validate_password_strength
+            try:
+                validate_password_strength(password)
+            except ValidationError as e:
+                return Response({
+                    'error': ' '.join(e.messages)
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Set password
+            user.set_password(password)
+            user.save(update_fields=['password'])
+            
+            # Log activity
+            UserActivityLog.objects.create(
+                user=user,
+                action_type='profile_update',
+                action_description='Password added for email login',
+                ip_address=self.get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                metadata={'auth_method': 'password_added'}
+            )
+            
+            return Response({
+                'message': 'Password set successfully. You can now login with email and password.'
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'error': 'Failed to set password',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CheckEmailView(APIView):
+    """
+    Check if email exists and what authentication method it uses
+    """
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email')
+        
+        if not email:
+            return Response({
+                'error': 'Email is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = User.objects.filter(email=email).first()
+            
+            if not user:
+                return Response({
+                    'exists': False,
+                    'auth_method': 'email',
+                    'message': 'No account found with this email'
+                }, status=status.HTTP_200_OK)
+            
+            # Check if user has Google profile picture or was created via Google
+            is_google_user = (
+                user.profile_picture and 
+                user.profile_picture.startswith('https://')
+            )
+            
+            return Response({
+                'exists': True,
+                'auth_method': 'google' if is_google_user else 'email',
+                'role': user.role,
+                'message': f'Account found. Please sign in with {"Google or email/password" if is_google_user else "email and password"}.',
+                'supports_password': True  # All users can potentially have passwords
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'error': 'Failed to check email',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GoogleOAuthView(APIView):
+    """
+    Google OAuth authentication endpoint
+    Handles Google token verification and user creation/login
+    """
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request):
+        access_token = request.data.get('access_token')
+        role = request.data.get('role', 'student')  # Default to student
+        
+        # Only allow student and landlord roles for Google OAuth
+        if role and role not in ['student', 'landlord']:
+            return Response({
+                'error': 'Google OAuth only supports student and landlord roles'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not access_token:
+            return Response({
+                'error': 'Access token is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Verify Google token
+            user_info = self.verify_google_token(access_token)
+            
+            if not user_info:
+                return Response({
+                    'error': 'Invalid Google token'
+                }, status=status.HTTP_401_UNAUTHORIZED)
+            
+            # Check if user exists and validate role
+            email = user_info.get('email')
+            existing_user = User.objects.filter(email=email).first()
+            
+            if existing_user:
+                # For existing users, verify they're using the correct role
+                if existing_user.role not in ['student', 'landlord']:
+                    return Response({
+                        'error': f'Account exists as {existing_user.role}. Please use email login.'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Update existing user with latest Google info
+                existing_user.first_name = user_info.get('given_name', existing_user.first_name)
+                existing_user.last_name = user_info.get('family_name', existing_user.last_name)
+                existing_user.profile_picture = user_info.get('picture', existing_user.profile_picture)
+                existing_user.last_login = timezone.now()
+                existing_user.save(update_fields=['first_name', 'last_name', 'profile_picture', 'last_login'])
+                
+                user = existing_user
+                is_new_user = False
+            else:
+                # Create new user
+                user = User.objects.create(
+                    email=email,
+                    first_name=user_info.get('given_name', ''),
+                    last_name=user_info.get('family_name', ''),
+                    role=role if role else 'student',  # Use role from request for new users
+                    is_verified=True,  # Google emails are verified
+                    is_active=True,
+                    profile_picture=user_info.get('picture'),
+                )
+                
+                # Create role-specific profile
+                user_role = role if role else 'student'
+                if user_role == 'student':
+                    StudentProfile.objects.create(
+                        user=user,
+                        is_profile_complete=False,
+                    )
+                elif user_role == 'landlord':
+                    LandlordProfile.objects.create(
+                        user=user,
+                        company_name=f'{user.first_name} Properties',
+                        national_id='GOOGLE' + str(user.id).zfill(10),
+                        bank_name='Pending',
+                        bank_account_number='Pending',
+                        bank_code='Pending',
+                        is_verified=False,  # Landlords need manual verification
+                        total_hostels=0,
+                    )
+                
+                is_new_user = True
+            
+            # Generate JWT tokens
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            refresh_token = str(refresh)
+            
+            # Log activity
+            UserActivityLog.objects.create(
+                user=user,
+                action_type='login',
+                action_description='Google OAuth login',
+                ip_address=self.get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                metadata={'auth_method': 'google_oauth'}
+            )
+            
+            # Get profile data
+            profile_data = self._get_user_profile_data(user)
+            
+            response = Response({
+                'access_token': access_token,
+                'refresh_token': refresh_token,
+                'token_type': 'Bearer',
+                'expires_in': 3600,
+                'user': profile_data,
+                'is_new_user': is_new_user
+            }, status=status.HTTP_200_OK)
+            
+            # Set access token cookie
+            response.set_cookie(
+                key='rumi_access_token',
+                value=access_token,
+                path='/',
+                domain=None,
+                secure=False,  # Set to True in production with HTTPS
+                httponly=True,
+                samesite='Lax'
+            )
+            
+            return response
+            
+        except Exception as e:
+            return Response({
+                'error': 'Authentication failed',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def verify_google_token(self, access_token):
+        """Verify Google access token and get user info"""
+        try:
+            # Call Google API to verify token
+            response = requests.get(
+                'https://www.googleapis.com/oauth2/v2/userinfo',
+                headers={'Authorization': f'Bearer {access_token}'}
+            )
+            
+            if response.status_code != 200:
+                return None
+            
+            return response.json()
+            
+        except requests.RequestException:
+            return None
+    
+    def get_client_ip(self, request):
+        """Get client IP address"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+    
+    def _get_user_profile_data(self, user):
+        """Get user profile data based on role"""
+        base_data = {
+            'id': user.id,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'role': user.role,
+            'is_verified': user.is_verified,
+            'phone_number': user.phone_number,
+            'profile_picture': user.profile_picture,
+            'date_joined': user.date_joined,
+        }
+        
+        # Add role-specific profile data
+        if user.role == 'student' and hasattr(user, 'student_profile'):
+            profile = user.student_profile
+            base_data.update({
+                'university': profile.university,
+                'student_id_number': profile.student_id_number,
+                'year_of_study': profile.year_of_study,
+                'course': profile.course,
+                'is_profile_complete': profile.is_profile_complete,
+            })
+        elif user.role == 'landlord' and hasattr(user, 'landlord_profile'):
+            profile = user.landlord_profile
+            base_data.update({
+                'company_name': profile.company_name,
+                'is_verified': profile.is_verified,
+                'total_hostels': profile.total_hostels,
+            })
+        elif user.role == 'caretaker' and hasattr(user, 'caretaker_profile'):
+            profile = user.caretaker_profile
+            base_data.update({
+                'hostel': profile.hostel.name if profile.hostel else None,
+                'is_active': profile.is_active,
+            })
+        
+        return base_data

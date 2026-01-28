@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // import { useTechSupportStore } from '@/features/support';
-import { useSupportHostels } from '@/features/support/hooks/use-support';
+import { useHostels } from '@/features/hostels';
 import { HostelTable } from '@/features/support';
 import { Badge } from '@/components/ui/badge';
 
@@ -23,8 +23,19 @@ interface HostelSupportPageProps {
 }
 
 export default function HostelSupportPage({ defaultStatus = "all" }: HostelSupportPageProps) {
-  const { data: response, isLoading: isLoadingHostels } = useSupportHostels();
-  const hostels = response?.data || [];
+  const { data: response, isLoading: isLoadingHostels } = useHostels();
+  const rawHostels = response?.results || [];
+  
+  // Transform hostels data to match TechSupportHostel interface
+  const hostels = rawHostels.map(hostel => ({
+    id: hostel.id,
+    name: hostel.name,
+    landlord_name: `Landlord ${hostel.id}`, // Mock landlord name since it's not in the API
+    location: `${hostel.address}, ${hostel.city}`,
+    status: hostel.status as 'pending' | 'active' | 'hidden' | 'flagged',
+    rooms_count: hostel.total_rooms,
+    is_verified: hostel.is_verified
+  }));
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState(defaultStatus);
 

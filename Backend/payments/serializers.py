@@ -35,7 +35,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     def get_landlord_details(self, obj):
         return {
             'id': obj.landlord.id,
-            'business_name': obj.landlord.business_name,
+            'company_name': obj.landlord.company_name or obj.landlord.user.get_full_name(),
         }
 
 
@@ -116,18 +116,10 @@ class LateFeeChargeSerializer(serializers.ModelSerializer):
         return None
 
 
-class TaxReportSerializer(serializers.ModelSerializer):
-    landlord_details = serializers.SerializerMethodField()
-
-    class Meta:
-        model = TaxReport
-        fields = '__all__'
-        read_only_fields = ['generated_at']
-
     def get_landlord_details(self, obj):
         return {
             'id': obj.landlord.id,
-            'business_name': obj.landlord.business_name,
+            'company_name': obj.landlord.company_name,
         }
 
 
@@ -142,7 +134,7 @@ class PaystackSubaccountSerializer(serializers.ModelSerializer):
     def get_landlord_details(self, obj):
         return {
             'id': obj.landlord.id,
-            'business_name': obj.landlord.business_name,
+            'company_name': obj.landlord.company_name,
         }
 
 
@@ -165,7 +157,7 @@ class PayoutSerializer(serializers.ModelSerializer):
     def get_landlord_details(self, obj):
         return {
             'id': obj.landlord.id,
-            'business_name': obj.landlord.business_name,
+            'company_name': obj.landlord.company_name,
         }
 
     def get_subaccount_details(self, obj):
@@ -241,6 +233,24 @@ class MpesaPaymentConfigSerializer(serializers.ModelSerializer):
     def get_landlord_details(self, obj):
         return {
             'id': obj.landlord.id,
-            'business_name': obj.landlord.business_name,
+            'company_name': obj.landlord.company_name,
+            'user': obj.landlord.user.get_full_name(),
+        }
+
+class TaxReportSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the TaxReport model.
+    """
+    landlord_details = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TaxReport
+        fields = '__all__'
+        read_only_fields = ['generated_at']
+
+    def get_landlord_details(self, obj):
+        return {
+            'id': obj.landlord.id,
+            'company_name': obj.landlord.company_name,
             'user': obj.landlord.user.get_full_name(),
         }

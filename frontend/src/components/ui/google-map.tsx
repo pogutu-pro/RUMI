@@ -1,31 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import dynamic from 'next/dynamic';
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
 import { BrandedLoader } from '@/components/ui/branded-loader';
 import { cn } from '@/lib/utils/cn';
-
-// Dynamically import react-map-gl/maplibre to avoid SSR issues
-const Map = dynamic(
-  () => import('react-map-gl/maplibre').then((mod) => mod.Map),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-full w-full bg-muted">
-        <BrandedLoader text="Loading Map" />
-      </div>
-    ),
-  },
-);
-
-const Marker = dynamic(
-  () => import('react-map-gl/maplibre').then((mod) => mod.Marker),
-  {
-    ssr: false,
-  },
-);
 
 interface LatLng {
   lat: number;
@@ -38,7 +15,7 @@ interface MapMarker {
   title: string;
 }
 
-interface MapLibreMapProps extends React.HTMLAttributes<HTMLDivElement> {
+interface GoogleMapProps extends React.HTMLAttributes<HTMLDivElement> {
   center: LatLng;
   zoom?: number;
   markers?: MapMarker[];
@@ -47,7 +24,7 @@ interface MapLibreMapProps extends React.HTMLAttributes<HTMLDivElement> {
   onMapClick?: (coords: LatLng) => void;
 }
 
-export function MapLibreMap({
+export function GoogleMap({
   center,
   zoom = 14,
   markers = [],
@@ -56,10 +33,86 @@ export function MapLibreMap({
   onMapClick,
   className,
   ...props
-}: MapLibreMapProps) {
-  const [loaded, setLoaded] = React.useState(false);
+}: GoogleMapProps) {
+  const mapRef = React.useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
-  const handleLoad = () => setLoaded(true);
+  React.useEffect(() => {
+    const initMap = async () => {
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      
+      if (!apiKey) {
+        setError('Google Maps API key not found');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Load Google Maps script
+        if (!window.google) {
+          const script = document.createElement('script');
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+          script.async = true;
+          document.head.appendChild(script);
+          
+          await new Promise((resolve, reject) => {
+            script.onload = resolve;
+            script.onerror = reject;
+          });
+        }
+        
+        if (mapRef.current && window.google) {
+          const mapInstance = new google.maps.Map(mapRef.current, {
+            center,
+            zoom,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+          });
+
+          if (onMapClick) {
+            mapInstance.addListener('click', (e: google.maps.MapMouseEvent) => {
+              if (e.latLng) {
+                onMapClick({
+                  lat: e.latLng.lat(),
+                  lng: e.latLng.lng()
+                });
+              }
+            });
+          }
+
+          // Add markers
+          markers.forEach(({ position, title }) => {
+            new google.maps.Marker({
+              position,
+              map: mapInstance,
+              title,
+            });
+          });
+        }
+      } catch (err) {
+        console.error('Error loading Google Maps:', err);
+        setError('Failed to load Google Maps');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initMap();
+  }, [center.lat, center.lng, zoom, onMapClick, markers]);
+
+  if (error) {
+    return (
+      <div
+        className={cn('rounded-xl overflow-hidden shadow-lg bg-gray-100 flex items-center justify-center', className)}
+        style={{ height, width }}
+        {...props}
+      >
+        <p className="text-gray-500">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -67,48 +120,14 @@ export function MapLibreMap({
       style={{ height, width }}
       {...props}
     >
-      {!loaded && (
+      {loading && (
         <div className="flex items-center justify-center h-full w-full bg-muted">
           <BrandedLoader text="Loading Map" />
         </div>
       )}
-
-      <Map
-        mapLib={maplibregl}
-        initialViewState={{
-          longitude: center.lng,
-          latitude: center.lat,
-          zoom,
-        }}
-        mapStyle="https://demotiles.maplibre.org/style.json" // Free OpenStreetMap style
-        style={{ height, width }}
-        onLoad={handleLoad}
-        onClick={(evt) => {
-          if (evt.lngLat) {
-            onMapClick?.({ lat: evt.lngLat.lat, lng: evt.lngLat.lng });
-          }
-        }}
-      >
-        {markers.map(({ id, position, title }) => (
-          <Marker
-            key={id}
-            longitude={position.lng}
-            latitude={position.lat}
-            anchor="bottom"
-            color="#007aff"
-          >
-            <div className="relative">
-             <BrandedLoader size={40} text="" className="p-0" />
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap">
-                {title}
-              </div>
-            </div>
-          </Marker>
-        ))}
-      </Map>
+      <div ref={mapRef} style={{ height, width, display: loading ? 'none' : 'block' }} />
     </div>
   );
 }
 
-export { MapLibreMap as GoogleMap };
-export default MapLibreMap;
+export default GoogleMap;

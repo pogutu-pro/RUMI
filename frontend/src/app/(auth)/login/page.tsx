@@ -5,12 +5,20 @@ import { useSearchParams } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { LoginForm } from '@/features/auth';
+import { LoginFormNew } from '@/features/auth';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const sessionExpired = searchParams?.get('session_expired') === 'true';
   const verified = searchParams?.get('verified') === 'true';
+  const redirectUrl = searchParams?.get('redirect');
+
+  // Save redirect URL to localStorage if provided
+  React.useEffect(() => {
+    if (redirectUrl) {
+      localStorage.setItem('redirectAfterLogin', redirectUrl);
+    }
+  }, [redirectUrl]);
 
   return (
     <div className="w-full">
@@ -49,7 +57,7 @@ export default function LoginPage() {
             )}
           </div>
 
-          <LoginForm />
+          <LoginFormNew />
         </div>
       </div>
     </div>

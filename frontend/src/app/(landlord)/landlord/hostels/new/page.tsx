@@ -99,7 +99,13 @@ const initialFormData: HostelFormData = {
   caretakerName: '',
   caretakerPhone: '',
   safetyFeatures: [],
-  roomTypes: [],
+  roomTypes: [{
+    name: '',
+    bedsPerRoom: 1,
+    genderRestriction: '',
+    amenities: [],
+    monthlyRent: 0
+  }],
   images: [],
   imageFiles: [],
   photoCategories: {},
@@ -214,7 +220,13 @@ export default function NewHostelWizardPage() {
         if (!formData.caretakerPhone.trim()) newErrors.caretakerPhone = 'Caretaker phone is required';
         break;
       case 3:
-        // Room types are optional for initial creation
+        // Ensure at least basic room configuration is set
+        if (!formData.roomTypes[0]?.bedsPerRoom || formData.roomTypes[0].bedsPerRoom < 1) {
+          newErrors.bedsPerRoom = 'Please select beds per room';
+        }
+        if (!formData.roomTypes[0]?.monthlyRent || formData.roomTypes[0].monthlyRent < 1) {
+          newErrors.monthlyRent = 'Please enter monthly rent amount';
+        }
         break;
       case 4:
         if (formData.depositAmount < 0) newErrors.depositAmount = 'Deposit cannot be negative';
@@ -277,6 +289,17 @@ export default function NewHostelWizardPage() {
 
     try {
       // Transform form data to API format
+      // Determine hostel_type based on room configuration
+      let hostelType = 'mixed'; // default
+      if (formData.roomTypes.length > 0 && formData.roomTypes[0]?.bedsPerRoom) {
+        const bedsPerRoom = formData.roomTypes[0].bedsPerRoom;
+        if (bedsPerRoom === 1) {
+          hostelType = 'single_rooms';
+        } else if (bedsPerRoom > 1) {
+          hostelType = 'shared_rooms';
+        }
+      }
+      
       const apiData = {
         name: formData.name,
         description: formData.description,
@@ -285,10 +308,11 @@ export default function NewHostelWizardPage() {
         university: campusOptions.find(c => c.value === formData.campus)?.label || formData.campus, // Map campus to university
         campus: formData.campus,
         gender_policy: formData.genderPolicy,
+        hostel_type: hostelType, // Required field for backend
         tenant_type: formData.tenantType,
         total_rooms: formData.totalRooms,
         total_floors: formData.totalFloors,
-        base_price: formData.roomTypes[0]?.monthlyRent?.toString() || '5000',
+        base_price: (formData.roomTypes[0]?.monthlyRent || 5000).toString(),
         deposit_amount: formData.depositAmount,
         caretaker_name: formData.caretakerName,
         caretaker_phone: formData.caretakerPhone,
@@ -763,7 +787,7 @@ export default function NewHostelWizardPage() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="bedsPerRoom" className="text-base font-bold">
-                        Beds Per Room
+                        Beds Per Room *
                       </Label>
                       <Select
                         value={formData.roomTypes[0]?.bedsPerRoom?.toString() || '1'}
@@ -776,7 +800,7 @@ export default function NewHostelWizardPage() {
                           monthlyRent: formData.roomTypes[0]?.monthlyRent || 0
                         }])}
                       >
-                        <SelectTrigger className="h-12 text-base">
+                        <SelectTrigger className={cn("h-12 text-base", errors.bedsPerRoom && "border-red-500")}>
                           <SelectValue placeholder="Select" />
                         </SelectTrigger>
                         <SelectContent>
@@ -787,11 +811,20 @@ export default function NewHostelWizardPage() {
                           <SelectItem value="6" className="text-base">6 Beds</SelectItem>
                         </SelectContent>
                       </Select>
+                      {errors.bedsPerRoom && (
+                        <p className="text-sm text-red-500 flex items-center gap-1">
+                          <AlertCircle className="h-4 w-4" />
+                          {errors.bedsPerRoom}
+                        </p>
+                      )}
+                      <p className="text-sm text-muted-foreground">
+                        This determines your hostel type (Single Rooms vs Shared Rooms)
+                      </p>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="monthlyRent" className="text-base font-bold">
-                        Monthly Rent (KES) per bed
+                        Monthly Rent (KES) per bed *
                       </Label>
                       <Input
                         id="monthlyRent"
@@ -807,8 +840,14 @@ export default function NewHostelWizardPage() {
                           amenities: formData.roomTypes[0]?.amenities || [],
                           monthlyRent: parseInt(e.target.value) || 0
                         }])}
-                        className="h-12 text-base"
+                        className={cn("h-12 text-base", errors.monthlyRent && "border-red-500")}
                       />
+                      {errors.monthlyRent && (
+                        <p className="text-sm text-red-500 flex items-center gap-1">
+                          <AlertCircle className="h-4 w-4" />
+                          {errors.monthlyRent}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

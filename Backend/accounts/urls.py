@@ -10,6 +10,10 @@ urlpatterns = [
     path('verify-email/', views.EmailVerificationView.as_view(), name='email_verification'),
     path('resend-otp/', views.ResendOTPView.as_view(), name='resend_otp'),
     path('login/', views.UserLoginView.as_view(), name='user_login'),
+    path('check-email/', views.CheckEmailView.as_view(), name='check_email'),
+    path('check-password/', views.CheckPasswordView.as_view(), name='check_password'),
+    path('set-password/', views.SetPasswordView.as_view(), name='set_password'),
+    path('auth/google/', views.GoogleOAuthView.as_view(), name='google_oauth'),
     path('refresh-token/', views.TokenRefreshView.as_view(), name='token_refresh'),
     path('logout/', views.UserLogoutView.as_view(), name='user_logout'),
 

@@ -847,3 +847,85 @@ class LandlordStudentManagementView(APIView):
             'total_tenants': len(students_data),
             'results': students_data
         }, status=status.HTTP_200_OK)
+
+
+@swagger_auto_schema(
+    tags=['Landlord API']
+)
+class LandlordHostelsView(APIView):
+    """
+    Landlord Hostels API
+    
+    Retrieve landlord's own hostels for dashboard management.
+    
+    GET: List landlord's hostels with basic information
+    
+    Authentication Required: JWT Token
+    Permissions: Landlords only
+    """
+    
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Get Landlord's Hostels
+        
+        Retrieve all hostels owned by the authenticated landlord.
+        
+        Returns hostel list with:
+        - Basic hostel information
+        - Room counts and availability
+        - Revenue and occupancy data
+        - Status and verification info
+        """
+        if request.user.role != 'landlord':
+            return Response({
+                'error': 'Access denied. Landlord role required.'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            landlord_profile = request.user.landlord_profile
+        except Exception:
+            return Response({
+                'error': 'Landlord profile not found.'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get landlord's hostels
+        hostels = Hostel.objects.filter(landlord=landlord_profile).order_by('-created_at')
+        
+        results = []
+        for hostel in hostels:
+            # Calculate occupancy
+            occupied_rooms = Booking.objects.filter(
+                room__hostel=hostel,
+                status__in=['confirmed', 'reserved']
+            ).count()
+            
+            results.append({
+                'id': hostel.id,
+                'name': hostel.name,
+                'description': hostel.description,
+                'address': hostel.address,
+                'city': hostel.city,
+                'university': hostel.university,
+                'gender_policy': hostel.gender_policy,
+                'hostel_type': hostel.hostel_type,
+                'status': hostel.status,
+                'total_rooms': hostel.total_rooms,
+                'available_rooms': hostel.available_rooms,
+                'base_price': str(hostel.base_price),
+                'currency': hostel.currency,
+                'rating': float(hostel.rating),
+                'review_count': hostel.review_count,
+                'images': hostel.images or [],
+                'is_verified': hostel.is_verified,
+                'created_at': hostel.created_at.isoformat(),
+                'updated_at': hostel.updated_at.isoformat(),
+            })
+        
+        return Response({
+            'current_page': 1,
+            'total_pages': 1,
+            'count': len(results),
+            'results': results
+        }, status=status.HTTP_200_OK)

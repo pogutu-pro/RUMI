@@ -6,6 +6,9 @@ urlpatterns = [
     path('dashboard/overview/', views.LandlordDashboardOverviewView.as_view(), name='landlord_dashboard_overview'),
     path('dashboard/activity-feed/', views.LandlordActivityFeedView.as_view(), name='landlord_activity_feed'),
     
+    # Hostel Management
+    path('hostels/', views.LandlordHostelsView.as_view(), name='landlord_hostels'),
+    
     # Payment Management
     path('payments/reports/', views.LandlordPaymentReportsView.as_view(), name='landlord_payment_reports'),
     path('payments/reports/generate/', views.LandlordPaymentReportsView.as_view(), name='landlord_generate_report'),

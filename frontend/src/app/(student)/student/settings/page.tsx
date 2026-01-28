@@ -2,6 +2,8 @@
 
 import * as React from 'react';
 import { useTheme } from 'next-themes';
+import { useAuth } from '@/features/auth';
+import { useCheckPasswordStatus } from '@/features/auth/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -25,19 +27,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Bell, Moon, Sun, Globe, Smartphone, Mail, Shield } from 'lucide-react';
+import { Bell, Moon, Sun, Globe, Smartphone, Mail, Shield, Key, Lock } from 'lucide-react';
 import { toast } from 'sonner';
+import { PasswordSetupModal } from '@/features/auth/components/password-setup-modal';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
+  const { data: passwordStatus } = useCheckPasswordStatus();
   const [mounted, setMounted] = React.useState(false);
+  const [showPasswordModal, setShowPasswordModal] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
+  const hasPassword = passwordStatus?.has_password ?? false;
+
   const handleNotificationToggle = (type: string, enabled: boolean) => {
     toast.success(`${type} notifications ${enabled ? 'enabled' : 'disabled'}`);
+  };
+
+  const handleSetPassword = () => {
+    setShowPasswordModal(true);
   };
 
   if (!mounted) {
@@ -187,6 +199,63 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5 text-emerald-600" />
+                Password & Security
+              </CardTitle>
+              <CardDescription>
+                Manage your password and authentication preferences.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {!hasPassword ? (
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50 border-blue-200">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-blue-100 text-blue-600">
+                      <Key className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium">Set Up Password</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Add a password for email sign-in convenience
+                      </p>
+                    </div>
+                  </div>
+                  <Button onClick={handleSetPassword}>
+                    Set Password
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col space-y-1">
+                      <Label>Current Password</Label>
+                      <span className="text-sm text-muted-foreground">
+                        You have a password set for your account
+                      </span>
+                    </div>
+                    <Button variant="outline">
+                      Change Password
+                    </Button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col space-y-1">
+                      <Label>Two-Factor Authentication</Label>
+                      <span className="text-sm text-muted-foreground">
+                        Add an extra layer of security to your account
+                      </span>
+                    </div>
+                    <Button variant="outline">
+                      Enable 2FA
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-emerald-600" />
                 Data & Privacy
               </CardTitle>
@@ -217,6 +286,11 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <PasswordSetupModal 
+        open={showPasswordModal} 
+        onOpenChange={setShowPasswordModal} 
+      />
     </div>
   );
 }

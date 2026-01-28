@@ -37,7 +37,7 @@ import {
   confirmPayment,
   checkStudentProfileExists 
 } from '@/features/bookings';
-import { toggleFavoriteHostel } from '@/features/hostels';
+import { toggleFavoriteHostel, hostelsApi } from '@/features/hostels';
 import { useAuth } from '@/features/auth';
 import { useBookingStore } from '@/features/bookings';
 import RoomAvailabilityCalendar from './room-availability-calendar';
@@ -103,14 +103,21 @@ export function HostelBookingWidget({
     return isNaN(date.getTime()) ? undefined : date;
   }, [moveInDate]);
 
-  const selectedRoom = useMemo(
-    () => hostel.rooms?.find((r) => String(r.id) === selectedRoomId) || null,
-    [hostel.rooms, selectedRoomId],
-  );
+  // Queries & Mutations
+  const { data: roomsData, isLoading: isLoadingRooms } = useQuery({
+    queryKey: ['hostel-rooms', hostel.id],
+    queryFn: () => hostelsApi.getRooms({ hostel: hostel.id }),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const availableRooms = useMemo(
-    () => hostel.rooms?.filter((room) => room.available) || [],
-    [hostel.rooms],
+    () => roomsData?.rooms?.filter((room) => room.is_available) || [],
+    [roomsData?.rooms],
+  );
+
+  const selectedRoom = useMemo(
+    () => availableRooms.find((r) => String(r.room_id) === selectedRoomId) || null,
+    [availableRooms, selectedRoomId],
   );
 
   const totalPrice = useMemo(() => {
@@ -336,22 +343,38 @@ export function HostelBookingWidget({
       {/* Room Selection */}
       <div>
         <Label className="text-xs font-bold uppercase text-slate-500 mb-3 block">Choose Your Room</Label>
-        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
-          {hostel.rooms?.map((room) => (
-            <RoomSelectionCard
-              key={room.id}
-              room={room}
-              isSelected={selectedRoomId === String(room.id)}
-              onSelect={selectRoom}
-              pricePerMonth={hostel.pricePerMonth}
-            />
-          ))}
-          {(!hostel.rooms || hostel.rooms.length === 0) && (
-             <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-               No rooms available for booking right now.
-             </div>
-          )}
-        </div>
+        {isLoadingRooms ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-20 bg-slate-100 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+            {availableRooms.map((room) => (
+              <RoomSelectionCard
+                key={room.room_id}
+                room={{
+                  id: room.room_id,
+                  name: room.room_number,
+                  price: room.base_price,
+                  capacity: room.capacity,
+                  available: room.is_available,
+                  description: room.description || `Room ${room.room_number}`,
+                  amenities: room.amenities || {},
+                }}
+                isSelected={selectedRoomId === String(room.room_id)}
+                onSelect={(roomId) => selectRoom(roomId)}
+                pricePerMonth={room.base_price}
+              />
+            ))}
+            {availableRooms.length === 0 && (
+               <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                 No rooms available for booking right now.
+               </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Details Sections */}
@@ -653,7 +676,7 @@ export function HostelBookingWidget({
       <ProfileCheckModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
-        onCreateProfile={() => router.push('/student/profile/create')}
+        onCreateProfile={() => router.push('/student/profile')}
         hostelName={hostel.name}
       />
 

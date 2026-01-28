@@ -39,9 +39,20 @@ const DEFAULT_REDIRECT = '/student/dashboard';
 
 function useAuthRedirect() {
   const router = useRouter();
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
 
   const redirectUser = React.useCallback(
     (role: string | undefined) => {
+      // Check for redirect URL first
+      const redirectTo = searchParams?.get('redirect') || localStorage.getItem('redirectAfterLogin');
+      
+      if (redirectTo) {
+        localStorage.removeItem('redirectAfterLogin');
+        router.push(redirectTo);
+        return;
+      }
+      
+      // Default role-based redirect
       if (!role) {
         router.push(DEFAULT_REDIRECT);
         return;
@@ -49,7 +60,7 @@ function useAuthRedirect() {
       const path = AUTH_REDIRECTS[role] || DEFAULT_REDIRECT;
       router.push(path);
     },
-    [router]
+    [router, searchParams]
   );
 
   return { redirectUser };
@@ -90,30 +101,26 @@ export function useAuth() {
     setProfile: storeSetProfile,
     uploadPhoto: async (file: File) => {
         const response = await authApi.uploadProfilePicture(file);
-        // Safely access avatar from profile
-        const newAvatar = (response.profile as any)?.avatar || response.user?.avatar;
+        console.log('Backend response:', response); // Debug log
         
-        // Update user state with new avatar
-        storeLogin({
-            user: { ...user!, avatar: newAvatar },
-             profile: response.profile,
-             accessToken: getAccessToken() || '', 
-             refreshToken: '', 
+        // Update user state with new avatar URL using updateUser
+        const updateUser = useAuthStore.getState().updateUser;
+        updateUser({
+            avatar: response.user.profile_picture,
+            profile_picture: response.user.profile_picture 
         });
-        // Also invalidate queries
+        
+        // Invalidate queries to refresh data
         queryClient.invalidateQueries({ queryKey: ['profile'] });
         queryClient.invalidateQueries({ queryKey: ['user'] });
     },
     updateProfile: async (data: any) => {
          const response = await authApi.updateProfile(data);
-          storeLogin({
-            user: { ...user!, ...data }, // Optimistic update or waiting for response
-            profile: response.profile,
-            accessToken: getAccessToken() || '',
-            refreshToken: '',
-        });
-        queryClient.invalidateQueries({ queryKey: ['profile'] });
-        queryClient.invalidateQueries({ queryKey: ['user'] });
+         const updateUser = useAuthStore.getState().updateUser;
+         updateUser(data); // Optimistic update
+         
+         queryClient.invalidateQueries({ queryKey: ['profile'] });
+         queryClient.invalidateQueries({ queryKey: ['user'] });
     }
   };
 }
@@ -214,13 +221,80 @@ export function useLogin() {
 }
 
 /**
- * Hook for Google login
+ * Hook for checking password status
+ */
+export function useCheckPasswordStatus() {
+  return useQuery({
+    queryKey: ['passwordStatus'],
+    queryFn: () => authApi.checkPasswordStatus(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Hook for setting password for Google users
+ */
+export function useSetPassword() {
+  return useMutation({
+    mutationFn: (password: string) => authApi.setPassword(password),
+    onSuccess: () => {
+      toast.success('Password set successfully! You can now login with email and password.');
+    },
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.error ||
+        error?.message ||
+        'Failed to set password. Please try again.';
+      toast.error(message);
+    },
+  });
+}
+
+/**
+ * Hook for checking email and authentication method
+ */
+export function useCheckEmail() {
+  return useMutation({
+    mutationFn: (email: string) => authApi.checkEmail(email),
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to check email. Please try again.';
+      toast.error(message);
+    },
+  });
+}
+
+/**
+ * Hook for completing Google login after role selection
+ */
+export function useCompleteGoogleLogin() {
+  const handleSuccess = useAuthSuccess();
+
+  return useMutation({
+    mutationFn: ({ token, role }: { token: string; role: string }) => authApi.googleLogin(token, role),
+    onSuccess: (response: AuthResponse) => {
+      handleSuccess(response, 'Successfully signed in with Google!');
+    },
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Google login failed. Please try again.';
+      toast.error(message);
+    },
+  });
+}
+
+/**
+ * Hook for Google login (deprecated - use useCompleteGoogleLogin)
  */
 export function useGoogleLogin() {
   const handleSuccess = useAuthSuccess();
 
   return useMutation({
-    mutationFn: (token: string) => authApi.googleLogin(token),
+    mutationFn: ({ token, role }: { token: string; role: string }) => authApi.googleLogin(token, role),
     onSuccess: (response: AuthResponse) => {
       handleSuccess(response, 'Successfully signed in with Google!');
     },

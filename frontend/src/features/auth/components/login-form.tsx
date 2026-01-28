@@ -10,8 +10,9 @@ import { FormField, PasswordField } from '@/components/ui/form-fields';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { GoogleAuthButton } from './google-auth-button';
+import { GoogleRoleSelection } from './google-role-selection';
 import { OAuthDivider } from './oauth-divider';
-import { useLogin } from '../hooks/use-auth';
+import { useLogin, useCheckEmail } from '../hooks/use-auth';
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth.schema';
 import { cn } from '@/lib/utils/cn';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
@@ -25,7 +26,23 @@ interface LoginFormProps {
   redirectTo?: string;
 }
 
-type Step = 'email' | 'password';
+type Step = 'email' | 'password' | 'google-role-selection' | 'google-required';
+
+interface GoogleData {
+  userInfo: {
+    email: string;
+    name: string;
+    picture: string;
+  };
+  accessToken: string;
+}
+
+interface EmailCheckResult {
+  exists: boolean;
+  auth_method: 'google' | 'email';
+  role?: string;
+  message: string;
+}
 
 export function LoginForm({
   onSuccess,
@@ -36,8 +53,11 @@ export function LoginForm({
   redirectTo,
 }: LoginFormProps) {
   const { mutate: login, isPending } = useLogin();
+  const { mutate: checkEmail, isPending: isCheckingEmail } = useCheckEmail();
   const [serverError, setServerError] = useState<string | null>(null);
   const [step, setStep] = useState<Step>('email');
+  const [googleData, setGoogleData] = useState<GoogleData | null>(null);
+  const [emailCheckResult, setEmailCheckResult] = useState<EmailCheckResult | null>(null);
 
   const {
     register,
@@ -62,10 +82,46 @@ export function LoginForm({
     }
   }, [setFocus, step]);
 
+  const handleGoogleSuccess = (data: GoogleData) => {
+    setGoogleData(data);
+    setStep('google-role-selection');
+  };
+
+  const handleGoogleError = (err: any) => {
+    setServerError(err?.message || 'Google sign in failed. Please try again.');
+  };
+
+  const handleBackToEmail = () => {
+    setStep('email');
+    setGoogleData(null);
+  };
+
   const handleContinue = async () => {
     const isEmailValid = await trigger('email');
     if (isEmailValid) {
-      setStep('password');
+      setServerError(null);
+      
+      // Check email and authentication method
+      checkEmail(emailValue, {
+        onSuccess: (result: EmailCheckResult) => {
+          setEmailCheckResult(result);
+          
+          if (!result.exists) {
+            // New user - go to password step for regular registration
+            setStep('password');
+          } else if (result.auth_method === 'google') {
+            // Existing Google user - show choice between Google and password
+            setStep('google-required');
+          } else {
+            // Regular email user - go to password step
+            setStep('password');
+          }
+        },
+        onError: (err: any) => {
+          // If check fails, default to password flow
+          setStep('password');
+        }
+      });
     }
   };
 
@@ -138,16 +194,24 @@ export function LoginForm({
             type="button"
             onClick={handleContinue}
             className="w-full h-12 text-base font-semibold bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg"
+            disabled={isCheckingEmail}
           >
-            Continue
+            {isCheckingEmail ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                Checking...
+              </>
+            ) : (
+              'Continue'
+            )}
           </Button>
 
           <OAuthDivider />
 
           <GoogleAuthButton
             mode="login"
-            onSuccess={() => onSuccess?.()}
-            onError={(err) => setServerError(err?.message)}
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
           />
 
           {showRegisterLink && (
@@ -230,6 +294,76 @@ export function LoginForm({
             )}
           </Button>
         </form>
+      )}
+
+      {step === 'google-required' && emailCheckResult && (
+        <div className="space-y-4">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Choose Your Sign-In Method
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Your account supports multiple sign-in methods. Choose what's most convenient for you.
+            </p>
+            <div className="bg-blue-50 p-3 rounded-lg mb-4">
+              <p className="text-sm text-blue-800">
+                <strong>Account:</strong> {emailValue}<br/>
+                <strong>Role:</strong> {emailCheckResult.role}<br/>
+                <strong>Methods:</strong> Google + Email/Password
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <GoogleAuthButton
+              mode="login"
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              skipRoleSelection={true}
+            />
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-500">Or</span>
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full h-12 text-base font-semibold"
+              onClick={() => setStep('password')}
+            >
+              Continue with Email and Password
+            </Button>
+          </div>
+
+          <Button
+            variant="ghost"
+            className="w-full"
+            onClick={handleBackToEmail}
+          >
+            Back to sign in options
+          </Button>
+        </div>
+      )}
+
+      {step === 'google-role-selection' && googleData && (
+        <GoogleRoleSelection
+          userInfo={googleData.userInfo}
+          accessToken={googleData.accessToken}
+          onBack={handleBackToEmail}
+        />
       )}
     </div>
   );

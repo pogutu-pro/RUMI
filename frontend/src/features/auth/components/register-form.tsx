@@ -10,6 +10,7 @@ import { FormField, PasswordField } from '@/components/ui/form-fields';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { GoogleAuthButton } from './google-auth-button';
+import { GoogleRoleSelection } from './google-role-selection';
 import { OAuthDivider } from './oauth-divider';
 import { RoleSelector } from './role-selector';
 import { useRegister } from '../hooks/use-auth';
@@ -28,15 +29,39 @@ interface RegisterFormProps {
   className?: string;
 }
 
-type Step = 'email' | 'details';
+type Step = 'email' | 'details' | 'google-role-selection';
 type Role = 'student' | 'landlord' | 'caretaker';
+
+interface GoogleData {
+  userInfo: {
+    email: string;
+    name: string;
+    picture: string;
+  };
+  accessToken: string;
+}
 
 export function RegisterForm({ onSuccess, onError, className }: RegisterFormProps) {
   const [step, setStep] = useState<Step>('email');
   const [role, setRole] = useState<Role>('student');
   const [serverError, setServerError] = useState<string | null>(null);
+  const [googleData, setGoogleData] = useState<GoogleData | null>(null);
 
   const { mutate: register, isPending } = useRegister();
+
+  const handleGoogleSuccess = (data: GoogleData) => {
+    setGoogleData(data);
+    setStep('google-role-selection');
+  };
+
+  const handleGoogleError = (err: any) => {
+    setServerError(err?.message || 'Google sign in failed. Please try again.');
+  };
+
+  const handleBackToEmail = () => {
+    setStep('email');
+    setGoogleData(null);
+  };
 
   const schema = useMemo(() => {
     switch (role) {
@@ -133,8 +158,8 @@ export function RegisterForm({ onSuccess, onError, className }: RegisterFormProp
 
           <GoogleAuthButton
             mode="register"
-            onSuccess={() => onSuccess?.()}
-            onError={(err) => setServerError(err?.message)}
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
           />
           
           <div className="text-center mt-4">
@@ -228,12 +253,23 @@ export function RegisterForm({ onSuccess, onError, className }: RegisterFormProp
               />
             </div>
 
-            <div className="text-xs text-gray-500 mt-4">
-              By selecting <strong>Agree and continue</strong>, I agree to Rumi&apos;s{' '}
-              <Link href="/terms" className="text-blue-600 hover:underline">Terms of Service</Link>,{' '}
-              <Link href="/payments-terms" className="text-blue-600 hover:underline">Payments Terms of Service</Link>, and{' '}
-              <Link href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>.
+            <div className="flex items-start space-x-2 pt-2">
+              <input
+                type="checkbox"
+                id="agree_to_terms"
+                className="mt-1 h-4 w-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                {...registerField('agree_to_terms')}
+              />
+              <label htmlFor="agree_to_terms" className="text-xs text-gray-500">
+                By selecting <strong>Agree and continue</strong>, I agree to Rumi&apos;s{' '}
+                <Link href="/terms" className="text-blue-600 hover:underline">Terms of Service</Link>,{' '}
+                <Link href="/payments-terms" className="text-blue-600 hover:underline">Payments Terms of Service</Link>, and{' '}
+                <Link href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>.
+              </label>
             </div>
+            {errors.agree_to_terms && (
+              <p className="text-xs text-red-600">{errors.agree_to_terms.message}</p>
+            )}
 
             <Button
               type="submit"
@@ -251,6 +287,14 @@ export function RegisterForm({ onSuccess, onError, className }: RegisterFormProp
             </Button>
           </div>
         </form>
+      )}
+
+      {step === 'google-role-selection' && googleData && (
+        <GoogleRoleSelection
+          userInfo={googleData.userInfo}
+          accessToken={googleData.accessToken}
+          onBack={handleBackToEmail}
+        />
       )}
     </div>
   );

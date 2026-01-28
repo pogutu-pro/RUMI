@@ -29,12 +29,43 @@ async function login(data: LoginRequest): Promise<AuthResponse> {
 }
 
 /**
- * Google OAuth login
- * Endpoint: POST /api/v1/accounts/google/
- * Note: This endpoint may need to be implemented on the backend
+ * Check email and authentication method
+ * Endpoint: POST /api/v1/accounts/check-email/
  */
-async function googleLogin(token: string): Promise<AuthResponse> {
-  const res = await axios.post<AuthResponse>('/accounts/google/', { token });
+async function checkEmail(email: string): Promise<{
+  exists: boolean;
+  auth_method: 'google' | 'email';
+  role?: string;
+  message: string;
+}> {
+  const res = await axios.post('/accounts/check-email/', { email });
+  return res.data;
+}
+
+/**
+ * Check if user has a usable password
+ * Endpoint: GET /api/v1/accounts/check-password/
+ */
+async function checkPasswordStatus(): Promise<{ has_password: boolean; can_set_password: boolean }> {
+  const res = await axios.get('/accounts/check-password/');
+  return res.data;
+}
+
+/**
+ * Set password for Google users
+ * Endpoint: POST /api/v1/accounts/set-password/
+ */
+async function setPassword(password: string): Promise<{ message: string }> {
+  const res = await axios.post('/accounts/set-password/', { password });
+  return res.data;
+}
+
+/**
+ * Google OAuth login
+ * Endpoint: POST /api/v1/accounts/auth/google/
+ */
+async function googleLogin(token: string, role: string = 'student'): Promise<AuthResponse> {
+  const res = await axios.post<AuthResponse>('/accounts/auth/google/', { access_token: token, role });
   return res.data;
 }
 
@@ -159,7 +190,7 @@ async function updateProfile(
  */
 async function uploadProfilePicture(file: File): Promise<ProfileResponse> {
   const formData = new FormData();
-  formData.append('picture', file);
+  formData.append('file', file);
 
   const res = await axios.post<ProfileResponse>(
     '/accounts/profile/picture/',
@@ -221,6 +252,9 @@ async function getPermissions(): Promise<PermissionsResponse> {
 
 export const authApi = {
   login,
+  checkEmail,
+  checkPasswordStatus,
+  setPassword,
   googleLogin,
   registerStudent,
   registerLandlord,
