@@ -26,7 +26,9 @@ import {
   UserX,
   UsersRound,
   GitCompare,
+  DollarSign
 } from 'lucide-react';
+
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -72,9 +74,11 @@ const navItems: NavItem[] = [
     items: [
       { title: 'Check-Ins', href: '/caretaker/check-in', icon: UserPlus },
       { title: 'Check-Outs', href: '/caretaker/check-out', icon: UserX },
+      { title: 'Rent Roll', href: '/caretaker/payments', icon: DollarSign },
       { title: 'Pending Approvals', href: '/caretaker/approvals', icon: ClipboardCheck },
     ],
   },
+
   {
     title: 'Tenants',
     icon: Users,

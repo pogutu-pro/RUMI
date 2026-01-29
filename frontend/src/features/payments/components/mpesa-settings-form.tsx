@@ -70,7 +70,7 @@ export function MpesaSettingsForm({ onSuccess, onCancel }: MpesaSettingsFormProp
             </SelectTrigger>
             <SelectContent>
                 <SelectItem value="till_number" className="py-3 text-base font-medium">Buy Goods / Till Number</SelectItem>
-                <SelectItem value="paybill_number" className="py-3 text-base font-medium">Paybill Number</SelectItem>
+                <SelectItem value="paybill" className="py-3 text-base font-medium">Paybill Number</SelectItem>
                 <SelectItem value="pochi_la_biashara" className="py-3 text-base font-medium">Pochi la Biashara</SelectItem>
             </SelectContent>
             </Select>
@@ -78,10 +78,10 @@ export function MpesaSettingsForm({ onSuccess, onCancel }: MpesaSettingsFormProp
 
         <div className="space-y-3">
           <Label className="text-base font-semibold text-slate-700 dark:text-slate-300">
-             {formData.payment_type === 'paybill_number' ? 'Business Number' : 'Till / Phone Number'} <span className="text-red-500">*</span>
+             {formData.payment_type === 'paybill' ? 'Business Number' : 'Till / Phone Number'} <span className="text-red-500">*</span>
           </Label>
           <Input 
-            placeholder={formData.payment_type === 'paybill_number' ? 'e.g. 522522' : 'e.g. 174379'}
+            placeholder={formData.payment_type === 'paybill' ? 'e.g. 522522' : 'e.g. 174379'}
             value={formData.mpesa_number}
             onChange={e => setFormData({...formData, mpesa_number: e.target.value})}
             className="h-12 md:h-14 rounded-xl text-base bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 font-mono tracking-wide"

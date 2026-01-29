@@ -7,8 +7,12 @@ import {
   MpesaInitializeRequest, 
   CreateMpesaConfigRequest,
   PaymentInitializeRequest,
-  Payment
+  Payment,
+  RentPeriod,
+  StudentWallet,
+  TransferLog
 } from '../types';
+
 import { toast } from 'sonner';
 
 // -- Student & Landlord Transaction Hooks --
@@ -115,3 +119,57 @@ export const useInitiatePayment = () => {
 };
 
 export const usePayments = useStudentTransactions;
+
+// -- RentPeriod Architecture Hooks --
+
+export const useRentPeriods = (filters?: any) => {
+  return useQuery({
+    queryKey: [...queryKeys.payments.all, 'rent-periods', filters],
+    queryFn: () => paymentsApi.getRentPeriods(filters),
+  });
+};
+
+
+export const useCurrentRentPeriod = () => {
+  return useQuery({
+    queryKey: [...queryKeys.payments.all, 'rent-periods', 'current'],
+    queryFn: () => paymentsApi.getCurrentRentPeriod(),
+  });
+};
+
+export const useOverdueRentPeriods = () => {
+  return useQuery({
+    queryKey: [...queryKeys.payments.all, 'rent-periods', 'overdue'],
+    queryFn: () => paymentsApi.getOverdueRentPeriods(),
+  });
+};
+
+export const useRentSummary = () => {
+  return useQuery({
+    queryKey: [...queryKeys.payments.all, 'rent-periods', 'summary'],
+    queryFn: () => paymentsApi.getRentSummary(),
+  });
+};
+
+export const useMyWallet = () => {
+  return useQuery({
+    queryKey: [...queryKeys.payments.all, 'wallet', 'my'],
+    queryFn: () => paymentsApi.getMyWallet(),
+  });
+};
+
+export const useTransferHistory = (filters?: any) => {
+  return useQuery({
+    queryKey: [...queryKeys.payments.all, 'transfers', filters],
+    queryFn: () => paymentsApi.getTransferHistory(filters),
+  });
+};
+
+export const useAllWallets = (filters?: any) => {
+  return useQuery({
+    queryKey: [...queryKeys.payments.all, 'wallets', 'all', filters],
+    queryFn: () => paymentsApi.getAllWallets(filters),
+  });
+};
+
+

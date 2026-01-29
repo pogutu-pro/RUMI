@@ -14,6 +14,10 @@ import os
 from pathlib import Path
 from datetime import timedelta
 from decimal import Decimal
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -112,8 +116,12 @@ ASGI_APPLICATION = 'rumi.asgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),
+        'NAME': os.getenv('DB_NAME', BASE_DIR / 'db.sqlite3') if os.getenv('DB_ENGINE') != 'django.db.backends.postgresql' else os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER', ''),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', ''),
+        'PORT': os.getenv('DB_PORT', ''),
     }
 }
 
@@ -164,17 +172,18 @@ SIMPLE_JWT = {
 }
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-    "https://rumi.co.ke",
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,https://rumi.co.ke').split(',')
+
+# Add common dev ports if not present
+dev_origins = [
     "http://localhost:5173",  # Vite dev server
     "http://127.0.0.1:5173",
-    "http://localhost:8080",  # Other common dev ports
+    "http://localhost:8080",
     "http://127.0.0.1:8080",
 ]
+for origin in dev_origins:
+    if origin not in CORS_ALLOWED_ORIGINS:
+        CORS_ALLOWED_ORIGINS.append(origin)
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True  # Allow all origins for development
@@ -199,16 +208,16 @@ CORS_ALLOW_METHODS = [
 ]
 
 # Email Configuration (Mailtrap)
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.mailtrap.io'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv('MAILTRAP_USERNAME')
-EMAIL_HOST_PASSWORD = os.getenv('MAILTRAP_PASSWORD')
-DEFAULT_FROM_EMAIL = 'noreply@rumi.co.ke'
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.mailtrap.io')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@rumi.co.ke')
 
-# SMS Configuration (African Talking)
-AFRICASTALKING_USERNAME = 'rumi'
+# SMS Configuration (Africa's Talking)
+AFRICASTALKING_USERNAME = os.getenv('AFRICASTALKING_USERNAME', 'sandbox')
 AFRICASTALKING_API_KEY = os.getenv('AFRICASTALKING_API_KEY')
 
 # Paystack Configuration
@@ -221,10 +230,17 @@ MPESA_CONSUMER_KEY = os.getenv('MPESA_CONSUMER_KEY')
 MPESA_CONSUMER_SECRET = os.getenv('MPESA_CONSUMER_SECRET')
 MPESA_SHORTCODE = os.getenv('MPESA_SHORTCODE')
 MPESA_PASSKEY = os.getenv('MPESA_PASSKEY')
-MPESA_CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL', f"{os.getenv('FRONTEND_URL', 'https://rumi.co.ke')}/api/payments/webhook/mpesa/stk_push")
-MPESA_VALIDATION_URL = os.getenv('MPESA_VALIDATION_URL', f"{os.getenv('FRONTEND_URL', 'https://rumi.co.ke')}/api/payments/webhook/mpesa/c2b_validation")
-MPESA_CONFIRMATION_URL = os.getenv('MPESA_CONFIRMATION_URL', f"{os.getenv('FRONTEND_URL', 'https://rumi.co.ke')}/api/payments/webhook/mpesa/c2b_confirmation")
+MPESA_CALLBACK_URL = os.getenv('MPESA_C2B_CONFIRMATION_URL', f"{os.getenv('FRONTEND_URL', 'https://rumi.co.ke')}/api/payments/webhook/mpesa/stk_push")
+MPESA_VALIDATION_URL = os.getenv('MPESA_C2B_VALIDATION_URL', f"{os.getenv('FRONTEND_URL', 'https://rumi.co.ke')}/api/payments/webhook/mpesa/c2b_validation")
+MPESA_CONFIRMATION_URL = os.getenv('MPESA_C2B_CONFIRMATION_URL', f"{os.getenv('FRONTEND_URL', 'https://rumi.co.ke')}/api/payments/webhook/mpesa/c2b_confirmation")
 MPESA_SANDBOX = os.getenv('MPESA_SANDBOX', 'True').lower() == 'true'
+
+# Google Maps Configuration
+GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
+
+# Weather API Configuration
+OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY')
+WEATHERAPI_KEY = os.getenv('WEATHERAPI_KEY')
 
 # Platform Fee Configuration (UPDATED v2.0)
 # Student pays 2% service fee, Landlord receives full rent

@@ -13,7 +13,7 @@ interface PayoutCardProps {
 
 export function PayoutCard({ payout }: PayoutCardProps) {
   // Handle optional or string date
-  const dateValue = payout.scheduledDate ? new Date(payout.scheduledDate) : new Date(payout.createdAt);
+  const dateValue = new Date(payout.created_at);
 
   return (
     <Card className="border-border bg-card shadow-sm">
@@ -22,7 +22,7 @@ export function PayoutCard({ payout }: PayoutCardProps) {
         <Badge 
           className={cn(
             "font-black uppercase text-[10px]",
-            payout.status === 'completed' ? "bg-emerald-500 hover:bg-emerald-600" : "bg-muted text-muted-foreground"
+            payout.status === 'success' ? "bg-emerald-500 hover:bg-emerald-600" : "bg-muted text-muted-foreground"
           )}
         >
           {payout.status}
@@ -32,7 +32,7 @@ export function PayoutCard({ payout }: PayoutCardProps) {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-2xl font-black text-foreground">
-              {payout.currency} {payout.amount.toLocaleString()}
+              KES {payout.amount.toLocaleString()}
             </span>
             <div className="p-1.5 bg-emerald-500/10 rounded-lg">
               <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />

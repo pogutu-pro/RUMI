@@ -64,7 +64,10 @@ export function PaymentForm({ bookingId, amount, onSuccess }: PaymentFormProps) 
 
   async function onSubmit(data: PaymentFormValues) {
     initiatePayment.mutate(
-      { bookingId: data.bookingId, method: data.method },
+      { 
+        bookingId: data.bookingId, 
+        method: data.method === 'bank' ? 'paystack' : 'mpesa' 
+      },
       {
         onSuccess: () => {
           onSuccess?.();

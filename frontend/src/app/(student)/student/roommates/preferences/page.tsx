@@ -95,7 +95,7 @@ export default function MatchProfilePage() {
   };
 
   const form = useForm<MatchProfileValues>({
-    resolver: zodResolver(matchProfileSchema),
+    resolver: zodResolver(matchProfileSchema) as any,
     defaultValues,
     mode: 'onChange',
   });

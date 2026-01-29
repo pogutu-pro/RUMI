@@ -91,9 +91,9 @@ export default function EditProfilePage() {
       form.reset({
         ...defaultValues,
         bio: (profile as any)?.bio || user?.bio || '',
-        emergency_contact_name: (profile as any)?.emergency_contact_name || user?.emergency_contact_name || '',
-        emergency_contact_phone: (profile as any)?.emergency_contact_phone || user?.emergency_contact_phone || '',
-        emergency_contact_relationship: (profile as any)?.emergency_contact_relationship || user?.emergency_contact_relationship || '',
+        emergency_contact_name: (profile as any)?.emergency_contact_name || '',
+        emergency_contact_phone: (profile as any)?.emergency_contact_phone || '',
+        emergency_contact_relationship: (profile as any)?.emergency_contact_relationship || '',
       });
     }
   }, [profile, user]);

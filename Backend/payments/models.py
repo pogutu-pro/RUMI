@@ -8,10 +8,8 @@ import uuid
 class MpesaPaymentConfig(models.Model):
     """Store landlord-specific M-Pesa payment configurations"""
     
+    # RESTRICTED: Only Paybill is supported for automated tracking
     PAYMENT_TYPE_CHOICES = [
-        ('send_money', 'Send Money'),
-        ('till_number', 'Till Number'),
-        ('pochi', 'Pochi la Biashara'),
         ('paybill', 'Paybill Number'),
     ]
     
@@ -26,8 +24,8 @@ class MpesaPaymentConfig(models.Model):
         on_delete=models.CASCADE,
         related_name='mpesa_payment_configs'
     )
-    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES)
-    mpesa_number = models.CharField(max_length=20, help_text="M-Pesa number (till, paybill, or phone number)")
+    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES, default='paybill')
+    mpesa_number = models.CharField(max_length=20, help_text="Paybill Number")
     business_name = models.CharField(max_length=255, help_text="Business name for display")
     is_default = models.BooleanField(default=False, help_text="Default payment method for this landlord")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_verification')
@@ -41,471 +39,242 @@ class MpesaPaymentConfig(models.Model):
         indexes = [
             models.Index(fields=['landlord'], name='idx_mpesa_config_landlord'),
             models.Index(fields=['payment_type'], name='idx_mpesa_config_type'),
-            models.Index(fields=['status'], name='idx_mpesa_config_status'),
-        ]
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(payment_type__in=['send_money', 'till_number', 'pochi', 'paybill']),
-                name='check_mpesa_payment_type'
-            ),
-            models.CheckConstraint(
-                check=models.Q(status__in=['active', 'inactive', 'pending_verification']),
-                name='check_mpesa_config_status'
-            ),
-            models.UniqueConstraint(
-                fields=['landlord', 'is_default'],
-                condition=models.Q(is_default=True),
-                name='unique_default_mpesa_config'
-            ),
         ]
     
     def __str__(self):
         return f"{self.get_payment_type_display()} - {self.mpesa_number} ({self.landlord.user.get_full_name()})"
     
     def save(self, *args, **kwargs):
-        # If this is set as default, unset others
         if self.is_default:
             MpesaPaymentConfig.objects.filter(
                 landlord=self.landlord
             ).exclude(pk=self.pk).update(is_default=False)
-        
         self.updated_at = timezone.now()
         super().save(*args, **kwargs)
 
 
-class Transaction(models.Model):
-    """Central record of all payment attempts and completions"""
+class StudentWallet(models.Model):
+    """Tracks student overpayments and credits"""
+    student = models.OneToOneField(
+        'accounts.StudentProfile',
+        on_delete=models.CASCADE,
+        related_name='wallet'
+    )
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    updated_at = models.DateTimeField(auto_now=True)
 
-    TRANSACTION_TYPE_CHOICES = [
-        ('initial', 'Initial Payment'),
-        ('recurring', 'Recurring Payment'),
-        ('late_fee', 'Late Fee Payment'),
+    def __str__(self):
+        return f"Wallet: {self.student.user.get_full_name()} - KES {self.balance}"
+
+
+class RentPeriod(models.Model):
+    """
+    CANONICAL TRUTH: Immutable record of a specific rent obligation.
+    Created for every month/cycle a student is in a bed.
+    """
+    STATUS_CHOICES = [
+        ('due', 'Due'),
+        ('partially_paid', 'Partially Paid'),
+        ('paid', 'Paid'),
+        ('overdue', 'Overdue'),
+        ('transferred', 'Transferred'),  # If student moved mid-month
     ]
 
-    PAYMENT_PLAN_CHOICES = [
-        ('monthly', 'Monthly'),
+    student = models.ForeignKey(
+        'accounts.StudentProfile',
+        on_delete=models.CASCADE,
+        related_name='rent_periods'
+    )
+    hostel = models.ForeignKey(
+        'hostels.Hostel',
+        on_delete=models.CASCADE,
+        related_name='rent_periods'
+    )
+    # Keeping Booking generic, but linking distinct periods
+    booking = models.ForeignKey(
+        'hostels.Booking',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='rent_periods'
+    )
+    room = models.ForeignKey(
+        'hostels.Room',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='rent_periods'
+    )
+    # Conceptual bed slot ID (e.g., '1', 'A', or uuid string)
+    bed_slot_id = models.CharField(max_length=50, blank=True, null=True)
+
+    start_date = models.DateField()
+    end_date = models.DateField()
+    
+    amount_due = models.DecimalField(max_digits=10, decimal_places=2)
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='due')
+    
+    # Payment Resolution Fields
+    assigned_paybill = models.CharField(max_length=20, blank=True, null=True)
+    student_account_ref = models.CharField(max_length=50, help_text="Unique ref for Paybill matching")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-start_date']
+        indexes = [
+            models.Index(fields=['student', 'status']),
+            models.Index(fields=['assigned_paybill', 'student_account_ref']),
+        ]
+
+    def __str__(self):
+        return f"{self.student.user.get_full_name()} - {self.start_date.strftime('%b %Y')} ({self.status})"
+    
+    @property
+    def balance(self):
+        return self.amount_due - self.amount_paid
+
+
+class Transaction(models.Model):
+    """Central record of money movement"""
+
+    TRANSACTION_TYPE_CHOICES = [
+        ('rent', 'Rent Payment'),
+        ('deposit', 'Security Deposit'),
+        ('late_fee', 'Late Fee'),
+        ('wallet_credit', 'Wallet Credit'),
     ]
 
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('success', 'Success'),
         ('failed', 'Failed'),
-        ('refunded', 'Refunded'),
     ]
 
     PAYMENT_METHOD_CHOICES = [
-        ('mpesa', 'M-Pesa'),
-        ('card', 'Card'),
-        ('bank_transfer', 'Bank Transfer'),
+        ('mpesa', 'M-Pesa (Paybill)'),
+        ('paystack', 'Card/Bank (Paystack)'),
     ]
 
-    MPESA_PAYMENT_TYPE_CHOICES = [
-        ('send_money', 'Send Money'),
-        ('till_number', 'Till Number'),
-        ('pochi', 'Pochi la Biashara'),
-        ('paybill', 'Paybill Number'),
-        ('c2b_offline', 'C2B Offline Payment'),
-    ]
-
-    booking = models.OneToOneField(
-        'hostels.Booking',
-        on_delete=models.CASCADE,
-        related_name='payment_transaction'
-    )
-    student = models.ForeignKey(
-        'accounts.StudentProfile',
-        on_delete=models.CASCADE,
-        related_name='transactions'
-    )
-    landlord = models.ForeignKey(
-        'accounts.LandlordProfile',
-        on_delete=models.CASCADE,
-        related_name='transactions'
-    )
-    transaction_reference = models.CharField(max_length=100, unique=True)
-    paystack_reference = models.CharField(max_length=100, unique=True, blank=True, null=True)
-    transaction_type = models.CharField(
-        max_length=20,
-        choices=TRANSACTION_TYPE_CHOICES,
-        default='initial'
-    )
-    payment_plan = models.CharField(
-        max_length=20,
-        choices=PAYMENT_PLAN_CHOICES,
-        default='monthly'
-    )
-    # UPDATED: No service fees - revenue via subscriptions
-    base_rent = models.DecimalField(max_digits=10, decimal_places=2)
-    student_service_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))  # Always 0
-    total_charged_amount = models.DecimalField(max_digits=10, decimal_places=2)  # Same as base_rent
-    landlord_payout_amount = models.DecimalField(max_digits=10, decimal_places=2)  # Same as base_rent
-
-    # Platform revenue breakdown (always 0)
-    gross_platform_revenue = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    gateway_fee = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    net_platform_revenue = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-
-    # Removed fields
-    landlord_commission = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    withholding_tax = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    currency = models.CharField(max_length=3, default='KES')
-    payment_method = models.CharField(
-        max_length=50,
-        choices=PAYMENT_METHOD_CHOICES,
-        blank=True,
-        null=True
-    )
-    saved_payment_method = models.ForeignKey(
-        'SavedPaymentMethod',
+    # REFACTORED: Linked to RentPeriod (can be null for wallet top-ups/deposits)
+    rent_period = models.ForeignKey(
+        RentPeriod,
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
         related_name='transactions'
     )
+    # Keeping Booking primarily for legacy/deposit logic
+    booking = models.ForeignKey(
+        'hostels.Booking',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='transactions'
+    )
+    
+    student = models.ForeignKey(
+        'accounts.StudentProfile',
+        on_delete=models.CASCADE,
+        related_name='transactions'
+    )
+    
+    transaction_reference = models.CharField(max_length=100, unique=True)
+    paystack_reference = models.CharField(max_length=100, unique=True, blank=True, null=True)
+    
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPE_CHOICES, default='rent')
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    metadata = models.JSONField(blank=True, null=True) # Full payload from gateway
+    
+    # M-Pesa Specifics
+    mpesa_receipt_number = models.CharField(max_length=50, blank=True, null=True)
+    mpesa_phone_number = models.CharField(max_length=15, blank=True, null=True)
+
     initiated_at = models.DateTimeField(default=timezone.now)
     paid_at = models.DateTimeField(blank=True, null=True)
-    failed_at = models.DateTimeField(blank=True, null=True)
-    metadata = models.JSONField(blank=True, null=True)
-    
-    # M-Pesa specific fields
-    mpesa_payment_type = models.CharField(
-        max_length=20,
-        choices=MPESA_PAYMENT_TYPE_CHOICES,
-        blank=True,
-        null=True
-    )
-    mpesa_transaction_id = models.CharField(max_length=100, blank=True, null=True)
-    mpesa_receipt_number = models.CharField(max_length=100, blank=True, null=True)
-    mpesa_checkout_request_id = models.CharField(max_length=100, blank=True, null=True)
-    mpesa_phone_number = models.CharField(max_length=15, blank=True, null=True)
-    mpesa_transaction_date = models.DateTimeField(blank=True, null=True)
-    mpesa_balance = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    
-    # C2B specific fields
-    c2b_reference = models.CharField(max_length=100, blank=True, null=True)
-    c2b_validation_response = models.JSONField(blank=True, null=True)
-    c2b_confirmation_response = models.JSONField(blank=True, null=True)
 
     class Meta:
-        db_table = 'payments_transaction'
-        indexes = [
-            models.Index(fields=['booking'], name='idx_transaction_booking'),
-            models.Index(fields=['student'], name='idx_transaction_student'),
-            models.Index(fields=['paystack_reference'], name='idx_transaction_paystack_ref'),
-            models.Index(fields=['status'], name='idx_transaction_status'),
-            models.Index(fields=['transaction_type'], name='idx_transaction_type'),
-            models.Index(fields=['paid_at'], name='idx_transaction_paid_at'),
-        ]
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(status__in=['pending', 'success', 'failed', 'refunded']),
-                name='check_transaction_status'
-            ),
-            models.CheckConstraint(
-                check=models.Q(transaction_type__in=['initial', 'recurring', 'late_fee']),
-                name='check_transaction_type'
-            ),
-            models.CheckConstraint(
-                check=models.Q(payment_plan__in=['monthly']),
-                name='check_payment_plan'
-            ),
-            # Basic validation constraints
-            models.CheckConstraint(
-                check=models.Q(landlord_commission=0.00),
-                name='check_no_landlord_commission'
-            ),
-        ]
+        ordering = ['-initiated_at']
 
     def __str__(self):
-        return f"{self.transaction_reference} - {self.booking.student.user.get_full_name()}"
+        return f"{self.transaction_reference} - {self.amount}"
 
+
+class TransferLog(models.Model):
+    """Audit trail for room/hostel transfers affecting financials"""
+    student = models.ForeignKey('accounts.StudentProfile', on_delete=models.CASCADE)
+    
+    from_rent_period = models.ForeignKey(RentPeriod, on_delete=models.CASCADE, related_name='transfer_out')
+    to_rent_period = models.ForeignKey(RentPeriod, on_delete=models.CASCADE, related_name='transfer_in')
+    
+    transfer_date = models.DateTimeField(default=timezone.now)
+    reason = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"Transfer: {self.student} ({self.transfer_date.date()})"
+
+
+# --- Legacy / Auxiliary Models (Kept/Updated) ---
 
 class SavedPaymentMethod(models.Model):
     """Store tokenized payment methods for recurring payments"""
-
-    PAYMENT_TYPE_CHOICES = [
-        ('mpesa', 'M-Pesa'),
-        ('card', 'Card'),
-        ('bank_transfer', 'Bank Transfer'),
-    ]
-
-    student = models.ForeignKey(
-        'accounts.StudentProfile',
-        on_delete=models.CASCADE,
-        related_name='saved_payment_methods'
-    )
-    paystack_authorization_code = models.CharField(max_length=100, unique=True)
-    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES)
-    last_four = models.CharField(max_length=4, blank=True, null=True)
-    phone_number = models.CharField(max_length=15, blank=True, null=True)
-    expiry_month = models.CharField(max_length=2, blank=True, null=True)
-    expiry_year = models.CharField(max_length=4, blank=True, null=True)
-    bank = models.CharField(max_length=50, blank=True, null=True)
-    is_default = models.BooleanField(default=False)
+    student = models.ForeignKey('accounts.StudentProfile', on_delete=models.CASCADE)
+    paystack_authorization_code = models.CharField(max_length=100)
+    payment_type = models.CharField(max_length=20) # card, mpesa
+    last_four = models.CharField(max_length=4)
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    last_used_at = models.DateTimeField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'payments_savedpaymentmethod'
-        indexes = [
-            models.Index(fields=['student'], name='idx_saved_payment_student'),
-            models.Index(fields=['paystack_authorization_code'], name='idx_saved_payment_auth_code'),
-        ]
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(payment_type__in=['mpesa', 'card', 'bank_transfer']),
-                name='check_payment_type'
-            ),
-            models.UniqueConstraint(
-                fields=['student', 'is_default'],
-                condition=models.Q(is_default=True),
-                name='unique_default_payment_method'
-            ),
-        ]
-
+    
     def __str__(self):
-        return f"{self.student.user.get_full_name()} - {self.payment_type}"
+        return f"{self.payment_type} **** {self.last_four}"
 
 
 class RecurringPayment(models.Model):
-    """Track recurring payment schedules for active tenants"""
-
-    booking = models.OneToOneField(
-        'hostels.Booking',
-        on_delete=models.CASCADE,
-        related_name='recurring_payment'
-    )
-    student = models.ForeignKey(
-        'accounts.StudentProfile',
-        on_delete=models.CASCADE,
-        related_name='recurring_payments'
-    )
-    saved_payment_method = models.ForeignKey(
-        SavedPaymentMethod,
-        on_delete=models.CASCADE,
-        related_name='recurring_payments'
-    )
-    rent_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    frequency = models.CharField(max_length=20, default='monthly')
+    """Track recurring payment schedules"""
+    booking = models.ForeignKey('hostels.Booking', on_delete=models.CASCADE) # Not OneToOne anymore ideally?
+    student = models.ForeignKey('accounts.StudentProfile', on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
     next_payment_date = models.DateField()
-    grace_period_days = models.IntegerField(default=7, validators=[MinValueValidator(0)])
-    late_fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('200.00'))
     is_active = models.BooleanField(default=True)
-    started_at = models.DateTimeField(default=timezone.now)
-    paused_at = models.DateTimeField(blank=True, null=True)
-    cancelled_at = models.DateTimeField(blank=True, null=True)
-    last_payment_at = models.DateTimeField(blank=True, null=True)
-    consecutive_failures = models.IntegerField(default=0, validators=[MinValueValidator(0)])
-
-    class Meta:
-        db_table = 'payments_recurringpayment'
-        indexes = [
-            models.Index(fields=['booking'], name='idx_recurring_booking'),
-            models.Index(fields=['next_payment_date'], name='idx_recurring_next_payment'),
-            models.Index(fields=['student'], name='idx_recurring_student'),
-        ]
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(frequency__in=['monthly']),
-                name='check_recurring_frequency'
-            ),
-            models.CheckConstraint(
-                check=models.Q(grace_period_days__gte=0),
-                name='check_grace_period_positive'
-            ),
-            models.CheckConstraint(
-                check=models.Q(consecutive_failures__gte=0),
-                name='check_consecutive_failures_positive'
-            ),
-        ]
-
-    def __str__(self):
-        return f"Recurring payment for {self.booking.student.user.get_full_name()}"
-
-
-class LateFeeCharge(models.Model):
-    """Track late fee charges after grace period"""
-
-    STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('paid', 'Paid'),
-        ('waived', 'Waived'),
-    ]
-
-    booking = models.ForeignKey(
-        'hostels.Booking',
-        on_delete=models.CASCADE,
-        related_name='late_fees'
-    )
-    student = models.ForeignKey(
-        'accounts.StudentProfile',
-        on_delete=models.CASCADE,
-        related_name='late_fees'
-    )
-    original_transaction = models.ForeignKey(
-        Transaction,
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name='late_fees'
-    )
-    late_fee_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    due_date = models.DateField()
-    grace_period_end = models.DateField()
-    charged_at = models.DateTimeField(default=timezone.now)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    paid_at = models.DateTimeField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'payments_latefeecharge'
-        indexes = [
-            models.Index(fields=['booking'], name='idx_late_fee_booking'),
-            models.Index(fields=['student'], name='idx_late_fee_student'),
-            models.Index(fields=['status'], name='idx_late_fee_status'),
-        ]
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(status__in=['pending', 'paid', 'waived']),
-                name='check_late_fee_status'
-            ),
-            models.CheckConstraint(
-                check=models.Q(grace_period_end__gt=models.F('due_date')),
-                name='check_grace_period_after_due_date'
-            ),
-        ]
-
-    def __str__(self):
-        return f"Late fee for {self.booking.student.user.get_full_name()} - {self.late_fee_amount}"
-
-
-class TaxReport(models.Model):
-    """Store monthly withholding tax reports for landlords"""
-
-    landlord = models.ForeignKey(
-        'accounts.LandlordProfile',
-        on_delete=models.CASCADE,
-        related_name='tax_reports'
-    )
-    report_month = models.DateField()  # YYYY-MM-01 format
-    total_rent_received = models.DecimalField(max_digits=10, decimal_places=2)
-    total_withholding_tax = models.DecimalField(max_digits=10, decimal_places=2)
-    transaction_count = models.IntegerField()
-    report_file_url = models.URLField(blank=True, null=True)
-    generated_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = 'payments_taxreport'
-        indexes = [
-            models.Index(fields=['landlord', 'report_month'], name='idx_tax_report_landlord_month'),
-        ]
-        constraints = [
-            models.UniqueConstraint(
-                fields=['landlord', 'report_month'],
-                name='unique_landlord_monthly_tax_report'
-            ),
-            models.CheckConstraint(
-                check=models.Q(total_withholding_tax=models.F('total_rent_received') * 0.10),
-                name='check_tax_calculation'
-            ),
-        ]
-
-    def __str__(self):
-        return f"Tax report for {self.landlord.user.get_full_name()} - {self.report_month.strftime('%B %Y')}"
-
-
-class PaystackSubaccount(models.Model):
-    """Store Paystack subaccount details for automated landlord payouts"""
-
-    landlord = models.OneToOneField(
-        'accounts.LandlordProfile',
-        on_delete=models.CASCADE,
-        related_name='paystack_subaccount'
-    )
-    subaccount_code = models.CharField(max_length=100, unique=True)
-    business_name = models.CharField(max_length=255)
-    settlement_bank = models.CharField(max_length=100)
-    account_number = models.CharField(max_length=20)
-    percentage_charge = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
-    total_payouts = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    total_commission_paid = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    verified_at = models.DateTimeField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'payments_paystacksubaccount'
-        indexes = [
-            models.Index(fields=['landlord'], name='idx_subaccount_landlord'),
-            models.Index(fields=['subaccount_code'], name='idx_subaccount_code'),
-        ]
-
-    def __str__(self):
-        return f"Subaccount for {self.business_name}"
 
 
 class Payout(models.Model):
-    """Track automated payouts to landlords"""
-
-    STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('processing', 'Processing'),
-        ('success', 'Success'),
-        ('failed', 'Failed'),
-    ]
-
-    transaction = models.OneToOneField(
-        Transaction,
-        on_delete=models.CASCADE,
-        related_name='payout'
-    )
-    landlord = models.ForeignKey(
-        'accounts.LandlordProfile',
-        on_delete=models.CASCADE,
-        related_name='payouts'
-    )
-    subaccount = models.ForeignKey(
-        PaystackSubaccount,
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name='payouts'
-    )
-    payout_reference = models.CharField(max_length=100, unique=True)
-    paystack_transfer_code = models.CharField(max_length=100, unique=True, blank=True, null=True)
-    gross_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    commission_deducted = models.DecimalField(max_digits=10, decimal_places=2)
-    withholding_tax_deducted = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    net_payout_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    payout_duration_seconds = models.IntegerField(blank=True, null=True)
+    """
+    Decoupled Payout Record.
+    Created by async task from settled RentPeriods.
+    """
+    STATUS_CHOICES = [('pending', 'Pending'), ('processing', 'Processing'), ('success', 'Success'), ('failed', 'Failed')]
+    
+    landlord = models.ForeignKey('accounts.LandlordProfile', on_delete=models.CASCADE)
+    reference = models.CharField(max_length=100, unique=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    initiated_at = models.DateTimeField(default=timezone.now)
-    completed_at = models.DateTimeField(blank=True, null=True)
-    failed_at = models.DateTimeField(blank=True, null=True)
-    failure_reason = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    processed_at = models.DateTimeField(blank=True, null=True)
 
-    class Meta:
-        db_table = 'payments_payout'
-        indexes = [
-            models.Index(fields=['transaction'], name='idx_payout_transaction'),
-            models.Index(fields=['landlord'], name='idx_payout_landlord'),
-            models.Index(fields=['status'], name='idx_payout_status'),
-            models.Index(fields=['completed_at'], name='idx_payout_completed_at'),
-        ]
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(status__in=['pending', 'processing', 'success', 'failed']),
-                name='check_payout_status'
-            ),
-            models.CheckConstraint(
-                check=models.Q(net_payout_amount=models.F('gross_amount') - models.F('commission_deducted') - models.F('withholding_tax_deducted')),
-                name='check_net_payout_calculation'
-            ),
-        ]
+class PaystackSubaccount(models.Model):
+    """Store Paystack subaccount details for automated landlord payouts"""
+    landlord = models.OneToOneField('accounts.LandlordProfile', on_delete=models.CASCADE)
+    subaccount_code = models.CharField(max_length=100)
+    business_name = models.CharField(max_length=255)
+    settlement_bank = models.CharField(max_length=100)
+    account_number = models.CharField(max_length=20)
+    is_active = models.BooleanField(default=True)
 
-    def __str__(self):
-        return f"Payout {self.payout_reference} - {self.net_payout_amount}"
+
+class LateFeeCharge(models.Model):
+    """Track late fee charges"""
+    # Simply linking to RentPeriod for context would be better now
+    rent_period = models.ForeignKey(RentPeriod, on_delete=models.CASCADE, null=True)
+    student = models.ForeignKey('accounts.StudentProfile', on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    reason = models.CharField(max_length=255, default='Late Fee')
+    created_at = models.DateTimeField(default=timezone.now)
+    is_paid = models.BooleanField(default=False)
 
 
 class RefundRequest(models.Model):
@@ -575,68 +344,25 @@ class RefundRequest(models.Model):
         return f"Refund request for {self.booking.student.user.get_full_name()} - {self.refund_amount}"
 
 
-class RevenueAnalytics(models.Model):
-    """Pre-aggregated revenue metrics for dashboard performance"""
-
-    PERIOD_TYPE_CHOICES = [
-        ('daily', 'Daily'),
-        ('weekly', 'Weekly'),
-        ('monthly', 'Monthly'),
-    ]
-
-    date = models.DateField()
-    period_type = models.CharField(max_length=20, choices=PERIOD_TYPE_CHOICES)
-    total_transactions = models.IntegerField(default=0)
-    total_volume = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    gross_platform_revenue = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    gateway_fees_paid = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    net_platform_revenue = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    recurring_payments_count = models.IntegerField(default=0)
-    late_fees_collected = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    total_withholding_tax = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    created_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = 'payments_revenueanalytics'
-        indexes = [
-            models.Index(fields=['date', 'period_type'], name='idx_revenue_date_period'),
-            models.Index(fields=['date'], name='idx_revenue_date'),
-        ]
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(period_type__in=['daily', 'weekly', 'monthly']),
-                name='check_period_type'
-            ),
-            models.UniqueConstraint(
-                fields=['date', 'period_type'],
-                name='unique_date_period_analytics'
-            ),
-        ]
-
-    def __str__(self):
-        return f"{self.period_type.title()} analytics for {self.date}"
-
-
 class Receipt(models.Model):
     """Store generated payment receipts"""
-    
-    transaction = models.OneToOneField(
-        Transaction,
-        on_delete=models.CASCADE,
-        related_name='receipt'
-    )
+    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='receipt')
     receipt_number = models.CharField(max_length=50, unique=True)
     pdf_file = models.FileField(upload_to='receipts/pdf/', blank=True, null=True)
     generated_at = models.DateTimeField(default=timezone.now)
-    emailed_at = models.DateTimeField(blank=True, null=True)
-    email_sent = models.BooleanField(default=False)
-    
-    class Meta:
-        db_table = 'payments_receipt'
-        indexes = [
-            models.Index(fields=['transaction'], name='idx_receipt_transaction'),
-            models.Index(fields=['receipt_number'], name='idx_receipt_number'),
-        ]
 
-    def __str__(self):
-        return f"Receipt {self.receipt_number}"
+class TaxReport(models.Model):
+    """Store monthly withholding tax reports for landlords"""
+    landlord = models.ForeignKey('accounts.LandlordProfile', on_delete=models.CASCADE)
+    report_month = models.DateField()
+    total_rent_received = models.DecimalField(max_digits=10, decimal_places=2)
+    total_withholding_tax = models.DecimalField(max_digits=10, decimal_places=2)
+    transaction_count = models.IntegerField()
+    report_file_url = models.URLField(blank=True, null=True)
+    generated_at = models.DateTimeField(default=timezone.now)
+
+class RevenueAnalytics(models.Model):
+    """Pre-aggregated revenue metrics"""
+    date = models.DateField()
+    period_type = models.CharField(max_length=20)
+    total_volume = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))

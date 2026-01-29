@@ -6,7 +6,7 @@ export interface Booking {
   
   // Relations
   hostel: Hostel | { id: string; name: string }; // Handle expanded or minimal
-  room: Room | { id: string; number: string };
+  room: Room | { id: string; number: string; room_number?: string; roomNumber?: string };
   student: {
     id: string;
     first_name: string;

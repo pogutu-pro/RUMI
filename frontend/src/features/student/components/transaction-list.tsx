@@ -17,7 +17,7 @@ export function TransactionList({ transactions, limit = 5, className }: Transact
 
   const getStatusColor = (status: Transaction['status']) => {
     switch (status) {
-      case 'completed':
+      case 'success':
         return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800';
       case 'pending':
         return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800';

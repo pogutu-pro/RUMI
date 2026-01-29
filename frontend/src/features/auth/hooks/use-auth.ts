@@ -70,6 +70,7 @@ function useAuthRedirect() {
 
 export function useAuth() {
   const user = useAuthStore((s) => s.user);
+  const profile = useAuthStore((s) => s.profile);
   const status = useAuthStore((s) => s.status);
   const error = useAuthStore((s) => s.error);
   const storeLogin = useAuthStore((s) => s.login);
@@ -93,6 +94,7 @@ export function useAuth() {
 
   return { 
     user, 
+    profile,
     status, 
     error,
     isAuthenticated, 

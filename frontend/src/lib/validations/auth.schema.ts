@@ -81,9 +81,14 @@ const studentIdentityFields = {
   gender: z.enum(['male', 'female', 'other'], {
     message: 'Please select your gender',
   }),
-  date_of_birth: z.coerce.date({
+  date_of_birth: z.union([z.string(), z.date()], {
     message: 'Please enter a valid date of birth',
-  }).refine((date) => {
+  }).refine((val) => {
+    if (!val) return false;
+    const date = new Date(val);
+    return !isNaN(date.getTime());
+  }, 'Please enter a valid date of birth').refine((val) => {
+    const date = new Date(val);
     const age = new Date().getFullYear() - date.getFullYear();
     return age >= 16;
   }, 'You must be at least 16 years old to register'),

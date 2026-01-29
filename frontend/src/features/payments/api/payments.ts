@@ -10,8 +10,12 @@ import type {
   Payout,
   Refund,
   RefundRequest,
-  PaymentInitializeRequest
+  PaymentInitializeRequest,
+  RentPeriod,
+  StudentWallet,
+  TransferLog
 } from '../types';
+
 import type { ApiResponse, PaginatedResponse } from '@/types/api.types';
 
 export interface GetPaymentsFilters {
@@ -160,7 +164,7 @@ export const getMpesaPaymentStatus = async (params: {
   return response.data.data || { 
     status: 'failed', 
     last_updated: new Date().toISOString(),
-    transaction: { id: '', date: '', amount: 0, type: 'rent', status: 'failed', method: 'mpesa', reference: '' }
+    transaction: { id: 0, date: '', amount: 0, type: 'rent', status: 'failed', method: 'mpesa', reference: '' }
   };
 };
 
@@ -188,7 +192,7 @@ export const createMpesaConfig = async (
   );
   return response.data.data || { 
     id: 0, 
-    payment_type: 'till_number', 
+    payment_type: 'paybill' as const, 
     mpesa_number: '', 
     business_name: '', 
     is_default: false, 
@@ -321,6 +325,73 @@ export const getStudentTransactionsWithReceipts = async (filters?: any): Promise
 };
 
 
+// ============================================
+// NEW: RentPeriod Architecture API Functions
+// ============================================
+
+/**
+ * Get all rent periods for the current user
+ */
+export const getRentPeriods = async (filters?: any): Promise<RentPeriod[]> => {
+  const { data } = await apiClient.get<any>('/payments/rent-periods/', { params: filters });
+  return Array.isArray(data) ? data : data?.results || [];
+};
+
+
+/**
+ * Get the current active rent period
+ */
+export const getCurrentRentPeriod = async (): Promise<RentPeriod | null> => {
+  try {
+    const response = await apiClient.axios.get<ApiResponse<RentPeriod>>('/payments/rent-periods/current/');
+    return response.data.data || null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Get overdue rent periods
+ */
+export const getOverdueRentPeriods = async (): Promise<RentPeriod[]> => {
+  const response = await apiClient.axios.get<ApiResponse<RentPeriod[]>>('/payments/rent-periods/overdue/');
+  return response.data.data || [];
+};
+
+/**
+ * Get rent payment summary
+ */
+export const getRentSummary = async (): Promise<any> => {
+  const response = await apiClient.axios.get<ApiResponse<any>>('/payments/rent-periods/summary/');
+  return response.data.data;
+};
+
+/**
+ * Get student wallet
+ */
+export const getMyWallet = async (): Promise<StudentWallet | null> => {
+  try {
+    const response = await apiClient.axios.get<ApiResponse<StudentWallet>>('/payments/wallet/my_wallet/');
+    return response.data.data || null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Get room transfer history
+ */
+export const getTransferHistory = async (filters?: any): Promise<TransferLog[]> => {
+  const { data } = await apiClient.get<any>('/payments/transfers/', { params: filters });
+  return Array.isArray(data) ? data : data?.results || [];
+};
+
+export const getAllWallets = async (filters?: any): Promise<StudentWallet[]> => {
+  const { data } = await apiClient.get<any>('/payments/wallet/', { params: filters });
+  return Array.isArray(data) ? data : data?.results || [];
+};
+
+
 export const paymentsApi = {
   getStudentTransactions: getPayments,
   getLandlordPayments,
@@ -349,6 +420,12 @@ export const paymentsApi = {
   getLandlordPayouts,
   getRefunds,
   createRefundRequest,
-  processRefund,
+  getRentPeriods,
+  getCurrentRentPeriod,
+  getOverdueRentPeriods,
+  getRentSummary,
+  getMyWallet,
+  getTransferHistory,
+  getAllWallets,
 };
 

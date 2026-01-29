@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from .models import (
     Transaction, SavedPaymentMethod, RecurringPayment, LateFeeCharge,
-    TaxReport, PaystackSubaccount, Payout, RefundRequest, RevenueAnalytics, Receipt, MpesaPaymentConfig
+    TaxReport, PaystackSubaccount, Payout, RefundRequest, RevenueAnalytics, Receipt, MpesaPaymentConfig,
+    RentPeriod, StudentWallet, TransferLog
 )
 from hostels.models import Booking
 from accounts.models import StudentProfile, LandlordProfile
@@ -10,7 +11,7 @@ from accounts.models import StudentProfile, LandlordProfile
 class TransactionSerializer(serializers.ModelSerializer):
     booking_details = serializers.SerializerMethodField()
     student_details = serializers.SerializerMethodField()
-    landlord_details = serializers.SerializerMethodField()
+    rent_period_details = serializers.SerializerMethodField()
 
     class Meta:
         model = Transaction
@@ -18,6 +19,8 @@ class TransactionSerializer(serializers.ModelSerializer):
         read_only_fields = ['transaction_reference', 'paystack_reference', 'initiated_at']
 
     def get_booking_details(self, obj):
+        if not obj.booking:
+            return None
         return {
             'id': obj.booking.id,
             'room': obj.booking.room.room_number,
@@ -31,11 +34,15 @@ class TransactionSerializer(serializers.ModelSerializer):
             'id': obj.student.id,
             'user': obj.student.user.get_full_name(),
         }
-
-    def get_landlord_details(self, obj):
+    
+    def get_rent_period_details(self, obj):
+        if not obj.rent_period:
+            return None
         return {
-            'id': obj.landlord.id,
-            'company_name': obj.landlord.company_name or obj.landlord.user.get_full_name(),
+            'id': obj.rent_period.id,
+            'start_date': obj.rent_period.start_date,
+            'end_date': obj.rent_period.end_date,
+            'status': obj.rent_period.status,
         }
 
 
@@ -45,7 +52,6 @@ class SavedPaymentMethodSerializer(serializers.ModelSerializer):
     class Meta:
         model = SavedPaymentMethod
         fields = '__all__'
-        read_only_fields = ['student', 'created_at']
 
     def get_student_details(self, obj):
         return {
@@ -57,12 +63,10 @@ class SavedPaymentMethodSerializer(serializers.ModelSerializer):
 class RecurringPaymentSerializer(serializers.ModelSerializer):
     booking_details = serializers.SerializerMethodField()
     student_details = serializers.SerializerMethodField()
-    saved_payment_method_details = serializers.SerializerMethodField()
 
     class Meta:
         model = RecurringPayment
         fields = '__all__'
-        read_only_fields = ['started_at']
 
     def get_booking_details(self, obj):
         return {
@@ -77,49 +81,29 @@ class RecurringPaymentSerializer(serializers.ModelSerializer):
             'user': obj.student.user.get_full_name(),
         }
 
-    def get_saved_payment_method_details(self, obj):
-        return {
-            'id': obj.saved_payment_method.id,
-            'payment_type': obj.saved_payment_method.payment_type,
-            'last_four': obj.saved_payment_method.last_four,
-        }
-
 
 class LateFeeChargeSerializer(serializers.ModelSerializer):
-    booking_details = serializers.SerializerMethodField()
     student_details = serializers.SerializerMethodField()
-    original_transaction_details = serializers.SerializerMethodField()
+    rent_period_details = serializers.SerializerMethodField()
 
     class Meta:
         model = LateFeeCharge
         fields = '__all__'
-        read_only_fields = ['charged_at']
-
-    def get_booking_details(self, obj):
-        return {
-            'id': obj.booking.id,
-            'room': obj.booking.room.room_number,
-        }
+        read_only_fields = ['created_at']
 
     def get_student_details(self, obj):
         return {
             'id': obj.student.id,
             'user': obj.student.user.get_full_name(),
         }
-
-    def get_original_transaction_details(self, obj):
-        if obj.original_transaction:
-            return {
-                'id': obj.original_transaction.id,
-                'reference': obj.original_transaction.transaction_reference,
-            }
-        return None
-
-
-    def get_landlord_details(self, obj):
+    
+    def get_rent_period_details(self, obj):
+        if not obj.rent_period:
+            return None
         return {
-            'id': obj.landlord.id,
-            'company_name': obj.landlord.company_name,
+            'id': obj.rent_period.id,
+            'start_date': obj.rent_period.start_date,
+            'end_date': obj.rent_period.end_date,
         }
 
 
@@ -129,7 +113,6 @@ class PaystackSubaccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaystackSubaccount
         fields = '__all__'
-        read_only_fields = ['created_at', 'verified_at']
 
     def get_landlord_details(self, obj):
         return {
@@ -139,34 +122,18 @@ class PaystackSubaccountSerializer(serializers.ModelSerializer):
 
 
 class PayoutSerializer(serializers.ModelSerializer):
-    transaction_details = serializers.SerializerMethodField()
     landlord_details = serializers.SerializerMethodField()
-    subaccount_details = serializers.SerializerMethodField()
 
     class Meta:
         model = Payout
         fields = '__all__'
-        read_only_fields = ['initiated_at']
-
-    def get_transaction_details(self, obj):
-        return {
-            'id': obj.transaction.id,
-            'reference': obj.transaction.transaction_reference,
-        }
+        read_only_fields = ['created_at']
 
     def get_landlord_details(self, obj):
         return {
             'id': obj.landlord.id,
             'company_name': obj.landlord.company_name,
         }
-
-    def get_subaccount_details(self, obj):
-        if obj.subaccount:
-            return {
-                'id': obj.subaccount.id,
-                'business_name': obj.subaccount.business_name,
-            }
-        return None
 
 
 class RefundRequestSerializer(serializers.ModelSerializer):
@@ -202,7 +169,6 @@ class RevenueAnalyticsSerializer(serializers.ModelSerializer):
     class Meta:
         model = RevenueAnalytics
         fields = '__all__'
-        read_only_fields = ['created_at']
 
 
 class ReceiptSerializer(serializers.ModelSerializer):
@@ -211,13 +177,13 @@ class ReceiptSerializer(serializers.ModelSerializer):
     class Meta:
         model = Receipt
         fields = '__all__'
-        read_only_fields = ['generated_at', 'emailed_at']
+        read_only_fields = ['generated_at']
 
     def get_transaction_details(self, obj):
         return {
             'id': obj.transaction.id,
             'reference': obj.transaction.transaction_reference,
-            'amount': float(obj.transaction.total_charged_amount),
+            'amount': float(obj.transaction.amount),
             'paid_at': obj.transaction.paid_at.isoformat() if obj.transaction.paid_at else None
         }
 
@@ -253,4 +219,123 @@ class TaxReportSerializer(serializers.ModelSerializer):
             'id': obj.landlord.id,
             'company_name': obj.landlord.company_name,
             'user': obj.landlord.user.get_full_name(),
+        }
+
+
+# ============================================
+# NEW: RentPeriod Architecture Serializers
+# ============================================
+
+class RentPeriodSerializer(serializers.ModelSerializer):
+    """Serializer for RentPeriod - the canonical rent ledger"""
+    student_details = serializers.SerializerMethodField()
+    hostel_details = serializers.SerializerMethodField()
+    room_details = serializers.SerializerMethodField()
+    balance = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    transactions = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = RentPeriod
+        fields = [
+            'id', 'student', 'student_details', 'hostel', 'hostel_details',
+            'room', 'room_details', 'booking', 'bed_slot_id',
+            'start_date', 'end_date', 'amount_due', 'amount_paid', 'balance',
+            'status', 'assigned_paybill', 'student_account_ref',
+            'transactions', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at', 'balance']
+    
+    def get_student_details(self, obj):
+        return {
+            'id': obj.student.id,
+            'name': obj.student.user.get_full_name(),
+            'email': obj.student.user.email,
+        }
+    
+    def get_hostel_details(self, obj):
+        return {
+            'id': obj.hostel.id,
+            'name': obj.hostel.name,
+            'address': obj.hostel.address,
+        }
+    
+    def get_room_details(self, obj):
+        if not obj.room:
+            return None
+        return {
+            'id': obj.room.id,
+            'room_number': obj.room.room_number,
+            'room_type': obj.room.room_type,
+        }
+    
+    def get_transactions(self, obj):
+        """Return simplified transaction list for this period"""
+        transactions = obj.transactions.all().order_by('-paid_at')
+        return [{
+            'id': txn.id,
+            'reference': txn.transaction_reference,
+            'amount': float(txn.amount),
+            'payment_method': txn.payment_method,
+            'status': txn.status,
+            'paid_at': txn.paid_at.isoformat() if txn.paid_at else None,
+        } for txn in transactions]
+
+
+class StudentWalletSerializer(serializers.ModelSerializer):
+    """Serializer for StudentWallet - tracks overpayments/credits"""
+    student_details = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = StudentWallet
+        fields = ['id', 'student', 'student_details', 'balance', 'updated_at']
+        read_only_fields = ['updated_at']
+    
+    def get_student_details(self, obj):
+        return {
+            'id': obj.student.id,
+            'name': obj.student.user.get_full_name(),
+            'email': obj.student.user.email,
+        }
+
+
+class TransferLogSerializer(serializers.ModelSerializer):
+    """Serializer for TransferLog - audit trail for room transfers"""
+    student_details = serializers.SerializerMethodField()
+    from_period_details = serializers.SerializerMethodField()
+    to_period_details = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = TransferLog
+        fields = [
+            'id', 'student', 'student_details',
+            'from_rent_period', 'from_period_details',
+            'to_rent_period', 'to_period_details',
+            'transfer_date', 'reason'
+        ]
+        read_only_fields = ['transfer_date']
+    
+    def get_student_details(self, obj):
+        return {
+            'id': obj.student.id,
+            'name': obj.student.user.get_full_name(),
+        }
+    
+    def get_from_period_details(self, obj):
+        period = obj.from_rent_period
+        return {
+            'id': period.id,
+            'hostel': period.hostel.name,
+            'room': period.room.room_number if period.room else None,
+            'start_date': period.start_date,
+            'end_date': period.end_date,
+        }
+    
+    def get_to_period_details(self, obj):
+        period = obj.to_rent_period
+        return {
+            'id': period.id,
+            'hostel': period.hostel.name,
+            'room': period.room.room_number if period.room else None,
+            'start_date': period.start_date,
+            'end_date': period.end_date,
         }

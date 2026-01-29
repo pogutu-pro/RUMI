@@ -1,8 +1,19 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
 from .mpesa_webhooks import StkPushWebhookView, C2BValidationWebhookView, C2BConfirmationWebhookView
+from .rent_period_views import RentPeriodViewSet, StudentWalletViewSet, TransferLogViewSet
+
+# DRF Router for RentPeriod architecture endpoints
+router = DefaultRouter()
+router.register(r'rent-periods', RentPeriodViewSet, basename='rentperiod')
+router.register(r'wallet', StudentWalletViewSet, basename='studentwallet')
+router.register(r'transfers', TransferLogViewSet, basename='transferlog')
 
 urlpatterns = [
+    # RentPeriod Architecture API (NEW)
+    path('', include(router.urls)),
+    
     # Payment initialization
     path('initialize/', views.PaymentInitializeView.as_view(), name='payment_initialize'),
     

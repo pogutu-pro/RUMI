@@ -23,25 +23,30 @@ export interface Payment {
   id: string;
   amount: number;
   status: 'completed' | 'pending' | 'failed' | 'success' | 'pending_stk_push' | 'cancelled';
-  date: Date;
+  date: string;
   user: {
     name: string;
     email: string;
   };
   method: string;
   reference: string;
-  type: 'rent' | 'deposit' | 'fee';
+  type: 'rent' | 'deposit' | 'fee' | 'wallet_credit';
+  rent_period?: number;
 }
 
 export interface Transaction {
-  id: string;
+  id: number;
   date: string;
   amount: number;
-  type: 'rent' | 'deposit' | 'penalty' | 'refund';
-  status: 'completed' | 'pending' | 'failed';
+  type: 'rent' | 'deposit' | 'penalty' | 'refund' | 'wallet_credit';
+  status: 'success' | 'pending' | 'failed';
   method: string;
   reference: string;
   description?: string;
+  metadata?: any;
+  paid_at?: string;
+  rent_period?: number;
+  booking?: number;
 }
 
 export interface PaymentMethod {
@@ -55,13 +60,67 @@ export interface PaymentMethod {
   updatedAt?: string;
 }
 
-export interface RecurringPayment {
-  id: string;
+export interface RentPeriod {
+  id: number;
+  student: number;
+  student_details: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  hostel: number;
+  hostel_details: {
+    id: number;
+    name: string;
+    address: string;
+  };
+  room?: number;
+  room_details?: {
+    id: number;
+    room_number: string;
+    room_type: string;
+  };
+  booking: number;
+  bed_slot_id: string;
+  start_date: string;
+  end_date: string;
+  amount_due: number;
+  amount_paid: number;
+  balance: number;
+  status: 'due' | 'partially_paid' | 'paid' | 'overdue' | 'transferred';
+  assigned_paybill?: string;
+  student_account_ref: string;
+  transactions: Array<{
+    id: number;
+    reference: string;
+    amount: number;
+    payment_method: string;
+    status: string;
+    paid_at: string | null;
+  }>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StudentWallet {
+  id: number;
+  student: number;
+  student_details: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  balance: number;
+  updated_at: string;
+}
+
+export interface TransferLog {
+  id: number;
+  student: number;
+  student_details: { id: number; name: string; email: string };
   amount: number;
-  frequency: 'monthly' | 'weekly' | 'biweekly';
-  nextPaymentDate: string;
-  status: 'active' | 'paused' | 'cancelled';
-  paymentMethod: PaymentMethod;
+  reason: string;
+  created_at: string;
 }
 
 export interface RentStatusInfo {
@@ -86,11 +145,10 @@ export interface PaymentStats {
 export interface Payout {
   id: string;
   amount: number;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  currency: string;
-  recipient: string;
-  createdAt: string;
-  scheduledDate?: string;
+  status: 'pending' | 'processing' | 'success' | 'failed';
+  reference: string;
+  created_at: string;
+  processed_at?: string;
 }
 
 export interface RefundRequest {
@@ -110,11 +168,12 @@ export interface Refund {
 
 // M-Pesa Specific Types
 export interface MpesaInitializeRequest {
-  booking_id: number | string;
-  payment_type: 'initial' | 'late_fee';
-  payment_method: 'stk_push';
+  booking_id: string | number;
+  payment_type: 'initial' | 'rent' | 'late_fee';
+  payment_method: 'stk_push' | 'paybill';
   phone_number: string;
-  late_fee_id?: number | string;
+  rent_period_id?: number;
+  amount?: number;
 }
 
 export interface MpesaInitializeResponse {
@@ -144,7 +203,7 @@ export interface MpesaPaymentStatusResponse {
 
 export interface MpesaConfig {
   id: number;
-  payment_type: 'till_number' | 'paybill_number' | 'pochi_la_biashara' | 'send_money';
+  payment_type: 'paybill';
   mpesa_number: string;
   business_name: string;
   is_default: boolean;
@@ -153,7 +212,7 @@ export interface MpesaConfig {
 }
 
 export interface CreateMpesaConfigRequest {
-  payment_type: MpesaConfig['payment_type'];
+  payment_type: 'paybill';
   mpesa_number: string;
   business_name: string;
   is_default?: boolean;
@@ -161,10 +220,12 @@ export interface CreateMpesaConfigRequest {
 
 export interface PaymentInitializeRequest {
   bookingId: string | number;
-  method: 'mpesa' | 'bank';
+  rentPeriodId?: string | number;
+  method: 'mpesa' | 'paystack';
   phoneNumber?: string;
   amount?: number;
 }
+
 
 
 
