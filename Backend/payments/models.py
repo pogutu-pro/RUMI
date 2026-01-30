@@ -192,6 +192,8 @@ class Transaction(models.Model):
     metadata = models.JSONField(blank=True, null=True) # Full payload from gateway
     
     # M-Pesa Specifics
+    mpesa_checkout_request_id = models.CharField(max_length=100, blank=True, null=True)
+    mpesa_merchant_request_id = models.CharField(max_length=100, blank=True, null=True)
     mpesa_receipt_number = models.CharField(max_length=50, blank=True, null=True)
     mpesa_phone_number = models.CharField(max_length=15, blank=True, null=True)
 

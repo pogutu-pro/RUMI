@@ -6,11 +6,22 @@ import { useDropzone, FileRejection } from 'react-dropzone';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import {
-  SortableContainer,
-  SortableElement,
-  SortableHandle,
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
   arrayMove,
-} from 'react-sortable-hoc';
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 
@@ -23,22 +34,43 @@ interface MultiImageUploadProps {
   maxSize?: number; // in bytes
 }
 
-const DragHandle = SortableHandle(() => (
-  <GripVertical className="h-5 w-5 cursor-grab text-muted-foreground hover:text-foreground transition-colors" />
-));
+interface SortableItemProps {
+  file: UploadedFile;
+  onRemove: (id: string) => void;
+}
 
-const SortableItem = SortableElement(
-  ({
-    file,
-    onRemove,
-  }: {
-    file: UploadedFile;
-    onRemove: (id: string) => void;
-  }) => (
-    <li className="relative flex items-center bg-card border rounded-lg shadow-sm h-20 p-2 group">
+function SortableItem({ file, onRemove }: SortableItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: file.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'relative flex items-center bg-card border rounded-lg shadow-sm h-20 p-2 group transition-shadow',
+        isDragging && 'shadow-lg opacity-80 border-primary/50'
+      )}
+    >
       {/* Drag Handle */}
-      <div className="h-full px-2 flex items-center border-r mr-3">
-        <DragHandle />
+      <div 
+        {...attributes} 
+        {...listeners}
+        className="h-full px-2 flex items-center border-r mr-3 cursor-grab active:cursor-grabbing"
+      >
+        <GripVertical className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
       </div>
 
       {/* Image Preview */}
@@ -70,32 +102,8 @@ const SortableItem = SortableElement(
         <X className="h-4 w-4" />
       </Button>
     </li>
-  ),
-);
-
-const SortableList = SortableContainer(
-  ({
-    files,
-    onRemove,
-  }: {
-    files: UploadedFile[];
-    onRemove: (id: string) => void;
-  }) => {
-    return (
-      <ul className="space-y-3">
-        {files.map((file, index) => (
-          <SortableItem
-            key={file.id}
-            index={index}
-            // @ts-ignore
-            file={file}
-            onRemove={onRemove}
-          />
-        ))}
-      </ul>
-    );
-  },
-);
+  );
+}
 
 /**
  * Component for uploading, previewing, and reordering multiple images.
@@ -106,6 +114,13 @@ export function MultiImageUpload({
   maxFiles = 10,
   maxSize = 5 * 1024 * 1024, // Default 5MB
 }: MultiImageUploadProps) {
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const onDrop = React.useCallback(
     (acceptedFiles: File[], fileRejections: FileRejection[]) => {
       // Check if new files exceed maxFiles limit
@@ -143,14 +158,15 @@ export function MultiImageUpload({
     multiple: true,
   });
 
-  const onSortEnd = ({
-    oldIndex,
-    newIndex,
-  }: {
-    oldIndex: number;
-    newIndex: number;
-  }) => {
-    setFiles(arrayMove(files, oldIndex, newIndex));
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = files.findIndex((f) => f.id === active.id);
+      const newIndex = files.findIndex((f) => f.id === over.id);
+
+      setFiles(arrayMove(files, oldIndex, newIndex));
+    }
   };
 
   const handleRemove = (id: string) => {
@@ -201,14 +217,27 @@ export function MultiImageUpload({
             <ImageIcon className="h-5 w-5 text-primary" />
             <span>Manage Photos (Drag to Reorder)</span>
           </h3>
-          <SortableList
-            // @ts-ignore
-            files={files}
-            onRemove={handleRemove}
-            onSortEnd={onSortEnd}
-            useDragHandle
-            lockAxis="y" // Ensure items only move vertically
-          />
+          
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={files.map((f) => f.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <ul className="space-y-3">
+                {files.map((file) => (
+                  <SortableItem
+                    key={file.id}
+                    file={file}
+                    onRemove={handleRemove}
+                  />
+                ))}
+              </ul>
+            </SortableContext>
+          </DndContext>
         </div>
       )}
     </div>

@@ -230,9 +230,13 @@ MPESA_CONSUMER_KEY = os.getenv('MPESA_CONSUMER_KEY')
 MPESA_CONSUMER_SECRET = os.getenv('MPESA_CONSUMER_SECRET')
 MPESA_SHORTCODE = os.getenv('MPESA_SHORTCODE')
 MPESA_PASSKEY = os.getenv('MPESA_PASSKEY')
-MPESA_CALLBACK_URL = os.getenv('MPESA_C2B_CONFIRMATION_URL', f"{os.getenv('FRONTEND_URL', 'https://rumi.co.ke')}/api/payments/webhook/mpesa/stk_push")
-MPESA_VALIDATION_URL = os.getenv('MPESA_C2B_VALIDATION_URL', f"{os.getenv('FRONTEND_URL', 'https://rumi.co.ke')}/api/payments/webhook/mpesa/c2b_validation")
-MPESA_CONFIRMATION_URL = os.getenv('MPESA_C2B_CONFIRMATION_URL', f"{os.getenv('FRONTEND_URL', 'https://rumi.co.ke')}/api/payments/webhook/mpesa/c2b_confirmation")
+
+# Webhook URLs (must include /api/v1/ and trailing slash)
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rumi.co.ke').rstrip('/')
+MPESA_CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL', f"{FRONTEND_URL}/api/v1/payments/webhook/mpesa/stk_push/")
+MPESA_VALIDATION_URL = os.getenv('MPESA_VALIDATION_URL', f"{FRONTEND_URL}/api/v1/payments/webhook/mpesa/c2b_validation/")
+MPESA_CONFIRMATION_URL = os.getenv('MPESA_C2B_CONFIRMATION_URL', f"{FRONTEND_URL}/api/v1/payments/webhook/mpesa/c2b_confirmation/")
+
 MPESA_SANDBOX = os.getenv('MPESA_SANDBOX', 'True').lower() == 'true'
 
 # Google Maps Configuration

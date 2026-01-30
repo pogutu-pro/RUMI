@@ -2122,21 +2122,15 @@ class MpesaPaymentInitializeView(APIView):
             # Create transaction with minimal fields
             transaction_ref = f"RUMI-{transaction_type.upper()}-{booking.id}-{uuid.uuid4().hex[:8]}"
             
-            # Create transaction with no service fees (revenue via subscriptions)
+            # Create transaction with fields existing in the model
             transaction_obj = Transaction.objects.create(
+                rent_period=getattr(booking, 'current_rent_period', None), # Try to link rent period if possible
                 booking=booking,
                 student=booking.student,
-                landlord=booking.room.hostel.landlord,
                 transaction_reference=transaction_ref,
                 transaction_type=transaction_type,
-                payment_plan='monthly',
                 payment_method='mpesa',
-                mpesa_payment_type='stk_push',
-                base_rent=amount,
-                student_service_fee=Decimal('0.00'),  # No service fee
-                total_charged_amount=amount,  # Total = base rent
-                landlord_payout_amount=amount,  # Landlord gets full amount
-                gross_platform_revenue=Decimal('0.00'),  # No platform revenue
+                amount=amount,
                 status='pending'
             )
             
@@ -2165,8 +2159,9 @@ class MpesaPaymentInitializeView(APIView):
             
             # Update transaction with minimal operations
             transaction_obj.mpesa_checkout_request_id = stk_result.get('CheckoutRequestID')
+            transaction_obj.mpesa_merchant_request_id = stk_result.get('MerchantRequestID')
             transaction_obj.mpesa_phone_number = formatted_phone
-            transaction_obj.save(update_fields=['mpesa_checkout_request_id', 'mpesa_phone_number'])
+            transaction_obj.save(update_fields=['mpesa_checkout_request_id', 'mpesa_merchant_request_id', 'mpesa_phone_number'])
             
             # Fast response with minimal data
             return Response({
