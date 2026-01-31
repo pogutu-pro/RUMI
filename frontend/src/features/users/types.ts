@@ -7,6 +7,7 @@ export interface User {
   email: string;
   role: UserRole;
   is_verified: boolean;
+  is_profile_complete?: boolean;
   phone_number?: string;
   profile_picture?: string;
   avatar?: string;

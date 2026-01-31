@@ -42,8 +42,14 @@ function useAuthRedirect() {
   const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
 
   const redirectUser = React.useCallback(
-    (role: string | undefined) => {
-      // Check for redirect URL first
+    (role: string | undefined, isProfileComplete: boolean = true) => {
+      // 1. Check for forced onboarding
+      if (!isProfileComplete && (role === 'student' || role === 'landlord')) {
+        router.push('/onboarding');
+        return;
+      }
+
+      // 2. Check for redirect URL first
       const redirectTo = searchParams?.get('redirect') || localStorage.getItem('redirectAfterLogin');
       
       if (redirectTo) {
@@ -52,7 +58,7 @@ function useAuthRedirect() {
         return;
       }
       
-      // Default role-based redirect
+      // 3. Default role-based redirect
       if (!role) {
         router.push(DEFAULT_REDIRECT);
         return;
@@ -160,7 +166,8 @@ function useAuthSuccess() {
     queryClient.invalidateQueries({ queryKey: ['profile'] });
 
     // 4. Redirect
-    redirectUser(response.user?.role);
+    const isProfileComplete = response.is_profile_complete ?? response.user?.is_profile_complete ?? true;
+    redirectUser(response.user?.role, isProfileComplete);
 
     // 5. Toast
     toast.success(successMessage);

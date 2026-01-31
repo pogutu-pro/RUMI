@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
+import { useIsFetching } from '@tanstack/react-query';
 import { Menu, X, User } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,9 @@ export const HostelsHeader = React.memo(function HostelsHeader({
 
   const { setSearchQuery } = useFiltersStore();
   const router = useRouter();
+  
+  // Track global loading state for hostels to show spinner in search
+  const isFetching = useIsFetching({ queryKey: ['hostels'] });
 
   const handleSearch = React.useCallback((query: string) => {
     setSearchQuery(query);
@@ -73,44 +77,51 @@ export const HostelsHeader = React.memo(function HostelsHeader({
     <>
       <header
         className={cn(
-          'fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out',
+          'fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out border-b',
           isScrolled
-            ? 'bg-white/98 backdrop-blur-md shadow-sm py-2.5'
-            : 'bg-white py-3.5'
+            ? 'bg-white border-gray-200 py-3 shadow-sm'
+            : 'bg-white border-transparent py-4'
         )}
       >
         <div className="container mx-auto px-4 lg:px-6">
-          <div className="flex items-center justify-between gap-3 md:gap-6">
-            {/* Left: Logo & Name */}
-            <Link
-              href="/"
-              className="flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg group shrink-0"
-            >
-              <div className="relative h-9 w-9 md:h-10 md:w-10 overflow-hidden rounded-xl transition-transform group-hover:scale-105 group-active:scale-95">
-                <Image
-                  src="/images/logo/logo.svg"
-                  alt="RUMI"
-                  width={40}
-                  height={40}
-                  className="object-cover w-auto h-auto"
-                  priority
-                />
-              </div>
-              <span className="font-bold text-xl md:text-2xl tracking-tight bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                RUMI
-              </span>
-            </Link>
-
-            {/* Center: Search Bar (Hidden on mobile, visible on tablet+) */}
-            <div className="hidden md:flex flex-1 max-w-xl mx-auto">
-              <SimpleHostelSearch onSearch={handleSearch} />
+          <div className="grid grid-cols-12 gap-4 items-center">
+            
+            {/* Left: Brand (3 cols) */}
+            <div className="col-span-3 lg:col-span-3 flex items-center">
+              <Link
+                href="/"
+                className="flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 rounded-lg group"
+              >
+                <div className="relative h-8 w-8 overflow-hidden rounded-lg transition-transform group-hover:scale-105">
+                  <Image
+                    src="/images/logo/logo.svg"
+                    alt="RUMI"
+                    width={32}
+                    height={32}
+                    className="object-contain"
+                    priority
+                    style={{ height: 'auto' }}
+                  />
+                </div>
+                <span className="font-bold text-lg tracking-tight text-gray-900 hidden sm:inline-block">
+                  RUMI
+                </span>
+              </Link>
             </div>
 
-            {/* Right: Profile & Menu */}
-            <div className="flex items-center gap-2 shrink-0">
+            {/* Center: Search (6 cols) - Hidden on mobile, visible on tablet+ */}
+            <div className="hidden md:flex col-span-6 justify-center">
+              <SimpleHostelSearch 
+                onSearch={handleSearch} 
+                className="w-full max-w-sm" 
+                isLoading={isFetching > 0}
+              />
+            </div>
+
+            {/* Right: Actions (3 cols) */}
+            <div className="col-span-9 md:col-span-3 flex justify-end items-center gap-3">
               {sanitizedUser ? (
                 <>
-                  {/* Desktop: User Menu */}
                   <div className="hidden md:block">
                     <UserMenu
                       userName={sanitizedUser.name}
@@ -120,11 +131,11 @@ export const HostelsHeader = React.memo(function HostelsHeader({
                     />
                   </div>
                   
-                  {/* Mobile: Profile Icon */}
+                  {/* Mobile Profile Trigger */}
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="md:hidden h-10 w-10 rounded-full"
+                    className="md:hidden h-9 w-9 rounded-full border border-gray-200"
                     asChild
                   >
                     <Link href={`/${sanitizedUser.role}/dashboard`}>
@@ -132,110 +143,59 @@ export const HostelsHeader = React.memo(function HostelsHeader({
                         <Image
                           src={sanitizedUser.image}
                           alt={sanitizedUser.name}
-                          width={40}
-                          height={40}
+                          width={36}
+                          height={36}
                           className="rounded-full object-cover"
                         />
                       ) : (
-                        <User className="h-5 w-5" />
+                        <User className="h-4 w-4 text-gray-700" />
                       )}
                     </Link>
                   </Button>
                 </>
               ) : (
                 <div className="flex items-center gap-2">
-                  {/* Hamburger Menu Icon - Desktop */}
                   <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                     <SheetTrigger asChild>
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hidden md:flex h-10 w-10 rounded-full text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                        className="h-10 px-6 rounded-md text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-sm active:scale-95"
                       >
-                        <Menu className="h-6 w-6" />
-                        <span className="sr-only">Open menu</span>
+                        Menu
                       </Button>
                     </SheetTrigger>
-                    <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                      <SheetHeader className="sr-only">
-                        <SheetTitle>Navigation Menu</SheetTitle>
-                        <SheetDescription>Main navigation menu for accessing pages.</SheetDescription>
-                      </SheetHeader>
-                      <div className="h-full flex flex-col">
-                        <div className="mb-6 flex items-center gap-2">
-                          <div className="relative h-8 w-8 overflow-hidden rounded-lg">
-                            <Image
-                              src="/images/logo/logo.svg"
-                              alt="RUMI"
-                              width={32}
-                              height={32}
-                              className="object-cover w-auto h-auto"
-                            />
+                    <SheetContent side="right" className="w-[300px] sm:w-[400px] p-0">
+                       <div className="h-full flex flex-col pt-6 px-6">
+                        <div className="mb-8 flex items-center gap-2">
+                          <div className="relative h-7 w-7 rounded-sm overflow-hidden">
+                             <Image src="/images/logo/logo.svg" alt="RUMI" fill className="object-cover" />
                           </div>
-                          <span className="font-bold text-xl tracking-tight">RUMI</span>
+                          <span className="font-bold text-lg tracking-tight">RUMI</span>
                         </div>
                         <PublicMenuContent onClose={() => setIsMenuOpen(false)} />
                       </div>
                     </SheetContent>
                   </Sheet>
-
-                  {/* Profile Icon (Login) - Desktop */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hidden md:flex h-10 w-10 rounded-full text-gray-700 hover:text-gray-900 hover:bg-gray-100"
-                    asChild
-                  >
-                    <Link href={LOGIN_HREF} aria-label="Log in">
-                      <User className="h-6 w-6" />
-                    </Link>
-                  </Button>
+                  
+                  {/* Login/Signup Links for Desktop - Optional based on "Action" requirement.
+                      Keeping it minimal as per "Menu" instruction, but usually "Log in" is distinct.
+                      If user said "remove login icon entirely", we stick to Menu. 
+                  */}
                 </div>
               )}
-
-              {/* Mobile Hamburger Menu */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden h-10 w-10 rounded-full hover:bg-gray-100"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              >
-                {isMobileMenuOpen ? (
-                  <X className="h-5 w-5" />
-                ) : (
-                  <Menu className="h-5 w-5" />
-                )}
-                <span className="sr-only">Toggle menu</span>
-              </Button>
             </div>
           </div>
 
-          {/* Mobile Search Bar & Profile Layout */}
-          <div className="md:hidden mt-3 flex items-center gap-3">
-            <div className="flex-1">
-              <SimpleHostelSearch onSearch={handleSearch} />
-            </div>
-            {/* Mobile Profile Icon */}
-            {!sanitizedUser && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-full flex-shrink-0 text-gray-700 hover:text-gray-900 hover:bg-gray-100"
-                asChild
-              >
-                <Link href={LOGIN_HREF} aria-label="Log in">
-                  <User className="h-6 w-6" />
-                </Link>
-              </Button>
-            )}
+          {/* Mobile Search Bar Row */}
+          <div className="md:hidden mt-3 pb-1">
+            <SimpleHostelSearch onSearch={handleSearch} isLoading={isFetching > 0} />
           </div>
         </div>
       </header>
 
       {/* Mobile Menu Overlay - Only for authenticated users */}
       {isMobileMenuOpen && sanitizedUser && (
-        <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="fixed right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-white shadow-2xl animate-in slide-in-from-right duration-300">
+        <div className="fixed inset-0 z-40 bg-black/40 duration-200">
+          <div className="fixed right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-white shadow-sm duration-300">
             <div className="flex flex-col h-full">
               {/* Menu Header */}
               <div className="flex items-center justify-between p-4 border-b">

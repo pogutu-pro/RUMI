@@ -18,8 +18,13 @@ import {
   type RegisterStudentFormData,
 } from '@/lib/validations/auth.schema';
 import { mapApiMessage } from '@/lib/api/error-mapping';
+import { GoogleAuthButton, OAuthDivider } from '@/features/auth';
 
-export function StudentRegisterForm() {
+interface StudentRegisterFormProps {
+  onGoogleSuccess?: (data: any) => void;
+}
+
+export function StudentRegisterForm({ onGoogleSuccess }: StudentRegisterFormProps) {
   const {
     form: {
       register,
@@ -64,10 +69,19 @@ export function StudentRegisterForm() {
   return (
     <section className="space-y-6">
       {apiMessage && (
-        <Alert variant="destructive" role="alert">
-          <AlertDescription>{apiMessage}</AlertDescription>
+        <Alert variant="destructive" role="alert" className="rounded-none border-2">
+          <AlertDescription className="font-bold">{apiMessage}</AlertDescription>
         </Alert>
       )}
+
+      <div className="space-y-4">
+        <GoogleAuthButton 
+          mode="register" 
+          onSuccess={onGoogleSuccess}
+          onError={(err) => console.error(err)}
+        />
+        <OAuthDivider />
+      </div>
 
       <form onSubmit={onSubmit} className="space-y-5" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">

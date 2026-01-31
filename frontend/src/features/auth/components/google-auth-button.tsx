@@ -53,15 +53,15 @@ export function GoogleAuthButton({ mode, onSuccess, onError, skipRoleSelection =
     <Button
       type="button"
       variant="outline"
-      className="w-full h-12 text-base font-semibold border-gray-400 hover:bg-gray-50 hover:border-black text-gray-800 relative"
+      className="w-full h-12 text-base font-black border-2 border-primary/20 hover:bg-primary/5 hover:border-primary text-gray-900 relative rounded-none uppercase tracking-widest transition-all group active:scale-[0.98]"
       onClick={() => login()}
       disabled={isPending}
     >
       {isPending ? (
-        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+        <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
       ) : (
         <svg
-          className="h-5 w-5 absolute left-4"
+          className="h-5 w-5 absolute left-4 transition-all"
           aria-hidden="true"
           viewBox="0 0 24 24"
         >
@@ -84,7 +84,7 @@ export function GoogleAuthButton({ mode, onSuccess, onError, skipRoleSelection =
         </svg>
       )}
       <span className="flex-1 text-center">
-        Continue with Google
+        {mode === 'login' ? 'Continue' : 'Sign up'} with Google
       </span>
     </Button>
   );

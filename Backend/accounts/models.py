@@ -232,6 +232,8 @@ class LandlordProfile(models.Model):
     national_id = models.CharField(
         max_length=20,
         unique=True,
+        blank=True,
+        null=True,
         validators=[MinLengthValidator(5), MaxLengthValidator(20)]
     )
     business_address = models.TextField(blank=True, null=True)
@@ -241,6 +243,7 @@ class LandlordProfile(models.Model):
     paystack_subaccount_code = models.CharField(max_length=100, unique=True, blank=True, null=True)
     total_units = models.IntegerField(default=0, validators=[MinValueValidator(0)], blank=True, null=True)
     is_verified = models.BooleanField(default=False)
+    is_profile_complete = models.BooleanField(default=False)
     verification_documents = models.JSONField(blank=True, null=True)
     verified_at = models.DateTimeField(blank=True, null=True)
     verified_by = models.ForeignKey(
@@ -269,6 +272,18 @@ class LandlordProfile(models.Model):
             models.Index(fields=['is_verified'], name='idx_landlord_verified'),
             models.Index(fields=['paystack_subaccount_code'], name='idx_landlord_paystack'),
         ]
+
+    def save(self, *args, **kwargs):
+        """Auto-calculate profile completion status"""
+        required_fields = [
+            self.company_name,
+            self.national_id,
+            self.bank_name,
+            self.bank_account_number,
+            self.user.phone_number,
+        ]
+        self.is_profile_complete = all(required_fields)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.company_name or self.user.get_full_name()} - {self.national_id}"

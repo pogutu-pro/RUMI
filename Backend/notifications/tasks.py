@@ -73,7 +73,7 @@ def send_notification(recipient_id, notification_type, channel, context):
             if channel == 'email':
                 _send_email_via_mailtrap(recipient.email, subject, message)
             elif channel == 'sms':
-                _send_sms_via_africatalking(recipient.phone_number, message)
+                _send_sms_via_kenyatalking(recipient.phone_number, message)
             elif channel == 'in_app':
                 # Already stored in DB, no external service needed
                 pass
@@ -168,9 +168,9 @@ def _send_email_via_mailtrap(recipient, subject, html_content):
     return email.send(fail_silently=False)
 
 
-def _send_sms_via_africatalking(phone_number, message):
+def _send_sms_via_kenyatalking(phone_number, message):
     """
-    Send SMS via African Talking with rate limiting
+    Send SMS via kenyan Talking with rate limiting
     """
     if not phone_number:
         raise ValueError("Phone number required for SMS")
@@ -182,12 +182,12 @@ def _send_sms_via_africatalking(phone_number, message):
 
     # Send SMS
     try:
-        import africastalking
-        africastalking.initialize(
-            username=settings.AFRICASTALKING_USERNAME,
-            api_key=settings.AFRICASTALKING_API_KEY
+        import kenyastalking
+        kenyastalking.initialize(
+            username=settings.kenyaSTALKING_USERNAME,
+            api_key=settings.kenyaSTALKING_API_KEY
         )
-        sms = africastalking.SMS
+        sms = kenyastalking.SMS
 
         response = sms.send(
             message=message,

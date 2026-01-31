@@ -187,16 +187,34 @@ export function PublicMenuContent({
                 href={item.href}
                 onClick={onClose}
                 className={cn(
-                  'flex items-center gap-4 px-6 py-4 text-base font-bold transition-colors',
+                  'group flex items-center gap-4 px-6 py-4 transition-colors border-b border-gray-100 last:border-0',
                   is_active
-                    ? 'text-primary border-l-4 border-primary bg-primary/5'
-                    : 'text-gray-700 hover:text-primary hover:bg-gray-50'
+                    ? 'bg-gray-50'
+                    : 'hover:bg-gray-50'
                 )}
               >
-                <span className={is_active ? 'text-primary' : 'text-gray-400 group-hover:text-primary'}>
+                <span className={cn(
+                  "flex items-center justify-center transition-colors",
+                  is_active ? "text-gray-900" : "text-gray-400 group-hover:text-gray-900"
+                )}>
                   {item.icon}
                 </span>
-                {item.label}
+                <div className="flex flex-col">
+                  <span className={cn(
+                    "text-sm font-bold tracking-tight",
+                    is_active ? "text-gray-900" : "text-gray-600 group-hover:text-gray-900"
+                  )}>
+                    {item.label}
+                  </span>
+                  {item.desc && (
+                    <span className="text-xs text-gray-400 mt-0.5 font-medium">
+                       {item.desc}
+                    </span>
+                  )}
+                </div>
+                {!is_active && (
+                   <ArrowRight className="ml-auto h-4 w-4 text-gray-300 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+                )}
               </Link>
             );
           })}
@@ -223,12 +241,12 @@ export function PublicMenuContent({
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            <Button className="w-full" size="lg" asChild>
+            <Button className="w-full bg-gray-900 hover:bg-black text-white rounded-md shadow-none" size="lg" asChild>
               <Link href={AUTH_ROUTES.LOGIN} onClick={onClose}>
                 Log in
               </Link>
             </Button>
-            <Button variant="outline" className="w-full" size="lg" asChild>
+            <Button variant="outline" className="w-full border-gray-200 text-gray-900 hover:bg-gray-50 hover:text-gray-900 rounded-md" size="lg" asChild>
               <Link href={AUTH_ROUTES.REGISTER} onClick={onClose}>
                 Sign up
               </Link>

@@ -9,6 +9,7 @@ export * from './components/verify-email-form';
 export * from './components/verify-phone-form';
 export * from './components/role-selector';
 export * from './components/google-auth-button';
+export * from './components/google-role-selection';
 export * from './components/oauth-divider';
 export * from './components/token-refresher';
 export * from './stores/auth.store';

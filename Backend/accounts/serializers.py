@@ -134,7 +134,20 @@ class UserLoginSerializer(serializers.Serializer):
 
                 student_profile.save()
 
-            # (Landlord/Caretaker logic preserved but omitted here for brevity as focus is Student)
+            # 3. Update Landlord Profile (if applicable)
+            elif instance.role == 'landlord':
+                landlord_profile, _ = LandlordProfile.objects.get_or_create(user=instance)
+                
+                landlord_fields = {
+                    'company_name', 'national_id', 'business_address', 
+                    'bank_name', 'bank_account_number'
+                }
+                
+                for field in landlord_fields:
+                    if field in validated_data:
+                        setattr(landlord_profile, field, validated_data[field])
+                
+                landlord_profile.save()
 
         return instance
 
@@ -350,6 +363,13 @@ class FullUserProfileSerializer(serializers.ModelSerializer):
     emergency_contact_phone = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     emergency_contact_relationship = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     lifestyle_preferences = serializers.JSONField(required=False, allow_null=True)
+    # Landlord Profile Fields (Write/Read)
+    company_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    national_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    business_address = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    bank_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    bank_account_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    
     urls = serializers.JSONField(required=False, allow_null=True) # Social links wrapper
     
     profile = serializers.SerializerMethodField() # For reading structured data
@@ -361,7 +381,9 @@ class FullUserProfileSerializer(serializers.ModelSerializer):
             'university', 'student_id_number', 'year_of_study', 'graduation_year',
             'course', 'campus', 'high_school', 'bio',
             'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship',
-            'lifestyle_preferences', 'urls', 'profile'
+            'lifestyle_preferences',
+            'company_name', 'national_id', 'business_address', 'bank_name', 'bank_account_number',
+            'urls', 'profile'
         ]
         read_only_fields = ['id', 'email', 'role']
 
@@ -435,6 +457,21 @@ class FullUserProfileSerializer(serializers.ModelSerializer):
                     student_profile.lifestyle_preferences = prefs
                 
                 student_profile.save()
+
+            # 3. Update Landlord Profile (if applicable)
+            elif instance.role == 'landlord':
+                landlord_profile, _ = LandlordProfile.objects.get_or_create(user=instance)
+                
+                landlord_fields = {
+                    'company_name', 'national_id', 'business_address', 
+                    'bank_name', 'bank_account_number'
+                }
+                
+                for field in landlord_fields:
+                    if field in validated_data:
+                        setattr(landlord_profile, field, validated_data[field])
+                
+                landlord_profile.save()
 
         return instance
 

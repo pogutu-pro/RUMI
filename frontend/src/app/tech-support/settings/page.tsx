@@ -73,7 +73,7 @@ export default function TechSupportSettingsPage() {
   // Platform preferences
   const [preferences, setPreferences] = React.useState({
     language: 'en',
-    timezone: 'Africa/Nairobi',
+    timezone: 'kenya/Nairobi',
     autoAssign: true,
     showOnlineStatus: true,
   });
@@ -523,7 +523,7 @@ export default function TechSupportSettingsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Africa/Nairobi">East Africa Time (EAT)</SelectItem>
+                    <SelectItem value="kenya/Nairobi">East kenya Time (EAT)</SelectItem>
                     <SelectItem value="UTC">UTC</SelectItem>
                   </SelectContent>
                 </Select>

@@ -32,10 +32,10 @@ class MonitoringConfig(AppConfig):
         self.memory_usage = Gauge('rumi_memory_usage_percent', 'Memory usage percentage')
         self.disk_usage = Gauge('rumi_disk_usage_percent', 'Disk usage percentage')
         
-        # Start Prometheus HTTP server on port 8001
+        # Start Prometheus HTTP server on port 8002
         try:
-            start_http_server(8001)
-            print("Prometheus metrics server started on port 8001")
+            start_http_server(8002)
+            print("Prometheus metrics server started on port 8002")
         except Exception as e:
             print(f"Failed to start Prometheus metrics server: {e}")
         

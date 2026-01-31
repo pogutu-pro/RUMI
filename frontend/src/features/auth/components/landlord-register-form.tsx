@@ -12,11 +12,16 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FormField, PasswordField } from '@/components/ui/form-fields';
 import { useRegistrationForm } from '../hooks/use-registration-form';
 import {
-  registerLandlordSchema,
   type RegisterLandlordFormData,
+  registerLandlordSchema,
 } from '@/lib/validations/auth.schema';
+import { GoogleAuthButton, OAuthDivider } from '@/features/auth';
 
-export function LandlordRegisterForm() {
+interface LandlordRegisterFormProps {
+  onGoogleSuccess?: (data: any) => void;
+}
+
+export function LandlordRegisterForm({ onGoogleSuccess }: LandlordRegisterFormProps) {
   const {
     form: {
       register,
@@ -52,11 +57,20 @@ export function LandlordRegisterForm() {
   return (
     <section className="space-y-6">
       {apiMessage && (
-        <Alert variant="destructive" role="alert">
+        <Alert variant="destructive" role="alert" className="rounded-none border-2">
           <AlertCircle className="h-4 w-4" aria-hidden />
-          <AlertDescription>{apiMessage}</AlertDescription>
+          <AlertDescription className="font-bold">{apiMessage}</AlertDescription>
         </Alert>
       )}
+
+      <div className="space-y-4">
+        <GoogleAuthButton 
+          mode="register" 
+          onSuccess={onGoogleSuccess}
+          onError={(err) => console.error(err)}
+        />
+        <OAuthDivider />
+      </div>
 
       <form onSubmit={onSubmit} className="space-y-5" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">

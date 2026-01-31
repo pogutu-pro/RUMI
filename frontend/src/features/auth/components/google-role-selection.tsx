@@ -1,11 +1,10 @@
 'use client';
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { User, Building, GraduationCap } from 'lucide-react';
 import { useCompleteGoogleLogin } from '../hooks/use-auth';
+import { AuthCard } from './auth-card';
+import { Button } from '@/components/ui/button';
+import { GraduationCap, Building, ChevronLeft } from 'lucide-react';
+import { cn } from '@/lib/utils/cn';
 
 interface GoogleRoleSelectionProps {
   userInfo: {
@@ -25,70 +24,76 @@ export function GoogleRoleSelection({ userInfo, accessToken, onBack }: GoogleRol
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="text-center">
-        <div className="mx-auto mb-4 w-20 h-20 rounded-full overflow-hidden border-2 border-gray-200">
-          <img 
-            src={userInfo.picture} 
-            alt={userInfo.name}
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <CardTitle className="text-xl">Welcome, {userInfo.name}!</CardTitle>
-        <CardDescription>
-          Select your role to continue with {userInfo.email}
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        <div className="space-y-3">
-          <Button
-            variant="outline"
-            className="w-full h-auto p-4 flex items-center justify-start space-x-3"
+    <div className="w-full max-w-lg mx-auto">
+      <AuthCard
+        icon={
+          <div className="w-16 h-16 border-2 border-primary overflow-hidden rounded-none">
+            <img 
+              src={userInfo.picture} 
+              alt={userInfo.name}
+              className="w-full h-full object-cover transition-all"
+            />
+          </div>
+        }
+        title={<span className="font-black text-2xl tracking-tight uppercase">Welcome, {userInfo.name.split(' ')[0]}</span>}
+        description={
+          <div className="space-y-1">
+            <p className="text-gray-900 font-bold">{userInfo.email}</p>
+            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Select your identity to finish registration</p>
+          </div>
+        }
+      >
+        <div className="grid gabp-4 sm:grid-cols-2 mt-4">
+          <button
             onClick={() => handleRoleSelect('student')}
             disabled={isPending}
+            className={cn(
+               "flex flex-col items-start p-6 border-2 border-gray-100 bg-white transition-all group hover:border-primary hover:bg-primary/5 rounded-none text-left",
+               isPending && "opacity-50 cursor-not-allowed"
+            )}
           >
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <GraduationCap className="w-5 h-5 text-blue-600" />
+            <div className="mb-6 p-3 border-2 border-gray-100 bg-gray-50 text-gray-500 group-hover:border-primary/30 group-hover:text-primary transition-colors">
+               <GraduationCap className="h-6 w-6" />
             </div>
-            <div className="text-left">
-              <div className="font-semibold">Student</div>
-              <div className="text-sm text-gray-600">Find and book hostels</div>
-            </div>
-            <Badge variant="secondary" className="ml-auto">Popular</Badge>
-          </Button>
+            <h3 className="font-black text-xl mb-1 tracking-tight text-gray-900 group-hover:text-primary transition-colors">Student</h3>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-tighter leading-tight">Find & Book verified hostels</p>
+          </button>
 
-          <Button
-            variant="outline"
-            className="w-full h-auto p-4 flex items-center justify-start space-x-3"
+          <button
             onClick={() => handleRoleSelect('landlord')}
             disabled={isPending}
+            className={cn(
+               "flex flex-col items-start p-6 border-2 border-gray-100 bg-white transition-all group hover:border-primary hover:bg-primary/5 rounded-none text-left",
+               isPending && "opacity-50 cursor-not-allowed"
+            )}
           >
-            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-              <Building className="w-5 h-5 text-green-600" />
+            <div className="mb-6 p-3 border-2 border-gray-100 bg-gray-50 text-gray-500 group-hover:border-primary/30 group-hover:text-primary transition-colors">
+               <Building className="h-6 w-6" />
             </div>
-            <div className="text-left">
-              <div className="font-semibold">Landlord</div>
-              <div className="text-sm text-gray-600">List and manage properties</div>
-            </div>
-          </Button>
+            <h3 className="font-black text-xl mb-1 tracking-tight text-gray-900 group-hover:text-primary transition-colors">Landlord</h3>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-tighter leading-tight">Manage your property & tenants</p>
+          </button>
         </div>
 
-        <Button
-          variant="ghost"
-          className="w-full"
-          onClick={onBack}
-          disabled={isPending}
-        >
-          Back to sign in options
-        </Button>
+        <div className="pt-6 border-t-2 border-primary/10 flex flex-col items-center gap-4">
+          <Button
+            variant="ghost"
+            className="text-xs font-black text-gray-500 uppercase tracking-widest hover:text-primary transition-colors"
+            onClick={onBack}
+            disabled={isPending}
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Different Account
+          </Button>
 
-        {isPending && (
-          <div className="text-center text-sm text-gray-600">
-            Creating your account...
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          {isPending && (
+            <div className="flex items-center gap-2 text-primary font-black text-sm uppercase tracking-widest animate-pulse">
+               <span className="w-2 h-2 bg-primary rounded-none" />
+               Initializing Account...
+            </div>
+          )}
+        </div>
+      </AuthCard>
+    </div>
   );
 }

@@ -361,7 +361,7 @@ export default function SettingsPage() {
                       <SelectValue placeholder="Select timezone" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="eat">East Africa Time (EAT)</SelectItem>
+                      <SelectItem value="eat">East kenya Time (EAT)</SelectItem>
                       <SelectItem value="gmt">Greenwich Mean Time (GMT)</SelectItem>
                       <SelectItem value="est">Eastern Standard Time (EST)</SelectItem>
                     </SelectContent>

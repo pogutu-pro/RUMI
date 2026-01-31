@@ -152,96 +152,81 @@ export function HostelFiltersPanel({
       </div>
 
       {/* Filters Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-8">
-        {/* Location Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <MapPin className="h-4 w-4 text-primary" />
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-10">
+        
+        {/* Section: Location */}
+        <div className="space-y-5">
+          <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest">
+            <MapPin className="h-3.5 w-3.5" />
             <span>Location</span>
           </div>
           
-          {/* University */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-foreground">University</Label>
-            <Select
-              value={filters.university}
-              onValueChange={(value) =>
-                onFiltersChange({ ...filters, university: value })
-              }
-            >
-              <SelectTrigger className="h-11 border-border focus:border-primary focus:ring-primary">
-                <SelectValue placeholder="Select your university" />
-              </SelectTrigger>
-              <SelectContent>
-                {UNIVERSITIES.map((uni) => (
-                  <SelectItem key={uni.value} value={uni.value} className="py-3">
-                    <div className="flex items-center justify-between w-full">
-                      <span>{uni.label}</span>
-                      <Badge variant="outline" className="ml-2 text-xs">
-                        {uni.short}
-                      </Badge>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <div className="space-y-5 pl-1">
+            {/* University */}
+            <div className="space-y-2.5">
+              <Label className="text-sm font-semibold text-gray-900">University</Label>
+              <Select
+                value={filters.university}
+                onValueChange={(value) =>
+                  onFiltersChange({ ...filters, university: value })
+                }
+              >
+                <SelectTrigger className="h-12 bg-gray-50 border-transparent hover:bg-gray-100 hover:border-gray-200 focus:ring-2 focus:ring-gray-900 focus:bg-white rounded-lg transition-all font-medium">
+                  <SelectValue placeholder="Select university" />
+                </SelectTrigger>
+                <SelectContent>
+                  {UNIVERSITIES.map((uni) => (
+                    <SelectItem key={uni.value} value={uni.value} className="py-3 font-medium cursor-pointer">
+                      {uni.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* City */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-foreground">City</Label>
-            <Select
-              value={filters.city}
-              onValueChange={(value) =>
-                onFiltersChange({ ...filters, city: value })
-              }
-            >
-              <SelectTrigger className="h-11 border-border focus:border-primary focus:ring-primary">
-                <SelectValue placeholder="Select city" />
-              </SelectTrigger>
-              <SelectContent>
-                {CITIES.map((city) => (
-                  <SelectItem key={city.value} value={city.value} className="py-3">
-                    <span className="flex items-center gap-2">
-                      <span>{city.icon}</span>
-                      <span>{city.label}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* City */}
+            <div className="space-y-2.5">
+              <Label className="text-sm font-semibold text-gray-900">City</Label>
+              <Select
+                value={filters.city}
+                onValueChange={(value) =>
+                  onFiltersChange({ ...filters, city: value })
+                }
+              >
+                <SelectTrigger className="h-12 bg-gray-50 border-transparent hover:bg-gray-100 hover:border-gray-200 focus:ring-2 focus:ring-gray-900 focus:bg-white rounded-lg transition-all font-medium">
+                  <SelectValue placeholder="Select city" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CITIES.map((city) => (
+                    <SelectItem key={city.value} value={city.value} className="py-3 font-medium cursor-pointer">
+                      <span className="flex items-center gap-2">
+                        <span>{city.icon}</span>
+                        <span>{city.label}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
-        <Separator />
-
-        {/* Price Range Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Wallet className="h-4 w-4 text-primary" />
-            <span>Price Range</span>
+        {/* Section: Price Range */}
+        <div className="space-y-5">
+          <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest">
+            <Wallet className="h-3.5 w-3.5" />
+            <span>Budget</span>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-6 px-1">
             {/* Range Display */}
-            <div className="flex items-center justify-between">
-              <div className="px-4 py-2 rounded-lg bg-muted border border-border">
-                <div className="text-xs text-primary font-medium">Min</div>
-                <div className="font-bold text-foreground">
-                  KES {priceRange[0].toLocaleString()}
-                </div>
-              </div>
-              <div className="h-px w-8 bg-border" />
-              <div className="px-4 py-2 rounded-lg bg-muted border border-border">
-                <div className="text-xs text-primary font-medium">Max</div>
-                <div className="font-bold text-foreground">
-                  KES {priceRange[1].toLocaleString()}
-                </div>
-              </div>
+            <div className="flex items-center justify-between text-sm font-bold text-gray-900">
+              <span>KES {priceRange[0].toLocaleString()}</span>
+              <span>KES {priceRange[1].toLocaleString()}</span>
             </div>
 
             {/* Slider */}
-            <div className="pt-2 pb-1">
+            <div className="pt-2">
               <Slider
                 value={priceRange}
                 min={5000}
@@ -249,32 +234,28 @@ export function HostelFiltersPanel({
                 step={1000}
                 onValueChange={handlePriceChange}
                 onValueCommit={handlePriceCommit}
-                className="w-full"
+                className="w-full cursor-pointer py-4"
                 aria-label="Price range slider"
               />
             </div>
-            <p className="text-xs text-muted-foreground text-center">
-              Average: KES {Math.round((priceRange[0] + priceRange[1]) / 2).toLocaleString()} / month
-            </p>
           </div>
         </div>
 
-        <Separator />
-
-        {/* Hostel Type & Gender Policy */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Building2 className="h-4 w-4 text-primary" />
-            <span>Hostel Preferences</span>
+        {/* Section: Preferences */}
+        <div className="space-y-5">
+           <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest">
+            <Building2 className="h-3.5 w-3.5" />
+            <span>Preferences</span>
           </div>
 
           {/* Hostel Type */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-foreground">Room Type</Label>
-            <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold text-gray-900 block">Room Type</Label>
+            <div className="grid grid-cols-3 gap-3">
               {['single_rooms', 'shared_rooms', 'mixed'].map((type) => (
                 <button
                   key={type}
+                  type="button"
                   onClick={() => 
                     onFiltersChange({ 
                       ...filters, 
@@ -282,17 +263,29 @@ export function HostelFiltersPanel({
                     })
                   }
                   className={cn(
-                    'px-3 py-2.5 rounded-lg border-2 text-xs font-medium transition-all flex items-center justify-center',
+                    'px-2 py-4 rounded-xl border text-xs font-bold transition-all flex flex-col items-center justify-center gap-2 shadow-sm transform-gpu',
                     filters.hostel_type === type
-                      ? 'border-primary bg-primary/10 text-primary font-bold'
-                      : 'border-border bg-card text-muted-foreground hover:border-primary/50'
+                      ? 'border-gray-900 bg-gray-900 text-white ring-1 ring-gray-900'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900'
                   )}
                 >
-                  {type === 'single_rooms' && '🏠 Single'}
-                  {type === 'shared_rooms' && '👥 Shared'}
-                  {type === 'mixed' && '🔀 Mixed'}
-                  {filters.hostel_type === type && (
-                    <Check className="h-3 w-3 inline ml-1" />
+                  {type === 'single_rooms' && (
+                    <>
+                      <span className="text-xl">🏠</span>
+                      <span className="tracking-tight">Single</span>
+                    </>
+                  )}
+                  {type === 'shared_rooms' && (
+                    <>
+                      <span className="text-xl">👥</span>
+                      <span className="tracking-tight">Shared</span>
+                    </>
+                  )}
+                  {type === 'mixed' && (
+                    <>
+                      <span className="text-xl text-gray-400">❖</span>
+                      <span className="tracking-tight">Any</span>
+                    </>
                   )}
                 </button>
               ))}
@@ -300,12 +293,13 @@ export function HostelFiltersPanel({
           </div>
 
           {/* Gender Policy */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-foreground">Gender Policy</Label>
-            <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-3 pt-2">
+            <Label className="text-sm font-semibold text-gray-900 block">Gender Policy</Label>
+            <div className="grid grid-cols-3 gap-3">
               {['male_only', 'female_only', 'mixed'].map((policy) => (
                 <button
                   key={policy}
+                  type="button"
                   onClick={() => 
                     onFiltersChange({ 
                       ...filters, 
@@ -313,17 +307,29 @@ export function HostelFiltersPanel({
                     })
                   }
                   className={cn(
-                    'px-3 py-2.5 rounded-lg border-2 text-xs font-medium transition-all flex items-center justify-center',
+                    'px-2 py-4 rounded-xl border text-xs font-bold transition-all flex flex-col items-center justify-center gap-2 shadow-sm transform-gpu',
                     filters.gender_policy === policy
-                      ? 'border-primary bg-primary/10 text-primary font-bold'
-                      : 'border-border bg-card text-muted-foreground hover:border-primary/50'
+                      ? 'border-gray-900 bg-gray-900 text-white ring-1 ring-gray-900'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900'
                   )}
                 >
-                  {policy === 'male_only' && '♂️ Male'}
-                  {policy === 'female_only' && '♀️ Female'}
-                  {policy === 'mixed' && '⚥ Mixed'}
-                  {filters.gender_policy === policy && (
-                    <Check className="h-3 w-3 inline ml-1" />
+                  {policy === 'male_only' && (
+                     <>
+                      <span className="text-xl">♂</span>
+                      <span className="tracking-tight">Male</span>
+                    </>
+                  )}
+                  {policy === 'female_only' && (
+                     <>
+                      <span className="text-xl">♀</span>
+                      <span className="tracking-tight">Female</span>
+                    </>
+                  )}
+                  {policy === 'mixed' && (
+                     <>
+                      <span className="text-xl text-gray-400">⚤</span>
+                      <span className="tracking-tight">Any</span>
+                    </>
                   )}
                 </button>
               ))}
@@ -331,86 +337,47 @@ export function HostelFiltersPanel({
           </div>
         </div>
 
-        <Separator />
-
-        {/* Amenities Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Sparkles className="h-4 w-4 text-primary" />
+        {/* Section: Amenities */}
+        <div className="space-y-5">
+          <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest">
+            <Sparkles className="h-3.5 w-3.5" />
             <span>Amenities</span>
           </div>
 
-          {/* Popular Amenities */}
-          <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Most Popular
-            </Label>
-            <div className="grid grid-cols-2 gap-2">
-              {popularAmenities.map((amenity) => (
-                <label
-                  key={amenity.id}
-                  className={cn(
-                    'flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all',
-                    filters.amenities?.includes(amenity.id)
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/30 bg-card'
-                  )}
-                >
-                  <Checkbox
-                    id={`amenity-${amenity.id}`}
-                    checked={filters.amenities?.includes(amenity.id)}
-                    onCheckedChange={(checked) =>
-                      handleAmenityToggle(amenity.id, checked as boolean)
-                    }
-                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                  />
-                  <span className="text-lg">{amenity.icon}</span>
-                  <span className="text-sm font-medium flex-1 text-foreground">{amenity.label}</span>
-                </label>
-              ))}
-            </div>
+          <div className="grid grid-cols-2 gap-3">
+            {AMENITIES.map((amenity) => (
+              <label
+                key={amenity.id}
+                className={cn(
+                  'flex items-center gap-3 p-3.5 rounded-lg border cursor-pointer transition-all hover:bg-gray-50',
+                  filters.amenities?.includes(amenity.id)
+                    ? 'border-gray-900 ring-1 ring-gray-900 bg-gray-50/50'
+                    : 'border-gray-200'
+                )}
+              >
+                <Checkbox
+                  id={`amenity-${amenity.id}`}
+                  checked={filters.amenities?.includes(amenity.id)}
+                  onCheckedChange={(checked) =>
+                    handleAmenityToggle(amenity.id, checked as boolean)
+                  }
+                  className="data-[state=checked]:bg-gray-900 data-[state=checked]:border-gray-900 rounded-[4px] h-5 w-5"
+                />
+                <span className="text-sm font-medium text-gray-700 select-none">{amenity.label}</span>
+              </label>
+            ))}
           </div>
-
-          {/* Other Amenities */}
-          {otherAmenities.length > 0 && (
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                More Options
-              </Label>
-              <div className="space-y-2">
-                {otherAmenities.map((amenity) => (
-                  <label
-                    key={amenity.id}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer group"
-                  >
-                    <Checkbox
-                      id={`amenity-${amenity.id}`}
-                      checked={filters.amenities?.includes(amenity.id)}
-                      onCheckedChange={(checked) =>
-                        handleAmenityToggle(amenity.id, checked as boolean)
-                      }
-                      className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                    />
-                    <span className="text-base">{amenity.icon}</span>
-                    <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground">
-                      {amenity.label}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
       {/* Footer - Sticky */}
-      <div className="sticky bottom-0 bg-background border-t px-6 py-4">
+      <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 py-4">
         <div className="flex items-center gap-3">
           {hasActiveFilters && (
             <Button
               variant="outline"
               onClick={onClearFilters}
-              className="flex-1 h-11 font-semibold border-border hover:bg-muted"
+              className="flex-1 h-11 font-semibold border-gray-200 text-gray-900 hover:bg-gray-50 rounded-md"
             >
               Clear all
             </Button>
@@ -418,7 +385,7 @@ export function HostelFiltersPanel({
           <Button
             onClick={onClose}
             className={cn(
-              "h-11 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md",
+              "h-11 font-semibold bg-gray-900 hover:bg-black text-white shadow-none rounded-md",
               hasActiveFilters ? "flex-1" : "w-full"
             )}
           >

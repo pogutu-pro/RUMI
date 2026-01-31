@@ -356,7 +356,7 @@ export default function MatchProfilePage() {
                                             <SelectItem value="Kenyatta University">Kenyatta University</SelectItem>
                                             <SelectItem value="JKUAT">JKUAT</SelectItem>
                                             <SelectItem value="Strathmore University">Strathmore University</SelectItem>
-                                            <SelectItem value="USIU Africa">USIU Africa</SelectItem>
+                                            <SelectItem value="USIU kenya">USIU kenya</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />

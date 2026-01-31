@@ -1,5 +1,5 @@
 """
-SMS Notification Service - Africa's Talking Integration
+SMS Notification Service - kenya's Talking Integration
 
 Provides SMS capabilities for the RUMI platform including:
 - OTP verification
@@ -48,23 +48,23 @@ class SMSResponse:
 
 
 class SMSService(ThirdPartyServiceBase):
-    """SMS service using Africa's Talking"""
+    """SMS service using kenya's Talking"""
     
     def __init__(self):
         config = ServiceConfig(
-            api_key=settings.AFRICASTALKING_API_KEY or "",
-            api_secret=settings.AFRICASTALKING_API_SECRET or "",
-            base_url="https://api.africastalking.com/rest",
+            api_key=settings.kenyaSTALKING_API_KEY or "",
+            api_secret=settings.kenyaSTALKING_API_SECRET or "",
+            base_url="https://api.kenyastalking.com/rest",
             timeout=30,
             retries=3,
             cache_ttl=0,  # Don't cache SMS requests
-            enabled=bool(settings.AFRICASTALKING_API_KEY),
+            enabled=bool(settings.kenyaSTALKING_API_KEY),
             rate_limit=100  # 100 SMS per minute
         )
         super().__init__("sms", config)
         
         # Get username from settings
-        self.username = getattr(settings, 'AFRICASTALKING_USERNAME', 'sandbox')
+        self.username = getattr(settings, 'kenyaSTALKING_USERNAME', 'sandbox')
         
         # Default sender ID (shortcode or sender name)
         self.default_sender = getattr(settings, 'SMS_DEFAULT_SENDER', 'RUMI')
@@ -260,7 +260,7 @@ class SMSService(ThirdPartyServiceBase):
         params: Optional[Dict[str, Any]] = None,
         **kwargs
     ) -> APIResponse:
-        """Make HTTP request to Africa's Talking API"""
+        """Make HTTP request to kenya's Talking API"""
         import time
         start_time = time.time()
         

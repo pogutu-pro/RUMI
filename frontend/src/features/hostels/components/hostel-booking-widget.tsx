@@ -346,7 +346,7 @@ export function HostelBookingWidget({
         {isLoadingRooms ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 bg-slate-100 rounded-xl animate-pulse" />
+              <div key={i} className="h-20 bg-slate-100 rounded-lg" />
             ))}
           </div>
         ) : (
@@ -576,17 +576,14 @@ export function HostelBookingWidget({
         {/* Loading Overlay */}
         <AnimatePresence>
             {isResuming && (
-                <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl"
+                <div 
+                    className="absolute inset-0 bg-white z-10 flex items-center justify-center rounded-xl border border-emerald-100"
                 >
                     <div className="flex flex-col items-center gap-3">
-                        <div className="w-8 h-8 rounded-full border-4 border-emerald-500/30 border-t-emerald-600 animate-spin" />
-                        <span className="text-sm font-medium text-emerald-700">Resuming booking...</span>
+                        <div className="w-8 h-8 rounded-full border-4 border-emerald-100 border-t-emerald-600 animate-spin" />
+                        <span className="text-sm font-medium text-emerald-700 font-bold uppercase tracking-tight">Processing...</span>
                     </div>
-                </motion.div>
+                </div>
             )}
         </AnimatePresence>
       </div>
@@ -622,15 +619,15 @@ export function HostelBookingWidget({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className={cn(
-          'hidden lg:block sticky top-24 self-start p-6 border border-slate-200 rounded-2xl shadow-xl shadow-slate-200/50 bg-white overflow-hidden',
+          'hidden lg:block sticky top-24 self-start p-6 border border-slate-200 rounded-xl shadow-sm bg-white overflow-hidden',
           className,
         )}
       >
         <WidgetContent />
       </motion.div>
 
-      {/* Mobile Bottom Sheet */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-40 safe-area-bottom">
+      {/* Mobile Bottom Bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-slate-100 p-4 shadow-none z-40 safe-area-bottom">
         <div className="container mx-auto">
           <div className="flex justify-between items-center gap-4">
             <div className="flex flex-col">

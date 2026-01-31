@@ -1,56 +1,68 @@
 'use client';
 
-import { useState } from 'react';
-import { ArrowUpDown } from 'lucide-react';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import * as React from 'react';
+import { ArrowUpDown, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useFiltersStore } from '@/features/hostels';
-
-const sortOptions = [
-  { value: 'popularity', label: 'Most popular' },
-  { value: 'price_asc', label: 'Price: low to high' },
-  { value: 'price_desc', label: 'Price: high to low' },
-  { value: 'rating', label: 'Highest rated' },
-  { value: 'distance', label: 'Closest to campus' },
-];
+import { cn } from '@/lib/utils';
 
 export default function HostelSort() {
   const { sort, setSort } = useFiltersStore();
-  const [open, setOpen] = useState(false);
+
+  const sortOptions = [
+    { value: 'popularity', label: 'Most Popular' },
+    { value: 'price_asc', label: 'Price: Low to High' },
+    { value: 'price_desc', label: 'Price: High to Low' },
+    { value: 'rating', label: 'Top Rated' },
+    { value: 'distance', label: 'Nearest to Campus' },
+  ];
+
+  const currentLabel = sortOptions.find(opt => opt.value === sort)?.label || 'Sort by';
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className="h-10 border-2 border-gray-400 hover:border-emerald-500 bg-white shadow-md hover:shadow-lg transition-all font-medium">
-          <ArrowUpDown className="h-4 w-4 mr-2" />
-          Sort by
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-64">
-        <RadioGroup
-          value={sort}
-          onValueChange={(v) => {
-            setSort(v as any);
-            setOpen(false);
-          }}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button 
+          variant="outline" 
+          className="h-10 gap-2 border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 text-gray-900 transition-all font-medium rounded-md shadow-sm min-w-[140px] justify-between"
         >
-          {sortOptions.map((option) => (
-            <div
-              key={option.value}
-              className="flex items-center space-x-2 py-2"
-            >
-              <RadioGroupItem value={option.value} id={option.value} />
-              <Label htmlFor={option.value}>{option.label}</Label>
-            </div>
-          ))}
-        </RadioGroup>
-      </PopoverContent>
-    </Popover>
+          <span className="truncate">{currentLabel}</span>
+          <ArrowUpDown className="h-4 w-4 text-gray-400" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-[200px] p-1">
+        <DropdownMenuLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 py-1.5">
+          Sort by
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator className="bg-gray-100 my-1" />
+        <DropdownMenuGroup>
+          {sortOptions.map((option) => {
+            const isSelected = sort === option.value;
+            return (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => setSort(option.value as any)}
+                className={cn(
+                  "flex items-center justify-between cursor-pointer px-2.5 py-2 rounded-sm text-sm font-medium transition-colors my-0.5",
+                  isSelected ? "bg-gray-50 text-gray-900" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                )}
+              >
+                {option.label}
+                {isSelected && <Check className="h-4 w-4" />}
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

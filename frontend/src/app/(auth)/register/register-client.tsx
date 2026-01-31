@@ -8,6 +8,9 @@ import { AuthCard } from '@/features/auth';
 import { RoleSelector } from '@/features/auth';
 import { StudentRegisterForm } from '@/features/auth';
 import { LandlordRegisterForm } from '@/features/auth';
+import { GoogleAuthButton } from '@/features/auth';
+import { GoogleRoleSelection } from '@/features/auth';
+import { OAuthDivider } from '@/features/auth';
 import type { UserRole } from '@/types/auth.types';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 import Image from 'next/image';
@@ -17,6 +20,33 @@ type RegisterableRole = Extract<UserRole, 'student' | 'landlord'>;
 export function RegisterClientPage() {
   const [selectedRole, setSelectedRole] =
     useState<RegisterableRole | null>(null);
+  const [googleData, setGoogleData] = useState<{ userInfo: any; accessToken: string } | null>(null);
+
+  const handleGoogleSuccess = (data: any) => {
+    if (data.userInfo) {
+      setGoogleData(data);
+    }
+  };
+
+  if (googleData) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-gray-50/30 p-4 pt-12">
+        <section className="w-full max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2 }}
+          >
+            <GoogleRoleSelection 
+              userInfo={googleData.userInfo} 
+              accessToken={googleData.accessToken}
+              onBack={() => setGoogleData(null)} 
+            />
+          </motion.div>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 p-4 pt-12">
@@ -34,13 +64,15 @@ export function RegisterClientPage() {
                   alt="RUMI"
                   width={32}
                   height={32}
+                  className="w-8 h-auto"
                 />
               </Link>
             }
             title={<span className="font-black text-3xl tracking-tight">Create your Rumi account</span>}
             description={<span className="text-gray-500 font-bold uppercase tracking-wider text-xs">Choose your role to get started</span>}
           >
-            <div className="space-y-6">
+            <div className="space-y-8">
+
                 <RoleSelector
                   value={selectedRole}
                   onValueChange={setSelectedRole}
@@ -48,8 +80,8 @@ export function RegisterClientPage() {
 
               {selectedRole && (
                 <div className="pt-8 border-t border-gray-100 animate-in fade-in slide-in-from-top-6 duration-700">
-                  {selectedRole === 'student' && <StudentRegisterForm />}
-                  {selectedRole === 'landlord' && <LandlordRegisterForm />}
+                  {selectedRole === 'student' && <StudentRegisterForm onGoogleSuccess={handleGoogleSuccess} />}
+                  {selectedRole === 'landlord' && <LandlordRegisterForm onGoogleSuccess={handleGoogleSuccess} />}
                 </div>
               )}
 

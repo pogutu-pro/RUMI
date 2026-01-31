@@ -249,3 +249,32 @@ export const updateLandlordProfileSchema = updateProfileSchema.extend({
 export type UpdateLandlordProfileFormData = z.infer<
   typeof updateLandlordProfileSchema
 >;
+
+export const studentOnboardingSchema = z.object({
+  university: requiredString(2, 100, 'University Name'),
+  student_id_number: requiredString(2, 50, 'Student ID Number')
+    .regex(/^[a-zA-Z0-9-/]+$/, 'Student ID can only contain letters, numbers, hyphens, and slashes'),
+  year_of_study: z.number().int().min(1, 'Year 1 minimum').max(6, 'Year 6 maximum'),
+  course: requiredString(2, 100, 'Course Name'),
+  phone_number: phoneSchema,
+  date_of_birth: z.date().refine((date) => {
+    const age = new Date().getFullYear() - date.getFullYear();
+    return age >= 16;
+  }, 'You must be at least 16 years old'),
+  emergency_contact_name: nameSchema,
+  emergency_contact_phone: phoneSchema,
+  emergency_contact_relationship: requiredString(2, 50, 'Relationship'),
+});
+
+export type StudentOnboardingFormData = z.infer<typeof studentOnboardingSchema>;
+
+export const landlordOnboardingSchema = z.object({
+  company_name: requiredString(2, 100, 'Property Name'),
+  national_id: requiredString(5, 20, 'National ID')
+    .regex(/^[0-9]+$/, 'National ID must contain only digits'),
+  phone_number: phoneSchema,
+  bank_name: requiredString(2, 100, 'Bank Name').optional(), // Optional for now
+  bank_account_number: z.string().min(10).max(20).regex(/^[0-9]+$/).optional(), // Optional for now
+});
+
+export type LandlordOnboardingFormData = z.infer<typeof landlordOnboardingSchema>;

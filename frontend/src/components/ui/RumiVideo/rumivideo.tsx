@@ -112,7 +112,7 @@ export default function RumiVideo({
     <div
       ref={containerRef}
       className={cn(
-        'relative w-full aspect-video rounded-2xl overflow-hidden shadow-xl bg-gray-900',
+        'relative w-full aspect-video rounded-xl overflow-hidden shadow-sm bg-gray-950',
         className,
       )}
     >
@@ -121,13 +121,13 @@ export default function RumiVideo({
           src={embedUrl}
           title={title}
           className="w-full h-full rounded-2xl"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
           loading="lazy"
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-gray-900">
-          <div className="animate-pulse text-white">Loading...</div>
+        <div className="w-full h-full flex items-center justify-center bg-gray-950">
+          <div className="text-gray-500 text-xs font-bold uppercase tracking-tight">Loading...</div>
         </div>
       )}
     </div>
@@ -135,5 +135,5 @@ export default function RumiVideo({
 }
 
 export function RumiHeroVideo(props: Omit<VideoProps, 'priority'>) {
-  return <RumiVideo {...props} priority className="rounded-3xl shadow-2xl" />;
+  return <RumiVideo {...props} priority className="rounded-xl shadow-sm border border-border" />;
 }

@@ -90,6 +90,48 @@ class WeatherService(ThirdPartyServiceBase):
             
         super().__init__("weather", config)
     
+    async def make_request(
+        self, 
+        endpoint: str, 
+        method: str = "GET", 
+        params: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None,
+        **kwargs
+    ) -> APIResponse:
+        """Make API request to weather service using aiohttp"""
+        url = f"{self.config.base_url}{endpoint}"
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.request(
+                    method=method,
+                    url=url,
+                    params=params,
+                    json=data,
+                    headers=headers,
+                    timeout=self.config.timeout,
+                    **kwargs
+                ) as response:
+                    status_code = response.status
+                    response_json = await response.json()
+                    
+                    if 200 <= status_code < 300:
+                        return APIResponse(
+                            success=True,
+                            data=response_json,
+                            status_code=status_code
+                        )
+                    else:
+                        return APIResponse(
+                            success=False,
+                            error=response_json.get('error', {}).get('message', 'API request failed'),
+                            status_code=status_code,
+                            data=response_json
+                        )
+        except Exception as e:
+            return self.handle_error(e, f"Request to {url} failed")
+    
     async def get_current_weather(self, latitude: float, longitude: float, units: str = "metric") -> APIResponse:
         """Get current weather for a location"""
         try:

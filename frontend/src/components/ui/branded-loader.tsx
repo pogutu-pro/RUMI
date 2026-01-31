@@ -33,7 +33,7 @@ export function BrandedLoader({
         />
       </div>
       {text && (
-        <p className="text-center text-sm font-medium text-muted-foreground tracking-wide animate-pulse">
+        <p className="text-center text-sm font-medium text-muted-foreground tracking-wide">
           {text}
         </p>
       )}

@@ -74,7 +74,7 @@ The RUMI platform backend has been successfully completed and is fully operation
 - **Redis**: Caching and session management
 - **Celery**: Async task processing
 - **Email**: SMTP integration (Mailtrap for testing)
-- **SMS**: African Talking API
+- **SMS**: kenyan Talking API
 - **WebSockets**: Real-time communication
 
 ### 4. Security & Performance

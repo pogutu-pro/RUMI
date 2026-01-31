@@ -119,7 +119,7 @@ export default function ContactPage() {
                       <p className="text-gray-600">
                         Nairobi, Kenya
                         <br />
-                        East Africa
+                        East kenya
                       </p>
                     </div>
                   </div>

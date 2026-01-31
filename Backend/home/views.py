@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from .models import Page, TeamMember, ContactInquiry, FAQ, BlogPost, Newsletter, Testimonial, Statistics
+from third_party.weather import get_location_weather
 
 
 class LandingPageView(APIView):
@@ -125,7 +126,7 @@ class AboutUsView(APIView):
             },
             'vision': {
                 'title': 'Our Vision',
-                'content': 'To become the leading student accommodation platform in Africa, empowering students to find safe, affordable housing while helping landlords efficiently manage their properties.'
+                'content': 'To become the leading student accommodation platform in kenya, empowering students to find safe, affordable housing while helping landlords efficiently manage their properties.'
             },
             'story': {
                 'title': 'Our Story',
@@ -742,4 +743,81 @@ class PrometheusMetricsProxyView(APIView):
         except Exception as e:
             return Response({
                 'error': f'Unexpected error: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+class WeatherView(APIView):
+    """Get real-time weather for a specific location"""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        """Fetch weather data from OpenWeather via ThirdPartyService"""
+        lat = request.query_params.get('lat')
+        lng = request.query_params.get('lng')
+
+        if not lat or not lng:
+            return Response({
+                'error': 'Latitude and longitude are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            latitude = float(lat)
+            longitude = float(lng)
+        except ValueError:
+            return Response({
+                'error': 'Invalid coordinates'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Round coordinates to 2 decimal places for better cache hit rate (~1km precision)
+        cache_lat = round(latitude, 2)
+        cache_lng = round(longitude, 2)
+        cache_key = f"weather_data:{cache_lat}:{cache_lng}"
+        
+        cached_weather = cache.get(cache_key)
+        if cached_weather:
+            return Response(cached_weather, status=status.HTTP_200_OK)
+
+        # Fetch from third party service
+        # Since ThirdPartyService is async, we need to run it in a sync context or use asgiref.sync.async_to_sync
+        from asgiref.sync import async_to_sync
+        
+        try:
+            response = async_to_sync(get_location_weather)(latitude, longitude)
+            
+            if response.success:
+                data = response.data.get('location_weather')
+                # Format for frontend consumption
+                weather_data = {
+                    'location_name': data.location_name,
+                    'current': {
+                        'temp': data.current_weather.temperature,
+                        'feels_like': data.current_weather.feels_like,
+                        'humidity': data.current_weather.humidity,
+                        'description': data.current_weather.description,
+                        'icon': data.current_weather.icon,
+                        'wind_speed': data.current_weather.wind_speed,
+                    },
+                    'forecast': [
+                        {
+                            'date': f.date.isoformat(),
+                            'temp_high': f.temperature_high,
+                            'temp_low': f.temperature_low,
+                            'description': f.description,
+                            'icon': f.icon,
+                        } for f in data.forecast[:3]
+                    ],
+                    'last_updated': timezone.now().isoformat()
+                }
+                
+                # Cache for 20 minutes (weather doesn't change that fast)
+                cache.set(cache_key, weather_data, timeout=1200)
+                
+                return Response(weather_data, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'error': response.error or 'Failed to fetch weather data'
+                }, status=status.HTTP_502_BAD_GATEWAY)
+                
+        except Exception as e:
+            return Response({
+                'error': f'Weather service error: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

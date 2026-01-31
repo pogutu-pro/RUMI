@@ -1489,7 +1489,7 @@ Exception Value: &#x27;password&#x27;
       
         <tr>
           <td>TZ</td>
-          <td class="code"><pre>&#x27;Africa/Nairobi&#x27;</pre></td>
+          <td class="code"><pre>&#x27;kenya/Nairobi&#x27;</pre></td>
         </tr>
       
         <tr>
@@ -1648,12 +1648,12 @@ Exception Value: &#x27;password&#x27;
         </tr>
       
         <tr>
-          <td>AFRICASTALKING_API_KEY</td>
+          <td>kenyaSTALKING_API_KEY</td>
           <td class="code"><pre>&#x27;********************&#x27;</pre></td>
         </tr>
       
         <tr>
-          <td>AFRICASTALKING_USERNAME</td>
+          <td>kenyaSTALKING_USERNAME</td>
           <td class="code"><pre>&#x27;rumi&#x27;</pre></td>
         </tr>
       
@@ -1771,7 +1771,7 @@ Exception Value: &#x27;password&#x27;
       
         <tr>
           <td>CELERY_TIMEZONE</td>
-          <td class="code"><pre>&#x27;Africa/Nairobi&#x27;</pre></td>
+          <td class="code"><pre>&#x27;kenya/Nairobi&#x27;</pre></td>
         </tr>
       
         <tr>
@@ -2789,7 +2789,7 @@ Exception Value: &#x27;password&#x27;
       
         <tr>
           <td>TIME_ZONE</td>
-          <td class="code"><pre>&#x27;Africa/Nairobi&#x27;</pre></td>
+          <td class="code"><pre>&#x27;kenya/Nairobi&#x27;</pre></td>
         </tr>
       
         <tr>

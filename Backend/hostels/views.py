@@ -1467,6 +1467,46 @@ class HostelsListView(APIView):
         if hostel_type:
             queryset = queryset.filter(hostel_type=hostel_type)
 
+        gender_policy = request.query_params.get('gender_policy')
+        if gender_policy:
+            queryset = queryset.filter(gender_policy=gender_policy)
+
+        university = request.query_params.get('university')
+        if university:
+            queryset = queryset.filter(university__icontains=university)
+
+        city = request.query_params.get('city')
+        if city:
+            queryset = queryset.filter(city__icontains=city)
+
+        search = request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
+                models.Q(name__icontains=search) |
+                models.Q(description__icontains=search) |
+                models.Q(university__icontains=search)
+            )
+
+        # Ordering
+        ordering = request.query_params.get('ordering')
+        if ordering:
+            if ordering == 'price':
+                queryset = queryset.order_by('base_price')
+            elif ordering == '-price':
+                queryset = queryset.order_by('-base_price')
+            elif ordering == '-rating':
+                queryset = queryset.order_by('-rating')
+            else:
+                queryset = queryset.order_by(ordering)
+        else:
+            queryset = queryset.order_by('-created_at')
+
+        amenities_param = request.query_params.get('amenities')
+        if amenities_param:
+            amenity_list = amenities_param.split(',')
+            for am_name in amenity_list:
+                queryset = queryset.filter(hostel_amenities__amenity__name__icontains=am_name, hostel_amenities__is_available=True)
+
         # Pagination
         limit = int(request.query_params.get('limit', 20))
         offset = int(request.query_params.get('offset', 0))
@@ -1660,4 +1700,54 @@ class RoomDetailView(APIView):
             'is_available': room.status == 'available',
             'current_occupants': current_occupants,
             'available_slots': room.capacity - room.current_occupancy
+        }, status=status.HTTP_200_OK)
+class HostelRelatedView(APIView):
+    """Get related hostels based on university and city"""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, hostel_id):
+        """Return 3 related hostels"""
+        try:
+            target_hostel = Hostel.objects.get(id=hostel_id, status='active')
+        except Hostel.DoesNotExist:
+            return Response({
+                'error': 'Hostel not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Find hostels in the same university or city, excluding the current one
+        queryset = Hostel.objects.filter(
+            status='active'
+        ).exclude(id=hostel_id)
+
+        # Prioritize same university, then same city
+        university_matches = queryset.filter(university=target_hostel.university)
+        
+        if university_matches.count() >= 3:
+            related_hostels = university_matches[:3]
+        else:
+            city_matches = queryset.filter(city=target_hostel.city).exclude(id__in=university_matches.values_list('id', flat=True))
+            related_hostels = list(university_matches) + list(city_matches[:3 - university_matches.count()])
+
+        results = []
+        for hostel in related_hostels:
+            results.append({
+                'id': hostel.id,
+                'name': hostel.name,
+                'description': hostel.description,
+                'address': hostel.address,
+                'city': hostel.city,
+                'university': hostel.university,
+                'gender_policy': hostel.gender_policy,
+                'hostel_type': hostel.hostel_type,
+                'base_price': str(hostel.base_price),
+                'currency': hostel.currency,
+                'rating': float(hostel.rating),
+                'review_count': hostel.review_count,
+                'images': hostel.images or [],
+                'is_verified': hostel.is_verified,
+            })
+
+        return Response({
+            'results': results
         }, status=status.HTTP_200_OK)

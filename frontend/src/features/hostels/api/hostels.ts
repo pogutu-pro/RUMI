@@ -137,9 +137,16 @@ export const getHostel = getHostelBySlug;
 export const createHostel = hostelsApi.createHostel;
 export const searchRooms = hostelsApi.searchRooms;
 
-export const getRelatedHostels = async (slug: string): Promise<Hostel[]> => {
-  console.warn('getRelatedHostels endpoint is missing in backend.');
-  return [];
+export const getRelatedHostels = async (id: string | number): Promise<Hostel[]> => {
+  try {
+    const res = await apiClient.get<ApiResponse<Hostel[]>>(
+      `/hostels/${id}/related/`
+    );
+    return res.data.data || [];
+  } catch (error) {
+    console.error('Failed to fetch related hostels:', error);
+    return [];
+  }
 };
 
 export const toggleFavoriteHostel = async (hostelId: string) => {

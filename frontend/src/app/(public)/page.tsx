@@ -13,19 +13,19 @@ import { AUTH_ROUTES } from '@/lib/constants/routes';
 import RumiVideo from '@/components/ui/RumiVideo/rumivideo';
 
 export const metadata: Metadata = {
-  title: 'Rumi - Student Hostel Management Platform Kenya',
+  title: 'Rumi - The Complete Platform for Student Housing in kenya',
   description:
-    'Rental management platform for student hostels. Track rent payments, manage occupancy, handle tenant records. Replace WhatsApp and Excel with digital hostel operations.',
+    'Rumi connects listing, booking, and payments in one app. The complete student housing system for landlords and students in Kenya.',
   openGraph: {
-    title: 'Rumi - Student Hostel Management Platform',
+    title: 'Rumi - The Complete Platform for Student Housing',
     description:
-      'Digital rental management for student hostels in Kenya. Rent tracking, M-PESA payments, occupancy management, and tenant records in one system.',
+      'Manage student hostels with ease. Automated rent collection, bed-level bookings, and full operational control in one verified component.',
     url: 'https://rumi.co.ke',
     siteName: 'Rumi',
     images: [
       {
         url: '/og-image.png',
-        alt: 'Rumi hostel management platform',
+        alt: 'Rumi - Student Housing Platform',
         width: 1200,
         height: 630,
       },
@@ -34,15 +34,13 @@ export const metadata: Metadata = {
     type: 'website',
   },
   keywords: [
-    'student hostel management Kenya',
-    'rental management system',
-    'hostel operations software',
-    'student housing management',
-    'rent payment tracking',
-    'occupancy management',
-    'tenant management system',
-    'hostel booking Kenya',
-    'student accommodation Nairobi',
+    'student housing platform',
+    'hostel management system Kenya',
+    'student accommodation software',
+    'hostel booking app',
+    'university housing Kenya',
+    'automated rent collection',
+    'M-PESA rent payment',
   ],
   robots: {
     index: true,
@@ -61,10 +59,10 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-16 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl">
             <h1 className="mb-6 text-4xl font-bold tracking-tight text-primary sm:text-5xl">
-              Student Hostel Management Platform
+              The Complete Platform for Student Housing in kenya
             </h1>
             <p className="mb-8 text-xl text-gray-700 leading-relaxed">
-              Digital rental management for student hostels. Track rent payments, manage occupancy, handle tenant records. Replace WhatsApp, Excel, and cash payments with dedicated hostel operations software.
+              Everything you need to list, book, and manage student hostels. One app for students, landlords, and caretakers.
             </p>
             <div className="flex flex-col gap-4 sm:flex-row">
               <Link href="/hostels" prefetch className="w-full sm:w-auto">
@@ -73,7 +71,7 @@ export default function HomePage() {
                   className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white rounded-none"
                 >
                   <Search className="mr-2 h-5 w-5" />
-                  View All Hostels
+                  Find a Hostel
                 </Button>
               </Link>
               <Link
@@ -99,7 +97,7 @@ export default function HomePage() {
                   variant="outline"
                   className="w-full sm:w-auto border-2 border-primary text-primary hover:bg-primary/5 rounded-none"
                 >
-                    List Property
+                    List Your Property
                 </Button>
               </Link>
             </div>
@@ -110,12 +108,12 @@ export default function HomePage() {
       {/* Platform Overview */}
       <section
         className="py-24 bg-white"
-        aria-label="How it works"
+        aria-label="See Rumi in action"
       >
         <div className="container mx-auto px-0 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-5xl">
             <h2 className="mb-6 text-2xl font-bold text-primary px-4 sm:px-0">
-              How Rumi Simplifies Hostel Management
+              See How Rumi Works
             </h2>
             <div className="border border-gray-200 bg-white overflow-hidden rounded-none shadow-sm">
                 <RumiVideo
@@ -139,30 +137,30 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl">
             <h2 className="mb-12 text-2xl font-bold text-gray-900">
-              How Students Use Rumi
+              Simple for Everyone
             </h2>
             <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
               {[
                 {
                   number: '1',
-                  title: 'Browse Hostels',
+                  title: 'Verified Listings',
                   description:
-                    'Search verified hostels by location and price.',
+                    'Browse hostels that have been checked and verified.',
                 },
                 {
                   number: '2',
-                  title: 'Book Room',
-                  description: 'Pay rent via M-PESA. Instant confirmation.',
+                  title: 'M-PESA Payment',
+                  description: 'Pay rent instantly and get a digital receipt.',
                 },
                 {
                   number: '3',
-                  title: 'Track Payments',
-                  description: 'View rent history and payment receipts.',
+                  title: 'Manage Your Stay',
+                  description: 'Track payments and request room repairs anytime.',
                 },
                 {
                   number: '4',
-                  title: 'Manage Tenancy',
-                  description: 'Request room transfers and view roommates.',
+                  title: 'Total Control',
+                  description: 'For landlords: see payments, vacancies, and issues.',
                 },
               ].map(({ number, title, description }) => (
                 <div
@@ -197,22 +195,22 @@ export default function HomePage() {
                 STUDENTS
             </Badge>
             <h2 className="mb-8 text-3xl font-bold text-primary">
-                For Students: Digital Rent Management
+                Campus Life Made Easy
             </h2>
             {/* Features in compact grid */}
             <div className="grid md:grid-cols-3 gap-6 mb-8">
               {[
                 {
-                  title: 'Digital Payments',
-                  desc: 'Pay rent via M-PESA with instant digital receipts.',
+                  title: 'Book Safely',
+                  desc: 'Every hostel on Rumi is verified. No scams, no fake listings.',
                 },
                 {
-                  title: 'Payment History',
-                  desc: 'Access all rent payments and receipts in your dashboard.',
+                  title: 'Pay Easily',
+                  desc: 'Pay rent directly via M-PESA. No need to visit the bank.',
                 },
                 {
-                  title: 'Room Management',
-                  desc: 'Request room transfers and report maintenance issues.',
+                  title: 'Live Better',
+                  desc: 'Report maintenance issues and manage your room from your phone.',
                 },
               ].map(({ title, desc }) => (
                 <div key={title} className="flex gap-3 items-start">
@@ -232,7 +230,7 @@ export default function HomePage() {
             <div className="mb-8">
               <Link href="/hostels" prefetch>
                   <Button size="lg">
-                  Search Hostels
+                  Find a Hostel
                   </Button>
               </Link>
             </div>
@@ -266,22 +264,22 @@ export default function HomePage() {
                 LANDLORDS
             </Badge>
             <h2 className="mb-8 text-3xl font-bold text-gray-900 pr-6">
-              For Landlords: Operations Management
+              Peace of Mind for Property Owners
             </h2>
             {/* Features in compact grid */}
             <div className="grid md:grid-cols-3 gap-6 mb-8">
               {[
                 {
-                  title: 'Rent Tracking',
-                  desc: 'Track all rent payments, arrears, and payment status.',
+                  title: 'Get Paid on Time',
+                  desc: 'Automated rent tracking and reminders. Know who owes what.',
                 },
                 {
-                  title: 'Occupancy Management',
-                  desc: 'Manage room occupancy, vacancies, and tenant records.',
+                  title: 'Fill Your Rooms',
+                  desc: 'Get seen by thousands of verified students looking for housing.',
                 },
                 {
-                  title: 'Tenant Onboarding',
-                  desc: 'Digital tenant registration and document management.',
+                  title: 'Control Everything',
+                  desc: 'Manage occupancy, caretakers, and property issues in one place.',
                 },
               ].map(({ title, desc }) => (
                 <div key={title} className="flex gap-3 items-start">
@@ -301,7 +299,7 @@ export default function HomePage() {
             <div className="mb-8">
               <Link href={`${AUTH_ROUTES.REGISTER}?role=landlord`} prefetch>
                   <Button size="lg" variant="outline" className="bg-white">
-                      Register Property
+                      List Your Property
                   </Button>
               </Link>
             </div>
@@ -349,10 +347,10 @@ export default function HomePage() {
                 className="border border-gray-200 px-4"
               >
                 <AccordionTrigger className="text-left font-semibold text-gray-900 no-underline hover:underline">
-                  Verification Process
+                  Are the listings verified?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-700">
-                  We physically inspect properties and verify ownership documents before listing.
+                  Yes. We physically inspect properties and verify ownership documents before they are listed.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem
@@ -360,10 +358,10 @@ export default function HomePage() {
                 className="border border-gray-200 px-4"
               >
                 <AccordionTrigger className="text-left font-semibold text-gray-900 no-underline hover:underline">
-                  Payment Methods
+                  How does payment work?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-700">
-                  M-PESA (Paybill/Till) only. Cash updates are not supported for initial booking security.
+                  We use M-PESA for secure, instant payments. You get a digital receipt immediately.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem
@@ -371,10 +369,10 @@ export default function HomePage() {
                 className="border border-gray-200 px-4"
               >
                 <AccordionTrigger className="text-left font-semibold text-gray-900 no-underline hover:underline">
-                  Cancellation Policy
+                  What if I need to cancel?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-700">
-                  Defined by individual landlords. See specific hostel page for details.
+                  Policies are set by individual landlords. Check the specific hostel page for details.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

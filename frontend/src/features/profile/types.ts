@@ -138,6 +138,7 @@ export interface LandlordProfile {
   bank_account_name?: string;
   paystack_subaccount_code?: Nullable<string>;
   is_verified: boolean;
+  is_profile_complete?: boolean;
   verification_status?: 'pending' | 'approved' | 'rejected';
   verification_documents?: Nullable<VerificationDocuments>;
   rejection_reason?: Nullable<string>;
@@ -171,6 +172,7 @@ export interface CaretakerProfile {
   employment_start_date: Timestamp;
   permissions: CaretakerPermissions;
   is_active: boolean;
+  is_profile_complete?: boolean;
   created_at: Timestamp;
   updated_at: Timestamp;
 }

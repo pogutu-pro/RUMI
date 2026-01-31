@@ -7,10 +7,15 @@ interface FiltersState {
   amenities: string[];
   sort: 'popularity' | 'price_asc' | 'price_desc' | 'rating' | 'distance';
   searchQuery: string;
+  university?: string;
+  city?: string;
+  hostel_type?: string;
+  gender_policy?: string;
   setPriceRange: (range: [number, number]) => void;
   toggleAmenity: (amenity: string) => void;
   setSort: (sort: FiltersState['sort']) => void;
   setSearchQuery: (query: string) => void;
+  setFilter: (key: keyof FiltersState, value: any) => void;
   resetFilters: () => void;
 }
 
@@ -21,6 +26,10 @@ export const useFiltersStore = create<FiltersState>()(
       amenities: [],
       sort: 'popularity',
       searchQuery: '',
+      university: undefined,
+      city: undefined,
+      hostel_type: undefined,
+      gender_policy: undefined,
       setPriceRange: (range) => set({ priceRange: range }),
       toggleAmenity: (amenity) => {
         const amenities = get().amenities;
@@ -32,12 +41,17 @@ export const useFiltersStore = create<FiltersState>()(
       },
       setSort: (sort) => set({ sort }),
       setSearchQuery: (query) => set({ searchQuery: query }),
+      setFilter: (key, value) => set({ [key]: value } as any),
       resetFilters: () =>
         set({
           priceRange: [0, 50000],
           amenities: [],
           sort: 'popularity',
           searchQuery: '',
+          university: undefined,
+          city: undefined,
+          hostel_type: undefined,
+          gender_policy: undefined,
         }),
     }),
     { name: 'filters-storage' },

@@ -33,4 +33,7 @@ urlpatterns = [
 
     # Prometheus metrics proxy
     path('metrics/', views.PrometheusMetricsProxyView.as_view(), name='prometheus_metrics'),
+
+    # Weather
+    path('weather/', views.WeatherView.as_view(), name='weather'),
 ]

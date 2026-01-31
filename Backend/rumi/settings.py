@@ -216,9 +216,9 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@rumi.co.ke')
 
-# SMS Configuration (Africa's Talking)
-AFRICASTALKING_USERNAME = os.getenv('AFRICASTALKING_USERNAME', 'sandbox')
-AFRICASTALKING_API_KEY = os.getenv('AFRICASTALKING_API_KEY')
+# SMS Configuration (kenya's Talking)
+kenyaSTALKING_USERNAME = os.getenv('kenyaSTALKING_USERNAME', 'sandbox')
+kenyaSTALKING_API_KEY = os.getenv('kenyaSTALKING_API_KEY')
 
 # Paystack Configuration
 PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
@@ -267,7 +267,7 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_RESULT_EXTENDED = True
-CELERY_TIMEZONE = 'Africa/Nairobi'
+CELERY_TIMEZONE = 'kenya/Nairobi'
 CELERY_ENABLE_UTC = True
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes

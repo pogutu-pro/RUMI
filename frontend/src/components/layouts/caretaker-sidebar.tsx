@@ -151,13 +151,13 @@ export function CaretakerSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) 
         {isExpanded ? (
           <Link href="/" className="flex items-center gap-2 font-bold text-2xl text-primary">
             <div className="relative h-8 w-8">
-              <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" />
+              <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" style={{ height: 'auto' }} />
             </div>
             <span>RUMI</span>
           </Link>
         ) : (
            <Link href="/" className="relative h-8 w-8">
-              <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" />
+              <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" style={{ height: 'auto' }} />
            </Link>
         )}
         

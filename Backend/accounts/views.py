@@ -3275,8 +3275,8 @@ class GoogleOAuthView(APIView):
                 elif user_role == 'landlord':
                     LandlordProfile.objects.create(
                         user=user,
-                        company_name=f'{user.first_name} Properties',
-                        national_id='GOOGLE' + str(user.id).zfill(10),
+                        company_name=None,
+                        national_id=None,
                         bank_name='Pending',
                         bank_account_number='Pending',
                         bank_code='Pending',
@@ -3310,7 +3310,8 @@ class GoogleOAuthView(APIView):
                 'token_type': 'Bearer',
                 'expires_in': 3600,
                 'user': profile_data,
-                'is_new_user': is_new_user
+                'is_new_user': is_new_user,
+                'is_profile_complete': profile_data.get('is_profile_complete', False)
             }, status=status.HTTP_200_OK)
             
             # Set access token cookie
@@ -3388,6 +3389,7 @@ class GoogleOAuthView(APIView):
                 'company_name': profile.company_name,
                 'is_verified': profile.is_verified,
                 'total_hostels': profile.total_hostels,
+                'is_profile_complete': getattr(profile, 'is_profile_complete', False),
             })
         elif user.role == 'caretaker' and hasattr(user, 'caretaker_profile'):
             profile = user.caretaker_profile

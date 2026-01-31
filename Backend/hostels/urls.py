@@ -6,6 +6,7 @@ urlpatterns = [
     path('', views.HostelsListView.as_view(), name='hostels_list'),
     path('create/', views.HostelCreateView.as_view(), name='hostel_create'),
     path('<int:hostel_id>/', views.HostelDetailView.as_view(), name='hostel_detail'),
+    path('<int:hostel_id>/related/', views.HostelRelatedView.as_view(), name='hostel_related'),
 
     # Room management
     path('rooms/', views.RoomsListView.as_view(), name='rooms_list'),
