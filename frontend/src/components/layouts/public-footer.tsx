@@ -42,7 +42,7 @@ export const Footer = React.memo(function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="w-full border-t border-gray-800 bg-gray-900">
+    <footer className="w-full bg-gray-900">
       <Shell className="pt-16 pb-8 md:pt-20">
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-12 lg:gap-12">
           {/* Logo and Social - Takes more space on desktop */}
@@ -58,7 +58,7 @@ export const Footer = React.memo(function Footer() {
                 height={40}
                 className="h-10 w-auto"
               />
-              <span className="font-bold text-2xl text-white">RUMI</span>
+              <span className="font-extrabold text-2xl text-white">RUMI</span>
             </Link>
             <p className="text-base text-gray-400 max-w-sm leading-relaxed">
               The Living Campus Standard: Safe, modern, and smart student
@@ -117,7 +117,7 @@ export const Footer = React.memo(function Footer() {
                   <li key={link.label}>
                     <Link
                       href={link.href as any}
-                      className="text-sm text-gray-400 hover:text-white transition-colors inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 rounded-sm"
+                      className="text-sm text-gray-400 hover:text-primary transition-colors inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 rounded-sm"
                     >
                       {link.label}
                     </Link>
@@ -143,7 +143,7 @@ export const Footer = React.memo(function Footer() {
               </Link>
               <Link
                 href="/terms"
-                className="text-sm text-gray-400 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 rounded-sm"
+                className="text-sm text-gray-400 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 rounded-sm"
               >
                 Terms of Service
               </Link>

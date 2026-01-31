@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { CheckCircle2 } from 'lucide-react';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 
 export const metadata: Metadata = {
@@ -82,27 +83,27 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-white font-sans">
       {/* Header */}
-      <section className="border-b border-gray-200 py-16 px-4">
-        <div className="container mx-auto max-w-3xl">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+      <section className="bg-white py-24 px-4 relative overflow-hidden border-b border-gray-200">
+        <div className="container mx-auto max-w-3xl text-center">
+          <h1 className="text-5xl font-extrabold text-primary mb-6">
             Pricing
           </h1>
-          <p className="text-lg text-gray-700">
+          <p className="text-xl text-gray-700 font-medium">
             Per-bed monthly billing. KES 50 - 150 per occupied bed per month. SMS & email notifications included.
           </p>
         </div>
       </section>
 
       {/* Trial Notice */}
-      <section className="py-8 px-4 bg-gray-50 border-b border-gray-200">
+      <section className="py-12 px-4 bg-white">
         <div className="container mx-auto max-w-4xl">
-          <div className="border border-gray-200 bg-white p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="border border-gray-200 bg-white p-10 rounded-none flex flex-col md:flex-row items-center justify-between gap-8 shadow-sm">
             <div>
-              <h3 className="font-bold text-gray-900 mb-1">30-day free trial</h3>
-              <p className="text-sm text-gray-700">Full access to Core and Control. No payment required.</p>
+              <h3 className="font-black text-primary text-3xl mb-2">30-day free trial</h3>
+              <p className="text-lg text-gray-700 font-medium">Full access to Core and Control. No credit card required.</p>
             </div>
             <Link href={AUTH_ROUTES.REGISTER}>
-              <Button>
+              <Button className="bg-primary text-white hover:bg-primary/90 px-10 py-7 h-auto text-xl font-bold rounded-none shadow-sm">
                 Start Trial
               </Button>
             </Link>
@@ -111,41 +112,47 @@ export default function PricingPage() {
       </section>
 
       {/* Pricing Cards */}
-      <section className="py-16 px-4">
+      <section className="py-24 px-4 bg-white">
         <div className="container mx-auto max-w-6xl">
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid lg:grid-cols-3 gap-12">
             {PLANS.map((plan) => (
               <div
                 key={plan.id}
-                className="border border-gray-200 bg-white p-8"
+                className={`border-2 ${plan.id === 'control' ? 'border-primary shadow-lg scale-105 z-10' : 'border-gray-100 shadow-sm'} bg-white p-10 rounded-none transition-all relative overflow-hidden`}
               >
-                <div className="mb-8">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-4">
+                {plan.id === 'control' && (
+                  <div className="absolute top-0 right-0 bg-primary text-white px-6 py-2 font-bold text-sm tracking-wide">
+                    POPULAR
+                  </div>
+                )}
+                <div className="mb-10">
+                  <h3 className={`text-sm font-black uppercase tracking-[0.2em] ${plan.id === 'control' ? 'text-primary' : 'text-gray-400'} mb-6`}>
                     {plan.name}
                   </h3>
                   
-                  <div className="flex items-baseline gap-1 mb-6">
-                    <span className="text-sm font-bold text-gray-700">KES</span>
-                    <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
-                    <span className="text-sm text-gray-700">/ bed / mo</span>
+                  <div className="flex items-baseline gap-2 mb-8">
+                    <span className="text-lg font-bold text-gray-400">KES</span>
+                    <span className={`text-6xl font-black tracking-tighter text-gray-900`}>{plan.price}</span>
+                    <span className="text-base text-gray-500 font-bold">/ bed</span>
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-8 pb-8 border-b border-gray-200">
+                <div className="space-y-5 mb-10 pb-10 border-b border-gray-100">
                   {plan.features.map((feature) => (
-                    <div key={feature} className="flex items-start gap-3">
-                      <span className="text-sm text-gray-700">• {feature}</span>
+                    <div key={feature} className="flex items-start gap-4">
+                      <CheckCircle2 className={`h-6 w-6 shrink-0 text-primary`} />
+                      <span className="text-base text-gray-600 font-semibold">{feature}</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <Link href={plan.ctaLink} className="block w-full">
-                    <Button className="w-full">
+                    <Button className={`w-full h-14 rounded-none font-black text-lg transition-all shadow-sm active:scale-95 bg-primary text-white hover:bg-primary/90`}>
                       {plan.cta}
                     </Button>
                   </Link>
-                  <p className="text-xs text-center text-gray-500">
+                  <p className="text-sm text-center text-gray-400 font-bold">
                     {plan.footerNote}
                   </p>
                 </div>
@@ -180,29 +187,29 @@ export default function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section className="py-16 px-4 bg-gray-50 border-t border-gray-200">
+      <section className="py-24 px-4 bg-gray-50">
         <div className="container mx-auto max-w-3xl">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8">
-            Questions
+          <h2 className="text-3xl font-bold text-primary mb-12 text-center">
+            Common Questions
           </h2>
           
-          <div className="space-y-8">
+          <div className="space-y-12">
             {FAQS.map((faq) => (
-              <div key={faq.q}>
-                <h4 className="font-bold text-gray-900 mb-2">{faq.q}</h4>
-                <p className="text-gray-700">{faq.a}</p>
+              <div key={faq.q} className="group">
+                <h4 className="font-bold text-gray-900 text-lg mb-3 group-hover:text-primary transition-colors">{faq.q}</h4>
+                <p className="text-gray-700 leading-relaxed font-medium">{faq.a}</p>
               </div>
             ))}
           </div>
           
-          <div className="mt-12 border border-gray-200 bg-white p-8">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div>
-                <p className="font-bold text-gray-900 mb-1">Still have questions?</p>
-                <p className="text-sm text-gray-700">Contact us for clarification.</p>
+          <div className="mt-20 border border-primary/10 bg-white p-10 rounded-3xl shadow-sm">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="text-center md:text-left">
+                <p className="font-bold text-primary text-xl mb-1">Still have questions?</p>
+                <p className="text-gray-600 font-medium">We're here to help you get started with Rumi.</p>
               </div>
               <Link href="/contact">
-                <Button variant="outline">Contact Us</Button>
+                <Button className="bg-primary text-white hover:bg-primary/90 px-8 rounded-xl h-12 font-bold">Contact Us</Button>
               </Link>
             </div>
           </div>

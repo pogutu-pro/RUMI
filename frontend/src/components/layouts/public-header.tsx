@@ -58,10 +58,10 @@ export const PublicHeader = React.memo(function PublicHeader({
         className={cn(
           'fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out',
           isScrolled
-            ? 'bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm py-2 xs:py-3'
+            ? 'bg-white/95 backdrop-blur-md shadow-sm py-2 xs:py-3'
             : isHome
             ? 'bg-transparent py-3 xs:py-5'
-            : 'bg-white border-b border-gray-100 py-3 xs:py-4'
+            : 'bg-white py-3 xs:py-4'
         )}
       >
         <div className="container mx-auto px-4 lg:px-8">
@@ -83,7 +83,7 @@ export const PublicHeader = React.memo(function PublicHeader({
               <span
                 className={cn(
                   'font-bold text-lg xs:text-xl hidden sm:block tracking-tight transition-colors',
-                  !isScrolled && isHome ? 'text-green-600' : 'text-green-600',
+                  !isScrolled && isHome ? 'text-primary' : 'text-primary',
                 )}
               >
                 RUMI
@@ -98,17 +98,18 @@ export const PublicHeader = React.memo(function PublicHeader({
               >
                 {[
                     { href: '/hostels', label: 'Find a Hostel' },
-                    { href: '/host', label: 'Become a Host' },
+                    { href: '/host', label: 'List your Hostel' },
+                    { href: '/about', label: 'About Us' },
                     { href: '/pricing', label: 'Pricing' },
                 ].map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'px-4 py-2 text-sm font-bold rounded-full text-lg text-green-600 transition-all duration-200',
+                      'px-4 py-2 text-lg font-bold transition-colors',
                       pathname.startsWith(item.href)
-                        ? 'bg-green-600/10 text-green-600'
-                        : 'text-green-600 hover:bg-green-600/10 hover:text-green-600',
+                        ? 'text-primary underline decoration-2 underline-offset-8'
+                        : 'text-primary hover:text-primary/80',
                     )}
                   >
                     {item.label}
@@ -131,59 +132,27 @@ export const PublicHeader = React.memo(function PublicHeader({
                 <div className="flex items-center gap-2">
                     {/* Menu Icon */}
                     <Sheet open={isOpen} onOpenChange={setIsOpen}>
-                    <SheetTrigger asChild>
+                      <SheetTrigger asChild>
                         <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                            "hidden md:flex",
-                            !isScrolled && isHome
-                                ? 'text-green-600 hover:text-green-600 hover:bg-green-600/10'
-                                : 'text-green-600 hover:text-green-600 hover:bg-green-600/10',
-                        )}
+                          variant="ghost"
+                          className={cn(
+                            "hidden lg:flex font-black text-sm tracking-widest text-primary hover:bg-primary/10",
+                          )}
                         >
-                        <Menu className="h-6 w-6" />
+                          MENU
                         </Button>
-                    </SheetTrigger>
-                    <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                      </SheetTrigger>
+                      <SheetContent side="right" className="w-[300px] sm:w-[400px]">
                         <SheetHeader className="sr-only">
                           <SheetTitle>Navigation Menu</SheetTitle>
                           <SheetDescription>Main navigation menu for accessing public pages.</SheetDescription>
                         </SheetHeader>
-                        <div className="h-full flex flex-col">
-                            <div className="mb-6 flex items-center gap-2">
-                                <div className="relative h-8 w-8 overflow-hidden rounded-lg">
-                                    <Image
-                                    src="/images/logo/logo.svg"
-                                    alt="RUMI"
-                                    width={32}
-                                    height={32}
-                                    className="object-contain"
-                                    />
-                                </div>
-                                <span className="font-bold text-xl tracking-tight">RUMI</span>
-                            </div>
-                            <PublicMenuContent onClose={() => setIsOpen(false)} />
+                        <div className="h-full flex flex-col pt-8">
+                            <PublicMenuContent onClose={() => setIsOpen(false)} excludeHeader />
                         </div>
-                    </SheetContent>
+                      </SheetContent>
                     </Sheet>
 
-                    {/* Profile Icon (Login) */}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                            "hidden md:flex",
-                            !isScrolled && isHome
-                                ? 'text-green-600 hover:text-green-600 hover:bg-green-600/10'
-                                : 'text-green-600 hover:text-green-600 hover:bg-green-600/10',
-                        )}
-                        asChild
-                    >
-                        <Link href={LOGIN_HREF} aria-label="Log in">
-                            <User className="h-6 w-6" />
-                        </Link>
-                    </Button>
                 </div>
               )}
             </div>

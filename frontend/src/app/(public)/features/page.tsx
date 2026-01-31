@@ -57,13 +57,13 @@ export default function FeaturesPage() {
   return (
     <div className="flex flex-col bg-white text-gray-900">
       {/* Header */}
-      <section className="border-b border-gray-200 bg-white py-16">
+      <section className="bg-white py-24 relative overflow-hidden border-b border-gray-200">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl">
-            <h1 className="mb-4 text-3xl font-bold text-gray-900">
+            <h1 className="mb-4 text-4xl font-extrabold text-primary">
               Platform Features
             </h1>
-            <p className="text-lg text-gray-700">
+            <p className="text-xl text-gray-700 font-medium leading-relaxed">
               Core functions available to students and landlords.
             </p>
           </div>
@@ -71,22 +71,22 @@ export default function FeaturesPage() {
       </section>
 
       {/* Student Features */}
-      <section className="bg-white py-16 border-b border-gray-200">
+      <section className="bg-white py-24">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl">
-            <h2 className="mb-8 text-2xl font-bold text-gray-900">
+            <h2 className="mb-12 text-3xl font-bold text-primary">
               For Students
             </h2>
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-8 md:grid-cols-2">
               {STUDENT_FEATURES.map((feature) => (
                 <div
                   key={feature.title}
-                  className="border border-gray-200 bg-white p-6"
+                  className="bg-white p-8 rounded-none border-b-4 border-gray-100 shadow-sm hover:border-primary transition-all"
                 >
-                  <h3 className="mb-2 font-semibold text-gray-900">
+                  <h3 className="mb-3 text-xl font-bold text-primary transition-colors">
                     {feature.title}
                   </h3>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-base text-gray-600 font-medium">
                     {feature.description}
                   </p>
                 </div>
@@ -97,22 +97,22 @@ export default function FeaturesPage() {
       </section>
 
       {/* Landlord Features */}
-      <section className="bg-gray-50 py-16 border-b border-gray-200">
+      <section className="bg-white py-24">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl">
-            <h2 className="mb-8 text-2xl font-bold text-gray-900">
+            <h2 className="mb-12 text-3xl font-bold text-primary">
               For Landlords
             </h2>
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-8 md:grid-cols-2">
               {LANDLORD_FEATURES.map((feature) => (
                 <div
                   key={feature.title}
-                  className="border border-gray-200 bg-white p-6"
+                  className="bg-gray-50 p-8 rounded-none border-b-4 border-gray-200 shadow-sm hover:border-primary transition-all"
                 >
-                  <h3 className="mb-2 font-semibold text-gray-900">
+                  <h3 className="mb-3 text-xl font-bold text-primary transition-colors">
                     {feature.title}
                   </h3>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-base text-gray-600 font-medium">
                     {feature.description}
                   </p>
                 </div>

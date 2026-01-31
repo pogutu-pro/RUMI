@@ -116,7 +116,7 @@ export function StudentRegisterForm() {
             </label>
             <select
               {...register('gender')}
-              className="flex h-11 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+              className="flex h-11 w-full rounded-none border border-gray-300 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
             >
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -151,7 +151,7 @@ export function StudentRegisterForm() {
             </label>
             <select
               {...register('preferred_hostel_id')}
-              className="flex h-11 w-full rounded-md border border-gray-300 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-colors"
+              className="flex h-11 w-full rounded-none border border-gray-300 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
             >
               <option value="">I haven't picked one yet</option>
               {hostels.map((h) => (
@@ -187,18 +187,18 @@ export function StudentRegisterForm() {
           {...register('confirm_password')}
         />
 
-        <div className="text-xs text-center text-gray-500">
+        <div className="text-xs text-center text-gray-500 font-bold uppercase tracking-wider">
           By selecting <strong>Create student account</strong>, I agree to the{' '}
           <Link
             href="/terms"
-            className="text-emerald-600 underline-offset-2 hover:underline"
+            className="text-primary hover:underline underline-offset-4"
           >
             Terms of Service
           </Link>{' '}
           and{' '}
           <Link
             href="/privacy"
-            className="text-emerald-600 underline-offset-2 hover:underline"
+            className="text-primary hover:underline underline-offset-4"
           >
             Privacy Policy
           </Link>
@@ -207,7 +207,7 @@ export function StudentRegisterForm() {
 
         <Button
           type="submit"
-          className="w-full h-12 text-base font-semibold bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg"
+          className="w-full h-12 text-base font-black bg-primary hover:bg-primary/90 text-white rounded-none uppercase tracking-widest shadow-md active:translate-y-0.5 transition-all"
           disabled={isSubmitting}
         >
           {isSubmitting ? (

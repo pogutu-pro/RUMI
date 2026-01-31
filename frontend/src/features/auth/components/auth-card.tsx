@@ -23,9 +23,9 @@ export function AuthCard({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-gray-100 bg-white p-6 shadow-lg ring-1 ring-black/5 backdrop-blur-sm',
+        'rounded-none border-2 border-primary bg-white p-6 shadow-sm',
         'sm:p-8',
-        'hover:shadow-xl transition-shadow duration-300',
+        'transition-shadow duration-300',
         className,
       )}
     >
@@ -33,7 +33,7 @@ export function AuthCard({
         <header className="mb-8 text-center space-y-3">
           {icon && (
             <div className="flex justify-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+              <div className="w-16 h-16 bg-gray-50 border-2 border-primary rounded-none flex items-center justify-center">
                 {icon}
               </div>
             </div>

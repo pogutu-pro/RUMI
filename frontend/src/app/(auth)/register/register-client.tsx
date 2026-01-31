@@ -10,6 +10,7 @@ import { StudentRegisterForm } from '@/features/auth';
 import { LandlordRegisterForm } from '@/features/auth';
 import type { UserRole } from '@/types/auth.types';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
+import Image from 'next/image';
 
 type RegisterableRole = Extract<UserRole, 'student' | 'landlord'>;
 
@@ -26,8 +27,18 @@ export function RegisterClientPage() {
           transition={{ duration: 0.28, ease: 'easeOut' }}
         >
           <AuthCard
-            title="Create your account"
-            description="Choose your role to get started"
+            icon={
+              <Link href="/">
+                <Image
+                  src="/images/logo/logo.svg"
+                  alt="RUMI"
+                  width={32}
+                  height={32}
+                />
+              </Link>
+            }
+            title={<span className="font-black text-3xl tracking-tight">Create your Rumi account</span>}
+            description={<span className="text-gray-500 font-bold uppercase tracking-wider text-xs">Choose your role to get started</span>}
           >
             <div className="space-y-6">
                 <RoleSelector
@@ -42,11 +53,11 @@ export function RegisterClientPage() {
                 </div>
               )}
 
-              <div className="pt-4 border-t text-center text-sm text-gray-600">
+              <div className="pt-4 border-t-2 border-primary/10 text-center text-sm font-bold text-gray-500">
                 Already have an account?{' '}
                 <Link
                   href={AUTH_ROUTES.LOGIN}
-                  className="font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                  className="text-primary hover:text-primary/80 transition-colors uppercase tracking-widest text-xs"
                 >
                   Sign in
                 </Link>

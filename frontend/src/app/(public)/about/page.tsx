@@ -12,13 +12,13 @@ export default function AboutPage() {
   return (
     <div className="flex flex-col bg-white text-gray-900">
       {/* Header */}
-      <section className="border-b border-gray-200 bg-white py-16">
+      <section className="bg-white py-24 relative overflow-hidden border-b border-gray-200">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl">
-            <h1 className="mb-4 text-3xl font-bold text-gray-900">
+            <h1 className="mb-4 text-4xl font-extrabold text-primary">
               About Rumi
             </h1>
-            <p className="text-lg text-gray-700">
+            <p className="text-xl text-gray-700 font-medium leading-relaxed">
               Student accommodation booking platform for verified hostels near Kenyan universities.
             </p>
           </div>
@@ -26,17 +26,17 @@ export default function AboutPage() {
       </section>
 
       {/* What We Do */}
-      <section className="py-16 bg-white border-b border-gray-200">
+      <section className="py-24 bg-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl">
-            <h2 className="mb-6 text-2xl font-bold text-gray-900">
-              What We Do
+            <h2 className="mb-8 text-3xl font-bold text-primary">
+              Our Mission
             </h2>
-            <div className="space-y-4 text-gray-700 leading-relaxed">
+            <div className="space-y-6 text-gray-700 leading-relaxed font-medium text-lg">
               <p>
                 Rumi is a booking platform connecting students with verified hostel accommodation near their campuses.
               </p>
-              <p>
+              <p className="border-l-4 border-primary pl-6 italic">
                 We verify property licenses, inspect physical conditions, and facilitate secure M-PESA payments between students and landlords.
               </p>
               <p>
@@ -48,13 +48,13 @@ export default function AboutPage() {
       </section>
 
       {/* Core Functions */}
-      <section className="bg-gray-50 py-16 border-b border-gray-200">
+      <section className="bg-white py-24">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl">
-            <h2 className="mb-8 text-2xl font-bold text-gray-900">
-              Platform Functions
+            <h2 className="mb-12 text-3xl font-bold text-primary text-center">
+              The Rumi Standard
             </h2>
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-8 md:grid-cols-2">
               {[
                 {
                   title: 'Property Verification',
@@ -79,12 +79,12 @@ export default function AboutPage() {
               ].map((item) => (
                 <div
                   key={item.title}
-                  className="border border-gray-200 bg-white p-6"
+                  className="border border-gray-100 bg-gray-50 p-8 rounded-none transition-all hover:bg-white hover:border-primary hover:shadow-sm"
                 >
-                  <h3 className="mb-2 font-semibold text-gray-900">
+                  <h3 className="mb-3 text-xl font-bold text-primary transition-colors">
                     {item.title}
                   </h3>
-                  <p className="text-sm text-gray-700">{item.description}</p>
+                  <p className="text-base text-gray-600 font-medium leading-relaxed">{item.description}</p>
                 </div>
               ))}
             </div>

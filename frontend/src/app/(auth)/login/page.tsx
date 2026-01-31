@@ -6,6 +6,9 @@ import { AlertCircle } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LoginFormNew } from '@/features/auth';
+import { AuthCard } from '@/features/auth';
+import Image from 'next/image';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -21,45 +24,46 @@ export default function LoginPage() {
   }, [redirectUrl]);
 
   return (
-    <div className="w-full">
-      <div className="bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-center">
-          <h1 className="text-base font-bold text-gray-900">
-            Log in or sign up
-          </h1>
+    <div className="w-full max-w-lg mx-auto">
+      <AuthCard
+        icon={
+           <Link href="/">
+             <Image
+               src="/images/logo/logo.svg"
+               alt="RUMI"
+               width={32}
+               height={32}
+             />
+           </Link>
+        }
+        title={<span className="font-black text-3xl tracking-tight">Welcome to Rumi</span>}
+        description={<span className="text-gray-500 font-bold uppercase tracking-wider text-xs">Sign in to your account</span>}
+      >
+        <div className="space-y-4">
+          {sessionExpired && (
+            <Alert variant="destructive" role="alert" className="rounded-none border-2">
+              <AlertCircle className="h-4 w-4" aria-hidden />
+              <AlertDescription className="font-bold">
+                Your session expired. Please sign in again.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {verified && (
+            <Alert role="status" className="rounded-none border-2 border-primary bg-primary/5">
+              <AlertCircle
+                className="h-4 w-4 text-primary"
+                aria-hidden
+              />
+              <AlertDescription className="text-primary font-bold">
+                Email verified — you can now sign in.
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
-        
-        <div className="p-6">
-          <div className="mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Welcome to Rumi</h2>
-          </div>
 
-          <div className="space-y-4 mb-6">
-            {sessionExpired && (
-              <Alert variant="destructive" role="alert">
-                <AlertCircle className="h-4 w-4" aria-hidden />
-                <AlertDescription>
-                  Your session expired. Please sign in again.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {verified && (
-              <Alert role="status">
-                <AlertCircle
-                  className="h-4 w-4 text-emerald-600"
-                  aria-hidden
-                />
-                <AlertDescription className="text-emerald-800">
-                  Email verified   you can now sign in.
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
-
-          <LoginFormNew />
-        </div>
-      </div>
+        <LoginFormNew />
+      </AuthCard>
     </div>
   );
 }

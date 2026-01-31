@@ -101,48 +101,55 @@ export function MobileBottomNav() {
           
           if (item.href === '/more') {
              return (
-               <Sheet key={item.href} open={isOpen} onOpenChange={setIsOpen}>
-                 <SheetTrigger asChild>
-                   <button
-                     className={cn(
-                       'flex flex-col items-center justify-center gap-1',
-                       'min-w-[64px] h-14 rounded-lg',
-                       'transition-all duration-200',
-                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                       isOpen
-                         ? 'text-primary'
-                         : 'text-gray-500 hover:text-gray-900 active:scale-95'
-                     )}
-                   >
-                     <div
-                       className={cn(
-                         'transition-all duration-200',
-                         isOpen && 'scale-110'
-                       )}
-                     >
-                       {item.icon}
+                <Sheet key={item.href} open={isOpen} onOpenChange={setIsOpen}>
+                  <SheetTrigger asChild>
+                    <button
+                      className={cn(
+                        'flex flex-col items-center justify-center gap-1',
+                        'min-w-[64px] h-14 rounded-lg',
+                        'transition-all duration-200',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                        isOpen
+                          ? 'text-primary'
+                          : 'text-gray-500 hover:text-gray-900 active:scale-95'
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          'transition-all duration-200',
+                          isOpen && 'scale-110'
+                        )}
+                      >
+                        {item.icon}
+                      </div>
+                      <span
+                        className={cn(
+                          'text-xs font-medium transition-all',
+                          isOpen ? 'font-semibold' : 'font-normal'
+                        )}
+                      >
+                        {item.label}
+                      </span>
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="h-[85vh] rounded-none p-0 border-t-2 border-primary">
+                     <SheetHeader className="sr-only">
+                         <SheetTitle>Navigation Menu</SheetTitle>
+                         <SheetDescription>Mobile navigation menu for accessing additional pages.</SheetDescription>
+                     </SheetHeader>
+                     <div className="flex flex-col h-full">
+                        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                            <span className="font-bold text-lg text-primary uppercase tracking-widest">More</span>
+                            <div className="w-12 h-1.5 bg-gray-100 rounded-full" />
+                        </div>
+                        <PublicMenuContent 
+                          onClose={() => setIsOpen(false)} 
+                          isGrid 
+                          excludeItems={['/', '/hostels']}
+                        />
                      </div>
-                     <span
-                       className={cn(
-                         'text-xs font-medium transition-all',
-                         isOpen ? 'font-semibold' : 'font-normal'
-                       )}
-                     >
-                       {item.label}
-                     </span>
-                   </button>
-                 </SheetTrigger>
-                 <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl p-0">
-                    <SheetHeader className="sr-only">
-                        <SheetTitle>Navigation Menu</SheetTitle>
-                        <SheetDescription>Mobile navigation menu for accessing additional pages.</SheetDescription>
-                    </SheetHeader>
-                    <div className="p-4 border-b border-gray-100 flex items-center justify-center">
-                        <div className="w-12 h-1.5 bg-gray-200 rounded-full" />
-                    </div>
-                    <PublicMenuContent onClose={() => setIsOpen(false)} />
-                 </SheetContent>
-               </Sheet>
+                  </SheetContent>
+                </Sheet>
              );
           }
 

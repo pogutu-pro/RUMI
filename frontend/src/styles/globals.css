@@ -105,20 +105,6 @@
 }
 
 @layer components {
-  .breathing-motion {
-    animation: breathing 4s ease-in-out infinite;
-  }
-
-  @keyframes breathing {
-    0%,
-    100% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.02);
-    }
-  }
-
   .container-custom {
     @apply mx-auto w-full px-4 sm:px-6 lg:px-8;
     max-width: 1280px; /* Airbnb max-width */
@@ -169,10 +155,6 @@
   /*
      TEXT UTILITIES
       */
-
-  .gradient-text {
-    @apply bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent;
-  }
 
   .text-balance {
     text-wrap: balance;
@@ -232,20 +214,6 @@
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors duration-200 bg-destructive/10 text-destructive;
   }
 
-  /* 
-     GLASSMORPHISM UTILITIES
-   */
-  .glass {
-    @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-sm;
-  }
-
-  .glass-dark {
-    @apply bg-black/30 backdrop-blur-lg border border-white/10 shadow-sm;
-  }
-
-  .glass-card {
-    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-sm transition-all duration-300 hover:shadow-md hover:bg-white/90;
-  }
 }
 
 @layer utilities {
@@ -380,7 +348,7 @@
       */
 
   .card-base {
-    border-radius: 0.75rem;
+    border-radius: var(--radius, 0);
     border: 1px solid hsl(var(--border));
     background-color: transparent; /* Changed from hsl(var(--card)) for better theme blending */
     color: hsl(var(--card-foreground));
@@ -389,7 +357,7 @@
   }
 
   .card-hover {
-    border-radius: 0.75rem;
+    border-radius: var(--radius, 0);
     border: 1px solid hsl(var(--border));
     background-color: transparent;
     color: hsl(var(--card-foreground));
@@ -403,7 +371,7 @@
   }
 
   .card-interactive {
-    border-radius: 0.75rem;
+    border-radius: var(--radius, 0);
     border: 1px solid hsl(var(--border));
     background-color: transparent;
     color: hsl(var(--card-foreground));
@@ -453,29 +421,6 @@
     }
   }
 
-  @keyframes shimmer {
-    0% {
-      transform: translateX(-100%);
-    }
-    100% {
-      transform: translateX(100%);
-    }
-  }
-
-  /* Gradient animation for pricing page */
-  @keyframes gradient {
-    0%, 100% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-  }
-
-  .animate-gradient {
-    background-size: 200% 200%;
-    animation: gradient 8s ease infinite;
-  }
 }
 
 /* 

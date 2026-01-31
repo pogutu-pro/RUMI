@@ -135,18 +135,18 @@ export function LandlordRegisterForm() {
           {...register('confirm_password')}
         />
 
-        <div className="text-xs text-center text-gray-500">
+        <div className="text-xs text-center text-gray-500 font-bold uppercase tracking-wider">
           By selecting <strong>Create landlord account</strong>, I agree to the{' '}
           <Link
             href="/terms"
-            className="text-emerald-600 underline-offset-2 hover:underline"
+            className="text-primary hover:underline underline-offset-4"
           >
             Terms of Service
           </Link>{' '}
           and{' '}
           <Link
             href="/privacy"
-            className="text-emerald-600 underline-offset-2 hover:underline"
+            className="text-primary hover:underline underline-offset-4"
           >
             Privacy Policy
           </Link>
@@ -155,7 +155,7 @@ export function LandlordRegisterForm() {
 
         <Button
           type="submit"
-          className="w-full h-12 text-base font-semibold bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg"
+          className="w-full h-12 text-base font-black bg-primary hover:bg-primary/90 text-white rounded-none uppercase tracking-widest shadow-md active:translate-y-0.5 transition-all"
           disabled={isSubmitting}
         >
           {isSubmitting ? (

@@ -55,12 +55,12 @@ export default function HomePage() {
     <main className="flex flex-col bg-white text-gray-900 font-sans">
       {/* Hero Section */}
       <section
-        className="relative border-b border-gray-200 bg-white"
+        className="relative bg-white"
         aria-label="Hero introduction"
       >
         <div className="container mx-auto px-4 py-16 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl">
-            <h1 className="mb-6 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+            <h1 className="mb-6 text-4xl font-bold tracking-tight text-primary sm:text-5xl">
               Student Hostel Management Platform
             </h1>
             <p className="mb-8 text-xl text-gray-700 leading-relaxed">
@@ -70,7 +70,7 @@ export default function HomePage() {
               <Link href="/hostels" prefetch className="w-full sm:w-auto">
                 <Button
                   size="lg"
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white rounded-none"
                 >
                   <Search className="mr-2 h-5 w-5" />
                   View All Hostels
@@ -96,8 +96,8 @@ export default function HomePage() {
               >
                 <Button
                   size="lg"
-                  variant="secondary"
-                  className="w-full sm:w-auto"
+                  variant="outline"
+                  className="w-full sm:w-auto border-2 border-primary text-primary hover:bg-primary/5 rounded-none"
                 >
                     List Property
                 </Button>
@@ -109,15 +109,15 @@ export default function HomePage() {
 
       {/* Platform Overview */}
       <section
-        className="py-16 bg-white border-b border-gray-200"
+        className="py-24 bg-white"
         aria-label="How it works"
       >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl">
-            <h2 className="mb-6 text-2xl font-bold text-gray-900">
+        <div className="container mx-auto px-0 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-5xl">
+            <h2 className="mb-6 text-2xl font-bold text-primary px-4 sm:px-0">
               How Rumi Simplifies Hostel Management
             </h2>
-            <div className="border border-gray-200 bg-gray-50">
+            <div className="border border-gray-200 bg-white overflow-hidden rounded-none shadow-sm">
                 <RumiVideo
                 url="https://www.youtube.com/watch?v=sBY5a0QZKUk"
                 title="Rumi Hostel Management Demo"
@@ -133,7 +133,7 @@ export default function HomePage() {
 
       {/* How It Works Section */}
       <section
-        className="py-16 bg-white border-b border-gray-200"
+        className="py-24 bg-white"
         aria-label="How Rumi works"
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -167,9 +167,9 @@ export default function HomePage() {
               ].map(({ number, title, description }) => (
                 <div
                   key={number}
-                  className="flex flex-col items-start"
+                  className="flex flex-col items-start p-6 bg-white"
                 >
-                  <span className="mb-4 text-xl font-bold text-gray-900 border-b-2 border-gray-900 pb-1">
+                  <span className="mb-4 text-2xl font-black text-primary">
                     {number}
                   </span>
                   <h3 className="mb-2 text-lg font-semibold text-gray-900">
@@ -185,18 +185,18 @@ export default function HomePage() {
 
       {/* For Students */}
       <section
-        className="py-16 bg-white border-b border-gray-200"
+        className="py-24 bg-white"
         aria-label="For students"
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl">
             <Badge
-                className="mb-4 inline-flex border-gray-900 text-gray-900 rounded-none bg-transparent hover:bg-transparent"
+                className="mb-4 inline-flex border-primary text-primary bg-primary/5 hover:bg-primary/10"
                 variant="outline"
             >
                 STUDENTS
             </Badge>
-            <h2 className="mb-8 text-3xl font-bold text-gray-900">
+            <h2 className="mb-8 text-3xl font-bold text-primary">
                 For Students: Digital Rent Management
             </h2>
             {/* Features in compact grid */}
@@ -254,18 +254,18 @@ export default function HomePage() {
 
       {/* For Landlords */}
       <section
-        className="bg-gray-50 py-16 border-b border-gray-200"
+        className="py-24 bg-white"
         aria-label="For landlords"
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl">
              <Badge
-                className="mb-4 inline-flex border-gray-900 text-gray-900 rounded-none bg-transparent hover:bg-transparent"
+                className="mb-4 inline-flex border-primary text-primary bg-primary/10 rounded-none"
                 variant="outline"
             >
                 LANDLORDS
             </Badge>
-            <h2 className="mb-8 text-3xl font-bold text-gray-900">
+            <h2 className="mb-8 text-3xl font-bold text-gray-900 pr-6">
               For Landlords: Operations Management
             </h2>
             {/* Features in compact grid */}
@@ -320,13 +320,13 @@ export default function HomePage() {
 
       {/* FAQ Section */}
       <section
-        className="py-16 bg-white"
+        className="py-24 bg-white"
         aria-label="Frequently asked questions"
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl">
-            <h2 className="mb-8 text-2xl font-bold text-gray-900">
-              Questions
+            <h2 className="mb-8 text-2xl font-bold text-primary">
+              Questions & Answers
             </h2>
             <Accordion
               type="single"

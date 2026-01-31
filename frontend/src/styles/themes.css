@@ -21,8 +21,8 @@
     --muted: 240 5% 96%;
     --muted-foreground: 240 4% 46%;
     
-    --accent: 150 30% 96%; /* Subtle green tint for accents */
-    --accent-foreground: 150 90% 35%;
+    --accent: 39 95% 52%; /* Brand Gold #f9ab0c - Use sparingly */
+    --accent-foreground: 0 0% 10%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
@@ -31,7 +31,7 @@
     --input: 240 6% 90%;
     --ring: 150 90% 35%;
     
-    --radius: 0.75rem;
+    --radius: 0;
     
     --success: 150 90% 35%;
     --success-foreground: 0 0% 100%;
@@ -77,7 +77,7 @@
     --input: 220 20% 20%;
     --ring: 150 70% 50%;
     
-    --radius: 0.75rem;
+    --radius: 0;
     
     --success: 150 70% 50%;
     --success-foreground: 150 90% 10%;

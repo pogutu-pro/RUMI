@@ -128,19 +128,18 @@ export function LoginForm({ onSuccess, onError, className }: LoginFormProps) {
 
       {step === 'email' && (
         <div className="space-y-4">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Welcome Back</h2>
-            <p className="text-gray-600">Sign in to your RUMI account</p>
+          <div className="text-center mb-8 border-b-2 border-primary/10 pb-4">
+            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter">Identity Check</h2>
           </div>
 
           <FormField
             label="Email"
             type="email"
-            placeholder="Enter your email address"
+            placeholder="enter your email"
             autoComplete="email"
             error={errors.email?.message}
             required
-            className="h-14 text-lg"
+            className="h-12 text-base rounded-none border-2 focus:border-primary"
             aria-invalid={!!errors.email}
             {...registerField('email')}
             value={emailValue}
@@ -150,13 +149,13 @@ export function LoginForm({ onSuccess, onError, className }: LoginFormProps) {
           <Button
             type="button"
             onClick={handleContinue}
-            className="w-full h-12 text-base font-semibold bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg"
+            className="w-full h-12 text-base font-black bg-primary hover:bg-primary/90 text-white rounded-none uppercase tracking-widest"
             disabled={isCheckingEmail}
           >
             {isCheckingEmail ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                Checking...
+                Processing...
               </>
             ) : (
               'Continue'
@@ -171,10 +170,10 @@ export function LoginForm({ onSuccess, onError, className }: LoginFormProps) {
             onError={handleGoogleError}
           />
           
-          <div className="text-center mt-4">
-             <span className="text-sm text-gray-600">Don't have an account? </span>
-             <Link href={AUTH_ROUTES.REGISTER} className="text-sm font-semibold text-gray-800 hover:underline">
-               Sign up
+          <div className="text-center mt-6 pt-4 border-t-2 border-primary/10">
+             <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">New to Rumi? </span>
+             <Link href={AUTH_ROUTES.REGISTER} className="text-sm font-black text-primary hover:underline underline-offset-4 uppercase tracking-widest">
+               Create Account
              </Link>
           </div>
         </div>
@@ -214,21 +213,21 @@ export function LoginForm({ onSuccess, onError, className }: LoginFormProps) {
           <div className="flex items-center justify-between">
             <Link 
               href="/forgot-password" 
-              className="text-sm text-emerald-600 hover:underline"
+              className="text-xs font-black text-primary uppercase tracking-widest hover:underline underline-offset-4"
             >
-              Forgot password?
+              Reset Password
             </Link>
           </div>
 
           <Button
             type="submit"
-            className="w-full h-12 text-base font-semibold bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg"
+            className="w-full h-12 text-base font-black bg-primary hover:bg-primary/90 text-white rounded-none uppercase tracking-widest"
             disabled={isPending}
           >
             {isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                Signing in...
+                Authenticating...
               </>
             ) : (
               'Sign In'
