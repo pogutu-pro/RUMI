@@ -121,21 +121,23 @@ export default function CheckOutPage() {
     );
   }
 
-  if (activeReport?.status !== 'draft' && activeReport?.status) {
+  if (activeReport?.status !== 'draft' && activeReport?.status || currentBooking.status === 'inspection_pending') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-4">
-        <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
-        <h2 className="text-2xl font-bold">Check-Out Submitted</h2>
+        <CheckCircle2 className="h-16 w-16 text-amber-500 mb-4" />
+        <h2 className="text-2xl font-bold">Inspection Pending</h2>
         <p className="text-muted-foreground mt-2 max-w-md">
-          Your check-out inventory report has been submitted. The caretaker will review it shortly.
+          Your check-out has been submitted. The caretaker needs to inspect the room before the process is complete.
         </p>
         <div className="flex gap-4 mt-6">
           <Button variant="outline" onClick={() => router.push('/student/dashboard')}>
             Back to Dashboard
           </Button>
-          <Button onClick={() => router.push(`/student/check-out/view/${activeReport.id}`)}>
-            View Report
-          </Button>
+          {activeReport && (
+            <Button onClick={() => router.push(`/student/check-out/view/${activeReport.id}`)}>
+               View Report
+            </Button>
+          )}
         </div>
       </div>
     );

@@ -1,7 +1,7 @@
 import { StateCreator } from 'zustand';
 import { AuthSlice, LoginPayload, AuthStatus } from './auth.types';
 import { AppState } from '@/stores/types';
-import { getAccessToken, setTokens, clearTokens } from '@/lib/auth/token';
+import { getAccessToken, setTokens, clearTokens, setOnboardingStage, setUserRole } from '@/lib/auth/token';
 
 export const createAuthSlice: StateCreator<
   AppState,
@@ -20,6 +20,8 @@ export const createAuthSlice: StateCreator<
     
     // 1. Side Effects: Set Tokens
     setTokens(accessToken, refreshToken || '');
+    if (user.role) setUserRole(user.role);
+    if (user.onboarding_stage) setOnboardingStage(user.onboarding_stage);
     
     // 2. State Update: Atomic update of all auth properties
     set({ 
@@ -82,6 +84,9 @@ export const createAuthSlice: StateCreator<
   updateUser: (updates) => {
     const { user } = get();
     if (user) {
+      if (updates.onboarding_stage) {
+        setOnboardingStage(updates.onboarding_stage);
+      }
       set({ user: { ...user, ...updates } });
     }
   },

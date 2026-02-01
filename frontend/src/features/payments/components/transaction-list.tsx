@@ -17,7 +17,7 @@ export function TransactionList() {
     id: payment.id,
     type: 'payment' as const,
     amount: payment.amount,
-    status: payment.status as 'completed' | 'pending' | 'failed',
+    status: payment.status as 'completed' | 'pending' | 'failed' | 'processing',
     date: new Date(payment.date),
     description: payment.reference,
   }));

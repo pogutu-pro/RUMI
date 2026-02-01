@@ -22,6 +22,7 @@ from django.db import transaction
 from django.utils import timezone
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from django_ratelimit.decorators import ratelimit
 
 from .models import Transaction, MpesaPaymentConfig
 from .mpesa_api import MpesaDarajaAPI
@@ -39,6 +40,7 @@ class MpesaWebhookHandler(View):
     
     @method_decorator(csrf_exempt)
     @method_decorator(require_http_methods(["POST"]))
+    @method_decorator(ratelimit(key='ip', rate='100/m', block=True))
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
     
@@ -144,63 +146,69 @@ class MpesaWebhookHandler(View):
     
     def _update_transaction_from_stk_push(self, payment_info):
         """
-        Update transaction from successful STK push callback
+        Update transaction from successful STK push callback.
+        Sets status to 'processing' before attempting logic to ensure
+        money-in events are captured even if logic fails.
         """
         try:
-            with transaction.atomic():
-                # Find transaction by checkout request ID
-                checkout_request_id = payment_info.get('checkout_request_id')
-                if not checkout_request_id:
-                    logger.error("No checkout request ID in payment info")
-                    return JsonResponse({'error': 'Missing checkout request ID'}, status=400)
-                
-                try:
-                    transaction_obj = Transaction.objects.get(
-                        mpesa_checkout_request_id=checkout_request_id,
-                        payment_method='mpesa'
-                    )
-                except Transaction.DoesNotExist:
-                    logger.error(f"Transaction not found for checkout request ID: {checkout_request_id}")
-                    return JsonResponse({'error': 'Transaction not found'}, status=404)
-                
-                # Update transaction with M-Pesa details
-                transaction_obj.mpesa_transaction_id = payment_info.get('transaction_id')
-                transaction_obj.mpesa_receipt_number = payment_info.get('receipt_number')
-                transaction_obj.mpesa_phone_number = payment_info.get('phone_number')
-                transaction_obj.mpesa_transaction_date = timezone.now()
-                transaction_obj.metadata = payment_info
-                
-                # Update status and timestamps
-                transaction_obj.status = 'success'
-                transaction_obj.paid_at = timezone.now()
-                
-                # Update booking
-                booking = transaction_obj.booking
-                booking.status = 'confirmed'
-                booking.amount_paid += transaction_obj.total_charged_amount
-                booking.save()
-                
-                # Create payout record
-                from .models import Payout
-                Payout.objects.create(
-                    transaction=transaction_obj,
-                    landlord=transaction_obj.landlord,
-                    payout_reference=f"MPESA-PAYOUT-{transaction_obj.id}-{int(timezone.now().timestamp())}",
-                    gross_amount=transaction_obj.landlord_payout_amount,
-                    commission_deducted=Decimal('0.00'),
-                    net_payout_amount=transaction_obj.landlord_payout_amount,
-                    status='pending'
+            checkout_request_id = payment_info.get('checkout_request_id')
+            if not checkout_request_id:
+                logger.error("No checkout request ID in payment info")
+                return JsonResponse({'error': 'Missing checkout request ID'}, status=400)
+            
+            try:
+                transaction_obj = Transaction.objects.select_related('student', 'booking').get(
+                    mpesa_checkout_request_id=checkout_request_id,
+                    payment_method='mpesa'
                 )
-                
-                # Send notifications
-                self._send_payment_notifications(transaction_obj)
-                
-                # Generate receipt
-                self._generate_receipt(transaction_obj)
-                
-                logger.info(f"STK Push transaction updated successfully: {transaction_obj.transaction_reference}")
-                return JsonResponse({'status': 'success', 'message': 'Transaction updated'}, status=200)
-                
+            except Transaction.DoesNotExist:
+                logger.error(f"Transaction not found for checkout request ID: {checkout_request_id}")
+                return JsonResponse({'error': 'Transaction not found'}, status=404)
+            
+            if transaction_obj.status == 'success':
+                return JsonResponse({'status': 'already_processed'}, status=200)
+
+            # 1. Update to PROCESSING status (Money confirmed, logic pending)
+            # This is saved outside the atomic block below so it persists if logic fails
+            transaction_obj.status = 'processing'
+            transaction_obj.mpesa_receipt_number = payment_info.get('receipt_number')
+            transaction_obj.mpesa_phone_number = payment_info.get('phone_number')
+            transaction_obj.metadata = payment_info
+            transaction_obj.save()
+
+            from .services import process_confirmed_payment
+            
+            # 2. Attempt Business Logic (Atomic)
+            try:
+                with transaction.atomic():
+                    # Use process_confirmed_payment for consistent lifecycle management
+                    reference = transaction_obj.transaction_reference
+                    
+                    process_confirmed_payment(
+                        student=transaction_obj.student,
+                        amount=Decimal(str(payment_info.get('amount'))),
+                        reference=reference,
+                        payment_method='mpesa',
+                        metadata=payment_info
+                    )
+                    
+                    logger.info(f"STK Push transaction confirmed successfully: {transaction_obj.transaction_reference}")
+                    
+                    # Notifications (could be async)
+                    try:
+                        self._send_payment_notifications(transaction_obj)
+                        self._generate_receipt(transaction_obj)
+                    except Exception as notify_error:
+                        logger.warning(f"Notification failed for {reference}: {notify_error}")
+
+                    return JsonResponse({'status': 'success', 'message': 'Transaction updated'}, status=200)
+
+            except Exception as logic_error:
+                # Logic failed, but money was received. Status remains 'processing'.
+                logger.critical(f"PAYMENT LOGIC FAILED for {transaction_obj.transaction_reference}. Money received but service failed: {logic_error}")
+                # We return success to M-Pesa to stop retries, but system alert needed
+                return JsonResponse({'status': 'processing_error', 'message': 'Payment received, logic pending'}, status=200)
+
         except Exception as e:
             logger.error(f"Error updating STK push transaction: {e}")
             return JsonResponse({'error': str(e)}, status=500)
@@ -241,105 +249,66 @@ class MpesaWebhookHandler(View):
     def _create_transaction_from_c2b(self, payment_info):
         """
         Create new transaction from C2B confirmation
-        
-        This is the automatic workflow for C2B offline payments.
-        Students can pay via M-Pesa menu using business number and reference.
-        Webhooks automatically create transactions when payments are confirmed.
         """
         try:
+            from .services import process_confirmed_payment
+            from hostels.models import Booking
+            
             with transaction.atomic():
                 reference = payment_info.get('reference')
-                transaction_id = payment_info.get('transaction_id')
                 amount = payment_info.get('amount')
-                phone_number = payment_info.get('phone_number')
+                transaction_id = payment_info.get('transaction_id')
                 
-                # Parse reference to extract booking ID and transaction type
-                # Expected format: RUMI-INITIAL-{booking_id}-{uuid}
-                if not reference or not reference.startswith('RUMI-'):
-                    logger.error(f"Invalid C2B reference format: {reference}")
-                    return JsonResponse({'error': 'Invalid reference format'}, status=400)
-                
-                parts = reference.split('-')
-                if len(parts) < 4:
-                    logger.error(f"Invalid C2B reference structure: {reference}")
-                    return JsonResponse({'error': 'Invalid reference structure'}, status=400)
-                
-                try:
-                    booking_id = int(parts[2])
-                except (ValueError, IndexError):
-                    logger.error(f"Could not parse booking ID from reference: {reference}")
-                    return JsonResponse({'error': 'Invalid booking ID'}, status=400)
-                
-                from hostels.models import Booking
-                from accounts.models import StudentProfile, LandlordProfile
-                
-                try:
-                    booking = Booking.objects.select_related(
-                        'student', 'room__hostel__landlord'
-                    ).get(id=booking_id)
-                except Booking.DoesNotExist:
-                    logger.error(f"Booking not found for C2B payment: {booking_id}")
-                    return JsonResponse({'error': 'Booking not found'}, status=404)
-                
-                # Check if transaction already exists
-                existing_transaction = Transaction.objects.filter(
-                    transaction_reference=reference
-                ).first()
-                
-                if existing_transaction:
-                    logger.info(f"C2B transaction already exists: {reference}")
+                # Check if transaction with this reference already exists and is success
+                existing = Transaction.objects.filter(transaction_reference=reference, status='success').first()
+                if existing:
                     return JsonResponse({'status': 'already_processed'}, status=200)
+
+                # We need to find the student to call process_confirmed_payment
+                # Reference format: RUMI-INITIAL-{booking_id}-... or RUMI-RENT-{rent_period_id}-...
+                parts = reference.split('-')
+                if len(parts) < 3:
+                     return JsonResponse({'error': 'Invalid reference structure'}, status=400)
                 
-                # Create new transaction from C2B confirmation
-                transaction_obj = Transaction.objects.create(
-                    booking=booking,
-                    student=booking.student,
-                    landlord=booking.room.hostel.landlord,
-                    transaction_reference=reference,
-                    transaction_type='initial',
-                    payment_plan='monthly',
+                target_type = parts[1]
+                target_id = parts[2]
+                
+                student = None
+                if target_type == 'INITIAL':
+                    target = Booking.objects.select_related('student').get(id=target_id)
+                    student = target.student
+                elif target_type == 'RENT':
+                    from .models import RentPeriod
+                    target = RentPeriod.objects.select_related('student').get(id=target_id)
+                    student = target.student
+                else:
+                    return JsonResponse({'error': 'Unknown payment target'}, status=400)
+
+                # Process confirmed payment (handles Transaction creation, Lifecycle, RentPeriods)
+                result = process_confirmed_payment(
+                    student=student,
+                    amount=Decimal(str(amount)),
+                    reference=reference,
                     payment_method='mpesa',
-                    mpesa_payment_type='c2b_offline',
-                    mpesa_transaction_id=transaction_id,
-                    mpesa_receipt_number=transaction_id,  # Use transaction ID as receipt
-                    mpesa_phone_number=phone_number,
-                    mpesa_transaction_date=timezone.now(),
-                    base_rent=booking.monthly_rent,
-                    student_service_fee=booking.monthly_rent * Decimal('0.02'),
-                    total_charged_amount=Decimal(str(amount)),
-                    landlord_payout_amount=booking.monthly_rent,
-                    gross_platform_revenue=booking.monthly_rent * Decimal('0.02'),
-                    status='success',
-                    paid_at=timezone.now(),
                     metadata=payment_info
                 )
                 
-                # Update booking
-                booking.status = 'confirmed'
-                booking.amount_paid += transaction_obj.total_charged_amount
-                booking.save()
-                
-                # Create payout record
-                from .models import Payout
-                Payout.objects.create(
-                    transaction=transaction_obj,
-                    landlord=transaction_obj.landlord,
-                    payout_reference=f"MPESA-C2B-PAYOUT-{transaction_obj.id}-{int(timezone.now().timestamp())}",
-                    gross_amount=transaction_obj.landlord_payout_amount,
-                    commission_deducted=Decimal('0.00'),
-                    net_payout_amount=transaction_obj.landlord_payout_amount,
-                    status='pending'
-                )
-                
-                # Send notifications
+                # Retrieve the newly created transaction for notifications/receipt
+                transaction_obj = Transaction.objects.get(transaction_reference=reference)
+                transaction_obj.mpesa_transaction_id = transaction_id
+                transaction_obj.mpesa_receipt_number = transaction_id
+                transaction_obj.mpesa_phone_number = payment_info.get('phone_number')
+                transaction_obj.save()
+
                 self._send_payment_notifications(transaction_obj)
-                
-                # Generate receipt
                 self._generate_receipt(transaction_obj)
                 
-                logger.info(f"C2B transaction created successfully: {transaction_obj.transaction_reference}")
+                logger.info(f"C2B transaction created successfully: {reference}")
                 return JsonResponse({'status': 'success', 'message': 'Transaction created'}, status=200)
                 
+        except (Booking.DoesNotExist, ValueError) as e:
+            logger.error(f"Target not found for C2B payment: {e}")
+            return JsonResponse({'error': 'Target not found'}, status=404)
         except Exception as e:
             logger.error(f"Error creating C2B transaction: {e}")
             return JsonResponse({'error': str(e)}, status=500)

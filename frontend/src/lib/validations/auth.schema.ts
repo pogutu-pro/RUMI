@@ -147,6 +147,64 @@ export const registerSchema = z.discriminatedUnion('role', [
 
 export type RegisterFormData = z.infer<typeof registerSchema>;
 
+/**
+ * Schema for completing identity after Google OAuth role selection
+ */
+export const googleCompleteSchema = z.object({
+  role: z.enum([ROLES.STUDENT, ROLES.LANDLORD]),
+  gender: z.enum(['male', 'female', 'other']).optional(),
+  date_of_birth: z.union([z.string(), z.date()]).optional().refine((val) => {
+    if (!val) return true;
+    const date = new Date(val);
+    const age = new Date().getFullYear() - date.getFullYear();
+    return age >= 16;
+  }, 'You must be at least 16 years old'),
+  phone_number: phoneSchema.optional(),
+  // Student fields
+  university: z.string().min(2, 'University name is required').optional(),
+  preferred_hostel_id: z.coerce.number().int().optional(),
+  room_number: z.string().max(20).optional(),
+  // Landlord fields
+  company_name: z.string().optional(),
+  total_units: z.coerce.number().int().min(0).optional(),
+}).superRefine((data, ctx) => {
+  if (data.role === ROLES.STUDENT) {
+    if (!data.university || data.university.length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "University name is required",
+        path: ["university"],
+      });
+    }
+    if (!data.gender) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Gender is required",
+        path: ["gender"],
+      });
+    }
+    if (!data.date_of_birth) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Date of birth is required",
+        path: ["date_of_birth"],
+      });
+    }
+  }
+
+  if (data.role === ROLES.LANDLORD) {
+    if (!data.company_name || data.company_name.length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Property/Company name is required",
+        path: ["company_name"],
+      });
+    }
+  }
+});
+
+export type GoogleCompleteFormData = z.infer<typeof googleCompleteSchema>;
+
 export const forgotPasswordSchema = z.object({
   email: emailSchema,
 });
@@ -256,6 +314,9 @@ export const studentOnboardingSchema = z.object({
     .regex(/^[a-zA-Z0-9-/]+$/, 'Student ID can only contain letters, numbers, hyphens, and slashes'),
   year_of_study: z.number().int().min(1, 'Year 1 minimum').max(6, 'Year 6 maximum'),
   course: requiredString(2, 100, 'Course Name'),
+  campus: requiredString(2, 100, 'Campus Name').optional(),
+  high_school: requiredString(2, 100, 'High School').optional(),
+  graduation_year: z.number().min(2020).max(2035).optional(),
   phone_number: phoneSchema,
   date_of_birth: z.date().refine((date) => {
     const age = new Date().getFullYear() - date.getFullYear();

@@ -13,6 +13,9 @@ const schema = z.object({
   university: z.string().min(1, 'University is required'),
   course: z.string().min(1, 'Course is required'),
   year_of_study: z.number().min(1).max(7),
+  campus: z.string().optional(),
+  high_school: z.string().optional(),
+  graduation_year: z.number().optional(),
   student_id_number: z.string().min(1, 'Student ID number is required'),
   emergency_contact_phone: z.string().min(10, 'Invalid phone number'),
   emergency_contact_name: z.string().min(1, 'Contact name is required'),
@@ -53,6 +56,21 @@ export function StudentProfileForm({ initialData }: { initialData?: FormValues }
                 <Input type="number" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
               </FormControl><FormMessage /></FormItem>
             )} />
+            <FormField control={form.control} name="campus" render={({ field }) => (
+              <FormItem><FormLabel>Campus</FormLabel><FormControl>
+                <Input {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="high_school" render={({ field }) => (
+                <FormItem><FormLabel>High School</FormLabel><FormControl>
+                  <Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="graduation_year" render={({ field }) => (
+                <FormItem><FormLabel>Graduation Year</FormLabel><FormControl>
+                  <Input type="number" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                </FormControl><FormMessage /></FormItem>
+              )} />
+            </div>
             <FormField control={form.control} name="student_id_number" render={({ field }) => (
               <FormItem><FormLabel>Student ID Number</FormLabel><FormControl>
                 <Input {...field} /></FormControl><FormMessage /></FormItem>

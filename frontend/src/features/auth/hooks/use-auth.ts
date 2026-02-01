@@ -129,6 +129,15 @@ export function useAuth() {
          
          queryClient.invalidateQueries({ queryKey: ['profile'] });
          queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
+    finalizeOnboarding: async () => {
+         const response = await authApi.finalizeOnboarding();
+         const updateUser = useAuthStore.getState().updateUser;
+         updateUser(response.user); // State sync
+         
+         queryClient.invalidateQueries({ queryKey: ['profile'] });
+         queryClient.invalidateQueries({ queryKey: ['user'] });
+         return response;
     }
   };
 }
@@ -282,7 +291,38 @@ export function useCompleteGoogleLogin() {
   const handleSuccess = useAuthSuccess();
 
   return useMutation({
-    mutationFn: ({ token, role }: { token: string; role: string }) => authApi.googleLogin(token, role),
+    mutationFn: ({ 
+      token, 
+      role, 
+      gender, 
+      date_of_birth, 
+      phone_number,
+      university,
+      preferred_hostel_id,
+      room_number,
+      company_name,
+      total_units
+    }: { 
+      token: string; 
+      role: string;
+      gender?: string;
+      date_of_birth?: string;
+      phone_number?: string;
+      university?: string;
+      preferred_hostel_id?: number;
+      room_number?: string;
+      company_name?: string;
+      total_units?: number;
+    }) => authApi.googleLogin(token, role, { 
+      gender, 
+      date_of_birth, 
+      phone_number,
+      university,
+      preferred_hostel_id,
+      room_number,
+      company_name,
+      total_units
+    }),
     onSuccess: (response: AuthResponse) => {
       handleSuccess(response, 'Successfully signed in with Google!');
     },
@@ -485,5 +525,39 @@ export function useResetPassword() {
     onError: (error: ApiError) => {
       toast.error(error.message || 'Failed to reset password');
     },
+  });
+}
+
+/**
+ * Onboarding Hooks
+ */
+export function useOnboardingStatus() {
+  return useQuery({
+    queryKey: ['onboarding-status'],
+    queryFn: () => authApi.getOnboardingStatus(),
+    staleTime: Infinity, // Or a long duration, but we invalidate it manually
+  });
+}
+
+export function useSaveOnboardingDraft() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => authApi.saveOnboardingDraft(data),
+    onSuccess: () => {
+       queryClient.invalidateQueries({ queryKey: ['onboarding-status'] });
+    }
+  });
+}
+
+export function useAdvanceOnboardingStage() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: (nextStage: string) => authApi.advanceOnboardingStage(nextStage),
+    onSuccess: (response) => {
+       const updateUser = useAuthStore.getState().updateUser;
+       updateUser({ onboarding_stage: response.current_stage as any });
+       queryClient.invalidateQueries({ queryKey: ['onboarding-status'] });
+    }
   });
 }

@@ -64,8 +64,25 @@ async function setPassword(password: string): Promise<{ message: string }> {
  * Google OAuth login
  * Endpoint: POST /api/v1/accounts/auth/google/
  */
-async function googleLogin(token: string, role: string = 'student'): Promise<AuthResponse> {
-  const res = await axios.post<AuthResponse>('/accounts/auth/google/', { access_token: token, role });
+async function googleLogin(
+  token: string, 
+  role: string = 'student',
+  extraData?: { 
+    gender?: string; 
+    date_of_birth?: string; 
+    phone_number?: string;
+    university?: string;
+    preferred_hostel_id?: number;
+    room_number?: string;
+    company_name?: string;
+    total_units?: number;
+  }
+): Promise<AuthResponse> {
+  const res = await axios.post<AuthResponse>('/accounts/auth/google/', { 
+    access_token: token, 
+    role,
+    ...extraData
+  });
   return res.data;
 }
 
@@ -242,11 +259,48 @@ async function refreshToken(refresh: string): Promise<TokenResponse> {
 }
 
 /**
+ * Save onboarding draft
+ */
+async function saveOnboardingDraft(data: any): Promise<{ status: string }> {
+  const res = await axios.post('/accounts/onboarding/draft/', data);
+  return res.data;
+}
+
+/**
+ * Advance onboarding stage
+ */
+async function advanceOnboardingStage(nextStage: string): Promise<{ status: string; current_stage: string }> {
+  const res = await axios.post('/accounts/onboarding/advance/', { next_stage: nextStage });
+  return res.data;
+}
+
+/**
+ * Finalize onboarding
+ */
+async function finalizeOnboarding(): Promise<{ status: string; user: any }> {
+  const res = await axios.post('/accounts/onboarding/finalize/', {});
+  return res.data;
+}
+
+/**
+ * Get onboarding status
+ */
+async function getOnboardingStatus(): Promise<{
+  onboarding_stage: string;
+  is_complete: boolean;
+  draft_data: any;
+  role: string;
+}> {
+  const res = await axios.get('/accounts/onboarding/status/');
+  return res.data;
+}
+
+/**
  * Get user permissions
  * Endpoint: GET /api/v1/accounts/permissions/
  */
-async function getPermissions(): Promise<PermissionsResponse> {
-  const res = await axios.get<PermissionsResponse>('/accounts/permissions/');
+async function getPermissions(): Promise<any> {
+  const res = await axios.get('/accounts/permissions/');
   return res.data;
 }
 
@@ -273,4 +327,8 @@ export const authApi = {
   uploadProfilePicture,
   refreshToken,
   getPermissions,
+  saveOnboardingDraft,
+  advanceOnboardingStage,
+  finalizeOnboarding,
+  getOnboardingStatus,
 };

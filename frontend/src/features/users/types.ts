@@ -11,6 +11,14 @@ export interface User {
   phone_number?: string;
   profile_picture?: string;
   avatar?: string;
+  onboarding_stage?: 
+    | 'REGISTERED' 
+    | 'ROLE_SELECTED' 
+    | 'IDENTITY_DRAFT' 
+    | 'IDENTITY_VERIFIED' 
+    | 'VERIFICATION_PENDING' 
+    | 'COMPLETED';
+  capabilities?: string[];
   status?: 'active' | 'suspended' | 'inactive';
   is_2fa_enabled?: boolean;
   bio?: string;

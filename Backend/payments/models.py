@@ -3,6 +3,61 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator
 from decimal import Decimal
 import uuid
+from django.conf import settings
+
+
+class WebhookEvent(models.Model):
+    """Log of all incoming payment webhooks for auditing and idempotency"""
+    transaction_ref = models.CharField(max_length=100, unique=True, db_index=True)
+    provider = models.CharField(max_length=50, help_text="e.g. mpesa, paystack")
+    event_type = models.CharField(max_length=100, help_text="e.g. stk_push_callback, c2b_confirmation")
+    payload = models.JSONField()
+    processing_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'Pending'),
+            ('processed', 'Processed'),
+            ('failed', 'Failed'),
+            ('duplicate', 'Duplicate')
+        ],
+        default='pending'
+    )
+    processed_at = models.DateTimeField(null=True, blank=True)
+    error_message = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'payments_webhookevent'
+        indexes = [
+            models.Index(fields=['created_at'], name='idx_webhook_created'),
+            models.Index(fields=['processing_status'], name='idx_webhook_status'),
+        ]
+
+    def __str__(self):
+        return f"{self.provider} - {self.transaction_ref} ({self.processing_status})"
+
+
+class IdempotencyKey(models.Model):
+    """Generic idempotency key storage for API requests"""
+    idempotency_key = models.UUIDField(unique=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    request_path = models.CharField(max_length=255)
+    response_code = models.IntegerField(null=True, blank=True)
+    response_body = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        db_table = 'payments_idempotencykey'
+        indexes = [
+            models.Index(fields=['expires_at'], name='idx_idemp_expiry'),
+        ]
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def __str__(self):
+        return str(self.idempotency_key)
 
 
 class MpesaPaymentConfig(models.Model):
@@ -148,6 +203,7 @@ class Transaction(models.Model):
 
     STATUS_CHOICES = [
         ('pending', 'Pending'),
+        ('processing', 'Processing'),
         ('success', 'Success'),
         ('failed', 'Failed'),
     ]

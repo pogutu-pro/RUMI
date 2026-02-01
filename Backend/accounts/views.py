@@ -3211,7 +3211,19 @@ class GoogleOAuthView(APIView):
     
     def post(self, request):
         access_token = request.data.get('access_token')
-        role = request.data.get('role', 'student')  # Default to student
+        role = request.data.get('role', 'student')
+        gender = request.data.get('gender')
+        date_of_birth = request.data.get('date_of_birth')
+        phone_number = request.data.get('phone_number')
+        
+        # Student specific fields
+        university = request.data.get('university')
+        preferred_hostel_id = request.data.get('preferred_hostel_id')
+        room_number = request.data.get('room_number')
+        
+        # Landlord specific fields
+        company_name = request.data.get('company_name')
+        total_units = request.data.get('total_units')
         
         # Only allow student and landlord roles for Google OAuth
         if role and role not in ['student', 'landlord']:
@@ -3248,8 +3260,17 @@ class GoogleOAuthView(APIView):
                 existing_user.first_name = user_info.get('given_name', existing_user.first_name)
                 existing_user.last_name = user_info.get('family_name', existing_user.last_name)
                 existing_user.profile_picture = user_info.get('picture', existing_user.profile_picture)
+                
+                # Update optional fields if provided
+                if gender:
+                    existing_user.gender = gender
+                if date_of_birth:
+                    existing_user.date_of_birth = date_of_birth
+                if phone_number:
+                    existing_user.phone_number = phone_number
+                
                 existing_user.last_login = timezone.now()
-                existing_user.save(update_fields=['first_name', 'last_name', 'profile_picture', 'last_login'])
+                existing_user.save()
                 
                 user = existing_user
                 is_new_user = False
@@ -3259,29 +3280,32 @@ class GoogleOAuthView(APIView):
                     email=email,
                     first_name=user_info.get('given_name', ''),
                     last_name=user_info.get('family_name', ''),
-                    role=role if role else 'student',  # Use role from request for new users
+                    role=role if role else 'student',
+                    gender=gender,
+                    date_of_birth=date_of_birth,
+                    phone_number=phone_number,
                     is_verified=True,  # Google emails are verified
                     is_active=True,
                     profile_picture=user_info.get('picture'),
+                    onboarding_stage='ROLE_SELECTED'
                 )
                 
-                # Create role-specific profile
-                user_role = role if role else 'student'
-                if user_role == 'student':
+                # Create role-specific profile with all captured data
+                if user.role == 'student':
                     StudentProfile.objects.create(
                         user=user,
-                        is_profile_complete=False,
+                        university=university,
+                        preferred_hostel_id=preferred_hostel_id if preferred_hostel_id else None,
+                        preferred_room_number=room_number,
+                        is_profile_complete=False
                     )
-                elif user_role == 'landlord':
+                elif user.role == 'landlord':
                     LandlordProfile.objects.create(
                         user=user,
-                        company_name=None,
-                        national_id=None,
-                        bank_name='Pending',
-                        bank_account_number='Pending',
-                        bank_code='Pending',
-                        is_verified=False,  # Landlords need manual verification
-                        total_hostels=0,
+                        company_name=company_name,
+                        total_units=total_units if total_units is not None else 0,
+                        is_verified=False,
+                        total_hostels=0
                     )
                 
                 is_new_user = True
@@ -3339,7 +3363,8 @@ class GoogleOAuthView(APIView):
             # Call Google API to verify token
             response = requests.get(
                 'https://www.googleapis.com/oauth2/v2/userinfo',
-                headers={'Authorization': f'Bearer {access_token}'}
+                headers={'Authorization': f'Bearer {access_token}'},
+                timeout=10
             )
             
             if response.status_code != 200:

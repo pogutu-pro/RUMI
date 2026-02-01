@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import {
   Bell,
   Menu,
-  Search,
   LogOut,
   User,
   Settings,
@@ -27,14 +26,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+
 import { useAuth } from '@/features/auth';
 import { useNotifications } from '@/features/notifications';
 import { getUserInitials } from '@/lib/utils/user';
 import { sanitizeImageUrl } from '@/lib/utils/security';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Helper function to format relative time
@@ -79,11 +77,7 @@ export function StudentTopNav({
 }: StudentTopNavProps) {
   // Use local isDesktop derived from isMobile inverse if needed, or rely on prop
   const isDesktop = !isMobile;
-  const router = useRouter();
   const { user, logout } = useAuth();
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [isSearchExpanded, setIsSearchExpanded] = React.useState(false);
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   // Fetch real notifications from API
   const { data: notificationsData, isLoading: isLoadingNotifications } = useNotifications({ page: 1 });
@@ -115,19 +109,7 @@ export function StudentTopNav({
     }
   }, [logout]);
 
-  const handleSearch = React.useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      // Navigate to search results page with query
-      router.push(`/student/search?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  }, [searchQuery, router]);
 
-  React.useEffect(() => {
-    if (isSearchExpanded && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [isSearchExpanded]);
 
   return (
     <header
@@ -164,60 +146,11 @@ export function StudentTopNav({
         </Link>
       </div>
 
-      {/* Zone 2: Global Search - Desktop: Visible, Mobile: Hidden (toggled) */}
-      <div className={cn(
-        "flex-1 flex justify-center transition-all duration-300",
-        isMobile && !isSearchExpanded ? "hidden" : "flex"
-      )}>
-        {(!isMobile || isSearchExpanded) && (
-          <form onSubmit={handleSearch} className={cn("w-full transition-all duration-300", isMobile ? "absolute left-0 top-0 h-16 bg-background px-4 flex items-center z-50 border-b animate-in fade-in slide-in-from-top-2" : "max-w-md")}>
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-20 bg-muted/50 border-muted-foreground/20 focus-visible:ring-emerald-500 rounded-full"
-              />
-               {isMobile && (
-                <Button 
-                  type="button"
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
-                  onClick={() => setIsSearchExpanded(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-              {!isMobile && (
-                <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-                  <span className="text-xs">⌘</span>K
-                </kbd>
-              )}
-            </div>
-          </form>
-        )}
-      </div>
+      {/* Spacer */}
+      <div className="flex-1" />
 
-      {/* Zone 3: Utilities */}
-      <div className="flex items-center gap-2 mr-2 md:mr-0">
-         {/* Mobile Search Trigger */}
-         <div className="md:hidden">
-            <Button
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setIsSearchExpanded(true)}
-              className="shrink-0"
-            >
-              <Search className="h-5 w-5" />
-              <span className="sr-only">Search</span>
-            </Button>
-         </div>
-
-        <ThemeToggle />
+      {/* Zone 3: Actions - Right Aligned */}
+      <div className="flex items-center gap-3 ml-auto mr-4">
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

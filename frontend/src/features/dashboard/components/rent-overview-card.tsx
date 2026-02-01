@@ -17,7 +17,7 @@ interface RentOverviewCardProps {
 export function RentOverviewCard({ rentStatus, loading }: RentOverviewCardProps) {
   if (loading) {
     return (
-      <Card className="h-full border border-border/50 bg-muted/20 animate-pulse">
+      <Card className="h-full border-2 border-border bg-muted/5">
         <CardContent className="h-64" />
       </Card>
     );
@@ -31,7 +31,7 @@ export function RentOverviewCard({ rentStatus, loading }: RentOverviewCardProps)
   const progressValue = isFullyPaid ? 100 : Math.max(5, 100 - (balance / 1000));
 
   return (
-    <Card className="h-full overflow-hidden border border-border/50 shadow-sm bg-card transition-shadow hover:shadow-md">
+    <Card className="h-full overflow-hidden rounded-none border-2 border-border bg-card">
       <CardHeader className="pb-4 border-b border-border/50">
         <div className="flex items-center justify-between">
            <CardTitle className="text-base font-bold flex items-center gap-2">
@@ -39,7 +39,7 @@ export function RentOverviewCard({ rentStatus, loading }: RentOverviewCardProps)
              {isFullyPaid && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
            </CardTitle>
            {!isFullyPaid && (
-             <div className="flex items-center gap-1.5 text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-rose-100">
+             <div className="flex items-center gap-1.5 text-rose-700 bg-rose-50 px-2.5 py-1 rounded-none text-[10px] font-black uppercase tracking-widest border-2 border-rose-200">
                <AlertCircle className="h-3 w-3" />
                Action Required
              </div>
@@ -66,12 +66,12 @@ export function RentOverviewCard({ rentStatus, loading }: RentOverviewCardProps)
            </div>
            <Progress 
               value={progressValue} 
-              className="h-2 bg-muted border border-border/20" 
-              indicatorClassName={isFullyPaid ? "bg-emerald-500" : "bg-primary"}
+              className="h-2 rounded-none bg-muted border-2 border-border" 
+              indicatorClassName={isFullyPaid ? "bg-emerald-600" : "bg-primary"}
             />
         </div>
 
-        <div className="flex items-center gap-3 p-3.5 rounded-xl bg-muted/50 border border-border/50">
+        <div className="flex items-center gap-3 p-3.5 rounded-none bg-muted/50 border-2 border-border">
            <Calendar className="h-4 w-4 text-muted-foreground" />
            <div className="space-y-0.5">
              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Next Deadline</p>

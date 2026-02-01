@@ -28,7 +28,7 @@ export interface Booking {
   payment_status?: 'pending' | 'paid' | 'partial' | 'failed';
   
   // Status
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  status: 'pending' | 'confirmed' | 'checked_in' | 'inspection_pending' | 'cancelled' | 'completed' | 'expired';
   
   // Legacy/Frontend helpers (mapped optional)
   studentName?: string;

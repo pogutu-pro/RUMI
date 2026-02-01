@@ -537,3 +537,45 @@ def send_payment_reminders():
         'reminders_sent': reminders_sent,
         'reminder_date': reminder_date.isoformat()
     }
+@shared_task
+def reconcile_missed_webhooks():
+    """
+    Periodic task to process 'pending' WebhookEvent records.
+    Provides safety against transient failures in real-time webhook processing.
+    """
+    from .models import WebhookEvent
+    from .services import process_confirmed_payment
+    
+    pending_events = WebhookEvent.objects.filter(processing_status='pending').order_by('created_at')[:50]
+    
+    results = {'processed': 0, 'failed': 0}
+    
+    for event in pending_events:
+        try:
+            payload = event.payload
+            
+            # C2B reconciliation
+            if event.provider == 'mpesa' and event.event_type == 'c2b_confirmation':
+                reference = payload.get('BillRefNumber')
+                amount = Decimal(str(payload.get('TransAmount')))
+                
+                process_confirmed_payment(
+                    student=None, # Resolved via reference
+                    amount=amount,
+                    reference=reference,
+                    payment_method='mpesa',
+                    metadata=payload
+                )
+                
+                event.processing_status = 'processed'
+                event.processed_at = timezone.now()
+                event.save()
+                results['processed'] += 1
+
+        except Exception as e:
+            event.processing_status = 'failed'
+            event.error_message = str(e)
+            event.save()
+            results['failed'] += 1
+            
+    return results

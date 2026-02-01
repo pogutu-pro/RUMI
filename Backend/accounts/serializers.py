@@ -33,18 +33,14 @@ class UserRegistrationSerializer(serializers.Serializer):
         if data['password'] != data['confirm_password']:
             raise serializers.ValidationError("Passwords do not match")
 
-        # Role-specific validation
+        # Role-specific validation (Minimal for registration)
         role = data.get('role')
         if role == 'student':
             if not data.get('gender'):
                 raise serializers.ValidationError({"gender": "Gender is required for students"})
             if not data.get('date_of_birth'):
                 raise serializers.ValidationError({"date_of_birth": "Date of birth is required for students"})
-            if not data.get('university'):
-                raise serializers.ValidationError({"university": "School name is required for students"})
-        elif role == 'landlord':
-            if not data.get('company_name'):
-                raise serializers.ValidationError({"company_name": "Property name is required for landlords"})
+        # Note: university and company_name are now deferred to onboarding stage
 
         # Validate password strength
         validate_password_strength(data['password'])
@@ -221,6 +217,9 @@ class UserLoginSerializer(serializers.Serializer):
                 data['profile'] = None
 
         return data
+
+
+UserSerializer = UserLoginSerializer
 
 
 class CaretakerCreateSerializer(serializers.Serializer):

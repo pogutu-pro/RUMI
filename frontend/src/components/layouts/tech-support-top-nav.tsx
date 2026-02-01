@@ -10,7 +10,7 @@ import {
   LogOut,
   User,
   Settings,
-  Search,
+
   ShieldAlert,
   MessageSquare,
   LifeBuoy,
@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+
 import { useAuth } from '@/features/auth';
 import { useNotifications } from '@/features/notifications';
 import { Notification as AppNotification } from '@/features/auth/types/types';
@@ -38,7 +38,6 @@ import { getUserInitials } from '@/lib/utils/user';
 import { sanitizeImageUrl } from '@/lib/utils/security';
 import { cn } from '@/lib/utils/cn';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Helper function to format relative time
@@ -83,10 +82,7 @@ export function TechSupportTopNav({
   isSidebarOpen,
   isMobile,
 }: TechSupportTopNavProps) {
-  const router = useRouter();
   const { user, logout } = useAuth();
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   // Fetch real notifications from API
   const { data: notificationsData, isLoading: isLoadingNotifications } = useNotifications({ page: 1 });
@@ -118,13 +114,7 @@ export function TechSupportTopNav({
     }
   }, [logout]);
 
-  const handleSearch = React.useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/tech-support/users?q=${encodeURIComponent(searchQuery.trim())}`);
-      console.log('Searching for:', searchQuery);
-    }
-  }, [searchQuery, router]);
+
 
   return (
     <header
@@ -169,29 +159,11 @@ export function TechSupportTopNav({
         </Link>
       </div>
 
-      {/* Zone 2: Global Search */}
-      <div className="flex-1 flex justify-center">
-        <form onSubmit={handleSearch} className="w-full max-w-md">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search users, tickets, hostels..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-20 bg-muted/50 border-muted-foreground/20 focus-visible:ring-indigo-500"
-            />
-            <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-              <span className="text-xs">⌘</span>K
-            </kbd>
-          </div>
-        </form>
-      </div>
+      {/* Spacer */}
+      <div className="flex-1" />
 
-      {/* Zone 3: Utilities */}
-      <div className="flex items-center gap-2 pr-4">
-        <ThemeToggle />
+      {/* Zone 3: Actions - Right Aligned */}
+      <div className="flex items-center gap-3 ml-auto pr-4">
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

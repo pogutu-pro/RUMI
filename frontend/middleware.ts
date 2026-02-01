@@ -10,6 +10,7 @@ type UserRole =
 
 const TOKEN_COOKIE = 'rumi_access_token';
 const ROLE_COOKIE = 'rumi_user_role';
+const ONBOARDING_COOKIE = 'rumi_onboarding_stage';
 
 const PUBLIC_ROUTES = new Set([
   '/',
@@ -103,6 +104,21 @@ export function middleware(request: NextRequest) {
         );
       }
     }
+  }
+
+  // Onboarding Guard
+  if (isAuthenticated && !pathname.startsWith('/onboarding') && !isPublic) {
+    const onboardingStage = request.cookies.get(ONBOARDING_COOKIE)?.value;
+    if (onboardingStage && onboardingStage !== 'COMPLETED') {
+        return NextResponse.redirect(new URL('/onboarding', request.url));
+    }
+  }
+
+  if (pathname.startsWith('/onboarding') && isAuthenticated) {
+     const onboardingStage = request.cookies.get(ONBOARDING_COOKIE)?.value;
+     if (onboardingStage === 'COMPLETED') {
+         return NextResponse.redirect(new URL(getDashboardUrl(userRole), request.url));
+     }
   }
 
   if (pathname.startsWith('/reset-password')) {

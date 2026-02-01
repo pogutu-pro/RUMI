@@ -81,7 +81,7 @@ export const createCaretaker = async (
   data: CreateCaretakerRequest
 ): Promise<LandlordCaretaker> => {
   const res = await axios.post<ApiResponse<LandlordCaretaker>>(
-    '/accounts/caretakers/',
+    '/landlord/caretakers/invite/',
     data,
     { headers: csrf.getHeader() }
   );

@@ -10,7 +10,7 @@ interface Transaction {
   id: string;
   type: 'payment' | 'refund' | 'payout';
   amount: number;
-  status: 'completed' | 'pending' | 'failed';
+  status: 'completed' | 'pending' | 'failed' | 'processing';
   date: Date;
   description: string;
 }
@@ -42,11 +42,14 @@ export function TransactionCard({ transaction, onClick }: TransactionCardProps) 
               ? 'default'
               : transaction.status === 'failed'
               ? 'destructive'
+              : transaction.status === 'processing'
+              ? 'outline'
               : 'secondary'
           }
           className={cn(
             "font-black uppercase text-[10px]",
             transaction.status === 'completed' && "bg-emerald-500 hover:bg-emerald-600",
+            transaction.status === 'processing' && "border-amber-500 text-amber-500",
           )}
         >
           {transaction.status}

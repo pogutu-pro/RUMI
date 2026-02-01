@@ -1,5 +1,9 @@
 from django.urls import path, include
 from . import views
+from .onboarding_views import (
+    OnboardingDraftView, OnboardingAdvanceView, 
+    OnboardingFinalizeView, OnboardingStatusView
+)
 
 urlpatterns = [
     # Subscription management
@@ -27,6 +31,12 @@ urlpatterns = [
     path('profile/completion/', views.ProfileCompletionView.as_view(), name='profile_completion'),
     path('profile/picture/', views.ProfilePictureUploadView.as_view(), name='profile_picture_upload'),
 
+    # Onboarding Endpoints
+    path('onboarding/status/', OnboardingStatusView.as_view(), name='onboarding_status'),
+    path('onboarding/draft/', OnboardingDraftView.as_view(), name='onboarding_draft'),
+    path('onboarding/advance/', OnboardingAdvanceView.as_view(), name='onboarding_advance'),
+    path('onboarding/finalize/', OnboardingFinalizeView.as_view(), name='onboarding_finalize'),
+
     # Caretaker management (Landlord)
     path('caretakers/', views.CaretakerListCreateView.as_view(), name='caretaker_list_create'),
     path('caretakers/<int:caretaker_id>/', views.CaretakerDetailView.as_view(), name='caretaker_detail'),
@@ -37,7 +47,6 @@ urlpatterns = [
     path('users/<int:user_id>/reactivate/', views.UserReactivateView.as_view(), name='user_reactivate'),
     path('users/<int:user_id>/activity/', views.UserActivityLogView.as_view(), name='user_activity_log'),
 
-    # Landlord verification (Admin)
     # Student dashboard
     path('dashboard/', views.StudentDashboardView.as_view(), name='student_dashboard'),
 

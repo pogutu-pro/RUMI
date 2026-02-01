@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
   Smartphone, 
@@ -50,13 +49,11 @@ export function PayRentModal({ isOpen, onClose, bookingId, amount, hostelName }:
   const { mutate: initializeMpesa, isPending: isInitializing } = useInitializeMpesaPayment();
   const [editableAmount, setEditableAmount] = React.useState(amount.toString());
   
-  // Update editableAmount if prop amount changes
   React.useEffect(() => {
     setEditableAmount(amount.toString());
   }, [amount]);
 
-  // Status check query - only enabled when we have IDs and are in pending state
-  const { data: statusData, isError: isStatusError } = useMpesaPaymentStatus(
+  const { data: statusData } = useMpesaPaymentStatus(
     { transaction_id: transactionId || undefined, checkout_request_id: checkoutId || undefined },
     { enabled: step === 'stk_pending' }
   );
@@ -79,45 +76,34 @@ export function PayRentModal({ isOpen, onClose, bookingId, amount, hostelName }:
 
     let actualBookingId = bookingId;
     
-    // Handle 'current' booking case
     if (bookingId === 'current') {
       try {
-        // Try to get the current active booking using the proper API client
         const dashboardResponse = await axios.get('/accounts/dashboard/');
-        
         if (dashboardResponse.data?.hostelInfo?.booking_id) {
           actualBookingId = dashboardResponse.data.hostelInfo.booking_id;
         } else {
-          toast.error('No active booking found. Please contact support.');
+          toast.error('No active booking found.');
           return;
         }
-      } catch (error: any) {
-        console.error('Failed to get current booking:', error);
-        toast.error('Unable to fetch booking information. Please contact support.');
+      } catch (error) {
+        toast.error('Unable to fetch booking information.');
         return;
       }
     }
 
-    if (!actualBookingId) {
-      toast.error('Unable to identify booking. Please contact support.');
-      console.error('Missing or invalid bookingId:', bookingId);
-      return;
-    }
-
-    // Format phone number to 254...
     let formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
     if (formattedPhone.startsWith('0')) formattedPhone = '254' + formattedPhone.slice(1);
     if (formattedPhone.startsWith('7')) formattedPhone = '254' + formattedPhone;
     if (formattedPhone.startsWith('1')) formattedPhone = '254' + formattedPhone;
     
     if (formattedPhone.length !== 12) {
-      toast.error('Invalid phone number format. Use 07... or 2547...');
+      toast.error('Invalid phone number format.');
       return;
     }
 
     const finalAmount = parseFloat(editableAmount);
     if (isNaN(finalAmount) || finalAmount <= 0) {
-      toast.error('Please enter a valid amount to pay');
+      toast.error('Invalid amount.');
       return;
     }
 
@@ -136,11 +122,7 @@ export function PayRentModal({ isOpen, onClose, bookingId, amount, hostelName }:
           setStep('stk_pending');
         },
         onError: (error: any) => {
-          // If the error message indicates a backend crash or specific M-Pesa issue
-          console.error('M-Pesa Init Error:', error);
-          const msg = error.message || 'STK Push failed. Proceeding to manual instructions.';
-          toast.error(msg);
-          // If it fails to even initialize, we might want to show instructions as a fallback
+          toast.error(error.message || 'STK Push failed.');
           setStep('instructions');
         }
       }
@@ -152,20 +134,13 @@ export function PayRentModal({ isOpen, onClose, bookingId, amount, hostelName }:
     toast.success(`${label} copied to clipboard`);
   };
 
-  const stepVariants = {
-    initial: { opacity: 0, x: 20 },
-    animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -20 },
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px] overflow-hidden p-0 border-none shadow-2xl bg-background">
-        <div className="h-1.5 w-full bg-emerald-500/10">
-          <motion.div 
-            className="h-full bg-emerald-500"
-            initial={{ width: '0%' }}
-            animate={{ 
+      <DialogContent className="sm:max-w-[425px] overflow-hidden p-0 border-2 border-border shadow-none bg-background rounded-none">
+        <div className="h-2 w-full bg-muted">
+          <div 
+            className="h-full bg-primary"
+            style={{ 
               width: step === 'method' ? '20%' : 
                      step === 'phone' ? '40%' : 
                      step === 'stk_pending' ? '70%' : '100%' 
@@ -174,300 +149,191 @@ export function PayRentModal({ isOpen, onClose, bookingId, amount, hostelName }:
         </div>
 
         <div className="p-6">
-          <AnimatePresence mode="wait">
-            {step === 'method' && (
-              <motion.div
-                key="method"
-                variants={stepVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                className="space-y-6"
-              >
-                <DialogHeader className="p-0">
-                  <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-                    <ShieldCheck className="h-6 w-6 text-emerald-600" />
-                    Complete Payment
-                  </DialogTitle>
-                  <DialogDescription>
-                    Secure payment for {hostelName || 'your booking'}
-                  </DialogDescription>
-                </DialogHeader>
+          {step === 'method' && (
+            <div className="space-y-6">
+              <DialogHeader className="p-0">
+                <DialogTitle className="text-2xl font-black flex items-center gap-2">
+                  <ShieldCheck className="h-6 w-6 text-primary" />
+                  PAYMENT
+                </DialogTitle>
+                <DialogDescription className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground">
+                  Secure transaction for {hostelName || 'Booking'}
+                </DialogDescription>
+              </DialogHeader>
 
-                <div className="space-y-4">
-                  <div className="bg-muted/30 border border-border rounded-2xl p-6 flex flex-col gap-4 shadow-sm relative overflow-hidden group">
-                    <div className="flex items-center justify-between relative z-10 w-full">
-                      <div>
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-1">Due Balance</p>
-                        <p className="text-xl font-black text-foreground/60 line-through decoration-emerald-500/30">
-                          <span className="text-xs font-black mr-1 text-muted-foreground/40">KES</span>
-                          {amount.toLocaleString()}
-                        </p>
-                      </div>
-                      <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center relative z-10">
-                        <Wallet className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 relative z-10 bg-background/50 p-4 rounded-xl border border-border/50">
-                      <Label htmlFor="pay-amount" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Amount to Pay</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black text-muted-foreground/60">KES</span>
-                        <Input
-                          id="pay-amount"
-                          type="number"
-                          value={editableAmount}
-                          onChange={(e) => setEditableAmount(e.target.value)}
-                          className="pl-12 h-12 text-2xl font-black bg-transparent border-none focus-visible:ring-0 p-0"
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground px-1">Select Payment Method</Label>
-                  <Button 
-                    variant="outline" 
-                    className="w-full h-16 justify-between group border-2 hover:border-emerald-500 hover:bg-emerald-500/10 transition-all border-border"
-                    onClick={() => setStep('phone')}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 bg-emerald-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-600/20">
-                        M
-                      </div>
-                      <div className="text-left">
-                        <p className="font-black text-foreground">M-Pesa STK Push</p>
-                        <p className="text-xs text-muted-foreground font-black">Instant payment prompt on phone</p>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
-                  </Button>
-
-                  <Button 
-                    variant="outline" 
-                    className="w-full h-16 justify-between group grayscale opacity-50 cursor-not-allowed"
-                    disabled
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
-                        <Smartphone className="h-6 w-6" />
-                      </div>
-                      <div className="text-left">
-                        <p className="font-bold">Other Methods</p>
-                        <p className="text-xs text-muted-foreground">Coming soon</p>
-                      </div>
-                    </div>
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-
-            {step === 'phone' && (
-              <motion.div
-                key="phone"
-                variants={stepVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                className="space-y-6"
-              >
-                <DialogHeader className="p-0">
-                  <DialogTitle className="text-2xl font-black flex items-center gap-2 text-foreground">
-                    <Smartphone className="h-6 w-6 text-emerald-600" />
-                    Enter Phone Number
-                  </DialogTitle>
-                  <DialogDescription className="text-muted-foreground font-black">
-                    Provide your M-Pesa registered phone number
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <div className="relative">
-                      <Input
-                        id="phone"
-                        placeholder="07XX XXX XXX"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        className="h-12 pl-4 text-lg font-black border-2 focus-visible:ring-emerald-500 bg-background"
-                        autoFocus
-                      />
-                    </div>
-                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                      <Info className="h-3 w-3" />
-                      We will send a payment prompt to this number.
+              <div className="bg-muted/10 border-2 border-border p-6 flex flex-col gap-4">
+                <div className="flex items-center justify-between w-full">
+                  <div>
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Due Balance</p>
+                    <p className="text-xl font-black text-foreground/40 line-through">
+                      <span className="text-xs font-black mr-1">KES</span>
+                      {amount.toLocaleString()}
                     </p>
                   </div>
-
-                  <div className="flex gap-3 pt-2">
-                    <Button variant="ghost" className="flex-1 h-12" onClick={() => setStep('method')}>
-                      Back
-                    </Button>
-                    <Button 
-                      className="flex-[2] h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                      onClick={handleMpesaInit}
-                      disabled={isInitializing}
-                    >
-                      {isInitializing ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Initializing...
-                        </>
-                      ) : 'Confirm & Pay'}
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {step === 'stk_pending' && (
-              <motion.div
-                key="stk_pending"
-                variants={stepVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                className="flex flex-col items-center justify-center py-10 space-y-6"
-              >
-                <div className="relative">
-                  <div className="h-24 w-24 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Smartphone className="h-10 w-10 text-emerald-600" />
-                  </div>
-                </div>
-                
-                <div className="text-center space-y-2">
-                  <h3 className="text-xl font-bold">Waiting for PIN...</h3>
-                  <p className="text-sm text-muted-foreground max-w-[280px]">
-                    Please check your phone and enter your M-Pesa PIN to complete payment.
-                  </p>
-                </div>
-
-                <div className="w-full bg-muted/30 rounded-xl p-4 border border-dashed border-border">
-                  <div className="flex items-start gap-3">
-                    <Info className="h-5 w-5 text-blue-600 dark:text-blue-500 mt-0.5" />
-                    <div className="space-y-1">
-                      <p className="text-xs font-black uppercase text-muted-foreground">Notice</p>
-                      <p className="text-xs text-muted-foreground leading-relaxed font-black">
-                        If you don&apos;t receive the prompt within 30 seconds, you can switch to offline payment instructions.
-                      </p>
-                    </div>
+                  <div className="h-10 w-10 bg-primary/10 flex items-center justify-center">
+                    <Wallet className="h-5 w-5 text-primary" />
                   </div>
                 </div>
 
+                <div className="space-y-2 bg-background p-4 border-2 border-border">
+                  <Label htmlFor="pay-amount" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Amount to Pay</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black text-muted-foreground/60">KES</span>
+                    <Input
+                      id="pay-amount"
+                      type="number"
+                      value={editableAmount}
+                      onChange={(e) => setEditableAmount(e.target.value)}
+                      className="pl-12 h-12 text-2xl font-black bg-transparent border-none focus-visible:ring-0 p-0"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground px-1">Method</Label>
                 <Button 
-                  variant="ghost" 
-                  className="text-muted-foreground hover:text-emerald-600 text-xs"
-                  onClick={() => setStep('instructions')}
+                  variant="outline" 
+                  className="w-full h-16 justify-between border-2 rounded-none hover:bg-muted"
+                  onClick={() => setStep('phone')}
                 >
-                  Switch to Offline Instructions
-                </Button>
-              </motion.div>
-            )}
-
-            {step === 'success' && (
-              <motion.div
-                key="success"
-                variants={stepVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                className="flex flex-col items-center justify-center py-8 space-y-6"
-              >
-                <div className="h-20 w-20 bg-emerald-500/10 rounded-full flex items-center justify-center scale-110">
-                  <CheckCircle2 className="h-12 w-12 text-emerald-600" />
-                </div>
-                
-                <div className="text-center space-y-1">
-                  <h3 className="text-2xl font-black text-foreground">Payment Success!</h3>
-                  <p className="text-sm text-muted-foreground font-black">
-                    Your payment has been successfully processed.
-                  </p>
-                </div>
-
-                <div className="w-full bg-muted/30 rounded-2xl p-5 border border-border space-y-3">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground font-black uppercase tracking-wider">Reference</span>
-                    <span className="font-mono font-black text-foreground bg-background px-2 py-1 rounded border border-border">{transactionId || 'RUMI-PAY-XXX'}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground font-black uppercase tracking-wider">Status</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-600 border-none px-2 h-5 text-[9px] uppercase font-black">Completed</Badge>
-                  </div>
-                </div>
-
-                <Button className="w-full h-12 bg-emerald-600 hover:bg-emerald-700" onClick={onClose}>
-                  Done
-                </Button>
-              </motion.div>
-            )}
-
-            {step === 'instructions' && (
-              <motion.div
-                key="instructions"
-                variants={stepVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                className="space-y-6"
-              >
-                <DialogHeader className="p-0">
-                  <DialogTitle className="text-2xl font-black flex items-center gap-2 text-foreground">
-                    <AlertCircle className="h-6 w-6 text-amber-600" />
-                    Offline Payment
-                  </DialogTitle>
-                  <DialogDescription className="text-muted-foreground font-black">
-                    Follow these steps to pay manually via M-Pesa
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-3">
-                  {[
-                    { label: 'Business Number', value: c2bInstructions?.business_number || '174379', type: 'Paybill' },
-                    { label: 'Account / Reference', value: c2bInstructions?.reference || 'RUMI-REF-123', type: 'Reference' },
-                  ].map((item, i) => (
-                    <div key={i} className="bg-muted/30 p-4 rounded-xl border border-border flex justify-between items-center transition-all hover:border-emerald-500/30">
-                      <div className="space-y-0.5">
-                        <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">{item.label}</p>
-                        <p className={cn("font-black text-foreground", i === 1 ? "font-mono text-base" : "text-xl")}>{item.value}</p>
-                      </div>
-                      <Button 
-                        variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-emerald-600 hover:bg-emerald-500/10 rounded-lg"
-                        onClick={() => copyToClipboard(item.value, item.type)}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 bg-primary text-primary-foreground flex items-center justify-center font-black">M</div>
+                    <div className="text-left">
+                      <p className="font-black">M-PESA STK PUSH</p>
+                      <p className="text-[10px] text-muted-foreground font-black uppercase">Instant Prompt</p>
                     </div>
-                  ))}
-
-                  <div className="bg-muted/30 p-4 rounded-xl border border-border flex justify-between items-center">
-                    <div className="space-y-0.5">
-                      <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Amount to Pay</p>
-                      <p className="text-lg font-black text-foreground">KES {amount.toLocaleString()}</p>
-                    </div>
-                    <Badge variant="outline" className="border-emerald-500/20 text-emerald-600 bg-emerald-500/5 px-2 h-5 text-[9px] font-black uppercase">Exact</Badge>
                   </div>
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+          )}
 
-                  <div className="p-4 bg-blue-500/5 rounded-xl border border-blue-500/10">
-                    <p className="text-[10px] text-blue-600 dark:text-blue-400 font-black mb-1 flex items-center gap-1 uppercase">
-                      <Info className="h-3 w-3" /> Note
-                    </p>
-                    <p className="text-[11px] text-blue-600/80 dark:text-blue-300 leading-relaxed font-bold">
-                      Your payment will be automatically matched using the reference number. 
-                      Please ensure the reference is entered exactly as shown.
-                    </p>
-                  </div>
+          {step === 'phone' && (
+            <div className="space-y-6">
+              <DialogHeader className="p-0">
+                <DialogTitle className="text-2xl font-black flex items-center gap-2">
+                  <Smartphone className="h-6 w-6 text-primary" />
+                  PHONE NUMBER
+                </DialogTitle>
+                <DialogDescription className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground">
+                  M-Pesa registered number
+                </DialogDescription>
+              </DialogHeader>
 
-                  <Button className="w-full h-12 bg-emerald-600" onClick={onClose}>
-                    I have paid
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-[10px] font-black uppercase tracking-widest">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    placeholder="07XX XXX XXX"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="h-12 text-lg font-black border-2 rounded-none focus-visible:ring-primary"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <Button variant="outline" className="flex-1 h-12 rounded-none font-black" onClick={() => setStep('method')}>BACK</Button>
+                  <Button 
+                    className="flex-[2] h-12 rounded-none font-black"
+                    onClick={handleMpesaInit}
+                    disabled={isInitializing}
+                  >
+                    {isInitializing ? 'INITIALIZING...' : 'CONFIRM & PAY'}
                   </Button>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
+            </div>
+          )}
+
+          {step === 'stk_pending' && (
+            <div className="flex flex-col items-center justify-center py-10 space-y-6 text-center">
+              <div className="relative">
+                <div className="h-24 w-24 border-4 border-primary/20 border-t-primary animate-spin rounded-none" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Smartphone className="h-10 w-10 text-primary" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black uppercase">Waiting for PIN</h3>
+                <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-wide max-w-[280px]">
+                  Check your phone and enter M-Pesa PIN
+                </p>
+              </div>
+              <div className="w-full bg-muted/10 border-2 border-dashed border-border p-4">
+                <p className="text-[10px] text-muted-foreground font-black uppercase">
+                  No prompt? Switch to offline instructions below.
+                </p>
+              </div>
+              <Button variant="link" className="text-xs font-black uppercase" onClick={() => setStep('instructions')}>
+                Offline Instructions
+              </Button>
+            </div>
+          )}
+
+          {step === 'success' && (
+            <div className="flex flex-col items-center justify-center py-8 space-y-6 text-center">
+              <div className="h-20 w-20 bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center">
+                <CheckCircle2 className="h-12 w-12 text-emerald-600" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-2xl font-black uppercase">Success</h3>
+                <p className="text-[11px] text-muted-foreground font-black uppercase tracking-widest">Transaction processed</p>
+              </div>
+              <div className="w-full bg-muted/10 border-2 border-border p-5 space-y-3">
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="text-muted-foreground font-black uppercase tracking-widest">Ref</span>
+                  <span className="font-mono font-black text-foreground bg-background px-2 py-1 border-2 border-border">{transactionId}</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="text-muted-foreground font-black uppercase tracking-widest">Status</span>
+                  <Badge className="bg-emerald-600 text-white rounded-none font-black px-2 py-1">COMPLETED</Badge>
+                </div>
+              </div>
+              <Button className="w-full h-12 rounded-none font-black uppercase" onClick={onClose}>DONE</Button>
+            </div>
+          )}
+
+          {step === 'instructions' && (
+            <div className="space-y-6">
+              <DialogHeader className="p-0">
+                <DialogTitle className="text-2xl font-black flex items-center gap-2">
+                  <AlertCircle className="h-6 w-6 text-amber-600" />
+                  OFFLINE
+                </DialogTitle>
+                <DialogDescription className="font-bold uppercase text-[10px] tracking-widest text-muted-foreground">
+                  Manual M-Pesa payment
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-3">
+                {[
+                  { label: 'Paybill', value: c2bInstructions?.business_number || '174379' },
+                  { label: 'Account', value: c2bInstructions?.reference || 'RUMI-REF' },
+                ].map((item, i) => (
+                  <div key={i} className="bg-muted/10 p-4 border-2 border-border flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">{item.label}</p>
+                      <p className="font-black text-xl font-mono">{item.value}</p>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => copyToClipboard(item.value, item.label)}>
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <div className="bg-muted/10 p-4 border-2 border-border flex justify-between items-center">
+                  <div>
+                    <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Amount</p>
+                    <p className="text-xl font-black">KES {amount.toLocaleString()}</p>
+                  </div>
+                </div>
+                <Button className="w-full h-12 rounded-none font-black uppercase" onClick={onClose}>I HAVE PAID</Button>
+              </div>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

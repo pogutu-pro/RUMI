@@ -3,6 +3,7 @@ import { Buffer } from 'buffer';
 const ACCESS_TOKEN_COOKIE = 'rumi_access_token';
 const REFRESH_TOKEN_COOKIE = 'rumi_refresh_token';
 const ROLE_COOKIE = 'rumi_user_role';
+const ONBOARDING_STAGE_COOKIE = 'rumi_onboarding_stage';
 
 const ACCESS_MAX_AGE = 15 * 60; // 15 minutes
 const REFRESH_MAX_AGE = 30 * 24 * 60 * 60; // 30 days
@@ -56,6 +57,7 @@ export function clearTokens(): void {
   deleteCookie(ACCESS_TOKEN_COOKIE);
   deleteCookie(REFRESH_TOKEN_COOKIE);
   deleteCookie(ROLE_COOKIE);
+  deleteCookie(ONBOARDING_STAGE_COOKIE);
 }
 
 export function setUserRole(role: string): void {
@@ -64,6 +66,14 @@ export function setUserRole(role: string): void {
 
 export function getUserRoleFromCookie(): string | null {
   return readCookie(ROLE_COOKIE);
+}
+
+export function setOnboardingStage(stage: string): void {
+  setCookie(ONBOARDING_STAGE_COOKIE, stage, REFRESH_MAX_AGE);
+}
+
+export function getOnboardingStage(): string | null {
+  return readCookie(ONBOARDING_STAGE_COOKIE);
 }
 
 const decodeBase64 = (input: string) => {

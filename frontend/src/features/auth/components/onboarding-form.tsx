@@ -2,8 +2,12 @@
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { 
+  useOnboardingStatus, 
+  useSaveOnboardingDraft, 
+  useAdvanceOnboardingStage 
+} from '@/features/auth/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,23 +19,28 @@ import {
   type StudentOnboardingFormData,
   type LandlordOnboardingFormData 
 } from '@/lib/validations/auth.schema';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface OnboardingFormProps {
   role: 'student' | 'landlord' | 'caretaker' | string;
 }
 
 export function OnboardingForm({ role }: OnboardingFormProps) {
-  const { updateProfile, user } = useAuth();
+  const { finalizeOnboarding, user } = useAuth();
+  const { data: onboardingStatus, isLoading: isLoadingStatus } = useOnboardingStatus();
+  const saveDraftMutation = useSaveOnboardingDraft();
+  const advanceStageMutation = useAdvanceOnboardingStage();
+  
   const { toast } = useToast();
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isFinalizing, setIsFinalizing] = useState(false);
 
   // Student Form
   const studentForm = useForm<StudentOnboardingFormData>({
-    resolver: zodResolver(studentOnboardingSchema),
+    resolver: zodResolver(studentOnboardingSchema) as any,
     defaultValues: {
       university: '',
       student_id_number: '',
@@ -42,12 +51,15 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
       emergency_contact_name: '',
       emergency_contact_phone: '',
       emergency_contact_relationship: '',
+      campus: '',
+      high_school: '',
+      graduation_year: new Date().getFullYear() + 4,
     },
   });
 
   // Landlord Form
   const landlordForm = useForm<LandlordOnboardingFormData>({
-    resolver: zodResolver(landlordOnboardingSchema),
+    resolver: zodResolver(landlordOnboardingSchema) as any,
     defaultValues: {
       company_name: '',
       national_id: '',
@@ -57,304 +69,397 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
     },
   });
 
-  const onStudentSubmit = async (data: StudentOnboardingFormData) => {
-    setIsSubmitting(true);
-    try {
-      // Format date to YYYY-MM-DD string for backend
-      const formattedData = {
-        ...data,
-        role: 'student', // Context for updateProfile
-      };
-      
-      await updateProfile(formattedData);
-      
-      toast({
-        title: "Profile Complete",
-        description: "Welcome to Rumi! Your profile has been set up.",
-        variant: "default",
-      });
-      
-      router.push('/student/dashboard');
-    } catch (error: any) {
-      toast({
-        title: "Submission Failed",
-        description: error.message || "Could not save profile details.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+  // Sync draft data to form
+  useEffect(() => {
+    if (onboardingStatus?.draft_data) {
+      if (role === 'student') {
+        studentForm.reset({
+          ...studentForm.getValues(),
+          ...onboardingStatus.draft_data
+        });
+      } else if (role === 'landlord') {
+        landlordForm.reset({
+          ...landlordForm.getValues(),
+          ...onboardingStatus.draft_data
+        });
+      }
+    }
+    
+    // Auto-detect step based on status if needed, 
+    // but for now we let users start at 1 or use local state
+  }, [onboardingStatus, role, studentForm, landlordForm]);
+
+  const handleNextStep = async (fields: string[]) => {
+    const form = role === 'student' ? studentForm : landlordForm;
+    const isValid = await form.trigger(fields as any);
+    
+    if (isValid) {
+      const data = form.getValues();
+      const stepData = fields.reduce((acc, field) => {
+        acc[field] = (data as any)[field];
+        return acc;
+      }, {} as any);
+
+      try {
+        await saveDraftMutation.mutateAsync(stepData);
+        setCurrentStep(prev => prev + 1);
+        
+        // Also advance backend stage if reaching specific points
+        if (currentStep === 1) {
+             await advanceStageMutation.mutateAsync('IDENTITY_DRAFT');
+        }
+      } catch (error) {
+        toast({
+          title: "Progress not saved",
+          description: "We couldn't save your draft, but you can still continue.",
+          variant: "destructive"
+        });
+        setCurrentStep(prev => prev + 1);
+      }
     }
   };
 
-  const onLandlordSubmit = async (data: LandlordOnboardingFormData) => {
-    setIsSubmitting(true);
+  const onFinalSubmit = async () => {
+    setIsFinalizing(true);
     try {
-      await updateProfile({
-        ...data,
-        role: 'landlord', // Context
-      });
-
+      await finalizeOnboarding();
+      
       toast({
-        title: "Profile Under Review",
-        description: "Your details have been submitted for verification.",
+        title: "Registration Complete",
+        description: "Your profile has been finalized successfully.",
         variant: "default",
       });
-
-      router.push('/landlord/dashboard');
+      
+      router.push(role === 'student' ? '/student/dashboard' : '/landlord/dashboard');
     } catch (error: any) {
       toast({
-        title: "Submission Failed",
-        description: error.message || "Could not save profile details.",
+        title: "Finalization Failed",
+        description: error.message || "Could not complete onboarding.",
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsFinalizing(false);
     }
   };
+
+  if (isLoadingStatus) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-border">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="font-bold uppercase tracking-widest text-muted-foreground text-xs mt-4">Initializing Session...</p>
+      </div>
+    );
+  }
 
   if (role === 'student') {
     return (
-      <Form {...studentForm}>
-        <form onSubmit={studentForm.handleSubmit(onStudentSubmit)} className="space-y-6 animate-in fade-in duration-500">
-          <div className="space-y-4">
-            <h3 className="font-black text-xl uppercase tracking-tight border-b-2 border-gray-100 pb-2">Academic Info</h3>
-            
-            <FormField
-              control={studentForm.control}
-              name="university"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold uppercase text-xs text-gray-500 tracking-wider">University / College</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="e.g. Strathmore University" className="rounded-none border-2 h-12 font-medium focus:border-primary focus:ring-0" />
-                  </FormControl>
-                  <FormMessage className="font-bold" />
-                </FormItem>
-              )}
-            />
+      <div className="space-y-6">
+        {/* Step Indicator */}
+        <div className="flex justify-between items-center mb-8">
+          {[1, 2, 3].map((s) => (
+            <div key={s} className="flex items-center">
+              <div className={`h-10 w-10 flex items-center justify-center font-black border-2 transition-all ${currentStep >= s ? 'bg-primary border-primary text-white' : 'border-gray-200 text-gray-300'}`}>
+                {currentStep > s ? <CheckCircle2 className="h-6 w-6" /> : s}
+              </div>
+              {s < 3 && <div className={`h-0.5 w-16 mx-2 ${currentStep > s ? 'bg-primary' : 'bg-gray-100'}`} />}
+            </div>
+          ))}
+        </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={studentForm.control}
-                name="student_id_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-bold uppercase text-xs text-gray-500 tracking-wider">Student ID</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="e.g. 12345/2023" className="rounded-none border-2 h-12 font-medium focus:border-primary focus:ring-0" />
-                    </FormControl>
-                    <FormMessage className="font-bold" />
-                  </FormItem>
-                )}
-              />
+        <Form {...studentForm}>
+          <form className="space-y-6">
+            {currentStep === 1 && (
+              <div className="space-y-4">
+                <h3 className="font-black text-2xl uppercase tracking-tighter border-b-4 border-primary pb-2">Academic Info</h3>
+                <FormField
+                  control={studentForm.control}
+                  name="university"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-bold uppercase text-xs text-gray-500">University</FormLabel>
+                      <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={studentForm.control}
+                  name="course"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-bold uppercase text-xs text-gray-500">Course</FormLabel>
+                      <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={studentForm.control}
+                    name="student_id_number"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-bold uppercase text-xs text-gray-500">Student ID</FormLabel>
+                        <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={studentForm.control}
+                    name="year_of_study"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-bold uppercase text-xs text-gray-500">Year</FormLabel>
+                        <Select onValueChange={(val) => field.onChange(parseInt(val))} defaultValue={field.value?.toString()}>
+                          <FormControl><SelectTrigger className="rounded-none border-2 h-14"><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {[1,2,3,4,5,6].map(y => <SelectItem key={y} value={y.toString()}>Year {y}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={studentForm.control}
+                  name="campus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-bold uppercase text-xs text-gray-500">Campus (Optional)</FormLabel>
+                      <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={studentForm.control}
+                    name="high_school"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-bold uppercase text-xs text-gray-500">High School (Optional)</FormLabel>
+                        <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={studentForm.control}
+                    name="graduation_year"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-bold uppercase text-xs text-gray-500">Grad Year</FormLabel>
+                        <FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} className="rounded-none border-2 h-14" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <Button 
+                  type="button" 
+                  onClick={() => handleNextStep(['university', 'course', 'student_id_number', 'year_of_study', 'campus', 'high_school', 'graduation_year'])} 
+                  className="w-full h-16 rounded-none font-black text-lg uppercase tracking-widest mt-4"
+                >
+                  Next Step <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            )}
 
-              <FormField
-                control={studentForm.control}
-                name="year_of_study"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-bold uppercase text-xs text-gray-500 tracking-wider">Year of Study</FormLabel>
-                    <Select onValueChange={(val) => field.onChange(parseInt(val))} defaultValue={field.value.toString()}>
-                      <FormControl className="rounded-none border-2 h-12 font-medium focus:border-primary focus:ring-0">
-                        <SelectTrigger>
-                          <SelectValue placeholder="Year" />
-                        </SelectTrigger>
+            {currentStep === 2 && (
+              <div className="space-y-4">
+                <h3 className="font-black text-2xl uppercase tracking-tighter border-b-4 border-primary pb-2">Personal Details</h3>
+                <FormField
+                  control={studentForm.control}
+                  name="phone_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-bold uppercase text-xs text-gray-500">Phone</FormLabel>
+                      <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={studentForm.control}
+                  name="date_of_birth"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-bold uppercase text-xs text-gray-500">DOB</FormLabel>
+                      <FormControl>
+                        <Input 
+                            type="date" 
+                            {...field} 
+                            value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
+                            onChange={(e) => field.onChange(e.target.valueAsDate)}
+                            className="rounded-none border-2 h-14" 
+                        />
                       </FormControl>
-                      <SelectContent className="rounded-none border-2 border-primary">
-                        {[1, 2, 3, 4, 5, 6].map((year) => (
-                          <SelectItem key={year} value={year.toString()} className="font-bold focus:bg-primary/20 cursor-pointer">
-                            Year {year}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage className="font-bold" />
-                  </FormItem>
-                )}
-              />
-            </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex gap-4 pt-4">
+                  <Button type="button" variant="outline" onClick={() => setCurrentStep(1)} className="flex-1 h-16 rounded-none border-2 font-bold uppercase"><ArrowLeft className="mr-2" /> Back</Button>
+                  <Button type="button" onClick={() => handleNextStep(['phone_number', 'date_of_birth'])} className="flex-[2] h-16 rounded-none font-black uppercase">Continue <ArrowRight className="ml-2" /></Button>
+                </div>
+              </div>
+            )}
 
-            <FormField
-              control={studentForm.control}
-              name="course"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold uppercase text-xs text-gray-500 tracking-wider">Course / Degree</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="e.g. BSc. Computer Science" className="rounded-none border-2 h-12 font-medium focus:border-primary focus:ring-0" />
-                  </FormControl>
-                  <FormMessage className="font-bold" />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="space-y-4 pt-4 border-t-2 border-gray-100">
-            <h3 className="font-black text-xl uppercase tracking-tight border-b-2 border-gray-100 pb-2">Personal Details</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={studentForm.control}
-                name="phone_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-bold uppercase text-xs text-gray-500 tracking-wider">Phone</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="+254..." className="rounded-none border-2 h-12 font-medium focus:border-primary focus:ring-0" />
-                    </FormControl>
-                    <FormMessage className="font-bold" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={studentForm.control}
-                name="date_of_birth"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-bold uppercase text-xs text-gray-500 tracking-wider">Date of Birth</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="date" 
-                        {...field} 
-                        value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
-                        onChange={(e) => field.onChange(e.target.valueAsDate)}
-                        className="rounded-none border-2 h-12 font-medium focus:border-primary focus:ring-0" 
-                      />
-                    </FormControl>
-                    <FormMessage className="font-bold" />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={studentForm.control}
-              name="emergency_contact_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold uppercase text-xs text-gray-500 tracking-wider">Emergency Contact Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} className="rounded-none border-2 h-12 font-medium focus:border-primary focus:ring-0" />
-                  </FormControl>
-                  <FormMessage className="font-bold" />
-                </FormItem>
-              )}
-            />
-             <div className="grid grid-cols-2 gap-4">
-               <FormField
-                control={studentForm.control}
-                name="emergency_contact_phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-bold uppercase text-xs text-gray-500 tracking-wider">Contact Phone</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="+254..." className="rounded-none border-2 h-12 font-medium focus:border-primary focus:ring-0" />
-                    </FormControl>
-                    <FormMessage className="font-bold" />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={studentForm.control}
-                name="emergency_contact_relationship"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-bold uppercase text-xs text-gray-500 tracking-wider">Relationship</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="e.g. Parent" className="rounded-none border-2 h-12 font-medium focus:border-primary focus:ring-0" />
-                    </FormControl>
-                    <FormMessage className="font-bold" />
-                  </FormItem>
-                )}
-              />
-             </div>
-          </div>
-
-          <Button 
-            type="submit" 
-            className="w-full h-14 rounded-none bg-primary text-white font-black uppercase tracking-widest hover:bg-primary/90 transition-all text-lg"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="animate-spin h-5 w-5" /> Saving...
-              </span>
-            ) : "Complete Profile"}
-          </Button>
-        </form>
-      </Form>
+            {currentStep === 3 && (
+              <div className="space-y-4">
+                <h3 className="font-black text-2xl uppercase tracking-tighter border-b-4 border-primary pb-2">Emergency Contact</h3>
+                <FormField
+                  control={studentForm.control}
+                  name="emergency_contact_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-bold uppercase text-xs text-gray-500">Contact Name</FormLabel>
+                      <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={studentForm.control}
+                    name="emergency_contact_phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-bold uppercase text-xs text-gray-500">Contact Phone</FormLabel>
+                        <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={studentForm.control}
+                    name="emergency_contact_relationship"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-bold uppercase text-xs text-gray-500">Relationship</FormLabel>
+                        <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <Button type="button" variant="outline" onClick={() => setCurrentStep(2)} className="flex-1 h-16 rounded-none border-2 font-bold uppercase">Back</Button>
+                  <Button 
+                    type="button" 
+                    onClick={onFinalSubmit} 
+                    className="flex-[2] h-16 rounded-none font-black uppercase text-xl bg-green-600 hover:bg-green-700"
+                    disabled={isFinalizing}
+                  >
+                    {isFinalizing ? <Loader2 className="animate-spin" /> : "Finish & Explore"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </form>
+        </Form>
+      </div>
     );
   }
 
   if (role === 'landlord') {
     return (
-      <Form {...landlordForm}>
-        <form onSubmit={landlordForm.handleSubmit(onLandlordSubmit)} className="space-y-6 animate-in fade-in duration-500">
-           <div className="bg-blue-50 border-l-4 border-blue-600 p-4 mb-6">
-            <p className="text-sm text-blue-900 font-bold">
-              Verification Required: As a landlord, you must provide your National ID for identity verification before you can list properties.
-            </p>
-          </div>
+      <div className="space-y-6">
+        {/* Step Indicator */}
+        <div className="flex justify-between items-center mb-8">
+          {[1, 2].map((s) => (
+            <div key={s} className="flex items-center">
+              <div className={`h-10 w-10 flex items-center justify-center font-black border-2 transition-all ${currentStep >= s ? 'bg-primary border-primary text-white' : 'border-gray-200 text-gray-300'}`}>
+                {currentStep > s ? <CheckCircle2 className="h-6 w-6" /> : s}
+              </div>
+              {s < 2 && <div className={`h-0.5 w-32 mx-2 ${currentStep > s ? 'bg-primary' : 'bg-gray-100'}`} />}
+            </div>
+          ))}
+        </div>
 
-          <div className="space-y-4">
-             <FormField
-              control={landlordForm.control}
-              name="company_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold uppercase text-xs text-gray-500 tracking-wider">Property / Company Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="e.g. Riverside Apartments" className="rounded-none border-2 h-12 font-medium focus:border-primary focus:ring-0" />
-                  </FormControl>
-                  <FormMessage className="font-bold" />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={landlordForm.control}
-              name="national_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold uppercase text-xs text-gray-500 tracking-wider">National ID Number</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="e.g. 12345678" className="rounded-none border-2 h-12 font-medium focus:border-primary focus:ring-0 bg-yellow-50/50" />
-                  </FormControl>
-                  <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wide">For official verification purposes only</p>
-                  <FormMessage className="font-bold" />
-                </FormItem>
-              )}
-            />
+        <Form {...landlordForm}>
+          <form className="space-y-6">
+            {currentStep === 1 && (
+              <div className="space-y-4">
+                <h3 className="font-black text-2xl uppercase tracking-tighter border-b-4 border-primary pb-2">Business Identity</h3>
+                <FormField
+                  control={landlordForm.control}
+                  name="company_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-bold uppercase text-xs text-gray-500">Company / Property Name</FormLabel>
+                      <FormControl><Input {...field} placeholder="e.g. Rumi Property Management" className="rounded-none border-2 h-14" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={landlordForm.control}
+                  name="national_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-bold uppercase text-xs text-gray-500">National ID</FormLabel>
+                      <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={landlordForm.control}
+                  name="phone_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-bold uppercase text-xs text-gray-500">Business Phone</FormLabel>
+                      <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button 
+                  type="button" 
+                  onClick={() => handleNextStep(['company_name', 'national_id', 'phone_number'])} 
+                  className="w-full h-16 rounded-none font-black text-lg uppercase tracking-widest mt-4"
+                >
+                  Save & Continue <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            )}
 
-            <FormField
-              control={landlordForm.control}
-              name="phone_number"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold uppercase text-xs text-gray-500 tracking-wider">Phone Number</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="+254..." className="rounded-none border-2 h-12 font-medium focus:border-primary focus:ring-0" />
-                  </FormControl>
-                  <FormMessage className="font-bold" />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <Button 
-            type="submit" 
-            className="w-full h-14 rounded-none bg-primary text-white font-black uppercase tracking-widest hover:bg-primary/90 transition-all text-lg mt-8"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="animate-spin h-5 w-5" /> Saving...
-              </span>
-            ) : "Submit for Verification"}
-          </Button>
-        </form>
-      </Form>
+            {currentStep === 2 && (
+              <div className="space-y-4">
+                <h3 className="font-black text-2xl uppercase tracking-tighter border-b-4 border-primary pb-2">Verification & Finalization</h3>
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <CheckCircle2 className="h-5 w-5 text-yellow-400" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-yellow-700">
+                        By finalizing, you agree that the information provided is accurate. 
+                        Your account will undergo a 24-hour verification period before you can list properties.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4 pt-4">
+                  <Button type="button" variant="outline" onClick={() => setCurrentStep(1)} className="flex-1 h-16 rounded-none border-2 font-bold uppercase"><ArrowLeft className="mr-2" /> Back</Button>
+                  <Button 
+                    type="button" 
+                    onClick={onFinalSubmit} 
+                    className="flex-[2] h-16 rounded-none font-black uppercase text-xl bg-primary hover:bg-primary/90"
+                    disabled={isFinalizing}
+                  >
+                    {isFinalizing ? <Loader2 className="animate-spin" /> : "Finalize Registration"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </form>
+        </Form>
+      </div>
     );
   }
 

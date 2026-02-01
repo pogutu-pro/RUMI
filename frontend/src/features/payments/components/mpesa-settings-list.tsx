@@ -8,7 +8,6 @@ import { toast } from 'sonner';
 import { useMpesaConfigs } from '../hooks/use-payments';
 import { MpesaConfig } from '../types';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface MpesaSettingsListProps {
   onEdit: (config: MpesaConfig) => void;
@@ -29,7 +28,7 @@ export function MpesaSettingsList({ onEdit }: MpesaSettingsListProps) {
 
   if (!configs || configs.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 px-4 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col items-center justify-center py-12 px-4 bg-muted/30 border-2 border-dashed border-border">
         <div className="h-16 w-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
             <Smartphone className="h-8 w-8 text-slate-400" />
         </div>
@@ -42,16 +41,11 @@ export function MpesaSettingsList({ onEdit }: MpesaSettingsListProps) {
   }
 
   return (
-    <div className="space-y-4">
-        <AnimatePresence>
+    <div className="space-y-3">
       {configs.map((config) => (
-        <motion.div
+        <div
             key={config.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            layout
-            className="group relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all hover:border-emerald-500/30"
+            className="group relative bg-card border border-border p-4 shadow-sm transition-colors hover:border-primary/50"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -89,9 +83,8 @@ export function MpesaSettingsList({ onEdit }: MpesaSettingsListProps) {
                  </Button> */}
             </div>
           </div>
-        </motion.div>
+        </div>
       ))}
-      </AnimatePresence>
     </div>
   );
 }

@@ -39,8 +39,8 @@ export function StudentWelcomeHero({ hostelName, roomNumber, loading }: StudentW
 
   if (loading) {
     return (
-      <div className="flex items-center gap-6 p-8 rounded-2xl bg-muted/20 animate-pulse border border-border/50">
-        <Skeleton className="h-20 w-20 rounded-xl" />
+      <div className="flex items-center gap-6 p-8 border-2 border-border bg-muted/10">
+        <Skeleton className="h-20 w-20 rounded-none border border-border" />
         <div className="space-y-3">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-4 w-32" />
@@ -50,13 +50,13 @@ export function StudentWelcomeHero({ hostelName, roomNumber, loading }: StudentW
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-card border border-border/50 shadow-sm p-8 md:p-10">
+    <div className="relative overflow-hidden rounded-none bg-card border-2 border-border p-8 md:p-10">
       <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
         
         {/* Left Section: User Identity */}
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 flex-1">
           <div className="relative">
-            <Avatar className="h-24 w-24 md:h-28 md:w-28 rounded-2xl border-2 border-background shadow-md">
+            <Avatar className="h-24 w-24 md:h-28 md:w-28 rounded-none border-2 border-border">
                 <AvatarImage 
                     src={user?.profile_picture || user?.avatar} 
                     className="object-cover" 
@@ -87,16 +87,16 @@ export function StudentWelcomeHero({ hostelName, roomNumber, loading }: StudentW
             
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-1">
               {hostelName ? (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted border border-border/50">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-none bg-muted border-2 border-border">
                     <MapPin className="h-4 w-4 text-primary" />
-                    <span className="text-xs font-semibold text-foreground/80">
-                        {hostelName} <span className="text-muted-foreground/30 mx-1">•</span> Room {roomNumber}
+                    <span className="text-xs font-black uppercase tracking-tight text-foreground">
+                        {hostelName} <span className="text-muted-foreground mx-1">|</span> Room {roomNumber}
                     </span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-50 border border-orange-100 text-orange-700">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-none bg-orange-50 border-2 border-orange-200 text-orange-700">
                     <GraduationCap className="h-4 w-4" />
-                    <span className="text-xs font-semibold uppercase tracking-wide">Pending Booking</span>
+                    <span className="text-xs font-black uppercase tracking-widest">Pending Booking</span>
                 </div>
               )}
             </div>

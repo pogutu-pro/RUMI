@@ -48,10 +48,20 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('super_admin', 'Super Admin'),
     ]
 
+    ONBOARDING_STAGE_CHOICES = [
+        ('REGISTERED', 'Registered'),
+        ('ROLE_SELECTED', 'Role Selected'),
+        ('IDENTITY_DRAFT', 'Identity Draft'),
+        ('IDENTITY_VERIFIED', 'Identity Verified'),
+        ('VERIFICATION_PENDING', 'Verification Pending'),
+        ('COMPLETED', 'Completed'),
+    ]
+
     GENDER_CHOICES = [
         ('male', 'Male'),
         ('female', 'Female'),
         ('other', 'Other'),
+        ('prefer_not_to_say', 'Prefer not to say'),
     ]
 
     email = models.EmailField(
@@ -70,7 +80,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         default='student'
     )
     gender = models.CharField(
-        max_length=10,
+        max_length=20,
         choices=GENDER_CHOICES,
         blank=True,
         null=True
@@ -89,6 +99,17 @@ class User(AbstractBaseUser, PermissionsMixin):
         )]
     )
     profile_picture = models.URLField(blank=True, null=True)
+    onboarding_stage = models.CharField(
+        max_length=50,
+        choices=ONBOARDING_STAGE_CHOICES,
+        default='REGISTERED',
+        db_index=True
+    )
+    capabilities = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of grantable capabilities (e.g. ['hostel:operate', 'tenant:offboard'])"
+    )
     last_login = models.DateTimeField(blank=True, null=True)
     date_joined = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(default=timezone.now)
@@ -148,6 +169,7 @@ class StudentProfile(models.Model):
         related_name='prospective_students'
     )
     preferred_room_number = models.CharField(max_length=20, blank=True, null=True)
+    draft_data = models.JSONField(default=dict, blank=True)
     lifestyle_preferences = models.JSONField(blank=True, null=True)
     bio = models.TextField(
         blank=True,
@@ -205,16 +227,31 @@ class StudentProfile(models.Model):
 
     def save(self, *args, **kwargs):
         """Auto-calculate profile completion status"""
-        required_fields = [
-            self.university,
-            self.student_id_number,
-            self.year_of_study,
-            self.user.phone_number,  # From User model
-            self.emergency_contact_name,
-            self.emergency_contact_phone,
-        ]
-        self.is_profile_complete = all(required_fields)
+        self.is_profile_complete = self.validate_readiness(raise_exception=False)
         super().save(*args, **kwargs)
+
+    def validate_readiness(self, raise_exception=True):
+        """
+        Strict validation check before finalizing onboarding.
+        Returns True if ready, raises ValidationError or returns False otherwise.
+        """
+        required_fields = [
+            (self.university, "University"),
+            (self.student_id_number, "Student ID Number"),
+            (self.year_of_study, "Year of Study"),
+            (self.user.phone_number, "Phone Number"),
+            (self.emergency_contact_name, "Emergency Contact Name"),
+            (self.emergency_contact_phone, "Emergency Contact Phone"),
+        ]
+        
+        missing = [name for field, name in required_fields if not field]
+        
+        if missing:
+            if raise_exception:
+                from django.core.exceptions import ValidationError
+                raise ValidationError(f"Missing required fields: {', '.join(missing)}")
+            return False
+        return True
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.university}"
@@ -237,9 +274,10 @@ class LandlordProfile(models.Model):
         validators=[MinLengthValidator(5), MaxLengthValidator(20)]
     )
     business_address = models.TextField(blank=True, null=True)
-    bank_name = models.CharField(max_length=100)
-    bank_account_number = models.CharField(max_length=20)
-    bank_code = models.CharField(max_length=10)
+    bank_name = models.CharField(max_length=100, blank=True, null=True)
+    bank_account_number = models.CharField(max_length=20, blank=True, null=True)
+    bank_code = models.CharField(max_length=10, blank=True, null=True)
+    draft_data = models.JSONField(default=dict, blank=True)
     paystack_subaccount_code = models.CharField(max_length=100, unique=True, blank=True, null=True)
     total_units = models.IntegerField(default=0, validators=[MinValueValidator(0)], blank=True, null=True)
     is_verified = models.BooleanField(default=False)
@@ -275,15 +313,27 @@ class LandlordProfile(models.Model):
 
     def save(self, *args, **kwargs):
         """Auto-calculate profile completion status"""
-        required_fields = [
-            self.company_name,
-            self.national_id,
-            self.bank_name,
-            self.bank_account_number,
-            self.user.phone_number,
-        ]
-        self.is_profile_complete = all(required_fields)
+        self.is_profile_complete = self.validate_readiness(raise_exception=False)
         super().save(*args, **kwargs)
+
+    def validate_readiness(self, raise_exception=True):
+        """Strict validation for Landlord onboarding finalization"""
+        required_fields = [
+            (self.company_name or self.user.get_full_name(), "Company/Name"),
+            (self.national_id, "National ID"),
+            (self.bank_name, "Bank Name"),
+            (self.bank_account_number, "Bank Account Number"),
+            (self.user.phone_number, "Phone Number"),
+        ]
+        
+        missing = [name for field, name in required_fields if not field]
+        
+        if missing:
+            if raise_exception:
+                from django.core.exceptions import ValidationError
+                raise ValidationError(f"Missing required fields: {', '.join(missing)}")
+            return False
+        return True
 
     def __str__(self):
         return f"{self.company_name or self.user.get_full_name()} - {self.national_id}"
@@ -297,22 +347,30 @@ class CaretakerProfile(models.Model):
         on_delete=models.CASCADE,
         related_name='caretaker_profile'
     )
+
     national_id = models.CharField(
         max_length=20,
         unique=True,
+        blank=True,
+        null=True,
         validators=[MinLengthValidator(5), MaxLengthValidator(20)]
     )
-    hostel = models.OneToOneField(
+    hostel = models.ForeignKey(
         'hostels.Hostel',
-        on_delete=models.CASCADE,
-        related_name='caretaker'
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='caretakers'
     )
     landlord = models.ForeignKey(
         LandlordProfile,
         on_delete=models.CASCADE,
-        related_name='caretakers'
+        related_name='caretakers',
+        null=True,
+        blank=True
     )
-    employment_start_date = models.DateField()
+    draft_data = models.JSONField(default=dict, blank=True)
+    employment_start_date = models.DateField(blank=True, null=True)
     employment_end_date = models.DateField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
     permissions = models.JSONField(default=dict)
@@ -331,6 +389,23 @@ class CaretakerProfile(models.Model):
         on_delete=models.CASCADE,
         related_name='created_caretakers'
     )
+    
+    def validate_readiness(self, raise_exception=True):
+        """Strict validation for Caretaker onboarding"""
+        required_fields = [
+            (self.hostel, "Assigned Hostel"),
+            (self.national_id, "National ID"),
+            (self.user.phone_number, "Phone Number"),
+        ]
+        
+        missing = [name for field, name in required_fields if not field]
+        
+        if missing:
+            if raise_exception:
+                from django.core.exceptions import ValidationError
+                raise ValidationError(f"Missing required fields: {', '.join(missing)}")
+            return False
+        return True
 
     class Meta:
         db_table = 'accounts_caretakerprofile'

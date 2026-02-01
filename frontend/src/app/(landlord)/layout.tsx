@@ -11,7 +11,7 @@ import type { Notification } from '@/features/notifications';
 import { LandlordSidebar } from '@/components/layouts/landlord-sidebar';
 import { LandlordBottomNav } from '@/components/layouts/landlord-bottom-nav';
 import { DashboardThemeProvider } from '@/components/providers/dashboard-theme-provider';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -220,8 +220,6 @@ export default function Layout({ children }: LandlordLayoutProps) {
                   </PopoverContent>
                 </Popover>
 
-                {/* Theme Toggle */}
-                <ThemeToggle />
 
                 {/* User Menu */}
                 <DropdownMenu>

@@ -22,7 +22,7 @@ export interface UserSubscription {
 export interface Payment {
   id: string;
   amount: number;
-  status: 'completed' | 'pending' | 'failed' | 'success' | 'pending_stk_push' | 'cancelled';
+  status: 'completed' | 'pending' | 'failed' | 'success' | 'pending_stk_push' | 'cancelled' | 'processing';
   date: string;
   user: {
     name: string;
@@ -39,7 +39,7 @@ export interface Transaction {
   date: string;
   amount: number;
   type: 'rent' | 'deposit' | 'penalty' | 'refund' | 'wallet_credit';
-  status: 'success' | 'pending' | 'failed';
+  status: 'success' | 'pending' | 'failed' | 'processing';
   method: string;
   reference: string;
   description?: string;

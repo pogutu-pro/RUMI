@@ -236,18 +236,92 @@ def handle_room_transfer(student, from_rent_period, new_room, transfer_date, rea
     }
 
 
-def update_overdue_rent_periods():
+@transaction.atomic
+def process_confirmed_payment(student, amount, reference, payment_method, metadata=None):
     """
-    Celery task to update RentPeriod statuses to 'overdue' if unpaid past end_date.
-    Should be run daily.
+    Unified entry point for processing any confirmed payment from a webhook.
+    Resolves whether the payment is for a Booking deposit or a RentPeriod.
     """
-    today = date.today()
-    
-    overdue_periods = RentPeriod.objects.filter(
-        status__in=['due', 'partially_paid'],
-        end_date__lt=today
-    )
-    
-    count = overdue_periods.update(status='overdue')
-    
-    return f"Updated {count} RentPeriods to overdue status"
+    from hostels.lifecycle_services import LifecycleService
+    from hostels.models import Booking
+
+    # 1. Resolve Target from Reference
+    # Format: RUMI-{TYPE}-{ID}-{UUID}
+    parts = reference.split('-')
+    if len(parts) < 3:
+        raise ValueError(f"Invalid reference format: {reference}")
+
+    ref_type = parts[1] # INITIAL (Booking) or RENT (RentPeriod)
+    ref_id = parts[2]
+
+    transaction_obj = None
+
+    if ref_type == 'INITIAL':
+        # This is a booking deposit
+        try:
+            booking = Booking.objects.select_related('student').get(id=ref_id)
+            if student and booking.student != student:
+                raise ValueError(f"Booking/Student mismatch: {booking.student.id} != {student.id}")
+            student = student or booking.student
+        except Booking.DoesNotExist:
+            raise ValueError(f"Booking {ref_id} not found")
+
+        # Check if transaction already exists for this reference
+        transaction_obj = Transaction.objects.filter(transaction_reference=reference, status='success').first()
+        if transaction_obj:
+            return {"type": "booking", "booking_id": booking.id, "status": "already_processed"}
+
+        transaction_obj = Transaction.objects.create(
+            booking=booking,
+            student=student,
+            transaction_reference=reference,
+            amount=amount,
+            transaction_type='deposit',
+            payment_method=payment_method,
+            status='success',
+            metadata=metadata or {},
+            paid_at=timezone.now()
+        )
+
+        LifecycleService.activate_tenancy(booking, transaction_obj)
+        return {"type": "booking", "booking_id": booking.id}
+
+    elif ref_type == 'RENT':
+        # This is a standard rent payment
+        try:
+            rent_period = RentPeriod.objects.select_related('student', 'booking').get(id=ref_id)
+            if student and rent_period.student != student:
+                raise ValueError(f"RentPeriod/Student mismatch: {rent_period.student.id} != {student.id}")
+            student = student or rent_period.student
+        except RentPeriod.DoesNotExist:
+            raise ValueError(f"RentPeriod {ref_id} not found")
+
+        transaction_obj = Transaction.objects.filter(transaction_reference=reference, status='success').first()
+        if transaction_obj:
+            return {"type": "rent", "rent_period_id": rent_period.id, "status": "already_processed"}
+
+        transaction_obj = Transaction.objects.create(
+            rent_period=rent_period,
+            booking=rent_period.booking,
+            student=student,
+            transaction_reference=reference,
+            amount=amount,
+            transaction_type='rent',
+            payment_method=payment_method,
+            status='success',
+            metadata=metadata or {},
+            paid_at=timezone.now()
+        )
+
+        rent_period.amount_paid += amount
+        if rent_period.amount_paid >= rent_period.amount_due:
+            rent_period.status = 'paid'
+        else:
+            rent_period.status = 'partially_paid'
+        rent_period.save()
+
+        return {"type": "rent", "rent_period_id": rent_period.id}
+
+    else:
+        # Fallback to greedy processing if type is unknown or mismatched
+        return process_payment_to_rent_periods(student, amount, payment_method, metadata)
