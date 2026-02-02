@@ -1,0 +1,105 @@
+# Core Django
+Django==4.2.7
+djangorestframework==3.14.0
+django-cors-headers==4.3.0
+
+# Database (PostgreSQL for production)
+psycopg2-binary==2.9.9
+django-db-connection-pool==1.2.4
+
+# Enhanced Caching
+redis==5.0.1
+django-redis==5.4.0
+redis-py-cluster==2.1.3
+
+# Task Queue (Optimized)
+celery==5.3.4
+amqp==5.2.0
+django-celery-beat==2.5.0
+django-celery-results==2.5.0
+
+# Authentication & Security
+djangorestframework-simplejwt==5.3.0
+django-allauth==0.57.0
+django-ratelimit==4.1.0
+
+# Environment Variables
+python-decouple==3.8
+
+# API Documentation
+drf-yasg==1.21.7
+
+# File Upload & Storage (Optimized)
+Pillow==10.1.0
+django-storages==1.14.2
+boto3==1.29.7
+
+# Utilities
+python-dateutil==2.8.2
+pytz==2023.3
+user-agents==2.2.0
+
+# Development (Optimized)
+django-debug-toolbar==4.2.0
+ipython==8.17.2
+django-extensions==3.2.3
+mypy==1.9.0
+
+# Testing
+pytest==7.4.3
+pytest-django==4.7.0
+factory-boy==3.3.0
+coverage==7.5.0
+
+# Code Quality
+flake8==6.1.0
+black==23.11.0
+
+# Production Server (Optimized)
+gunicorn==21.2.0
+whitenoise==6.6.0
+gevent==23.9.1
+
+# Monitoring & Performance
+sentry-sdk==2.0.0
+flower==2.0.0
+prometheus_client==0.19.0
+django-prometheus==2.3.1
+psutil==5.9.6
+
+# Performance Optimization
+django-cacheops==7.0.2
+django-compressor==4.4
+django-zipfile==2.0.1
+
+# Receipt Generation
+reportlab==4.0.7
+
+# Real-time (Optimized)
+channels==4.3.1
+channels_redis==4.2.0
+daphne==4.0.0
+
+# Payment APIs
+paystackapi==2.1.3
+africastalking==1.2.5
+
+# Environment
+python-dotenv==1.0.1
+
+# Additional Performance Libraries
+uvicorn==0.24.0.post1
+hypercorn==0.15.0
+orjson==3.9.10  # Fast JSON parsing
+python-memcached==1.62
+
+# Database Query Optimization
+django-silk==5.0.4  # Query profiling
+django-debug-toolbar==4.2.0
+
+# HTTP Client Optimization
+httpx==0.25.2  # Async HTTP client
+aiohttp==3.9.1
+
+# Background Task Optimization
+celery-redbeat==2.0.1  # Advanced scheduling

@@ -108,18 +108,18 @@ class MpesaPaymentConfig(models.Model):
         super().save(*args, **kwargs)
 
 
-class StudentWallet(models.Model):
-    """Tracks student overpayments and credits"""
+class StudentPaymentTracker(models.Model):
+    """Tracks student overpayments and credits for future use"""
     student = models.OneToOneField(
         'accounts.StudentProfile',
         on_delete=models.CASCADE,
-        related_name='wallet'
+        related_name='payment_tracker'
     )
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Wallet: {self.student.user.get_full_name()} - KES {self.balance}"
+        return f"Payment Tracker: {self.student.user.get_full_name()} - KES {self.balance}"
 
 
 class RentPeriod(models.Model):

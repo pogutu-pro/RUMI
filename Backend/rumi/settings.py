@@ -19,6 +19,9 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+# Import performance settings
+from rumi.performance_settings import get_performance_settings
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -75,17 +78,33 @@ INSTALLED_APPS = [
 # Custom User Model (matches schema: email as unique identifier)
 AUTH_USER_MODEL = 'accounts.User'
 
+# Performance-optimized middleware
 MIDDLEWARE = [
+    'rumi.middleware.SecurityHeadersMiddleware',
+    'rumi.middleware.DatabaseConnectionMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'rumi.middleware.CompressionMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'rumi.middleware.PerformanceMonitoringMiddleware',
+    'rumi.middleware.DatabaseQueryCountMiddleware',
+    'rumi.middleware.APIResponseCacheMiddleware',
+    'rumi.middleware.RateLimitMiddleware',
 ]
+
+# Debug toolbar (only in development)
+if DEBUG:
+    MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
+    INTERNAL_IPS = [
+        '127.0.0.1',
+        'localhost',
+    ]
 
 ROOT_URLCONF = 'rumi.urls'
 
@@ -114,7 +133,7 @@ ASGI_APPLICATION = 'rumi.asgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
+DATABASES = get_performance_settings().get('DATABASES', {
     'default': {
         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),
         'NAME': os.getenv('DB_NAME', BASE_DIR / 'db.sqlite3') if os.getenv('DB_ENGINE') != 'django.db.backends.postgresql' else os.getenv('DB_NAME'),
@@ -122,12 +141,16 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD', ''),
         'HOST': os.getenv('DB_HOST', ''),
         'PORT': os.getenv('DB_PORT', ''),
+        'CONN_MAX_AGE': 60,  # Persistent connections
+        'ATOMIC_REQUESTS': False,  # Performance optimization
+        'AUTOCOMMIT': True,
     }
-}
+})
 
 
-# REST Framework Configuration
-REST_FRAMEWORK = {
+# REST Framework Configuration with Performance Optimizations
+performance_settings = get_performance_settings()
+REST_FRAMEWORK = performance_settings.get('REST_FRAMEWORK', {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'accounts.authentication.CookieJWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
@@ -145,7 +168,7 @@ REST_FRAMEWORK = {
         'anon': '100/hour',
         'user': '1000/hour'
     }
-}
+})
 
 # JWT Configuration
 SIMPLE_JWT = {
@@ -260,33 +283,47 @@ BASIC_PLAN_PRICE = Decimal('10000.00')
 MEDIUM_PLAN_PRICE = Decimal('30000.00')
 ADVANCED_PLAN_PRICE = Decimal('40000.00')
 
-# Celery Configuration
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+# Celery Configuration with Performance Optimizations
+CELERY_BROKER_URL = performance_settings.get('CELERY_BROKER_URL', os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0'))
+CELERY_RESULT_BACKEND = performance_settings.get('CELERY_RESULT_BACKEND', os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0'))
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_RESULT_EXTENDED = True
-CELERY_TIMEZONE = 'kenya/Nairobi'
+CELERY_TIMEZONE = 'Africa/Nairobi'
 CELERY_ENABLE_UTC = True
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
-# Redis Cache Configuration
-CACHES = {
+# Performance optimizations
+CELERY_WORKER_CONCURRENCY = int(os.getenv('CELERY_WORKER_CONCURRENCY', '4'))
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+
+# Redis Cache Configuration with Performance Optimizations
+CACHES = performance_settings.get('CACHES', {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': os.getenv('REDIS_URL', 'redis://localhost:6379/1'),
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
+            'CONNECTION_POOL_KWARGS': {
+                'max_connections': 50,
+                'retry_on_timeout': True,
+            },
+        },
+        'KEY_PREFIX': 'rumi',
+        'TIMEOUT': 300,
     }
-}
+})
 
-# Session Configuration
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'default'
+# Session Configuration with Performance Optimizations
+SESSION_ENGINE = performance_settings.get('SESSION_ENGINE', 'django.contrib.sessions.backends.cache')
+SESSION_CACHE_ALIAS = performance_settings.get('SESSION_CACHE_ALIAS', 'default')
+SESSION_COOKIE_AGE = performance_settings.get('SESSION_COOKIE_AGE', 1200)
 
 # Channels Configuration
 CHANNEL_LAYERS = {
@@ -349,6 +386,33 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Performance optimization settings
+API_CACHE_TIMEOUT = 300  # 5 minutes
+API_CACHE_EXCLUDE_PATHS = [
+    '/api/v1/auth/login/',
+    '/api/v1/auth/logout/',
+    '/api/v1/auth/refresh-token/',
+    '/api/v1/payments/',
+    '/admin/',
+    '/metrics/',
+    '/swagger/',
+    '/redoc/',
+]
+SLOW_REQUEST_THRESHOLD = 2.0  # seconds
+MEMORY_THRESHOLD = 100 * 1024 * 1024  # 100MB
+COMPRESS_MIN_LENGTH = 1024  # 1KB
+COMPRESSIBLE_TYPES = [
+    'text/html',
+    'text/css',
+    'text/javascript',
+    'application/javascript',
+    'application/json',
+    'application/xml',
+    'text/xml',
+]
+RATE_LIMIT_ANONYMOUS = 100  # per hour
+RATE_LIMIT_AUTHENTICATED = 1000  # per hour
+
 # Debug Toolbar Configuration
 if DEBUG:
     INTERNAL_IPS = [
@@ -356,8 +420,8 @@ if DEBUG:
         'localhost',
     ]
 
-# Logging Configuration
-LOGGING = {
+# Logging Configuration with Performance Optimizations
+LOGGING = performance_settings.get('LOGGING', {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
@@ -371,12 +435,6 @@ LOGGING = {
         },
     },
     'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs/django.log',
-            'formatter': 'verbose',
-        },
         'console': {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
@@ -384,24 +442,7 @@ LOGGING = {
         },
     },
     'root': {
-        'handlers': ['console', 'file'],
+        'handlers': ['console'],
         'level': 'INFO',
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'payments': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'notifications': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-    },
-}
+})

@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import (
     Transaction, SavedPaymentMethod, RecurringPayment, LateFeeCharge,
     TaxReport, PaystackSubaccount, Payout, RefundRequest, RevenueAnalytics, Receipt, MpesaPaymentConfig,
-    RentPeriod, StudentWallet, TransferLog
+    RentPeriod, StudentPaymentTracker, TransferLog
 )
 from hostels.models import Booking
 from accounts.models import StudentProfile, LandlordProfile
@@ -281,12 +281,12 @@ class RentPeriodSerializer(serializers.ModelSerializer):
         } for txn in transactions]
 
 
-class StudentWalletSerializer(serializers.ModelSerializer):
-    """Serializer for StudentWallet - tracks overpayments/credits"""
+class StudentPaymentTrackerSerializer(serializers.ModelSerializer):
+    """Serializer for StudentPaymentTracker - tracks overpayments/credits"""
     student_details = serializers.SerializerMethodField()
     
     class Meta:
-        model = StudentWallet
+        model = StudentPaymentTracker
         fields = ['id', 'student', 'student_details', 'balance', 'updated_at']
         read_only_fields = ['updated_at']
     

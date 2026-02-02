@@ -11,8 +11,8 @@ from rest_framework.response import Response
 from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404
 
-from .models import RentPeriod, StudentWallet, TransferLog
-from .serializers import RentPeriodSerializer, StudentWalletSerializer, TransferLogSerializer
+from .models import RentPeriod, StudentPaymentTracker, TransferLog
+from .serializers import RentPeriodSerializer, StudentPaymentTrackerSerializer, TransferLogSerializer
 from accounts.permissions import IsStudent, IsLandlord
 from accounts.models import StudentProfile
 
@@ -138,9 +138,9 @@ class RentPeriodViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(summary)
 
 
-class StudentWalletViewSet(viewsets.ReadOnlyModelViewSet):
+class StudentPaymentTrackerViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    API endpoint for StudentWallet - tracks overpayments/credits.
+    API endpoint for StudentPaymentTracker - tracks overpayments/credits.
     
     Students can view their own wallet.
     Landlords cannot access wallets.
@@ -149,7 +149,7 @@ class StudentWalletViewSet(viewsets.ReadOnlyModelViewSet):
     - GET /api/v1/payments/wallet/ - Get student's wallet
     """
     pagination_class = None
-    serializer_class = StudentWalletSerializer
+    serializer_class = StudentPaymentTrackerSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     
@@ -157,23 +157,23 @@ class StudentWalletViewSet(viewsets.ReadOnlyModelViewSet):
         user = self.request.user
         
         if hasattr(user, 'student_profile'):
-            return StudentWallet.objects.filter(student=user.student_profile)
+            return StudentPaymentTracker.objects.filter(student=user.student_profile)
         
         # Landlords see wallets of their tenants
         elif hasattr(user, 'landlord_profile'):
-            return StudentWallet.objects.filter(
+            return StudentPaymentTracker.objects.filter(
                 student__bookings__hostel__landlord=user.landlord_profile
             ).distinct()
             
         # Caretakers see wallets of their tenants
         elif hasattr(user, 'caretaker_profile'):
-            return StudentWallet.objects.filter(
+            return StudentPaymentTracker.objects.filter(
                 student__bookings__hostel=user.caretaker_profile.hostel
             ).distinct()
             
         # Admins see all
         elif user.is_staff or user.is_superuser:
-            return StudentWallet.objects.all()
+            return StudentPaymentTracker.objects.all()
 
     
     @action(detail=False, methods=['get'])
@@ -185,7 +185,7 @@ class StudentWalletViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        wallet, created = StudentWallet.objects.get_or_create(
+        wallet, created = StudentPaymentTracker.objects.get_or_create(
             student=request.user.student_profile
         )
         

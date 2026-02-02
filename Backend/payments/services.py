@@ -4,7 +4,7 @@ RentPeriod Business Logic Services
 This module contains the core business logic for:
 - Generating RentPeriods upon booking confirmation
 - Processing payments and applying them to RentPeriods
-- Managing StudentWallet credits
+- Managing StudentPaymentTracker credits
 - Handling room/hostel transfers
 """
 
@@ -15,7 +15,7 @@ from dateutil.relativedelta import relativedelta
 from datetime import date
 import uuid
 
-from .models import RentPeriod, StudentWallet, Transaction, TransferLog
+from .models import RentPeriod, StudentPaymentTracker, Transaction, TransferLog
 from hostels.models import Booking
 
 
@@ -62,20 +62,20 @@ def generate_rent_periods_for_booking(booking):
     return rent_periods
 
 
-def get_or_create_student_wallet(student):
-    """Get or create a StudentWallet for the given student."""
-    wallet, created = StudentWallet.objects.get_or_create(
+def get_or_create_student_payment_tracker(student):
+    """Get or create a StudentPaymentTracker for the given student."""
+    tracker, created = StudentPaymentTracker.objects.get_or_create(
         student=student,
         defaults={'balance': Decimal('0.00')}
     )
-    return wallet
+    return tracker
 
 
 @transaction.atomic
 def process_payment_to_rent_periods(student, amount, payment_method, metadata=None):
     """
     Process a payment and apply it to the oldest unpaid RentPeriods.
-    Excess amount goes to StudentWallet.
+    Excess amount goes to StudentPaymentTracker.
     
     Args:
         student: StudentProfile instance
@@ -141,19 +141,19 @@ def process_payment_to_rent_periods(student, amount, payment_method, metadata=No
         
         remaining_amount -= payment_to_apply
     
-    # Handle excess amount -> StudentWallet
-    wallet_credit = Decimal('0.00')
+    # Handle excess amount -> StudentPaymentTracker
+    tracker_credit = Decimal('0.00')
     if remaining_amount > 0:
-        wallet = get_or_create_student_wallet(student)
-        wallet.balance += remaining_amount
-        wallet.save()
-        wallet_credit = remaining_amount
+        tracker = get_or_create_student_payment_tracker(student)
+        tracker.balance += remaining_amount
+        tracker.save()
+        tracker_credit = remaining_amount
         
-        # Create a wallet credit transaction
-        wallet_txn_ref = f"RUMI-WALLET-{student.id}-{uuid.uuid4().hex[:8]}"
-        wallet_txn = Transaction.objects.create(
+        # Create a tracker credit transaction
+        tracker_txn_ref = f"RUMI-TRACKER-{student.id}-{uuid.uuid4().hex[:8]}"
+        tracker_txn = Transaction.objects.create(
             student=student,
-            transaction_reference=wallet_txn_ref,
+            transaction_reference=tracker_txn_ref,
             amount=remaining_amount,
             transaction_type='wallet_credit',
             payment_method=payment_method,
@@ -161,12 +161,12 @@ def process_payment_to_rent_periods(student, amount, payment_method, metadata=No
             metadata=metadata or {},
             paid_at=timezone.now()
         )
-        transactions.append(wallet_txn)
+        transactions.append(tracker_txn)
     
     return {
         'transactions': transactions,
         'rent_periods_updated': rent_periods_updated,
-        'wallet_credit': wallet_credit
+        'tracker_credit': tracker_credit
     }
 
 
