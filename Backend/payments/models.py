@@ -293,7 +293,7 @@ class SavedPaymentMethod(models.Model):
 
 class RecurringPayment(models.Model):
     """Track recurring payment schedules"""
-    booking = models.ForeignKey('hostels.Booking', on_delete=models.CASCADE) # Not OneToOne anymore ideally?
+    booking = models.ForeignKey('hostels.Booking', on_delete=models.CASCADE, related_name='recurring_payments')
     student = models.ForeignKey('accounts.StudentProfile', on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     next_payment_date = models.DateField()

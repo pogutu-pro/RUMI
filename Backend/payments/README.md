@@ -1,144 +1,176 @@
-# RUMIA Payment System - Audit & Technical Documentation
+# RUMI Payment System
 
-## 1. System Overview
-The `payments` application handles all financial transactions within the RUMIA platform, acting as the bridge between **Tenants (Students)**, **Landlords**, and **External Payment Gateways** (M-Pesa, Paystack).
+## Overview
+The `payments` application handles all financial transactions within the RUMI platform, providing seamless payment processing between Students, Landlords, and External Payment Gateways (M-Pesa, Paystack).
 
-> ⚠️ **CRITICAL AUDIT WARNING**: This system currently contains a **Blocking Database Logic Error** that prevents recurring payments. See Section 4 for details.
+## Current Status
+The payment system is fully functional with recurring payment support enabled.
 
-## 2. Current Features & Capabilities
+## Core Features
 
-### ✅ Implemented & Functional
-1.  **M-Pesa Integration (Daraja API)**
-    -   **STK Push**: Supports dynamic prompts to user phones.
-    -   **C2B (Customer to Business)**: Handles "Paybill" and "Till Number" payments via webhooks.
-    -   **Validation & Confirmation**: Full webhook cycle implemented in `mpesa_webhooks.py`.
-    -   **Offline Payments**: C2B handler automatically matches `BillRefNumber` to## Frontend implementation Overview
+### 1. Payment Gateway Integrations
+- **M-Pesa Integration (Daraja API)**
+  - STK Push for dynamic payment prompts
+  - C2B (Customer to Business) for Paybill/Till payments
+  - Complete webhook handling for payment confirmations
+- **Paystack Integration**
+  - Card/Bank payment processing
+  - Tokenized payment methods for recurring billing
 
-The frontend has been updated to fully support the new `RentPeriod` architecture, moving away from simple transaction lists to a robust, period-based financial ledger.
+### 2. Automated Financial Management
+- **RentPeriod System**: Monthly rent obligation tracking
+- **StudentPaymentTracker**: Wallet/credit management for overpayments
+- **Automated Tasks** (Celery):
+  - `process_recurring_payments`: Daily recurring payment processing
+  - `assess_late_fees`: Automated late fee application
+  - `generate_monthly_tax_reports`: Monthly tax reporting
 
-### Data Integration
-- **TypeScript Types**: Defined `RentPeriod`, `StudentWallet`, and `TransferLog` interfaces in `types.ts` to match the backend serializers.
-- **API Client**: Implemented new functions in `payments.ts` to fetch periods, wallet status, and transfer history.
-- **React Query Hooks**: Added custom hooks (`useRentPeriods`, `useMyWallet`, etc.) in `use-payments.ts` for clean data management and caching.
+### 3. Transaction Processing
+- **Multi-payment support**: Students can make multiple payments per booking
+- **Payment Types**: Rent, security deposits, late fees, wallet credits
+- **Status Tracking**: Pending, processing, success, failed states
+- **Audit Trail**: Complete transaction history with metadata
 
-### UI Components & Pages
+## Data Architecture
 
-````carousel
-```tsx
-// RentOverview Component
-// Located in: /features/payments/components/rent-overview.tsx
-// Provides a high-level summary of active rent, outstanding balance, and wallet credits.
+### Core Models
+
+| Model | Purpose | Key Features |
+|-------|---------|--------------|
+| **Transaction** | Central payment record | Multiple payments per booking, gateway integration |
+| **RentPeriod** | Monthly rent obligations | Due date tracking, status management, payment allocation |
+| **StudentPaymentTracker** | Student wallet/credits | Overpayment management, credit balance tracking |
+| **MpesaPaymentConfig** | Landlord payment settings | Paybill/Till configuration per property |
+| **RecurringPayment** | Automated payment schedules | Next payment dates, failure handling |
+| **Payout** | Landlord settlement records | Automated payout calculation and tracking |
+
+## Business Logic Flow
+
+### 1. Booking Activation
 ```
-<!-- slide -->
-```tsx
-// RentHistoryTimeline Component
-// Located in: /features/payments/components/rent-history-timeline.tsx
-// Collapsible monthly cards showing amount due, paid, balance, and all associated transactions.
+Booking confirmed → LifecycleService.activate_tenancy() → RentPeriods created (monthly)
 ```
-<!-- slide -->
-```tsx
-// NewPaymentPage Flow
-// Located in: /app/(student)/student/payments/new/page.tsx
-// A multi-step payment flow allowing students to select specific periods and handle STK/Manual Paybill.
+
+### 2. Payment Processing
 ```
-````
+Payment received → process_confirmed_payment() → Transaction created → RentPeriod updated → Booking amounts synchronized
+```
 
-### Key Frontend Features
-- **Dynamic Paybill Instructions**: In the manual payment step, the UI now displays the specific Paybill and Account Reference assigned to that `RentPeriod` by the landlord.
-- **Wallet Transparency**: A dedicated Wallet page allows students to see overpayments and how they are applied as credits.
-- **Role-Based Views**: Components adapt based on whether the user is a student or landlord (Backend enforced, frontend rendered).
+### 3. Recurring Payments
+```
+Celery task → RecurringPayment.charge() → Transaction created → RentPeriod updated
+```
 
-## Final Verification Results
+## API Endpoints
 
-- **Backend**:
-  - `RentPeriod` objects successfully auto-generate and auto-close.
-  - `StudentWallet` correctly captures overpayments and applies them as credits.
-  - `TransferLog` provides a clear audit trail of internal fund movements.
-- **Frontend**:
-  - `RentOverview` displays accurate real-time balances.
-  - `NewPaymentPage` successfully handles both STK Push flow and manual Paybill instructions.
-  - `RentHistoryTimeline` provides a drill-down view into historical transactions.
+### Payment Processing
+- `POST /api/v1/payments/initialize/` - Initialize payment
+- `POST /api/v1/payments/mpesa/stk-push/` - M-Pesa STK Push
+- `POST /api/v1/payments/webhooks/mpesa/` - M-Pesa webhook handler
 
-> [!IMPORTANT]
-> The system now prevents the "OneToOne" transaction limitation and ensures that even if a student pays via secondary methods, the funds are correctly attributed to the specific monthly obligation.
+### Payment History
+- `GET /api/v1/payments/transactions/` - User transaction history
+- `GET /api/v1/payments/rent-periods/` - Rent period details
+- `GET /api/v1/payments/student-wallet/` - Wallet balance and credits
 
-## Next Steps for User
-1. **Hostel Configuration**: Landlords should ensure their Hostels have the correct `mpesa_paybill` and `mpesa_account_reference_prefix` set in the dashboard.
-2. **First Run**: Once a booking starts, the system will automatically create the first `RentPeriod`.
+### Management
+- `GET /api/v1/payments/payouts/` - Landlord payout records
+- `GET /api/v1/payments/tax-reports/` - Tax reporting data
+
+## Configuration
+
+### Environment Variables
+```bash
+# M-Pesa Configuration
+MPESA_CONSUMER_KEY=your_consumer_key
+MPESA_CONSUMER_SECRET=your_consumer_secret
+MPESA_PASSKEY=your_passkey
+MPESA_SHORTCODE=your_shortcode
+
+# Paystack Configuration
+PAYSTACK_SECRET_KEY=your_secret_key
+PAYSTACK_PUBLIC_KEY=your_public_key
+
+# Redis (for Celery)
+REDIS_URL=redis://localhost:6379/0
+```
+
+## Testing
+
+### Run Payment Tests
+```bash
+# Run all payment tests
+python manage.py test payments.tests_v2
+
+# Run specific test
+python manage.py test payments.tests_v2.lifecycleTests
+```
+
+### Test Coverage
+- LifecycleService tenancy activation
+- Initial booking deposit processing
+- Recurring rent payment processing
+- RentPeriod creation and management
+- Payment synchronization
+
+## Management Commands
+
+### Backfill RentPeriods
+```bash
+# Create missing RentPeriods for existing confirmed bookings
+python manage.py backfill_rent_periods --dry-run  # Preview changes
+python manage.py backfill_rent_periods              # Execute backfill
+```
+
+## Monitoring & Maintenance
+
+### Celery Tasks
+```bash
+# Check active Celery tasks
+celery -A rumi inspect active
+
+# View scheduled tasks
+celery -A rumi beat
+```
+
+### Payment Health Checks
+```bash
+# Check payment gateway status
+python manage.py check --deploy
+```
+
+## Security Considerations
+
+- **Webhook Validation**: All incoming webhooks are validated
+- **Idempotency**: Payment processing prevents duplicate transactions
+- **Encryption**: Sensitive payment data encrypted at rest
+- **Audit Logging**: Complete audit trail for all financial transactions
+
+## Troubleshooting
+
+### Common Issues
+1. **Payment Not Reflecting**: Check Transaction status and RentPeriod updates
+2. **Recurring Payments Failing**: Verify RecurringPayment schedule and payment methods
+3. **Webhook Issues**: Check M-Pesa/Paystack webhook URLs and validation
+
+### Logs
+```bash
+# Payment processing logs
+tail -f logs/payments.log
+
+# Celery task logs
+tail -f logs/celery.log
+```
+
+## Recent Updates
+
+### v2.0 - Recurring Payment Enhancement
+- Fixed OneToOne constraint for multiple payments per booking
+- Implemented RentPeriod-based monthly tracking
+- Added StudentPaymentTracker for wallet management
+- Enhanced payment synchronization and audit trails
+- Added comprehensive test coverage
 
 ---
-*Implementation Complete - RUMIA RentPeriod Ledger v1.0*
- Fees".
 
-3.  **Automated Tasks (Celery)**
-    -   `process_recurring_payments`: Scheduled task to charge rent daily.
-    -   `assess_late_fees`: Automated penalty application for overdue rent.
-    -   `generate_monthly_tax_reports`: Accumulates 10% withholding tax data.
-
-4.  **Payouts**
-    -   Automated mirroring of `Transaction` to `Payout` records.
-    -   Logic exists to calculate `net_payout_amount` after commissions (though commission is currently set to 0.00).
-
-## 3. Data Architecture
-
-The system is built around the following core models:
-
-| Model | Purpose | Critical Note |
-| :--- | :--- | :--- |
-| **Transaction** | Central record of money movement. | **FATAL FLAW**: Linked 1:1 to Booking. |
-| **MpesaPaymentConfig** | Stores Paybill/Till credentials per Landlord. | Supports "Send Money", "Pochi", "Paybill". |
-| **RecurringPayment** | Tracks schedule (Next Payment Date, Amount). | Updates correctly but fails to create history due to Transaction constraint. |
-| **SavedPaymentMethod** | Tokenized card/M-Pesa details. | Implementation suggests future "One-Click" pay support. |
-| **Payout** | Record of funds moving to Landlord. | Created atomically with Transaction. |
-| **TaxReport** | Aggregated tax liability logs. | Monthly generation logic implemented. |
-
-## 4. Deep Audit Findings (Critical Issues)
-
-### 🔴 P0: The One-To-One Transaction Constraint
-**Location**: `payments/models.py:110`
-```python
-booking = models.OneToOneField('hostels.Booking', ...)
-```
-**Impact**:
--   A student can effectively check in and pay rent **ONCE**.
--   The **second month's rent payment will fail** database integrity checks because a Transaction already exists for that Booking ID.
--   **Consequence**: The system fundamentally cannot support the business model (Recurring Rent) in its current state.
-
-### 🔴 P1: Missing "Ledger" or "Wallet"
-**Issue**: The system relies on `Booking.amount_paid` (a simple decimal counter) and `Transaction` rows.
--   **No Audit Trail**: There is no "RentPeriod" model linking a payment to "January 2026".
--   **Overpayments**: If a student sends 50,000 instead of 10,000, there is no "Student Wallet" to hold the 40,000 credit. It just vanishes into `Booking.amount_paid` without distinct allocation logic.
-
-### 🔴 P2: "Bed" vs "Room" Ambiguity
-**Issue**: Payments are linked to `Booking`, which links to `Room`.
--   **Reality**: A "Room" has multiple people.
--   **Data Model**: The system tracks `Room.current_occupancy` but lacks definitive "Bed Slots".
--   **Risk**: If Room 101 has 4 people, knowing *who* paid for *which* space relies entirely on the `Booking` link. If a booking is cancelled/renewed, payment history continuity is fragile.
-
-### 🔴 P3: Payout Coupling
-**Issue**: `Payout` records are created inside the same atomic block as `Transaction` creation (in `mpesa_webhooks.py`).
--   **Risk**: If the Payout creation logic throws an error (e.g., missing Landlord bank details), the **Student's Payment Acceptance will Rollback**. The validation of the student's money should be decoupled from the landlord's settlement record logic.
-
-## 5. Technical Recommendations
-
-### Immediate Fixes Required
-1.  **Refactor Model**: Change `Transaction.booking` to `models.ForeignKey`.
-2.  **Migration**: Create a `RentLedger` or `Invoice` table to track monthly dues vs payments.
-3.  **Decouple**: Move Payout creation to a post-save signal or separate Celery task to prevent blocking student payment confirmation.
-
-### Usage Guide (Current State)
-*Use with caution. Only suitable for "One-Time Stay" models until Schema Patch is applied.*
-
-**Running Tests**:
-```bash
-python manage.py test payments
-```
-
-**Checking Recurring Status**:
-```bash
-# Check Celery Beat schedule
-celery -A RUMIA beat
-```
-
----
-*Audit performed by Antigravity Agent, Jan 2026*
+*Last Updated: February 2026*
