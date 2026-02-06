@@ -1,0 +1,25 @@
+Failed to start Prometheus metrics server: [Errno 98] Address already in use
+Found 2 test(s).
+Creating test database for alias 'default'...
+System check identified no issues (0 silenced).
+WARNING High memory usage: 118.4MB during POST /api/v1/hostels/1/reserve/
+Internal Server Error: /api/v1/hostels/1/reserve/
+ERROR Internal Server Error: /api/v1/hostels/1/reserve/
+FWARNING High memory usage: 119.4MB during POST /api/v1/hostels/1/reserve/
+Bad Request: /api/v1/hostels/1/reserve/
+WARNING Bad Request: /api/v1/hostels/1/reserve/
+.
+======================================================================
+FAIL: test_booking_creation_and_capacity (hostels.tests.test_booking_lifecycle.BookingLifecycleTest.test_booking_creation_and_capacity)
+Test that reserving a room updates occupancy and creates a booking
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/ogutu/Pictures/RUMI/Backend/hostels/tests/test_booking_lifecycle.py", line 24, in test_booking_creation_and_capacity
+    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+AssertionError: 500 != 201
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.709s
+
+FAILED (failures=1)
+Destroying test database for alias 'default'...

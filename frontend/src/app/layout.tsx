@@ -170,6 +170,24 @@ export default function RootLayout({
           href="https://res.cloudinary.com"
           crossOrigin="anonymous"
         />
+        <link
+          rel="preconnect"
+          href="https://maps.googleapis.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="dns-prefetch"
+          href="https://maps.googleapis.com"
+        />
+        <link
+          rel="preconnect"
+          href="https://maps.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="dns-prefetch"
+          href="https://maps.gstatic.com"
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}

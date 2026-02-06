@@ -2,14 +2,18 @@ import uuid
 from decimal import Decimal
 from django.conf import settings
 from django.core.cache import cache
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.db import transaction, models
 from django.utils import timezone
-from rest_framework import status, permissions
+from rest_framework import status, permissions, viewsets, filters
 from rest_framework.decorators import api_view, permission_classes, action
+from accounts.permissions import IsVerifiedLandlord, IsHostelOwner, IsLandlordOfRoom
+from accounts.models import LandlordProfile
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
+from core.views import TenantModelViewSet
+from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -17,329 +21,118 @@ from .models import (
     Hostel, Room, Booking, RoomReservation, RoomOccupant,
     CompatibilityScore, InventoryTemplate, InventoryItem,
     RoomInventory, InventoryCheckIn, InventoryCheckOut,
-    DamageReport, RoomTransfer, RoomImage, HostelAmenity
+    DamageReport, RoomTransfer, RoomImage, HostelAmenity,
+    Favorite, Waitlist
 )
-from .serializers import HostelSerializer
-
-
-@swagger_auto_schema(
-    tags=['Hostel Management']
+from .serializers import (
+    HostelSerializer, HostelCreateSerializer,
+    RoomSerializer, RoomCreateSerializer,
+    BookingSerializer, BookingCreateSerializer
 )
-class HostelCreateView(APIView):
+
+
+class HostelViewSet(TenantModelViewSet):
     """
-    Hostel Creation API
-    
-    Create new hostel listing for verified landlords.
-    
-    POST: Create new hostel property listing
-    
-    Authentication Required: JWT Token
-    Permissions: Verified landlords only
-    
-    This endpoint allows verified landlords to create new hostel listings on the platform.
-    Includes property details, amenities, rules, and image management.
-    
-    Security Features:
-    - Landlord verification requirement
-    - Ownership validation
-    - Data sanitization and validation
-    - Automatic statistics update
+    Unified Hostel Management ViewSet.
+    - Landlords: Full CRUD on OWN hostels.
+    - Caretakers: Read/Update on ASSIGNED hostel.
+    - Public: Read ONLY on ACTIVE hostels.
     """
+    serializer_class = HostelSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    queryset = Hostel.objects.all()
 
-    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        user = self.request.user
+        
+        # 1. Tenant Scoped (Landlord/Caretaker)
+        if user.is_authenticated and user.role in ['landlord', 'caretaker']:
+            return super().get_queryset()
+            
+        # 2. Public Scope (Active Only)
+        return Hostel.objects.filter(status='active').select_related('landlord__user')
 
-    def post(self, request):
-        """
-        Create Hostel Listing
-        
-        Create a new hostel property listing with comprehensive details.
-        
-        Required Fields:
-        - name: Hostel property name
-        - description: Detailed property description
-        - address: Physical address
-        - city: City location
-        - university: Associated university name
-        - gender_policy: Gender policy (male_only, female_only, mixed)
-        
-        Optional Fields:
-        - distance_from_university: Distance in kilometers
-        - amenities: Dictionary of available amenities
-        - rules: Hostel rules and regulations
-        - images: Array of image URLs
-        
-        Process Flow:
-        1. Validate user is verified landlord
-        2. Validate required field presence
-        3. Validate gender policy options
-        4. Create hostel record with all details
-        5. Update landlord statistics
-        6. Return creation confirmation
-        
-        Returns hostel ID, initial stats, and next steps guidance.
-        
-        Error Handling:
-        - 403: Non-landlord or unverified landlord access
-        - 400: Missing required fields or invalid gender policy
-        - 500: Database or server errors
-        """
-        # Check if user is verified landlord
-        if request.user.role != 'landlord':
-            return Response({
-                'error': 'Only landlords can create hostels'
-            }, status=status.HTTP_403_FORBIDDEN)
-
+    def perform_create(self, serializer):
+        if self.request.user.role != 'landlord':
+            raise PermissionDenied("Only landlords can create hostels")
+            
         try:
-            landlord_profile = request.user.landlord_profile
+            landlord_profile = self.request.user.landlord_profile
             if not landlord_profile.is_verified:
-                return Response({
-                    'error': 'Landlord account must be verified to list hostels'
-                }, status=status.HTTP_403_FORBIDDEN)
-        except Exception:
-            return Response({
-                'error': 'Landlord profile not found'
-            }, status=status.HTTP_403_FORBIDDEN)
-
-        # Validate required fields
-        required_fields = ['name', 'description', 'address', 'city', 'university', 'gender_policy', 'hostel_type', 'base_price']
-        for field in required_fields:
-            if not request.data.get(field):
-                return Response({
-                    'error': f'{field.replace("_", " ").title()} is required'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validate gender policy
-        valid_policies = ['male_only', 'female_only', 'mixed']
-        if request.data['gender_policy'] not in valid_policies:
-            return Response({
-                'error': 'Invalid gender policy'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validate hostel type
-        valid_types = ['single_rooms', 'shared_rooms', 'mixed']
-        if request.data['hostel_type'] not in valid_types:
-            return Response({
-                'error': 'Invalid hostel type'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            with transaction.atomic():
-                hostel = Hostel.objects.create(
-                    landlord=landlord_profile,
-                    name=request.data['name'],
-                    description=request.data['description'],
-                    address=request.data['address'],
-                    city=request.data['city'],
-                    university=request.data['university'],
-                    distance_from_university=request.data.get('distance_from_university'),
-                    latitude=request.data.get('latitude'),
-                    longitude=request.data.get('longitude'),
-                    gender_policy=request.data['gender_policy'],
-                    hostel_type=request.data['hostel_type'],
-                    base_price=request.data['base_price'],
-                    images=request.data.get('images', [])
-                )
-
-                # Update landlord stats
-                landlord_profile.total_hostels += 1
-                landlord_profile.save()
-
-                return Response({
-                    'hostel_id': hostel.id,
-                    'name': hostel.name,
-                    'landlord_name': landlord_profile.company_name or landlord_profile.user.get_full_name(),
-                    'total_rooms': 0,
-                    'status': hostel.status,
-                    'created_at': hostel.created_at,
-                    'message': 'Hostel created successfully. Next steps: Add rooms and create inventory template.'
-                }, status=status.HTTP_201_CREATED)
-
-        except Exception as e:
-            return Response({
-                'error': 'Failed to create hostel',
-                'details': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                raise PermissionDenied("Landlord must be verified to create hostels")
+                
+            hostel = serializer.save(landlord=landlord_profile)
+            
+            # Update landlord stats
+            landlord_profile.total_hostels += 1
+            landlord_profile.save()
+        except LandlordProfile.DoesNotExist:
+            raise ValidationError("Landlord profile not found")
 
 
-@swagger_auto_schema(
-    tags=['Hostel Management']
-)
-class HostelDetailView(APIView):
-    """Get hostel details"""
+class RoomViewSet(TenantModelViewSet):
+    """
+    Unified Room Management ViewSet.
+    - Landlords: Full CRUD on rooms in their hostels.
+    - Caretakers: Read/Update on rooms in their assigned hostel.
+    - Public: Read ONLY on available rooms in active hostels.
+    """
+    serializer_class = RoomSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsLandlordOfRoom]
+    queryset = Room.objects.all()
 
-    permission_classes = [permissions.AllowAny]
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return RoomCreateSerializer
+        return super().get_serializer_class()
 
-    def get(self, request, hostel_id):
-        """Get hostel information"""
-        try:
-            hostel = Hostel.objects.select_related('landlord__user').get(id=hostel_id, status='active')
-        except Hostel.DoesNotExist:
-            return Response({
-                'error': 'Hostel not found'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-        # Calculate room stats
-        total_rooms = hostel.total_rooms
-        available_rooms = hostel.available_rooms
+    def get_queryset(self):
+        user = self.request.user
         
-        return Response({
-            'data': {
-                'id': hostel.id,
-                'name': hostel.name,
-                'description': hostel.description,
-                'address': hostel.address,
-                'city': hostel.city,
-                'university': hostel.university,
-                'gender_policy': hostel.gender_policy,
-                'hostel_type': hostel.hostel_type,
-                'status': hostel.status,
-                'total_rooms': total_rooms,
-                'available_rooms': available_rooms,
-                'base_price': str(hostel.base_price),
-                'currency': hostel.currency,
-                'rating': float(hostel.rating),
-                'review_count': hostel.review_count,
-                'images': hostel.images or [],
-                'is_verified': hostel.is_verified,
-                'created_at': hostel.created_at.isoformat(),
-                'updated_at': hostel.updated_at.isoformat(),
-            }
-        }, status=status.HTTP_200_OK)
+        # 1. Tenant Scoped (Landlord/Caretaker)
+        if user.is_authenticated and user.role in ['landlord', 'caretaker']:
+            return super().get_queryset()
+            
+        # 2. Public Scope (Available rooms in active hostels)
+        # 2. Public Scope (Available rooms in active hostels)
+        return Room.objects.filter(status='available', hostel__status='active').select_related('hostel')
+
+    def perform_create(self, serializer):
+        hostel_id = self.request.data.get('hostel_id')
+        if not hostel_id:
+            raise ValidationError("hostel_id is required")
+            
+        try:
+            hostel = Hostel.objects.get(id=hostel_id)
+            if hostel.landlord.user != self.request.user:
+                raise PermissionDenied("You do not own this hostel")
+            serializer.save(hostel=hostel)
+        except Hostel.DoesNotExist:
+            raise ValidationError("Hostel not found")
 
 
-@swagger_auto_schema(
-    tags=['Hostel Management']
-)
-class RoomCreateView(APIView):
+class BookingViewSet(TenantModelViewSet):
     """
-    Room Creation API
-    
-    Add new rooms to existing hostel properties.
-    
-    POST: Create new room in specified hostel
-    
-    Authentication Required: JWT Token
-    Permissions: Verified landlords (property owners)
-    
-    This endpoint allows verified landlords to add individual rooms to their
-    hostel properties, with detailed room specifications and pricing.
-    
-    Features:
-    - Room type validation (single, double, triple, quad)
-    - Duplicate room number prevention
-    - Automatic inventory and statistics updates
-    - Detailed room attributes and images
+    Unified Booking Management ViewSet.
+    - Landlords: View/Manage bookings for their hostels.
+    - Students: View/Create their own bookings.
+    - Caretakers: View/Manage bookings for their assigned hostel.
     """
-
+    serializer_class = BookingSerializer
     permission_classes = [permissions.IsAuthenticated]
+    queryset = Booking.objects.all()
 
-    def post(self, request, hostel_id):
-        """
-        Create Room
-        
-        Add a new room to the specified hostel property.
-        
-        Path Parameters:
-        - hostel_id: Unique hostel identifier
-        
-        Required Fields:
-        - room_number: Unique room identifier within hostel
-        - capacity: Maximum number of occupants
-        - base_price: Monthly rent amount
-        - deposit_required: Security deposit amount
-        - room_type: Room type (single, double, triple, quad)
-        
-        Optional Fields:
-        - floor: Floor number
-        - semester_price: Semester pricing option
-        - detailed_attributes: Room-specific features
-        - images: Room photos array
-        
-        Process Flow:
-        1. Validate hostel ownership and existence
-        2. Validate required field presence
-        3. Validate room type options
-        4. Check for duplicate room numbers
-        5. Create room record with specifications
-        6. Update hostel and landlord statistics
-        7. Return room creation confirmation
-        
-        Returns room ID, specifications, and availability status.
-        
-        Error Handling:
-        - 404: Hostel not found or access denied
-        - 400: Missing fields, invalid room type, or duplicate room number
-        - 500: Database or server errors
-        """
-        # Validate hostel ownership
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return BookingCreateSerializer
+        return super().get_serializer_class()
+
+    def perform_create(self, serializer):
         try:
-            hostel = Hostel.objects.get(id=hostel_id, landlord__user=request.user, status='active')
-        except Hostel.DoesNotExist:
-            return Response({
-                'error': 'Hostel not found or access denied'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-        # Validate required fields
-        required_fields = ['room_number', 'capacity', 'base_price', 'deposit_required', 'room_type']
-        for field in required_fields:
-            if not request.data.get(field):
-                return Response({
-                    'error': f'{field.replace("_", " ").title()} is required'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validate room type
-        valid_types = ['single', 'double', 'triple', 'quad']
-        if request.data['room_type'] not in valid_types:
-            return Response({
-                'error': 'Invalid room type'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Check for duplicate room number
-        if Room.objects.filter(hostel=hostel, room_number=request.data['room_number']).exists():
-            return Response({
-                'error': 'Room number already exists in this hostel'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            with transaction.atomic():
-                room = Room.objects.create(
-                    hostel=hostel,
-                    room_number=request.data['room_number'],
-                    floor=request.data.get('floor'),
-                    capacity=request.data['capacity'],
-                    base_price=request.data['base_price'],
-                    semester_price=request.data.get('semester_price'),
-                    deposit_required=request.data['deposit_required'],
-                    room_type=request.data['room_type'],
-                    detailed_attributes=request.data.get('detailed_attributes', {}),
-                    images=request.data.get('images', [])
-                )
-
-                # Update hostel stats
-                hostel.total_rooms += 1
-                hostel.available_rooms += 1
-                hostel.save()
-
-                # Update landlord stats
-                hostel.landlord.total_rooms += 1
-                hostel.landlord.save()
-
-                return Response({
-                    'room_id': room.id,
-                    'hostel_name': hostel.name,
-                    'room_number': room.room_number,
-                    'capacity': room.capacity,
-                    'base_price': float(room.base_price),
-                    'is_available': room.is_available,
-                    'has_custom_inventory': False,
-                    'message': 'Room added successfully'
-                }, status=status.HTTP_201_CREATED)
-
-        except Exception as e:
-            return Response({
-                'error': 'Failed to add room',
-                'details': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            student_profile = self.request.user.student_profile
+            serializer.save(student=student_profile)
+        except Exception:
+            raise ValidationError("Student profile not found")
 
 
 @swagger_auto_schema(
@@ -891,7 +684,7 @@ class HostelSearchView(APIView):
     - Multiple sorting options
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get(self, request):
         """
@@ -947,7 +740,7 @@ class HostelSearchView(APIView):
         
         Note: Only returns active hostel properties.
         """
-        queryset = Hostel.objects.filter(status='active')
+        queryset = Hostel.objects.filter(status='active').prefetch_related('hostel_amenities__amenity')
 
         # Apply filters
         search_query = request.query_params.get('search')
@@ -977,6 +770,10 @@ class HostelSearchView(APIView):
             except Exception:
                 pass
 
+        hostel_type = request.query_params.get('hostel_type')
+        if hostel_type:
+            queryset = queryset.filter(hostel_type=hostel_type)
+
         gender_policy = request.query_params.get('gender_policy')
         if gender_policy:
             queryset = queryset.filter(gender_policy=gender_policy)
@@ -985,21 +782,31 @@ class HostelSearchView(APIView):
         if verified_only:
             queryset = queryset.filter(is_verified=True)
 
-        amenities = request.query_params.get('amenities')
-        if amenities:
-            amenity_list = amenities.split(',')
-            for amenity in amenity_list:
-                queryset = queryset.filter(amenities__contains=[amenity])
+        amenities_filter = request.query_params.get('amenities')
+        if amenities_filter:
+            # Simple contains filter for now - logic might need M2M filter refinement for strict matching
+            # But for text search / list check, let's keep it simple or implement distinct logic
+            amenity_list = amenities_filter.split(',')
+            # Filtering efficiently on M2M in Django for "all items in list" is tricky without multiple filters
+            # For "any item", use:
+            queryset = queryset.filter(hostel_amenities__amenity__name__in=amenity_list).distinct()
 
         # Sorting
-        sort_by = request.query_params.get('sort_by', 'name')
+        sort_by = request.query_params.get('sort_by')
+        # Map frontend sort keys to model fields
         if sort_by == 'price_low':
             queryset = queryset.order_by('base_price')
         elif sort_by == 'price_high':
             queryset = queryset.order_by('-base_price')
         elif sort_by == 'rating':
             queryset = queryset.order_by('-rating')
+        elif sort_by == 'popularity':
+            # Assuming popularity is based on review count or views (not implemented yet, fallback to new)
+            queryset = queryset.order_by('-review_count')
+        elif sort_by == 'newest':
+             queryset = queryset.order_by('-created_at')
         else:
+            # Default sort
             queryset = queryset.order_by('name')
 
         # Pagination
@@ -1016,6 +823,13 @@ class HostelSearchView(APIView):
             
             # Mock rating based on hostel id
             rating = round(3.5 + (hostel.id % 15) * 0.1, 1)
+            
+            # Extract amenities list
+            amenity_names = [
+                ha.amenity.name 
+                for ha in hostel.hostel_amenities.all() 
+                if ha.is_available
+            ]
             
             results.append({
                 'id': hostel.id,
@@ -1035,7 +849,7 @@ class HostelSearchView(APIView):
                 'images': getattr(hostel, 'images', []) or [
                     'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800'
                 ],
-                'amenities': hostel.amenities or [],
+                'amenities': amenity_names,
                 'gender_policy': hostel.gender_policy,
                 'distance_from_university': distance,
                 'is_verified': hostel.is_verified,
@@ -1078,24 +892,14 @@ class RoomReserveView(APIView):
                 'error': 'Room not found or not available'
             }, status=status.HTTP_404_NOT_FOUND)
 
-        move_in_date = request.data.get('move_in_date')
-        payment_plan = request.data.get('payment_plan', 'monthly')
-
-        if not move_in_date:
-            return Response({
-                'error': 'move_in_date is required'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            move_in_date = timezone.datetime.fromisoformat(move_in_date).date()
-            if move_in_date < timezone.now().date():
-                return Response({
-                    'error': 'Move-in date cannot be in the past'
-                }, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({
-                'error': 'Invalid move_in_date format'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        serializer = BookingCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        validated_data = serializer.validated_data
+        move_in_date = validated_data.get('move_in_date', timezone.now().date())
+        payment_plan = validated_data.get('payment_plan', 'monthly')
+        is_existing_resident = validated_data.get('is_existing_resident', False)
 
         try:
             with transaction.atomic():
@@ -1106,13 +910,19 @@ class RoomReserveView(APIView):
                     booking_reference=booking_reference,
                     student=student,
                     room=room,
-                    status='reserved',
+                    status='pending' if is_existing_resident else 'reserved',
                     payment_status='pending',
                     payment_plan=payment_plan,
+                    is_existing_resident=is_existing_resident,
+                    monthly_rent=room.base_price,
                     total_amount=room.base_price,  # Simplified
                     amount_paid=Decimal('0.00'),
                     balance_due=room.base_price,
-                    move_in_date=move_in_date
+                    check_in_date=move_in_date,
+                    move_in_date=move_in_date,
+                    emergency_contact_name=student.emergency_contact_name,
+                    emergency_contact_phone=student.emergency_contact_phone,
+                    emergency_contact_relationship=student.emergency_contact_relationship
                 )
 
                 # Create reservation
@@ -1436,271 +1246,7 @@ class RoommateMatchingView(APIView):
         return reasons
 
 
-@swagger_auto_schema(
-    tags=['Hostel Management']
-)
-class HostelsListView(APIView):
-    """List all available hostels"""
 
-    permission_classes = [permissions.AllowAny]
-
-    def get(self, request):
-        """Get list of hostels with filtering"""
-        queryset = Hostel.objects.filter(status='active').select_related('landlord__user')
-
-        # Apply filters
-        min_price = request.query_params.get('min_price')
-        if min_price:
-            try:
-                queryset = queryset.filter(base_price__gte=Decimal(min_price))
-            except Exception:
-                pass
-
-        max_price = request.query_params.get('max_price')
-        if max_price:
-            try:
-                queryset = queryset.filter(base_price__lte=Decimal(max_price))
-            except Exception:
-                pass
-
-        hostel_type = request.query_params.get('hostel_type')
-        if hostel_type:
-            queryset = queryset.filter(hostel_type=hostel_type)
-
-        gender_policy = request.query_params.get('gender_policy')
-        if gender_policy:
-            queryset = queryset.filter(gender_policy=gender_policy)
-
-        university = request.query_params.get('university')
-        if university:
-            queryset = queryset.filter(university__icontains=university)
-
-        city = request.query_params.get('city')
-        if city:
-            queryset = queryset.filter(city__icontains=city)
-
-        search = request.query_params.get('search')
-        if search:
-            queryset = queryset.filter(
-                models.Q(name__icontains=search) |
-                models.Q(description__icontains=search) |
-                models.Q(university__icontains=search)
-            )
-
-        # Ordering
-        ordering = request.query_params.get('ordering')
-        if ordering:
-            if ordering == 'price':
-                queryset = queryset.order_by('base_price')
-            elif ordering == '-price':
-                queryset = queryset.order_by('-base_price')
-            elif ordering == '-rating':
-                queryset = queryset.order_by('-rating')
-            else:
-                queryset = queryset.order_by(ordering)
-        else:
-            queryset = queryset.order_by('-created_at')
-
-        amenities_param = request.query_params.get('amenities')
-        if amenities_param:
-            amenity_list = amenities_param.split(',')
-            for am_name in amenity_list:
-                queryset = queryset.filter(hostel_amenities__amenity__name__icontains=am_name, hostel_amenities__is_available=True)
-
-        # Pagination
-        limit = int(request.query_params.get('limit', 20))
-        offset = int(request.query_params.get('offset', 0))
-
-        total_hostels = queryset.count()
-        hostels = queryset[offset:offset + limit]
-
-        results = []
-        for hostel in hostels:
-            # Get room availability
-            rooms = Room.objects.filter(hostel=hostel, is_active=True)
-            total_rooms = rooms.count()
-            available_rooms = rooms.filter(status='available').count()
-
-            # Get amenities
-            amenities = HostelAmenity.objects.filter(
-                hostel=hostel,
-                is_available=True
-            ).select_related('amenity').values_list('amenity__name', flat=True)
-
-            results.append({
-                'id': hostel.id,
-                'name': hostel.name,
-                'description': hostel.description,
-                'address': hostel.address,
-                'city': hostel.city,
-                'university': hostel.university,
-                'gender_policy': hostel.gender_policy,
-                'hostel_type': hostel.hostel_type,
-                'status': hostel.status,
-                'total_rooms': total_rooms,
-                'available_rooms': available_rooms,
-                'base_price': str(hostel.base_price),
-                'currency': hostel.currency,
-                'rating': float(hostel.rating),
-                'review_count': hostel.review_count,
-                'images': hostel.images or [],
-                'is_verified': hostel.is_verified,
-                'created_at': hostel.created_at.isoformat(),
-                'updated_at': hostel.updated_at.isoformat(),
-            })
-
-        return Response({
-            'current_page': 1,
-            'total_pages': 1,
-            'count': total_hostels,
-            'results': results
-        }, status=status.HTTP_200_OK)
-
-
-@swagger_auto_schema(
-    tags=['Hostel Management']
-)
-class RoomsListView(APIView):
-    """List all available rooms"""
-
-    permission_classes = [permissions.AllowAny]
-
-    def get(self, request):
-        """Get list of rooms with filtering"""
-        queryset = Room.objects.select_related('hostel').filter(
-            is_active=True,
-            hostel__status='active',
-            status='available'
-        )
-
-        # Apply filters
-        min_price = request.query_params.get('min_price')
-        if min_price:
-            try:
-                queryset = queryset.filter(base_price__gte=Decimal(min_price))
-            except Exception:
-                pass
-
-        max_price = request.query_params.get('max_price')
-        if max_price:
-            try:
-                queryset = queryset.filter(base_price__lte=Decimal(max_price))
-            except Exception:
-                pass
-
-        room_type = request.query_params.get('room_type')
-        if room_type:
-            queryset = queryset.filter(room_type=room_type)
-
-        hostel_type = request.query_params.get('hostel_type')
-        if hostel_type:
-            queryset = queryset.filter(hostel__hostel_type=hostel_type)
-
-        # Pagination
-        limit = int(request.query_params.get('limit', 20))
-        offset = int(request.query_params.get('offset', 0))
-
-        total_rooms = queryset.count()
-        rooms = queryset[offset:offset + limit]
-
-        results = []
-        for room in rooms:
-            # Get room images
-            images = RoomImage.objects.filter(room=room).order_by('sort_order')
-            image_urls = [img.image_url for img in images]
-
-            results.append({
-                'room_id': room.id,
-                'hostel_name': room.hostel.name,
-                'room_number': room.room_number,
-                'capacity': room.capacity,
-                'base_price': float(room.base_price),
-                'room_type': room.room_type,
-                'floor': room.floor,
-                'amenities': room.amenities or {},
-                'description': room.description,
-                'images': image_urls,
-                'hostel_type': room.hostel.hostel_type,
-                'is_available': room.status == 'available',
-                'compatibility_score': 85  # Mock compatibility score
-            })
-
-        return Response({
-            'total_rooms': total_rooms,
-            'rooms': results
-        }, status=status.HTTP_200_OK)
-
-
-@swagger_auto_schema(
-    tags=['Hostel Management']
-)
-class RoomDetailView(APIView):
-    """Get detailed room information"""
-
-    permission_classes = [permissions.AllowAny]
-
-    def get(self, request, room_id):
-        """Get room details"""
-        try:
-            room = Room.objects.select_related('hostel__landlord__user').get(
-                id=room_id,
-                is_active=True,
-                hostel__status='active'
-            )
-        except Room.DoesNotExist:
-            return Response({
-                'error': 'Room not found'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-        # Get room images
-        images = RoomImage.objects.filter(room=room).order_by('sort_order')
-        image_urls = [img.image_url for img in images]
-
-        # Get current occupants
-        occupants = RoomOccupant.objects.filter(
-            room=room,
-            is_active=True
-        ).select_related('student__user')
-
-        current_occupants = []
-        for occupant in occupants:
-            current_occupants.append({
-                'name': occupant.student.user.get_full_name(),
-                'course': getattr(occupant.student, 'course_of_study', ''),
-                'year_of_study': getattr(occupant.student, 'year_of_study', '')
-            })
-
-        # Get hostel amenities
-        amenities = HostelAmenity.objects.filter(
-            hostel=room.hostel,
-            is_available=True
-        ).select_related('amenity').values_list('amenity__name', flat=True)
-
-        return Response({
-            'room_id': room.id,
-            'hostel': {
-                'hostel_id': room.hostel.id,
-                'name': room.hostel.name,
-                'address': room.hostel.address,
-                'hostel_type': room.hostel.hostel_type,
-                'landlord': {
-                    'company_name': room.hostel.landlord.company_name,
-                    'phone': room.hostel.landlord.user.phone_number
-                }
-            },
-            'room_number': room.room_number,
-            'capacity': room.capacity,
-            'current_occupancy': room.current_occupancy,
-            'base_price': float(room.base_price),
-            'room_type': room.room_type,
-            'floor': room.floor,
-            'amenities': list(amenities),
-            'description': room.description,
-            'images': image_urls,
-            'is_available': room.status == 'available',
-            'current_occupants': current_occupants,
-            'available_slots': room.capacity - room.current_occupancy
-        }, status=status.HTTP_200_OK)
 class HostelRelatedView(APIView):
     """Get related hostels based on university and city"""
 
@@ -1751,3 +1297,115 @@ class HostelRelatedView(APIView):
         return Response({
             'results': results
         }, status=status.HTTP_200_OK)
+
+
+@swagger_auto_schema(
+    method='post',
+    responses={200: "Favorite toggled successfully"}
+)
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def toggle_favorite_hostel(request, hostel_id):
+    """
+    Toggle favorite status for a hostel
+    """
+    try:
+        hostel = Hostel.objects.get(id=hostel_id)
+        favorite, created = Favorite.objects.get_or_create(
+            user=request.user,
+            hostel=hostel
+        )
+        
+        if not created:
+            favorite.delete()
+            is_favorited = False
+        else:
+            is_favorited = True
+            
+        return Response({
+            'is_favorited': is_favorited,
+            'message': 'Hostel favorited' if is_favorited else 'Hostel removed from favorites'
+        }, status=status.HTTP_200_OK)
+        
+    except Hostel.DoesNotExist:
+        return Response({
+            'error': 'Hostel not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+@swagger_auto_schema(
+    method='get',
+    responses={200: "List of favorite hostels"}
+)
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_favorites(request):
+    """
+    Get current user's favorite hostels
+    """
+    favorites = Favorite.objects.filter(user=request.user).select_related('hostel')
+    results = []
+    
+    for fav in favorites:
+        hostel = fav.hostel
+        results.append({
+            'id': hostel.id,
+            'name': hostel.name,
+            'address': hostel.address,
+            'city': hostel.city,
+            'base_price': float(hostel.base_price),
+            'images': hostel.images or [],
+            'is_verified': hostel.is_verified,
+            'rating': float(hostel.rating)
+        })
+        
+    return Response({
+        'count': len(results),
+        'results': results
+    }, status=status.HTTP_200_OK)
+
+
+@swagger_auto_schema(
+    method='post',
+    responses={201: "Joined waitlist successfully"}
+)
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def join_waitlist(request, hostel_id):
+    """
+    Join waitlist for a hostel
+    """
+    try:
+        hostel = Hostel.objects.get(id=hostel_id)
+        
+        # Validate student profile
+        try:
+            student = request.user.student_profile
+        except Exception:
+            return Response({
+                'error': 'Student profile required to join waitlist'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        waitlist_entry, created = Waitlist.objects.get_or_create(
+            student=student,
+            hostel=hostel,
+            defaults={
+                'room_type_preference': request.data.get('room_type_preference'),
+                'notes': request.data.get('notes')
+            }
+        )
+        
+        if not created:
+            return Response({
+                'message': 'You are already on the waitlist for this hostel'
+            }, status=status.HTTP_200_OK)
+            
+        return Response({
+            'message': 'Successfully joined the waitlist',
+            'waitlist_id': waitlist_entry.id
+        }, status=status.HTTP_201_CREATED)
+        
+    except Hostel.DoesNotExist:
+        return Response({
+            'error': 'Hostel not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+

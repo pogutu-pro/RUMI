@@ -55,7 +55,7 @@ import { useToast } from '@/hooks/use-toast';
 // Extended Booking type mock for richer UI - handling potential missing backend fields
 interface ExtendedBooking {
     id: string;
-    reference: string;
+    booking_reference: string;
     status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
     student: {
         first_name: string;
@@ -72,7 +72,7 @@ interface ExtendedBooking {
         type: string;
     };
     bed_number?: string;
-    check_in_date: string;
+    move_in_date: string;
     created_at: string;
     duration: number;
     monthly_rent: number;
@@ -95,13 +95,13 @@ export default function BookingsPage() {
   const bookings = (bookingsData || []).map(b => ({
       ...b,
       // Ensure strict typing for missing fields to avoid crashes
-      reference: b.reference || `BKG-${b.id.substring(0,6)}`,
+      booking_reference: b.booking_reference || `BKG-${b.id.substring(0,6)}`,
       deposit_status: (b as any).deposit_status || 'unpaid',
       payment_proof_url: (b as any).payment_proof_url || null
   })) as unknown as ExtendedBooking[];
 
   const filteredBookings = bookings.filter((booking) => {
-    const reference = booking.reference;
+    const reference = booking.booking_reference;
     // Handle potential missing student object
     const studentName = booking.student ? `${booking.student.first_name || ''} ${booking.student.last_name || ''}` : 'Unknown Student';
     const hostelName = booking.hostel?.name || 'Unknown Hostel';
@@ -265,7 +265,7 @@ export default function BookingsPage() {
              <AnimatePresence mode='popLayout'>
               {filteredBookings.map((booking, index) => {
                 const StatusIcon = getStatusIcon(booking.status);
-                const reference = booking.reference || `BKG-${booking.id}`;
+                const reference = booking.booking_reference || `BKG-${booking.id}`;
                 const studentName = `${booking.student?.first_name} ${booking.student?.last_name}`;
                 
                 return (
@@ -315,7 +315,7 @@ export default function BookingsPage() {
                                         </div>
                                          <div className="flex items-center gap-2">
                                             <Calendar className="h-4 w-4 opacity-70" />
-                                            <span>Move-in: <span className="text-foreground font-medium">{format(new Date(booking.check_in_date), 'MMM dd, yyyy')}</span></span>
+                                            <span>Move-in: <span className="text-foreground font-medium">{format(new Date(booking.move_in_date), 'MMM dd, yyyy')}</span></span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Clock className="h-4 w-4 opacity-70" />

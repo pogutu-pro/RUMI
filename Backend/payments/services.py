@@ -271,16 +271,19 @@ def process_confirmed_payment(student, amount, reference, payment_method, metada
         if transaction_obj:
             return {"type": "booking", "booking_id": booking.id, "status": "already_processed"}
 
-        transaction_obj = Transaction.objects.create(
-            booking=booking,
-            student=student,
+        # Update or create transaction for this reference
+        transaction_obj, created = Transaction.objects.update_or_create(
             transaction_reference=reference,
-            amount=amount,
-            transaction_type='deposit',
-            payment_method=payment_method,
-            status='success',
-            metadata=metadata or {},
-            paid_at=timezone.now()
+            defaults={
+                'booking': booking,
+                'student': student,
+                'amount': amount,
+                'transaction_type': 'deposit',
+                'payment_method': payment_method,
+                'status': 'success',
+                'metadata': metadata or {},
+                'paid_at': timezone.now()
+            }
         )
 
         LifecycleService.activate_tenancy(booking, transaction_obj)

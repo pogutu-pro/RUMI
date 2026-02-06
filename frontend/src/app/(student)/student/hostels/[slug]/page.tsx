@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import { useHostelBySlug, hostelsApi } from '@/features/hostels';
 import { cn } from '@/lib/utils';
-import { HostelBookingWidget } from '@/features/hostels';
+import { HostelBookingWidget, HostelLandlordCard, HostelSafety } from '@/features/hostels';
 import type { Room } from '@/types/entities.types';
 
 function ImageGallery({ images }: { images: string[] }) {
@@ -119,8 +119,6 @@ export default function HostelDetailPage() {
     return {
       ...rawHostel,
       rooms,
-      // Also set pricePerMonth from base_price if not set
-      pricePerMonth: rawHostel.pricePerMonth || parseFloat(rawHostel.base_price) || 8000,
     };
   }, [rawHostel, roomsResponse]);
 
@@ -226,11 +224,14 @@ export default function HostelDetailPage() {
                 {hostel.hostel_type.replace('_', ' ').toUpperCase()}
               </Badge>
               
-              {hostel.gender_policy !== 'mixed' && (
-                <Badge variant="outline">
-                  {hostel.gender_policy === 'male_only' ? 'Male Only' : 'Female Only'}
-                </Badge>
-              )}
+              <Badge variant={hostel.gender_policy === 'mixed' ? 'secondary' : 'outline'}>
+                {hostel.gender_policy === 'male_only' ? 'Male Students Only' : 
+                 hostel.gender_policy === 'female_only' ? 'Female Students Only' : 'Mixed Gender'}
+              </Badge>
+              
+              <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50">
+                {hostel.tenant_type === 'students_only' ? 'Students Only' : 'Open to Anyone'}
+              </Badge>
             </div>
           </div>
 
@@ -271,6 +272,19 @@ export default function HostelDetailPage() {
           </div>
 
           <Separator />
+          
+          {/* Safety Features */}
+          {hostel.safety_features && hostel.safety_features.length > 0 && (
+            <>
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Safety & Security</h2>
+                <HostelSafety features={hostel.safety_features} />
+              </div>
+              <Separator />
+            </>
+          )}
+
+          <Separator />
 
           {/* House Rules */}
           {hostel.rules && (
@@ -286,91 +300,8 @@ export default function HostelDetailPage() {
           )}
 
           {/* Landlord Info */}
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Managed by</h2>
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className="h-16 w-16 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center shrink-0">
-                      <Building className="h-8 w-8 text-emerald-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold">{hostel.landlord_name}</h3>
-                      <p className="text-sm text-muted-foreground">Joined December 2023</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex-1 flex flex-col justify-center gap-2">
-                    <div className="flex gap-4 text-sm text-muted-foreground">
-                      <div>
-                        <span className="font-medium text-foreground">124</span> Reviews
-                      </div>
-                      <div>
-                        <span className="font-medium text-foreground">Verified</span> Identity
-                      </div>
-                      <div>
-                        <span className="font-medium text-foreground">Superhost</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-3 mt-2">
-                      <Button 
-                        variant={isFollowing ? "outline" : "default"}
-                        className={cn(
-                          "flex-1 md:flex-none",
-                          !isFollowing && "bg-emerald-600 hover:bg-emerald-700"
-                        )}
-                        onClick={() => setIsFollowing(!isFollowing)}
-                      >
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        {isFollowing ? 'Following' : 'Follow'}
-                      </Button>
-                      <Button variant="outline" className="flex-1 md:flex-none">
-                        <MessageCircle className="h-4 w-4 mr-2" />
-                        Contact Host
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator className="my-6" />
-
-                <div className="grid md:grid-cols-2 gap-4 text-sm">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-emerald-600" />
-                      <span>365 Reviews</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-emerald-600" />
-                      <span>Identity verified</span>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <MessageCircle className="h-4 w-4 text-emerald-600" />
-                      <span>Response rate: 100%</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-emerald-600" />
-                      <span>Response time: within an hour</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 pt-6 border-t flex items-center justify-between text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    <span>{hostel.landlord_phone}</span>
-                  </div>
-                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive">
-                    <Flag className="h-4 w-4 mr-2" />
-                    Report this listing
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {/* Landlord Info */}
+          <HostelLandlordCard hostel={hostel} />
         </div>
 
         {/* Right Column - Booking Widget */}

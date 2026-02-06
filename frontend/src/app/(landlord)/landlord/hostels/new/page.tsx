@@ -637,8 +637,11 @@ export default function NewHostelWizardPage() {
                     id="totalFloors"
                     type="number"
                     min="1"
-                    value={formData.totalFloors}
-                    onChange={(e) => updateField('totalFloors', parseInt(e.target.value) || 1)}
+                    value={formData.totalFloors || ''}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                      updateField('totalFloors', isNaN(val) ? 0 : val);
+                    }}
                     className="h-12 text-base"
                   />
                   <p className="text-sm text-muted-foreground">
@@ -654,8 +657,11 @@ export default function NewHostelWizardPage() {
                     id="totalRooms"
                     type="number"
                     min="1"
-                    value={formData.totalRooms}
-                    onChange={(e) => updateField('totalRooms', parseInt(e.target.value) || 1)}
+                    value={formData.totalRooms || ''}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                      updateField('totalRooms', isNaN(val) ? 0 : val);
+                    }}
                     className={cn("h-12 text-base", errors.totalRooms && "border-red-500")}
                   />
                   {errors.totalRooms && (

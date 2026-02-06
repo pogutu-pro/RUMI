@@ -297,27 +297,37 @@ class RateLimitMiddleware(MiddlewareMixin):
     
     def process_request(self, request):
         """Check rate limits"""
-        
-        # Get client identifier
+        # 1. Global toggle
+        if not getattr(settings, 'ENABLE_RATE_LIMITING', True):
+            return None
+
+        # 2. Get client identifier
         client_id = self._get_client_id(request)
         
-        # Determine rate limit
+        # 3. Bypass for internal IPs (Development/Trusted)
+        if hasattr(request, 'META'):
+            remote_addr = request.META.get('REMOTE_ADDR')
+            if remote_addr in getattr(settings, 'INTERNAL_IPS', []):
+                return None
+
+        # 4. Determine rate limit
         limit = self.authenticated_limit if (
             hasattr(request, 'user') and request.user.is_authenticated
         ) else self.anonymous_limit
         
-        # Check rate limit
+        # 5. Check rate limit
         cache_key = f"rate_limit:{client_id}:{timezone.now().hour}"
         current_count = self.cache_manager.get(cache_key, 0)
         
         if current_count >= limit:
+            logger.warning(f"Rate limit exceeded for {client_id}: {current_count}/{limit}")
             return HttpResponse(
                 json.dumps({'error': 'Rate limit exceeded'}),
                 status=429,
                 content_type='application/json'
             )
         
-        # Increment counter
+        # 6. Increment counter
         self.cache_manager.set(cache_key, current_count + 1, timeout=3600)  # 1 hour
         
         return None

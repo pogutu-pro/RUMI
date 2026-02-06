@@ -1882,7 +1882,7 @@ class StudentDashboardView(APIView):
         total_spent = Transaction.objects.filter(
             student=student_profile,
             status='success'
-        ).aggregate(total=Sum('total_charged_amount'))['total'] or 0
+        ).aggregate(total=Sum('amount'))['total'] or 0
 
         # Get current/active booking for hostelInfo (used by payments)
         current_booking = Booking.objects.filter(
@@ -2113,9 +2113,12 @@ class LandlordDashboardView(APIView):
             })
 
         # Get recent payments/transactions
+        # Get recent payments/transactions
         from payments.models import Transaction
+        from django.db.models import Q
         recent_payments = Transaction.objects.filter(
-            landlord=landlord_profile,
+            Q(booking__room__hostel__landlord=landlord_profile) |
+            Q(rent_period__hostel__landlord=landlord_profile),
             status='success'
         ).order_by('-paid_at')[:5]
 

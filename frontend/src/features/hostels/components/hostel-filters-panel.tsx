@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { 
   X, 
@@ -23,7 +22,16 @@ import {
   Wallet, 
   Users, 
   Sparkles,
-  Check
+  Wifi,
+  ShieldCheck,
+  ParkingCircle,
+  Shirt,
+  Droplets,
+  Dumbbell,
+  BookOpen,
+  Utensils,
+  GraduationCap,
+  Home
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -54,11 +62,11 @@ const UNIVERSITIES = [
 ];
 
 const CITIES = [
-  { value: 'Nairobi', label: 'Nairobi', icon: '🏙️' },
-  { value: 'Eldoret', label: 'Eldoret', icon: '🌾' },
-  { value: 'Mombasa', label: 'Mombasa', icon: '🏖️' },
-  { value: 'Kisumu', label: 'Kisumu', icon: '⛵' },
-  { value: 'Nakuru', label: 'Nakuru', icon: '🦩' },
+  { value: 'Nairobi', label: 'Nairobi' },
+  { value: 'Eldoret', label: 'Eldoret' },
+  { value: 'Mombasa', label: 'Mombasa' },
+  { value: 'Kisumu', label: 'Kisumu' },
+  { value: 'Nakuru', label: 'Nakuru' },
 ];
 
 const AMENITIES = [
@@ -199,10 +207,7 @@ export function HostelFiltersPanel({
                 <SelectContent>
                   {CITIES.map((city) => (
                     <SelectItem key={city.value} value={city.value} className="py-3 font-medium cursor-pointer">
-                      <span className="flex items-center gap-2">
-                        <span>{city.icon}</span>
-                        <span>{city.label}</span>
-                      </span>
+                      {city.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

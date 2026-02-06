@@ -2,22 +2,34 @@ import { Hostel, Room } from '@/features/hostels/types';
 
 export interface Booking {
   id: string;
-  reference?: string;
+  booking_reference: string;
   
   // Relations
-  hostel: Hostel | { id: string; name: string }; // Handle expanded or minimal
-  room: Room | { id: string; number: string; room_number?: string; roomNumber?: string };
-  student: {
+  // Relations
+  hostel?: Hostel;
+  room?: Room;
+  room_info?: {
+      room_id: string;
+      room_number: string;
+      hostel_name: string;
+  };
+  student?: {
     id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
     profile_picture?: string;
-  } | string; // Can be ID or object
+  };
+  student_info?: {
+      student_id: string;
+      name: string;
+      email: string;
+  };
   
   // Dates
-  check_in_date: string; // ISO string
+  move_in_date: string; // ISO string (Standardized name)
   check_out_date?: string; // ISO string
+  is_existing_resident?: boolean;
   created_at: string;
   updated_at?: string;
   
@@ -25,14 +37,17 @@ export interface Booking {
   total_amount: number;
   monthly_rent?: number;
   duration_months: number;
-  payment_status?: 'pending' | 'paid' | 'partial' | 'failed';
+  payment_status: 'pending' | 'paid' | 'partial' | 'failed';
   
   // Status
   status: 'pending' | 'confirmed' | 'checked_in' | 'inspection_pending' | 'cancelled' | 'completed' | 'expired';
-  
-  // Legacy/Frontend helpers (mapped optional)
-  studentName?: string;
-  hostelName?: string;
-  roomNumber?: string;
-  moveInDate?: Date; // Optional helper
+}
+
+export interface WaitlistEntry {
+  id: string;
+  student_id: string;
+  hostel_id: string;
+  room_type_preference?: string;
+  status: 'active' | 'contacted' | 'converted' | 'cancelled';
+  created_at: string;
 }

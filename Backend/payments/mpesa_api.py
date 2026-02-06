@@ -414,7 +414,7 @@ class MpesaDarajaAPI:
                     'result_code': result_code,
                     'result_desc': result_desc,
                     'checkout_request_id': checkout_request_id,
-                    'timestamp': timezone.now()
+                    'timestamp': timezone.now().isoformat()
                 }
                 
                 if result_code == 0:

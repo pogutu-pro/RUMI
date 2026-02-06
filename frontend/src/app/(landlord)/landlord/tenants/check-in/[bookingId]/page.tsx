@@ -47,9 +47,9 @@ export default function CheckInProcessPage() {
       if (!booking) return;
       
       processCheckIn.mutate({
-          tenantId: typeof booking.student === 'object' ? booking.student.id : booking.student,
-          bookingCode: booking.reference || 'MANUAL',
-          roomId: typeof booking.room === 'object' ? booking.room.id : '',
+          tenantId: typeof booking.student === 'object' ? booking.student?.id || '' : booking.student || '',
+          bookingCode: booking.booking_reference || 'MANUAL',
+          roomId: typeof booking.room === 'object' ? booking.room?.id || '' : '',
           actualCheckInDate: new Date().toISOString(),
           identityVerified: true,
           bookingVerified: true,
@@ -82,7 +82,7 @@ export default function CheckInProcessPage() {
   const studentName = typeof booking.student === 'object' ? `${booking.student.first_name} ${booking.student.last_name}` : 'Student';
   const studentEmail = typeof booking.student === 'object' ? booking.student.email : '';
   const hostelName = typeof booking.hostel === 'object' ? booking.hostel.name : 'Hostel';
-  const roomNumber = typeof booking.room === 'object' ? booking.room.number : (booking.roomNumber || 'N/A');
+  const roomNumber = typeof booking.room === 'object' ? booking.room.room_number : (booking.room_info?.room_number || 'N/A');
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -148,7 +148,7 @@ export default function CheckInProcessPage() {
                                <Label className="text-slate-500 uppercase text-xs tracking-wider">Move-In Date</Label>
                                <div className="flex items-center gap-2 font-medium">
                                    <Calendar className="h-4 w-4 text-emerald-600" />
-                                   {format(new Date(booking.check_in_date), 'MMMM dd, yyyy')}
+                                   {format(new Date(booking.move_in_date), 'MMMM dd, yyyy')}
                                </div>
                            </div>
                            <div className="space-y-1">

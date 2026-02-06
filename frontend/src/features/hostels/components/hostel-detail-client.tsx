@@ -3,29 +3,21 @@
 import { Suspense, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
-import HostelDetails from './hostel-details';
-import { HostelBookingWidget } from './hostel-booking-widget';
-import HostelHero from './hostel-hero';
-import HostelGallery from './hostel-gallery';
-import RelatedHostels from './related-hostels';
 import { getHostelBySlug, hostelsApi } from '@/features/hostels';
+import { useAuth } from '@/features/auth/hooks/use-auth';
 import type { Hostel, Room } from '@/types/entities.types';
+
+// New specialized variants
+import PublicHostelDetail from './public-hostel-detail';
+import DashboardHostelDetail from './dashboard-hostel-detail';
 
 interface HostelDetailClientProps {
   slug: string;
 }
 
-function LoadingRelated() {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Skeleton key={i} className="h-48 rounded-xl" />
-      ))}
-    </div>
-  );
-}
-
 export function HostelDetailClient({ slug }: HostelDetailClientProps) {
+  const { user, isAuthenticated } = useAuth();
+  
   // Fetch the hostel
   const {
     data: rawHostel,
@@ -50,7 +42,6 @@ export function HostelDetailClient({ slug }: HostelDetailClientProps) {
   });
 
   const isLoading = isLoadingHostel || isLoadingRooms;
-  const error = hostelError;
 
   // Combine hostel with rooms data
   const hostel = useMemo(() => {
@@ -64,13 +55,9 @@ export function HostelDetailClient({ slug }: HostelDetailClientProps) {
     return {
       ...rawHostel,
       rooms,
-      // Also set pricePerMonth from base_price if not set
-      pricePerMonth: rawHostel?.pricePerMonth || (rawHostel?.base_price ? parseFloat(rawHostel.base_price) : 8000),
-      // Ensure reviews is defined
       reviews: rawHostel?.reviews || [],
     } as Hostel;
   }, [rawHostel, roomsResponse]);
-
 
   if (isLoading) {
     return (
@@ -90,49 +77,41 @@ export function HostelDetailClient({ slug }: HostelDetailClientProps) {
     );
   }
 
-  if (error || !hostel) {
-    // Error boundary will handle this
-    return null;
+  if (hostelError || !hostel) {
+    return (
+      <div className="container mx-auto py-16 px-4 text-center">
+        <div className="max-w-md mx-auto">
+          <div className="mb-4 text-6xl">🏠</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Hostel Not Found</h1>
+          <p className="text-gray-600 mb-6">
+            The hostel you're looking for could not be found or has been removed.
+          </p>
+          <button
+            onClick={() => window.history.back()}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
   }
 
-  return (
-    <div className="container mx-auto py-6 md:py-8 px-4 sm:px-6 lg:px-8 max-w-7xl">
-      {/* 1. Hero & Gallery (Full Width) */}
-      <div className="space-y-4 mb-8 md:mb-10">
-        <HostelHero hostel={hostel} />
-        {hostel.images && hostel.images.length > 0 && (
-          <HostelGallery images={hostel.images} hostelName={hostel.name} />
-        )}
-      </div>
+  // Determine which variant to show
+  // If authenticated as a student, show the personalized dashboard view
+  if (isAuthenticated && user?.role === 'student') {
+    return (
+      <DashboardHostelDetail 
+        hostel={hostel} 
+        studentContext={{
+          roommateMatchScore: 85, // Mock score - should come from backend
+          isSaved: hostel.is_favorited || false,
+          applicationStatus: 'none'
+        }}
+      />
+    );
+  }
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 relative">
-        {/* 2. Main Content (Left Column) */}
-        <div className="lg:col-span-2">
-          <HostelDetails hostel={hostel} />
-          
-          {/* Related Hostels Section */}
-          <section className="py-10 border-t border-gray-200 mt-10">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900">
-              More places to stay nearby
-            </h2>
-            <Suspense fallback={<LoadingRelated />}>
-              <RelatedHostels slug={slug} />
-            </Suspense>
-          </section>
-        </div>
-
-        {/* 3. Sticky Booking Widget (Right Column) */}
-        <div className="relative hidden lg:block">
-          <div className="sticky top-20 w-full">
-             <HostelBookingWidget hostel={hostel} />
-          </div>
-        </div>
-      </div>
-      
-      {/* Mobile Booking Widget (Fixed Bottom) - handled inside HostelBookingWidget */}
-      <div className="lg:hidden">
-        <HostelBookingWidget hostel={hostel} />
-      </div>
-    </div>
-  );
+  // Default to Public View (SEO & Marketing focused)
+  return <PublicHostelDetail hostel={hostel} />;
 }

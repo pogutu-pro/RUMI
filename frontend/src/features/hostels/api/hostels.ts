@@ -32,10 +32,16 @@ export const hostelsApi = {
 
   // Create Hostel
   // POST /hostels/create/
-  createHostel: async (data: Partial<Hostel>) => {
+  createHostel: async (data: any) => {
+    // Ensure base_price is a string for backend Decimal fields
+    const formattedData = {
+      ...data,
+      base_price: data.base_price ? String(data.base_price) : undefined
+    };
+    
     const res = await apiClient.post<ApiResponse<Hostel>>(
       '/hostels/create/',
-      data
+      formattedData
     );
     return res.data.data;
   },
@@ -43,13 +49,13 @@ export const hostelsApi = {
   // Get Hostel By ID
   // GET /hostels/{hostel_id}/
   getHostelById: async (id: string | number): Promise<Hostel> => {
-    const res = await apiClient.get<ApiResponse<Hostel>>(
+    const res = await apiClient.get<Hostel>(
       `/hostels/${id}/`
     );
-    if (!res.data.data) {
+    if (!res.data) {
         throw new Error('Hostel data not found in response');
     }
-    return res.data.data;
+    return res.data;
   },
 
   // Search Room Availability
@@ -131,7 +137,15 @@ export const hostelsApi = {
 export const getHostels = hostelsApi.getHostels;
 export const getHostelById = hostelsApi.getHostelById;
 export const getHostelBySlug = async (slug: string): Promise<Hostel> => {
-  return await hostelsApi.getHostelById(slug);
+  // The backend uses numeric ID as slug fallback, so convert string slug to number
+  const hostelId = isNaN(Number(slug)) ? slug : Number(slug);
+  
+  try {
+    return await hostelsApi.getHostelById(hostelId);
+  } catch (error) {
+    console.error('Failed to fetch hostel by slug:', slug, error);
+    throw new Error(`Hostel with slug "${slug}" not found`);
+  }
 };
 export const getHostel = getHostelBySlug; 
 export const createHostel = hostelsApi.createHostel;
@@ -149,14 +163,18 @@ export const getRelatedHostels = async (id: string | number): Promise<Hostel[]> 
   }
 };
 
-export const toggleFavoriteHostel = async (hostelId: string) => {
-   console.warn('toggleFavoriteHostel endpoint is missing in backend.');
-   return { data: { isFavorited: false } };
-}
+export const toggleFavoriteHostel = async (hostelId: string | number) => {
+  const res = await apiClient.post<ApiResponse<{ is_favorited: boolean }>>(
+    `/hostels/${hostelId}/toggle-favorite/`
+  );
+  return res.data.data;
+};
 
 export const getFavorites = async (): Promise<Hostel[]> => {
-    console.warn('getFavorites endpoint is missing in backend.');
-    return []; 
+  const res = await apiClient.get<ApiResponse<Hostel[]>>(
+    '/hostels/favorites/'
+  );
+  return res.data.data || [];
 };
 
 export const searchHostels = hostelsApi.searchHostels;

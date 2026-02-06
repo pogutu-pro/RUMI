@@ -20,8 +20,8 @@ export default function RoomSelectionCard({
   onSelect,
   pricePerMonth
 }: RoomSelectionCardProps) {
-  const isFull = !room.available;
-  const isFewLeft = room.available && room.capacity - (room.beds || 0) <= 2; // Assuming beds = occupied beds? Or beds = total beds? 
+  const isFull = !room.is_available;
+  const isFewLeft = room.is_available && room.capacity <= 2; // Simplified logic as 'occupied' count is not in unified type yet
   // Let's assume 'beds' in Room type is total capacity, and we need a way to know occupied.
   // Actually, looking at the type: beds: number, capacity: number. 
   // Let's assume 'available' boolean is the source of truth for now, and we simulate 'few left' randomly or if we had real data.
@@ -48,23 +48,17 @@ export default function RoomSelectionCard({
 
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h3 className="font-bold text-slate-900">{room.name}</h3>
+          <h3 className="font-bold text-slate-900">Room {room.room_number}</h3>
           <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
             <Badge variant="secondary" className="bg-slate-100 text-slate-600 hover:bg-slate-100 font-normal">
               <Users className="w-3 h-3 mr-1" />
               {room.capacity > 1 ? 'Shared Room' : 'Private Room'}
             </Badge>
-            {isFewLeft && !isFull && (
-              <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100 font-normal border-amber-200">
-                <Clock className="w-3 h-3 mr-1" />
-                {room.capacity - (room.beds || 0)} slots left
-              </Badge>
-            )}
-          </div>
         </div>
+      </div>
         <div className="text-right">
           <div className="font-bold text-slate-900">
-            KSh {(room.price || pricePerMonth || 0).toLocaleString()}
+            KSh {Number(room.base_price || pricePerMonth || 0).toLocaleString()}
           </div>
           <div className="text-[10px] text-slate-500 uppercase font-medium">
             {room.capacity > 1 ? 'per person/mo' : '/ month'}
@@ -77,15 +71,9 @@ export default function RoomSelectionCard({
         <div className="flex -space-x-2">
            {/* Generate bed icons based on capacity */}
            {Array.from({ length: room.capacity }).map((_, i) => {
-             // Logic to determine if this specific slot is taken
-             // For now, we assume first N slots are taken where N = room.beds (occupied count)
-             // This is a simplification.
-             const isTaken = i < (room.beds || 0); // Assuming room.beds is occupied count for this visual
-             
              return (
                <div key={i} className={cn(
-                 "w-8 h-8 rounded-full flex items-center justify-center border-2 border-white",
-                 isTaken ? "bg-slate-200 text-slate-400" : "bg-emerald-100 text-emerald-600"
+                 "w-8 h-8 rounded-full flex items-center justify-center border-2 border-white bg-emerald-100 text-emerald-600"
                )}>
                  <Bed className="w-4 h-4" />
                </div>
@@ -100,7 +88,7 @@ export default function RoomSelectionCard({
             </span>
           ) : (
             <span>
-              <span className="font-bold text-emerald-600">{room.capacity - (room.beds || 0)} slots left</span> • Instant Booking
+              <span className="font-bold text-emerald-600">{room.capacity} capacity</span> • Instant Booking
             </span>
           )}
         </div>

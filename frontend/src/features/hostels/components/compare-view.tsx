@@ -52,12 +52,12 @@ export function CompareView({
 
   const getAttributeValue = (hostel: any, key: string) => {
     switch (key) {
-      case 'price': return hostel.base_price ? parseFloat(hostel.base_price) : (hostel.pricePerMonth || 0);
-      case 'distance': return hostel.distance_from_university ? parseFloat(hostel.distance_from_university) : hostel.distanceToCampus;
+      case 'price': return Number(hostel.base_price || 0);
+      case 'distance': return hostel.distance_from_university ? parseFloat(hostel.distance_from_university) : 0;
       case 'rating': return hostel.rating ? parseFloat(hostel.rating) : 0;
-      case 'rooms': return hostel.available_rooms ?? hostel.roomsLeft ?? 0;
-      case 'type': return hostel.hostel_type || hostel.type;
-      case 'verified': return hostel.is_verified || hostel.verified;
+      case 'rooms': return hostel.available_rooms ?? 0;
+      case 'type': return hostel.hostel_type;
+      case 'verified': return hostel.is_verified;
       default: return null;
     }
   };

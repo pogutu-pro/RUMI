@@ -34,11 +34,9 @@ export function HostelCard({
   const images = hostel.images?.length
     ? hostel.images
     : ['/images/cards/card-01.jpg'];
-  const price = hostel.base_price
-    ? parseFloat(hostel.base_price)
-    : (hostel.pricePerMonth ?? 0);
+  const price = hostel.base_price ? parseFloat(hostel.base_price) : 0;
   const rating = hostel.rating ? parseFloat(hostel.rating) : 0;
-  const availableRooms = hostel.available_rooms ?? hostel.roomsLeft ?? 0;
+  const availableRooms = hostel.available_rooms ?? 0;
   const currency = hostel.currency ?? 'KSh';
 
   const nextImage = (e: React.MouseEvent) => {
@@ -94,7 +92,7 @@ export function HostelCard({
           <div className="ml-auto">
             <FavoriteButton
               hostelId={String(hostel.id)}
-              initialFavorited={isFavorite || hostel.isFavorited || false}
+              initialFavorited={isFavorite || hostel.is_favorited || false}
               hostel={hostel}
             />
           </div>

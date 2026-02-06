@@ -15,7 +15,7 @@ export default function RoomCard({ room }: RoomCardProps) {
         {room.images && room.images.length > 0 ? (
           <Image
             src={room.images[0]}
-            alt={room.name}
+            alt={room.room_number}
             fill
             className="object-cover"
           />
@@ -26,24 +26,20 @@ export default function RoomCard({ room }: RoomCardProps) {
         )}
       </div>
       <div className="p-4">
-        <h3 className="font-semibold text-lg">{room.name}</h3>
+        <h3 className="font-semibold text-lg">Room {room.room_number}</h3>
         <div className="flex items-center gap-4 mt-2 text-gray-600">
           <div className="flex items-center gap-1">
-            <Bed className="h-4 w-4" />
-            {room.beds} beds
-          </div>
-          <div className="flex items-center gap-1">
             <Users className="h-4 w-4" />
-            {room.capacity} max
+            {room.capacity} capacity
           </div>
         </div>
         <div className="mt-3">
           <span className="text-xl font-bold text-green-600">
-            KSh {room.price?.toLocaleString() || '0'}
+            KSh {room.base_price?.toLocaleString() || '0'}
           </span>
           <span className="text-sm text-gray-600">/month</span>
         </div>
-        {room.available && (
+        {room.is_available && (
           <Badge className="mt-2 bg-green-100 text-green-800">Available</Badge>
         )}
       </div>

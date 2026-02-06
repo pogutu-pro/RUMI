@@ -57,7 +57,7 @@ export default function CheckOutsPage() {
 
   // Mock checking logic for checkouts
   const checkOuts = bookings.map(b => {
-      const startDate = new Date(b.check_in_date);
+      const startDate = new Date(b.move_in_date);
       const durationMonths = Number((b as any).duration || (b as any).durationMonths || 1);
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + durationMonths);
@@ -164,7 +164,7 @@ export default function CheckOutsPage() {
                 
                 const studentName = typeof booking.student === 'object' ? `${booking.student.first_name} ${booking.student.last_name}` : 'Student';
                 const hostelName = typeof booking.hostel === 'object' ? booking.hostel.name : 'Hostel';
-                const roomNumber = typeof booking.room === 'object' ? booking.room.number : ((booking as any).roomNumber || 'N/A');
+                const roomNumber = typeof booking.room === 'object' ? booking.room.room_number : (booking.room_info?.room_number || 'N/A');
 
                 return (
                 <motion.div

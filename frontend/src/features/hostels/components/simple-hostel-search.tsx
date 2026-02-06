@@ -22,10 +22,10 @@ export function SimpleHostelSearch({ className, onSearch, isLoading = false }: S
   const [isFocused, setIsFocused] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  // Debounce the search callback by 300ms
+  // Debounce the search callback by 300ms to avoid excessive API calls
   const debouncedSearch = useDebouncedCallback((value: string) => {
     onSearch?.(value);
-  }, 300);
+  }, 400);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -41,8 +41,8 @@ export function SimpleHostelSearch({ className, onSearch, isLoading = false }: S
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Immediate search on enter
-    debouncedSearch.cancel(); // Cancel pending debounce
+    // Immediate search on enter, bypassing debounce
+    debouncedSearch.cancel(); 
     onSearch?.(query);
   };
 
@@ -56,19 +56,19 @@ export function SimpleHostelSearch({ className, onSearch, isLoading = false }: S
     >
       <div
         className={cn(
-          'relative flex items-center bg-gray-50 rounded-md border transition-all duration-200 h-10',
+          'relative flex items-center bg-gray-50 rounded-xl border transition-all duration-200 h-10 overflow-hidden',
           isFocused
-            ? 'bg-white border-gray-900 ring-1 ring-gray-900 shadow-sm'
-            : 'border-gray-200 hover:border-gray-300 hover:bg-white',
-          query && 'bg-white border-gray-300'
+            ? 'bg-white border-gray-900 ring-1 ring-gray-900 shadow-md'
+            : 'border-transparent hover:border-gray-300 hover:bg-white',
+          query && !isFocused && 'bg-white border-gray-200'
         )}
       >
         {/* Search Icon / Loader */}
-        <div className="pl-3 pr-2 text-gray-500">
+        <div className="pl-3 pr-2 text-gray-400">
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin text-gray-900" />
           ) : (
-            <Search className={cn("h-4 w-4 transition-colors", isFocused ? "text-gray-900" : "text-gray-500")} />
+            <Search className={cn("h-4 w-4 transition-colors", isFocused ? "text-gray-900" : "text-gray-400")} />
           )}
         </div>
 
@@ -83,7 +83,7 @@ export function SimpleHostelSearch({ className, onSearch, isLoading = false }: S
           onBlur={() => setIsFocused(false)}
           className={cn(
             'flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0',
-            'placeholder:text-gray-500 text-sm font-medium text-gray-900 h-full'
+            'placeholder:text-gray-400 text-sm font-medium text-gray-900 h-full'
           )}
         />
 
@@ -94,20 +94,13 @@ export function SimpleHostelSearch({ className, onSearch, isLoading = false }: S
             variant="ghost"
             size="icon"
             onClick={handleClear}
-            className="mr-1 h-7 w-7 rounded-sm hover:bg-gray-100 text-gray-400 hover:text-gray-900 transition-all"
+            className="mr-1 h-7 w-7 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-900 transition-all"
           >
             <X className="h-3.5 w-3.5" />
             <span className="sr-only">Clear search</span>
           </Button>
         )}
       </div>
-
-      {/* Focus Helper / Keyboard Hint (Optional Fintech Polish) */}
-      {isFocused && (
-        <div className="absolute right-0 top-full mt-2 hidden">
-           {/* Placeholder for advanced autocomplete dropdown later */}
-        </div>
-      )}
     </form>
   );
 }

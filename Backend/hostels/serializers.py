@@ -28,23 +28,44 @@ class HostelSerializer(serializers.ModelSerializer):
     """Serializer for hostel listings"""
     amenities = HostelAmenitySerializer(source='hostel_amenities', many=True, read_only=True)
     landlord_info = serializers.SerializerMethodField()
+    
+    # Flattened fields for frontend compatibility
+    landlord_name = serializers.CharField(source='landlord.company_name', read_only=True)
+    landlord_phone = serializers.CharField(source='landlord.user.phone_number', read_only=True)
+    slug = serializers.CharField(source='id', read_only=True) # Fallback since we don't have slugs yet
+    amenities_list = serializers.SerializerMethodField()
 
     class Meta:
         model = Hostel
         fields = [
-            'id', 'name', 'description', 'address', 'city', 'university',
-            'latitude', 'longitude', 'total_rooms', 'available_rooms',
-            'base_price', 'currency', 'rating', 'review_count', 'images',
-            'amenities', 'gender_policy', 'distance_from_university',
-            'is_verified', 'landlord_info'
+            'id', 'slug', 'name', 'description', 'address', 'city', 'university',
+            'latitude', 'longitude', 'total_rooms', 'available_rooms', 'total_floors',
+            'base_price', 'deposit_amount', 'currency', 'rating', 'review_count', 'images',
+            'amenities', 'amenities_list', 'gender_policy', 'distance_from_university',
+            'is_verified', 'landlord_info', 'landlord_name', 'landlord_phone',
+            'verification_data', 'contact_preferences', 'rules',
+            'caretaker_name', 'caretaker_phone', 'safety_features',
+            'payment_terms', 'payment_cycle', 'grace_period_days', 'late_fee_percent',
+            'tenant_type', 'minimum_stay', 'mid_term_joins_allowed'
         ]
-        read_only_fields = ['id', 'landlord_info', 'rating', 'review_count']
+        read_only_fields = ['id', 'slug', 'landlord_info', 'rating', 'review_count', 'amenities_list']
 
     def get_landlord_info(self, obj):
         return {
             'company_name': obj.landlord.company_name,
-            'phone': obj.landlord.user.phone_number
+            'phone': obj.landlord.user.phone_number,
+            'response_rate': obj.landlord.response_rate,
+            'average_response_time': obj.landlord.average_response_time,
+            'verified_since': obj.landlord.verified_since,
+            'trust_score': obj.landlord.trust_score
         }
+
+    def get_amenities_list(self, obj):
+        return [
+            ha.amenity.name 
+            for ha in obj.hostel_amenities.all() 
+            if ha.is_available
+        ]
 
 
 class HostelCreateSerializer(serializers.ModelSerializer):
@@ -55,7 +76,11 @@ class HostelCreateSerializer(serializers.ModelSerializer):
         fields = [
             'name', 'description', 'address', 'city', 'university',
             'distance_from_university', 'gender_policy', 'amenities',
-            'rules', 'images'
+            'rules', 'images', 'total_rooms', 'total_floors',
+            'base_price', 'deposit_amount',
+            'caretaker_name', 'caretaker_phone', 'safety_features',
+            'payment_terms', 'payment_cycle', 'grace_period_days', 'late_fee_percent',
+            'tenant_type', 'minimum_stay', 'mid_term_joins_allowed', 'hostel_type'
         ]
 
     def validate_gender_policy(self, value):
@@ -78,6 +103,7 @@ class RoomSerializer(serializers.ModelSerializer):
     images = RoomImageSerializer(many=True, read_only=True)
     hostel_name = serializers.CharField(source='hostel.name', read_only=True)
     compatibility_score = serializers.SerializerMethodField()
+    is_available = serializers.SerializerMethodField()
 
     class Meta:
         model = Room
@@ -87,6 +113,9 @@ class RoomSerializer(serializers.ModelSerializer):
             'amenities', 'detailed_attributes', 'images', 'is_available',
             'compatibility_score'
         ]
+
+    def get_is_available(self, obj):
+        return obj.status == 'available'
 
     def get_compatibility_score(self, obj):
         # Mock compatibility score - would be calculated based on user preferences
@@ -113,15 +142,15 @@ class RoomCreateSerializer(serializers.ModelSerializer):
 class BookingSerializer(serializers.ModelSerializer):
     """Serializer for bookings"""
     room_info = serializers.SerializerMethodField()
-    student_info = serializers.SerializerMethodField()
+    reference = serializers.CharField(source='booking_reference', read_only=True)
 
     class Meta:
         model = Booking
         fields = [
-            'id', 'booking_reference', 'status', 'payment_status',
-            'total_amount', 'amount_paid', 'balance_due', 'payment_plan',
-            'move_in_date', 'move_out_date', 'created_at', 'updated_at',
-            'room_info', 'student_info'
+            'id', 'booking_reference', 'reference', 'status', 'payment_status',
+            'is_existing_resident', 'total_amount', 'amount_paid',
+            'balance_due', 'payment_plan', 'move_in_date', 'move_out_date',
+            'created_at', 'updated_at', 'room_info', 'student_info'
         ]
         read_only_fields = ['id', 'booking_reference', 'created_at', 'updated_at']
 
@@ -145,7 +174,7 @@ class BookingCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ['payment_plan', 'move_in_date']
+        fields = ['payment_plan', 'move_in_date', 'is_existing_resident']
 
     def validate_move_in_date(self, value):
         from django.utils import timezone

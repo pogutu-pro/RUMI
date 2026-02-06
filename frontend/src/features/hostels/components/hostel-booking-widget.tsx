@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/accordion";
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { format, addMinutes, differenceInSeconds } from 'date-fns';
@@ -35,7 +36,8 @@ import {
   checkAvailability, 
   createBookingWithValidation, 
   confirmPayment,
-  checkStudentProfileExists 
+  checkStudentProfileExists,
+  joinWaitlist
 } from '@/features/bookings';
 import { toggleFavoriteHostel, hostelsApi } from '@/features/hostels';
 import { useAuth } from '@/features/auth';
@@ -111,7 +113,7 @@ export function HostelBookingWidget({
   });
 
   const availableRooms = useMemo(
-    () => roomsData?.data?.filter((room) => room.available) || [],
+    () => roomsData?.data?.filter((room) => room.is_available) || [],
     [roomsData?.data],
   );
 
@@ -121,9 +123,9 @@ export function HostelBookingWidget({
   );
 
   const totalPrice = useMemo(() => {
-    const basePrice = selectedRoom?.price || hostel.pricePerMonth || 0;
+    const basePrice = Number(selectedRoom?.base_price || hostel.base_price || 0);
     return basePrice * durationMonths;
-  }, [selectedRoom?.price, hostel.pricePerMonth, durationMonths]);
+  }, [selectedRoom?.base_price, hostel.base_price, durationMonths]);
 
   // Timer Logic
   useEffect(() => {
@@ -179,17 +181,20 @@ export function HostelBookingWidget({
     retry: 1,
   });
 
+  const [isExistingResident, setIsExistingResident] = useState(false);
+
   const createBookingMutation = useMutation({
     mutationFn: async () => {
       // Small artificial delay for "processing" feel
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      if (!safeMoveInDate || !selectedRoom) throw new Error('Please select date and room');
+      if (!selectedRoom) throw new Error('Please select a room');
       return createBookingWithValidation({
         hostelId: hostel.id,
         roomId: selectedRoom.id,
-        moveInDate: safeMoveInDate,
+        moveInDate: new Date(), // Defaulting to today as UI is removed
         durationMonths,
+        isExistingResident,
       });
     },
     onSuccess: async (data) => {
@@ -251,16 +256,6 @@ export function HostelBookingWidget({
 
   // Handlers
   const handleBookClick = async () => {
-    // Validation
-    if (!selectedRoom) {
-      toast.warning('Please select a room first');
-      return;
-    }
-    if (!safeMoveInDate) {
-      toast.warning('Please select a move-in date');
-      return;
-    }
-
     // Auth Check
     if (!isAuthenticated) {
       toast.info('Please login to secure your slot', {
@@ -268,6 +263,12 @@ export function HostelBookingWidget({
        });
       setBookingInProgress(true);
       router.push(`/login?redirect=${basePath}/${hostel.slug}`);
+      return;
+    }
+
+    // Validation
+    if (!selectedRoom) {
+      toast.warning('Please select a room first');
       return;
     }
 
@@ -318,25 +319,13 @@ export function HostelBookingWidget({
   // Render Components
   const SelectionView = () => (
     <div className="space-y-6">
-      {/* Date & Duration */}
-      {/* Date Selection Only - Duration removed as per requirements */}
-      <div className="grid grid-cols-1 gap-3">
-        <div className="col-span-1">
-          <Label className="text-xs font-bold uppercase text-slate-500 mb-1.5 block">Move-in Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-11", !safeMoveInDate && "text-muted-foreground")}>
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {safeMoveInDate ? format(safeMoveInDate, 'dd MMM yyyy') : <span>Select date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <RoomAvailabilityCalendar
-                bookedDates={availability?.bookedDates || []}
-                onDateSelect={setMoveInDate}
-              />
-            </PopoverContent>
-          </Popover>
+      {/* Selection View Header */}
+      <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-2">
+        <div className="flex items-center gap-3">
+          <ShieldCheck className="w-5 h-5 text-emerald-600" />
+          <div className="text-sm font-medium text-emerald-900">
+            Immediate move-in available for all selected rooms.
+          </div>
         </div>
       </div>
 
@@ -357,12 +346,34 @@ export function HostelBookingWidget({
                 room={room}
                 isSelected={selectedRoomId === String(room.id)}
                 onSelect={(roomId) => selectRoom(roomId)}
-                pricePerMonth={room.price}
+                pricePerMonth={Number(room.base_price)}
               />
             ))}
-            {availableRooms.length === 0 && (
-               <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                 No rooms available for booking right now.
+            {availableRooms.length === 0 && !isLoadingRooms && (
+               <div className="text-center py-8 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                 <p className="text-slate-500 text-sm mb-4">All rooms are currently filled.</p>
+                 <Button 
+                    variant="outline" 
+                    className="w-full border-slate-300 text-slate-700 hover:bg-slate-100"
+                    onClick={() => {
+                        if (!isAuthenticated) {
+                            toast.info("Please login to join the waitlist");
+                            router.push(`/login?redirect=${basePath}/${hostel.slug}`);
+                            return;
+                        }
+                        // Logic for waitlist call
+                        toast.promise(
+                            joinWaitlist({ hostelId: hostel.id }),
+                            {
+                                loading: 'Joining waitlist...',
+                                success: 'You have been added to the waitlist!',
+                                error: (err) => err.message || 'Failed to join waitlist'
+                            }
+                        );
+                    }}
+                 >
+                    Join the Waitlist
+                 </Button>
                </div>
             )}
           </div>
@@ -397,7 +408,7 @@ export function HostelBookingWidget({
                   </div>
                   <div className="text-right">
                     <span className="text-xs text-slate-500 font-medium uppercase block">Recurring</span>
-                    <span className="text-sm font-bold text-slate-900">KSh {(selectedRoom.price || hostel.pricePerMonth || 0).toLocaleString()}/mo</span>
+                    <span className="text-sm font-bold text-slate-900">KSh {(selectedRoom.base_price || hostel.base_price || 0).toLocaleString()}/mo</span>
                   </div>
                 </div>
               </div>
@@ -434,15 +445,33 @@ export function HostelBookingWidget({
            </AccordionContent>
         </AccordionItem>
       </Accordion>
+      
+      {selectedRoom && (
+        <div className="flex items-center gap-2 px-1 mb-4">
+          <Checkbox 
+            id="existing-resident" 
+            checked={isExistingResident}
+            onCheckedChange={(checked) => setIsExistingResident(!!checked)}
+            className="border-slate-300 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+          />
+          <Label htmlFor="existing-resident" className="text-xs text-slate-600 cursor-pointer select-none">
+            I already reside in this hostel (Request Verification)
+          </Label>
+        </div>
+      )}
 
       {/* Action Button */}
       <Button
         className="w-full h-12 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg transition-all active:scale-[0.98]"
         onClick={handleBookClick}
-        disabled={createBookingMutation.isPending || isResuming}
+        disabled={createBookingMutation.isPending || isResuming || availableRooms.length === 0}
         size="lg"
       >
-        {createBookingMutation.isPending || isResuming ? 'Processing...' : 'Book This Room'}
+        {availableRooms.length === 0 
+          ? 'Fully Booked' 
+          : (createBookingMutation.isPending || isResuming 
+              ? 'Processing...' 
+              : (isExistingResident ? 'Request Verification' : 'Book This Room'))}
       </Button>
       
       <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
@@ -459,7 +488,7 @@ export function HostelBookingWidget({
         <div>
           <h4 className="font-bold text-amber-900 text-sm">Complete payment in {timeLeft !== null ? formatTime(timeLeft) : '--:--'}</h4>
           <p className="text-xs text-amber-700 mt-1">
-            Your slot in {selectedRoom?.name} is held for 15 minutes.
+            Your slot in Room {selectedRoom?.room_number} is held for 15 minutes.
           </p>
         </div>
       </div>
@@ -478,7 +507,7 @@ export function HostelBookingWidget({
             </div>
             <div>
               <Label className="text-xs text-slate-500 uppercase font-bold">Account Number</Label>
-              <div className="text-lg font-mono font-bold text-slate-900">{selectedRoom?.name || 'ROOM-01'}</div>
+              <div className="text-lg font-mono font-bold text-slate-900">Room {selectedRoom?.room_number || '01'}</div>
             </div>
             <div>
               <Label className="text-xs text-slate-500 uppercase font-bold">Amount to Pay</Label>
@@ -523,9 +552,10 @@ export function HostelBookingWidget({
         <BookingSuccessView
           bookingId={currentBookingId || '---'}
           hostelName={hostel.name}
-          roomName={selectedRoom.name}
-          moveInDate={safeMoveInDate}
-          amountPaid={totalPrice + 2000}
+          roomName={`Room ${selectedRoom.room_number}`}
+          moveInDate={safeMoveInDate || new Date()}
+          amountPaid={isExistingResident ? totalPrice : totalPrice + 2000}
+          isPending={isExistingResident}
         />
         
         {bookingType === 'invite' && inviteCode && (
@@ -568,7 +598,7 @@ export function HostelBookingWidget({
         </h3>
         {currentStep === 'selection' && (
           <p className="text-sm text-slate-500 mt-1">
-            <span className="font-bold text-slate-900">KSh {((hostel?.pricePerMonth ?? 0) || 0).toLocaleString()}</span>
+            <span className="font-bold text-slate-900">KSh {((hostel?.base_price ?? 0) || 0).toLocaleString()}</span>
             /month
           </p>
         )}
@@ -632,11 +662,11 @@ export function HostelBookingWidget({
           <div className="flex justify-between items-center gap-4">
             <div className="flex flex-col">
               <span className="font-bold text-slate-900">
-                KSh {((hostel?.pricePerMonth ?? 0) || 0).toLocaleString()}
+                KSh {Number(selectedRoom?.base_price || hostel?.base_price || 0).toLocaleString()}
                 <span className="text-sm font-normal text-slate-500"> / mo</span>
               </span>
               <span className="text-xs text-slate-500">
-                 {selectedRoom ? selectedRoom.name : 'Select a room'}
+                 {selectedRoom ? `Room ${selectedRoom.room_number}` : 'Select a room'}
               </span>
             </div>
             <Sheet open={isMobileSheetOpen} onOpenChange={setMobileSheetOpen}>

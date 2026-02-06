@@ -99,3 +99,37 @@ class CanCreateInventoryTemplates(HasCaretakerPermission):
 
 class CanVerifyCheckIns(HasCaretakerPermission):
     required_permission = 'can_verify_check_ins'
+
+
+class IsHostelOwner(permissions.BasePermission):
+    """
+    Check if the authenticated landlord owns the hostel
+    """
+    def has_object_permission(self, request, view, obj):
+        if not request.user.is_authenticated or request.user.role != 'landlord':
+            return False
+        
+        # Check if object has a landlord attribute that matches
+        if hasattr(obj, 'landlord'):
+            # If it's a LandlordProfile
+            if hasattr(obj.landlord, 'user'):
+                return obj.landlord.user == request.user
+            # If it's the User directly (less likely for Hostel model)
+            return obj.landlord == request.user
+        
+        return False
+
+
+class IsLandlordOfRoom(permissions.BasePermission):
+    """
+    Check if the authenticated landlord owns the hostel the room belongs to
+    """
+    def has_object_permission(self, request, view, obj):
+        if not request.user.is_authenticated or request.user.role != 'landlord':
+            return False
+            
+        # If the object is a Room
+        if hasattr(obj, 'hostel'):
+            return obj.hostel.landlord.user == request.user
+            
+        return False

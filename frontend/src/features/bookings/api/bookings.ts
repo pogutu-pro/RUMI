@@ -1,5 +1,5 @@
 import api from '@/lib/api/client';
-import type { Booking } from '@/types/entities.types';
+import type { Booking, WaitlistEntry } from '../types/types';
 import type { ApiResponse } from '@/types/api.types';
 import { searchRooms } from '@/features/hostels';
 
@@ -41,14 +41,16 @@ export const createBooking = async (data: {
   roomId?: string;
   moveInDate: Date;
   durationMonths: number;
+  isExistingResident?: boolean;
 }): Promise<Booking> => {
   if (!data.roomId) throw new Error("Room ID is required");
   
   const response = await api.axios.post<ApiResponse<Booking>>(
     `/hostels/${data.roomId}/book/`,
     {
-      move_in_date: data.moveInDate.toISOString(),
+      move_in_date: data.moveInDate?.toISOString(),
       duration_months: data.durationMonths,
+      is_existing_resident: data.isExistingResident,
     }
   );
   
@@ -141,6 +143,7 @@ export const createBookingWithValidation = async (data: {
   roomId?: string | number;
   moveInDate: Date;
   durationMonths: number;
+  isExistingResident?: boolean;
 }): Promise<Booking> => {
   if (!data.roomId) {
     throw new Error("Missing room ID");
@@ -151,7 +154,8 @@ export const createBookingWithValidation = async (data: {
     hostelId: String(data.hostelId),
     roomId: String(data.roomId),
     moveInDate: data.moveInDate,
-    durationMonths: data.durationMonths
+    durationMonths: data.durationMonths,
+    isExistingResident: data.isExistingResident,
   });
 };
 
@@ -183,4 +187,20 @@ export const getStudentBookings = async (
     params: { status }
   });
   return response.data.data || [];
+};
+
+export const joinWaitlist = async (data: {
+  hostelId: string | number;
+  roomTypePreference?: string;
+  notes?: string;
+}): Promise<WaitlistEntry> => {
+  const response = await api.axios.post<ApiResponse<WaitlistEntry>>(
+    `/hostels/${data.hostelId}/join-waitlist/`,
+    {
+      room_type_preference: data.roomTypePreference,
+      notes: data.notes
+    }
+  );
+  if (!response.data.data) throw new Error('Failed to join waitlist');
+  return response.data.data;
 };

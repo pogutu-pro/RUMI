@@ -145,18 +145,18 @@ export default function Page() {
                          <p className="text-sm font-medium text-muted-foreground">Property</p>
                          <div className="flex items-center gap-2">
                              <Building2 className="h-4 w-4 text-primary" />
-                             <span className="font-medium">{booking.hostelName || (typeof booking.hostel === 'object' ? booking.hostel.name : booking.hostel)}</span>
+                             <span className="font-medium">{booking.room_info?.hostel_name || (typeof booking.hostel === 'object' ? booking.hostel?.name : '')}</span>
                          </div>
                      </div>
                      <div className="space-y-1">
                          <p className="text-sm font-medium text-muted-foreground">Room</p>
-                         <p className="font-medium">Room {booking.roomNumber || (typeof booking.room === 'object' ? booking.room.number : booking.room)}</p>
+                         <p className="font-medium">Room {booking.room_info?.room_number || (typeof booking.room === 'object' ? booking.room?.room_number : '')}</p>
                      </div>
                      <div className="space-y-1">
                          <p className="text-sm font-medium text-muted-foreground">Check-in Date</p>
                          <div className="flex items-center gap-2">
                              <Calendar className="h-4 w-4 text-muted-foreground" />
-                             <span className="font-medium">{format(new Date(booking.check_in_date), 'MMMM d, yyyy')}</span>
+                             <span className="font-medium">{format(new Date(booking.move_in_date), 'MMMM d, yyyy')}</span>
                          </div>
                      </div>
                      <div className="space-y-1">
@@ -211,12 +211,12 @@ export default function Page() {
                          <Avatar className="h-12 w-12">
                              {/* <AvatarImage src={booking.studentAvatar} /> */}
                              <AvatarFallback className="bg-primary/10 text-primary">
-                                 {((typeof booking.student === 'object' ? booking.student.first_name : 'S').substring(0,2).toUpperCase())}
+                                 {typeof booking.student === 'object' ? booking.student?.first_name?.substring(0,2).toUpperCase() : 'S'}
                              </AvatarFallback>
                          </Avatar>
                          <div>
                              <p className="font-medium leading-none">
-                                 {typeof booking.student === 'object' ? `${booking.student.first_name} ${booking.student.last_name}` : booking.studentName || 'Student'}
+                                 {typeof booking.student === 'object' ? `${booking.student.first_name} ${booking.student.last_name}` : 'Student'}
                              </p>
                              <p className="text-sm text-muted-foreground mt-1">Student</p>
                          </div>

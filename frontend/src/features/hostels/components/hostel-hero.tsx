@@ -60,7 +60,7 @@ export default function HostelHero({ hostel, className }: HostelHeroProps) {
              </Button>
              <FavoriteButton
               hostelId={String(hostel.id)}
-              initialFavorited={!!hostel.isFavorited}
+              initialFavorited={!!hostel.is_favorited}
               size="default"
             />
           </div>

@@ -1365,7 +1365,7 @@ class AdminDashboardStatsView(APIView):
         total_revenue_today = today_transactions.filter(
             status='success'
         ).aggregate(
-            total=Sum('total_charged_amount')
+            total=Sum('amount')
         )['total'] or 0
         
         # Dispute statistics

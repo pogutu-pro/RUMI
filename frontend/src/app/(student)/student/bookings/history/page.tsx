@@ -53,13 +53,13 @@ export default function BookingHistoryPage() {
               <CardContent className="flex items-center justify-between py-4">
                 <div className="space-y-1">
                   <p className="font-semibold text-foreground">
-                    {booking.hostel.name}
+                    {typeof booking.hostel === 'object' ? booking.hostel.name : 'Hostel'}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Room {(booking.room as any).name || (booking.room as any).number} • {booking.duration_months} months
+                    Room {(booking.room as any)?.room_number || booking.room_info?.room_number} • {booking.duration_months} months
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(booking.check_in_date).toLocaleDateString()} -{' '}
+                    {new Date(booking.move_in_date).toLocaleDateString()} -{' '}
                     {booking.check_out_date ? new Date(booking.check_out_date).toLocaleDateString() : 'N/A'}
                   </p>
                 </div>

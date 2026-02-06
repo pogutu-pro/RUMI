@@ -52,10 +52,10 @@ export function BookingsList({ status = 'all' }: BookingsListProps) {
   const bookings = bookingsData || [];
 
   const filteredBookings = bookings.filter((booking) => {
-    const reference = booking.reference || `BKG-${booking.id}`;
-    const studentName = typeof booking.student === 'object' ? `${booking.student.first_name} ${booking.student.last_name}` : 'Student';
-    const hostelName = typeof booking.hostel === 'object' ? booking.hostel.name : '';
-    const roomNumber = typeof booking.room === 'object' ? booking.room.number : (booking.roomNumber || '');
+    const reference = booking.booking_reference || `BKG-${booking.id}`;
+    const studentName = booking.student_info?.name || (typeof booking.student === 'object' ? `${booking.student.first_name} ${booking.student.last_name}` : 'Student');
+    const hostelName = booking.room_info?.hostel_name || (typeof booking.hostel === 'object' ? booking.hostel.name : '');
+    const roomNumber = booking.room_info?.room_number || (typeof booking.room === 'object' ? booking.room.room_number : '');
     
     // Check if status matches if we are in 'all' mode but want to support client-side filter? 
     // Actually the prop 'status' already filtered the API.
@@ -155,9 +155,9 @@ export function BookingsList({ status = 'all' }: BookingsListProps) {
         ) : (
             filteredBookings.map((booking, index) => {
                  const StatusIcon = getStatusIcon(booking.status);
-                 const studentName = typeof booking.student === 'object' ? `${booking.student.first_name} ${booking.student.last_name}` : 'Unknown Student';
-                 const hostelName = typeof booking.hostel === 'object' ? booking.hostel.name : 'Unknown Hostel';
-                 const roomNumber = typeof booking.room === 'object' ? booking.room.number : (booking.roomNumber || 'N/A');
+                 const studentName = booking.student_info?.name || (typeof booking.student === 'object' ? `${booking.student.first_name} ${booking.student.last_name}` : 'Unknown Student');
+                 const hostelName = booking.room_info?.hostel_name || (typeof booking.hostel === 'object' ? booking.hostel.name : 'Unknown Hostel');
+                 const roomNumber = booking.room_info?.room_number || (typeof booking.room === 'object' ? booking.room.room_number : 'N/A');
                  
                  return (
                     <motion.div
@@ -178,7 +178,7 @@ export function BookingsList({ status = 'all' }: BookingsListProps) {
                                         </Avatar>
                                         <div>
                                             <h3 className="font-semibold text-slate-900 dark:text-slate-100">{studentName}</h3>
-                                            <p className="text-sm text-slate-500">Ref: {booking.reference || booking.id.slice(0,8).toUpperCase()}</p>
+                                            <p className="text-sm text-slate-500">Ref: {booking.booking_reference || booking.id.slice(0,8).toUpperCase()}</p>
                                         </div>
                                     </div>
 
@@ -197,7 +197,7 @@ export function BookingsList({ status = 'all' }: BookingsListProps) {
                                         <div className="space-y-1">
                                              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                                                 <Calendar className="h-4 w-4" />
-                                                <span>In: {format(new Date(booking.check_in_date), 'MMM dd, yyyy')}</span>
+                                                <span>In: {format(new Date(booking.move_in_date), 'MMM dd, yyyy')}</span>
                                             </div>
                                              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                                                 <DollarSign className="h-4 w-4" />

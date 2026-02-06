@@ -61,14 +61,14 @@ export default function CheckInsPage() {
 
     if (!matchesSearch) return false;
 
-    const checkInDate = new Date(booking.check_in_date);
+    const checkInDate = new Date(booking.move_in_date);
     
     if (filter === 'today') return isToday(checkInDate);
     if (filter === 'upcoming') return isFuture(checkInDate);
     if (filter === 'overdue') return isPast(checkInDate) && !isToday(checkInDate);
     
     return true;
-  }).sort((a, b) => new Date(a.check_in_date).getTime() - new Date(b.check_in_date).getTime());
+  }).sort((a, b) => new Date(a.move_in_date).getTime() - new Date(b.move_in_date).getTime());
 
   const handleBulkAction = () => {
       toast({
@@ -156,8 +156,8 @@ export default function CheckInsPage() {
                 
                 const studentName = typeof booking.student === 'object' ? `${booking.student.first_name} ${booking.student.last_name}` : 'Student';
                 const hostelName = typeof booking.hostel === 'object' ? booking.hostel.name : 'Hostel';
-                const roomNumber = typeof booking.room === 'object' ? booking.room.number : ((booking as any).roomNumber || 'N/A');
-                const checkInDate = new Date(booking.check_in_date);
+                const roomNumber = typeof booking.room === 'object' ? booking.room.room_number : (booking.room_info?.room_number || 'N/A');
+                const checkInDate = new Date(booking.move_in_date);
 
                 return (
                 <motion.div

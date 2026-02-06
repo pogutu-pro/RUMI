@@ -39,7 +39,7 @@ export function CurrentStayCard({ booking, loading }: CurrentStayCardProps) {
     );
   }
 
-  const { hostel, room, check_in_date, duration_months } = booking;
+  const { hostel, room, move_in_date, duration_months } = booking;
   const coverImage = (hostel as any).images?.[0] || '/images/hostel-placeholder.jpg';
 
   return (
@@ -64,7 +64,7 @@ export function CurrentStayCard({ booking, loading }: CurrentStayCardProps) {
                      <h2 className="text-xl font-bold text-foreground leading-tight line-clamp-1">{hostel?.name}</h2>
                      <p className="flex items-center gap-1.5 text-muted-foreground text-xs font-semibold uppercase tracking-wide">
                          <MapPin className="h-3.5 w-3.5 text-primary" />
-                         Room {room?.room_number || room?.number || room?.roomNumber}
+                         Room {room?.room_number || 'N/A'}
                      </p>
                 </div>
 
@@ -74,7 +74,7 @@ export function CurrentStayCard({ booking, loading }: CurrentStayCardProps) {
                             <Calendar className="h-3 w-3" /> Check-in
                         </p>
                         <p className="text-sm font-bold text-foreground">
-                             {check_in_date ? new Date(check_in_date).toLocaleDateString() : 'N/A'}
+                             {move_in_date ? new Date(move_in_date).toLocaleDateString() : 'N/A'}
                         </p>
                     </div>
                     <div className="space-y-1">

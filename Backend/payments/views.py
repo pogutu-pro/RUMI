@@ -1614,7 +1614,7 @@ class RevenueAnalyticsView(APIView):
         ).aggregate(
             total_revenue=Sum('gross_platform_revenue'),
             total_transactions=Count('id'),
-            total_volume=Sum('total_charged_amount'),
+            total_volume=Sum('amount'),
             gateway_fees=Sum('gateway_fee')
         )
 
@@ -1627,7 +1627,7 @@ class RevenueAnalyticsView(APIView):
         ).values('month').annotate(
             revenue=Sum('gross_platform_revenue'),
             transactions=Count('id'),
-            volume=Sum('total_charged_amount')
+            volume=Sum('amount')
         ).order_by('month')
 
         return Response({

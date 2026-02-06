@@ -77,7 +77,7 @@ export default function BookingsPage() {
                   <div className="flex justify-between items-start">
                     <div>
                       <Badge className="bg-emerald-600 hover:bg-emerald-700 mb-2">Active</Badge>
-                      <CardTitle className="text-xl">{booking.hostel.name}</CardTitle>
+                      <CardTitle className="text-xl">{typeof booking.hostel === 'object' ? booking.hostel.name : 'Hostel'}</CardTitle>
                       <CardDescription className="flex items-center gap-1 mt-1">
                         <MapPin className="h-3.5 w-3.5" />
                         {(booking.hostel as any).address || 'Nairobi, Kenya'}
@@ -104,7 +104,7 @@ export default function BookingsPage() {
                     <p className="text-xs text-muted-foreground uppercase tracking-wider">Room</p>
                     <div className="flex items-center gap-2 font-medium">
                       <Home className="h-4 w-4 text-emerald-600" />
-                      {(booking.room as any).name || (booking.room as any).number}
+                      {(booking.room as any)?.room_number || booking.room_info?.room_number}
                     </div>
                   </div>
                   <div className="space-y-1">
@@ -118,7 +118,7 @@ export default function BookingsPage() {
                     <p className="text-xs text-muted-foreground uppercase tracking-wider">Check-in</p>
                     <div className="flex items-center gap-2 font-medium">
                       <Calendar className="h-4 w-4 text-emerald-600" />
-                      {new Date(booking.moveInDate || booking.check_in_date).toLocaleDateString()}
+                      {new Date(booking.move_in_date).toLocaleDateString()}
                     </div>
                   </div>
                   <div className="space-y-1">
@@ -171,15 +171,15 @@ export default function BookingsPage() {
                         Pending Approval
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(booking.moveInDate || booking.check_in_date).toLocaleDateString()}
+                        {new Date(booking.move_in_date).toLocaleDateString()}
                       </span>
                     </div>
-                    <CardTitle className="text-base mt-2">{booking.hostel.name}</CardTitle>
+                    <CardTitle className="text-base mt-2">{typeof booking.hostel === 'object' ? booking.hostel.name : 'Hostel'}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Room Type</span>
-                      <span className="font-medium">{(booking.room as any).name || (booking.room as any).number}</span>
+                      <span className="font-medium">{(booking.room as any)?.room_number || booking.room_info?.room_number}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Total Amount</span>
@@ -224,9 +224,9 @@ export default function BookingsPage() {
                       <XCircle className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="font-medium">{booking.hostel.name}</p>
+                      <p className="font-medium">{typeof booking.hostel === 'object' ? booking.hostel.name : 'Hostel'}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(booking.moveInDate || booking.check_in_date).toLocaleDateString()} • {booking.duration_months} months
+                        {new Date(booking.move_in_date).toLocaleDateString()} • {booking.duration_months} months
                       </p>
                     </div>
                   </div>

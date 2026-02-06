@@ -37,11 +37,11 @@ export default function Page() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight text-foreground">
-            {booking.hostel.name}
+            {typeof booking.hostel === 'object' ? booking.hostel.name : 'Hostel'}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Room {(booking.room as any)?.name || (booking.room as any)?.number} • Move-in{' '}
-            {new Date(booking.check_in_date).toLocaleDateString()}
+            Room {(booking.room as any)?.room_number || booking.room_info?.room_number} • Move-in{' '}
+            {new Date(booking.move_in_date).toLocaleDateString()}
           </p>
         </div>
         <Badge variant="outline" className="text-[11px]">
@@ -58,7 +58,7 @@ export default function Page() {
         <CardContent className="pt-0 text-xs text-muted-foreground space-y-1">
           <p>Duration: {booking.duration_months} months</p>
           <p>Total: KES {booking.total_amount}</p>
-          <p>Check-in: {new Date(booking.check_in_date).toLocaleDateString()}</p>
+          <p>Check-in: {new Date(booking.move_in_date).toLocaleDateString()}</p>
         </CardContent>
       </Card>
 

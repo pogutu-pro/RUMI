@@ -12,6 +12,7 @@ interface BookingSuccessViewProps {
   roomName: string;
   moveInDate: Date;
   amountPaid: number;
+  isPending?: boolean;
 }
 
 export default function BookingSuccessView({
@@ -19,7 +20,8 @@ export default function BookingSuccessView({
   hostelName,
   roomName,
   moveInDate,
-  amountPaid
+  amountPaid,
+  isPending = false
 }: BookingSuccessViewProps) {
   const router = useRouter();
 
@@ -34,9 +36,13 @@ export default function BookingSuccessView({
         <CheckCircle2 className="w-10 h-10 text-green-600" />
       </motion.div>
 
-      <h2 className="text-2xl font-bold text-slate-900 mb-2">Booking Confirmed!</h2>
+      <h2 className="text-2xl font-bold text-slate-900 mb-2">
+        {isPending ? 'Verification Pending' : 'Booking Confirmed!'}
+      </h2>
       <p className="text-slate-600 mb-8 max-w-xs">
-        You are now a resident at <span className="font-semibold text-slate-900">{hostelName}</span>.
+        {isPending 
+          ? `Your claim for a room at ${hostelName} has been sent for verification.`
+          : `You are now a resident at ${hostelName}.`}
       </p>
 
       {/* Receipt Card */}
@@ -51,7 +57,9 @@ export default function BookingSuccessView({
               <p className="font-mono text-slate-900">#{bookingId}</p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-slate-500 uppercase font-bold">Amount Paid</p>
+              <p className="text-xs text-slate-500 uppercase font-bold">
+                {isPending ? 'Monthly Rent' : 'Amount Paid'}
+              </p>
               <p className="font-bold text-emerald-600">KSh {amountPaid.toLocaleString()}</p>
             </div>
           </div>

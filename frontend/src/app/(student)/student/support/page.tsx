@@ -170,7 +170,7 @@ export default function SupportPage() {
               ) : caretaker ? (
                 <>
                   <div className="space-y-1">
-                    <p className="text-xl font-black text-foreground">{caretaker.caretakerName || 'Registry Pending'}</p>
+                    <p className="text-xl font-black text-foreground">{caretaker.caretaker_name || 'Registry Pending'}</p>
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Caretaker / Facility Management</p>
                   </div>
                   <div className="p-4 bg-muted/20 border border-border/20 rounded-lg space-y-2">

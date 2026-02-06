@@ -101,8 +101,8 @@ class ReceiptGenerator:
         booking_info_data = [
             ['Hostel:', booking.room.hostel.name],
             ['Room:', booking.room.room_number],
-            ['Check-in Date:', booking.check_in_date.strftime("%Y-%m-%d")],
-            ['Check-out Date:', booking.check_out_date.strftime("%Y-%m-%d")]
+            ['Check-in Date:', booking.check_in_date.strftime("%Y-%m-%d") if booking.check_in_date else 'N/A'],
+            ['Check-out Date:', booking.check_out_date.strftime("%Y-%m-%d") if booking.check_out_date else 'N/A']
         ]
         
         booking_table = Table(booking_info_data, colWidths=[2.5*inch, 3*inch])
@@ -122,9 +122,8 @@ class ReceiptGenerator:
         
         payment_data = [
             ['Description', 'Amount (KES)'],
-            ['Base Rent', f"{self.transaction.base_rent:,.2f}"],
-            ['Service Fee (2%)', f"{self.transaction.student_service_fee:,.2f}"],
-            ['Total Paid', f"{self.transaction.total_charged_amount:,.2f}"]
+            ['Booking Payment', f"{self.transaction.amount:,.2f}"],
+            ['Total Paid', f"{self.transaction.amount:,.2f}"]
         ]
         
         payment_table = Table(payment_data, colWidths=[3.5*inch, 2*inch])

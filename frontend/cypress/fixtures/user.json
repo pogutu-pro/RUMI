@@ -1,0 +1,8 @@
+{
+    "id": "user-1",
+    "email": "student@example.com",
+    "role": "student",
+    "first_name": "Test",
+    "last_name": "Student",
+    "is_verified": true
+}

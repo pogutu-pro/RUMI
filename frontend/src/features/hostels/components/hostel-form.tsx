@@ -19,7 +19,7 @@ const schema = z.object({
   name: z.string().min(3),
   address: z.string().min(5),
   description: z.string().min(10),
-  pricePerMonth: z.number().positive(),
+  base_price: z.number().positive(),
   amenities: z.array(z.string()),
   images: z.array(z.string()),
 });
@@ -39,7 +39,7 @@ export default function HostelForm({ initialData }: { initialData?: Hostel }) {
         name: initialData?.name || '',
         address: initialData?.address || '',
         description: initialData?.description || '',
-        pricePerMonth: initialData?.pricePerMonth || Number(initialData?.base_price) || 0,
+        base_price: Number(initialData?.base_price) || 0,
         amenities: initialData?.amenities_list || [],
         images: initialData?.images || [],
     },
@@ -77,14 +77,14 @@ export default function HostelForm({ initialData }: { initialData?: Hostel }) {
         )}
       </div>
       <div>
-        <Label htmlFor="pricePerMonth">Price per Month (KSh)</Label>
+        <Label htmlFor="base_price">Price per Month (KSh)</Label>
         <Input
-          id="pricePerMonth"
+          id="base_price"
           type="number"
-          {...register('pricePerMonth', { valueAsNumber: true })}
+          {...register('base_price', { valueAsNumber: true })}
         />
-        {errors.pricePerMonth && (
-          <p className="text-red-500 text-sm">{errors.pricePerMonth.message}</p>
+        {errors.base_price && (
+          <p className="text-red-500 text-sm">{errors.base_price.message}</p>
         )}
       </div>
       <div>

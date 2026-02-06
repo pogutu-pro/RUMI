@@ -308,8 +308,8 @@ class AdminPlatformStatsView(APIView):
             'total_bookings': Booking.objects.count(),
             'active_bookings': Booking.objects.filter(status__in=['confirmed', 'reserved']).count(),
             'completed_bookings': Booking.objects.filter(status='completed').count(),
-            'total_revenue': float(Transaction.objects.aggregate(total=Sum('total_charged_amount'))['total'] or 0),
-            'platform_commission': float(Transaction.objects.aggregate(total=Sum('platform_fee'))['total'] or 0)
+            'total_revenue': float(Transaction.objects.aggregate(total=Sum('amount'))['total'] or 0),
+            'platform_commission': float(Transaction.objects.aggregate(total=Sum(F('amount') * Decimal('0.03')))['total'] or 0)
         }
         
         # Growth metrics
@@ -326,7 +326,9 @@ class AdminPlatformStatsView(APIView):
         revenue_growth = Transaction.objects.filter(
             paid_at__date__gte=start_date,
             paid_at__date__lte=end_date
-        ).aggregate(total=Sum('total_charged_amount'))['total'] or 0
+        ).aggregate(
+            total=Sum('amount')
+        )['total'] or 0
         
         # Occupancy rates
         total_capacity = platform_stats['total_rooms']
@@ -347,7 +349,7 @@ class AdminPlatformStatsView(APIView):
             month_revenue = Transaction.objects.filter(
                 paid_at__date__gte=current_date,
                 paid_at__date__lte=month_end
-            ).aggregate(total=Sum('total_charged_amount'))['total'] or 0
+            ).aggregate(total=Sum('amount'))['total'] or 0
             
             monthly_trends.append({
                 'month': current_date.strftime('%Y-%m'),

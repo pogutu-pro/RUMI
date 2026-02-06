@@ -30,9 +30,9 @@ export function HostelComparisonTable({
         {hostels.map((hostel) => (
           <TableRow key={hostel.id}>
             <TableCell className="font-medium">{hostel.name}</TableCell>
-            <TableCell>KSh {(hostel.pricePerMonth ?? 0).toLocaleString()}</TableCell>
+            <TableCell>KSh {Number(hostel.base_price ?? 0).toLocaleString()}</TableCell>
             <TableCell>{parseFloat(hostel.rating || '0').toFixed(1)}</TableCell>
-            <TableCell>{hostel.distanceToCampus ?? 0} km</TableCell>
+            <TableCell>{hostel.distance_from_university ?? 'Near'} km</TableCell>
             <TableCell>{(hostel.amenities_list || []).join(', ')}</TableCell>
           </TableRow>
         ))}

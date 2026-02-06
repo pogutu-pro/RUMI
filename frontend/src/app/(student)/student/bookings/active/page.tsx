@@ -54,7 +54,7 @@ export default function ActiveBookingsPage() {
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-xl font-bold text-foreground">
-                      {booking.hostel.name}
+                      {typeof booking.hostel === 'object' ? booking.hostel.name : 'Hostel'}
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
                       Booking #{booking.id.slice(0, 8)}
@@ -71,7 +71,7 @@ export default function ActiveBookingsPage() {
                     <div>
                       <p className="text-xs text-muted-foreground">Room</p>
                       <p className="text-sm font-medium text-foreground">
-                        {(booking.room as any).name || (booking.room as any).number} • {(booking.room as any).room_type || (booking.room as any).type || 'Room'}
+                        {(booking.room as any)?.room_number || booking.room_info?.room_number} • {(booking.room as any)?.room_type || (booking.room as any)?.type || 'Room'}
                       </p>
                     </div>
                   </div>
@@ -91,7 +91,7 @@ export default function ActiveBookingsPage() {
                     <div>
                       <p className="text-xs text-muted-foreground">Check-in Date</p>
                       <p className="text-sm font-medium text-foreground">
-                        {new Date(booking.check_in_date).toLocaleDateString('en-US', {
+                        {new Date(booking.move_in_date).toLocaleDateString('en-US', {
                           month: 'long',
                           day: 'numeric',
                           year: 'numeric',

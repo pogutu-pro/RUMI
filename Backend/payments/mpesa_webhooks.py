@@ -339,7 +339,7 @@ class MpesaWebhookHandler(View):
                 notification_type='payment_received',
                 channel='email',
                 context={
-                    'landlord_name': transaction.landlord.business_name or transaction.landlord.user.first_name,
+                    'landlord_name': transaction.landlord.company_name or transaction.landlord.user.first_name,
                     'amount': float(transaction.landlord_payout_amount),
                     'student_name': transaction.student.user.first_name,
                     'payment_method': 'M-Pesa'

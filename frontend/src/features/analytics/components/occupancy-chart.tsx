@@ -19,7 +19,7 @@ export function OccupancyChart() {
         <CardTitle>Occupancy Rate</CardTitle>
       </CardHeader>
       <CardContent>
-        <div style={{ width: '100%', height: 350, minHeight: 350 }}>
+        <div style={{ width: '100%', height: 350, minHeight: 350, minWidth: '100%' }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={mockData}>
               <CartesianGrid strokeDasharray="3 3" />

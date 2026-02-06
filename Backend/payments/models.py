@@ -256,6 +256,26 @@ class Transaction(models.Model):
     initiated_at = models.DateTimeField(default=timezone.now)
     paid_at = models.DateTimeField(blank=True, null=True)
 
+    @property
+    def total_charged_amount(self):
+        return self.amount
+
+    @property
+    def landlord_payout_amount(self):
+        return self.amount * Decimal('0.97') # Simplified 3% fee
+
+    @property
+    def platform_fee(self):
+        return self.amount * Decimal('0.03')
+
+    @property
+    def landlord(self):
+        if self.booking:
+            return self.booking.room.hostel.landlord
+        if self.rent_period:
+            return self.rent_period.hostel.landlord
+        return None
+
     class Meta:
         ordering = ['-initiated_at']
 

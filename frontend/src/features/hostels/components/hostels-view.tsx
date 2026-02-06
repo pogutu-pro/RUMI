@@ -14,7 +14,7 @@ import HostelSort from './hostel-sort';
 import HostelGrid from './hostel-grid';
 import { HostelFiltersPanel, type FiltersState } from './hostel-filters-panel';
 import { useFiltersStore } from '@/features/hostels';
-import { getHostels, type HostelsResponse } from '@/features/hostels';
+import { searchHostels, getHostels, type HostelsResponse } from '@/features/hostels';
 import type { Hostel } from '@/types/entities.types';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -46,11 +46,12 @@ export function HostelsView() {
 
   // Combine store and local filters for API
   const apiFilters = React.useMemo(() => {
-    // Map frontend sort keys to backend 'ordering' parameter
-    let ordering = undefined;
-    if (sort === 'price_asc') ordering = 'price';
-    else if (sort === 'price_desc') ordering = '-price';
-    else if (sort === 'rating') ordering = '-rating';
+    // Map frontend sort keys to backend 'sort_by' parameter
+    let sort_by = undefined;
+    if (sort === 'price_asc') sort_by = 'price_low';
+    else if (sort === 'price_desc') sort_by = 'price_high';
+    else if (sort === 'rating') sort_by = 'rating';
+    else if (sort === 'popularity') sort_by = 'popularity';
     
     return {
       university,
@@ -61,7 +62,7 @@ export function HostelsView() {
       max_price: priceRange[1],
       amenities: amenities.length > 0 ? amenities.join(',') : undefined,
       search: searchQuery || undefined,
-      ordering,
+      sort_by,
     };
   }, [university, city, hostel_type, gender_policy, priceRange, amenities, searchQuery, sort]);
   
@@ -71,12 +72,40 @@ export function HostelsView() {
     error,
   } = useQuery<HostelsResponse, Error>({
     queryKey: ['hostels', apiFilters, sort],
-    queryFn: () => getHostels(apiFilters),
+    queryFn: () => {
+      // Use searchHostels only when there are meaningful filters that require authentication
+      // Otherwise use getHostels which is publicly accessible
+      const hasFilters = Object.keys(apiFilters).some(key => {
+        const value = apiFilters[key as keyof typeof apiFilters];
+        // Check for meaningful filter values, not just defaults or empty states
+        if (value === undefined || value === '') return false;
+        if (Array.isArray(value)) return value.length > 0;
+        // Exclude default price range values
+        if (key === 'min_price' && value === 0) return false;
+        if (key === 'max_price' && value === 50000) return false;
+        // Exclude default sort
+        if (key === 'sort_by' && value === undefined) return false;
+        return true;
+      });
+      
+      console.log('🔍 Filter Logic:', { hasFilters, apiFilters });
+      
+      return hasFilters ? searchHostels(apiFilters) : getHostels({});
+    },
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
 
   const hostels = data?.results || [];
+  
+  // Debug: Log data state
+  console.log('🏠 Hostels Debug:', {
+    data: data,
+    hostelsLength: hostels.length,
+    isLoading,
+    error: error?.message,
+    apiFilters
+  });
 
   const handleFiltersChange = (newFilters: FiltersState) => {
     // Sync everything to store

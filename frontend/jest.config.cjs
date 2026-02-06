@@ -21,6 +21,9 @@ const config = {
       '!src/**/index.ts',
       '!src/types/**/*',
   ],
+  transformIgnorePatterns: [
+    'node_modules/(?!(msw|@mswjs|until-async|@mswjs/interceptors|@bundled-es-modules|undici)/)',
+  ],
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

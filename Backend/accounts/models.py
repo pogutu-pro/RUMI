@@ -299,6 +299,10 @@ class LandlordProfile(models.Model):
         default=Decimal('0.00'),
         validators=[MinValueValidator(Decimal('0.00'))]
     )
+    response_rate = models.IntegerField(default=100, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    average_response_time = models.CharField(max_length=50, default='Within 24 hours')
+    verified_since = models.DateTimeField(blank=True, null=True)
+    trust_score = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -357,7 +361,7 @@ class CaretakerProfile(models.Model):
     )
     hostel = models.ForeignKey(
         'hostels.Hostel',
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         null=True,
         blank=True,
         related_name='caretakers'

@@ -29,6 +29,11 @@ const item = {
 };
 
 export default function HostelGrid({ hostels, className, basePath }: HostelGridProps) {
+  console.log('🏠 HostelGrid Debug:', { 
+    hostelsLength: hostels?.length || 0, 
+    hostels: hostels?.slice(0, 2) // Show first 2 for debugging
+  });
+  
   if (!hostels || hostels.length === 0)
     return (
       <p className="text-center text-gray-500 py-12" role="status">

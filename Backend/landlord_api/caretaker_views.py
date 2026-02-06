@@ -5,7 +5,7 @@ from django.db import transaction
 from django.utils.crypto import get_random_string
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-
+from accounts.permissions import IsVerifiedLandlord
 from accounts.models import User, CaretakerProfile, LandlordProfile
 from accounts.serializers import CaretakerCreateSerializer
 from hostels.models import Hostel
@@ -22,7 +22,7 @@ class InviteCaretakerView(APIView):
     
     Landlord provides details. System creates a User (if needed) and a CaretakerProfile.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerifiedLandlord]
 
     @swagger_auto_schema(
         request_body=CaretakerCreateSerializer,

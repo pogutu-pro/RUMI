@@ -410,8 +410,10 @@ COMPRESSIBLE_TYPES = [
     'application/xml',
     'text/xml',
 ]
-RATE_LIMIT_ANONYMOUS = 100  # per hour
-RATE_LIMIT_AUTHENTICATED = 1000  # per hour
+# Rate limiting settings
+ENABLE_RATE_LIMITING = os.getenv('ENABLE_RATE_LIMITING', 'True').lower() == 'true'
+RATE_LIMIT_ANONYMOUS = int(os.getenv('RATE_LIMIT_ANONYMOUS', 1000))  # Increased for dev
+RATE_LIMIT_AUTHENTICATED = int(os.getenv('RATE_LIMIT_AUTHENTICATED', 5000))
 
 # Debug Toolbar Configuration
 if DEBUG:

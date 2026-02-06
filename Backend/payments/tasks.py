@@ -122,19 +122,15 @@ def charge_saved_payment_method(recurring_payment, amount):
             transaction = Transaction.objects.create(
                 booking=recurring_payment.booking,
                 student=recurring_payment.student,
-                landlord=recurring_payment.booking.room.hostel.landlord,
                 transaction_reference=f"RUMI-RECUR-{timezone.now().year}-{recurring_payment.id}",
-                transaction_type='recurring',
-                payment_plan='monthly',
-                base_rent=amount,
-                student_service_fee=amount * Decimal('0.01'),
-                total_charged_amount=amount * Decimal('1.01'),
-                landlord_commission=amount * Decimal('0.02'),
-                landlord_payout_amount=amount * Decimal('0.98'),
-                gross_platform_revenue=amount * Decimal('0.03'),
+                transaction_type='rent',
+                amount=amount,
                 status='success',
                 paid_at=timezone.now(),
-                metadata={'recurring_payment_id': recurring_payment.id}
+                metadata={
+                    'recurring_payment_id': recurring_payment.id,
+                    'is_recurring': True
+                }
             )
 
             return {
@@ -254,7 +250,7 @@ def generate_monthly_tax_reports():
         )
 
         total_rent = transactions.aggregate(
-            total=Sum('base_rent')
+            total=Sum('amount')
         )['total'] or Decimal('0.00')
 
         total_tax = total_rent * Decimal('0.10')
@@ -328,26 +324,23 @@ def aggregate_revenue_analytics():
     )
 
     daily_stats = daily_transactions.aggregate(
-        total_transactions=Sum('id', distinct=True),
-        total_volume=Sum('base_rent'),
-        gross_revenue=Sum('gross_platform_revenue'),
-        gateway_fees=Sum('gateway_fee'),
-        net_revenue=Sum('net_platform_revenue')
+        total_transactions=Count('id'),
+        total_volume=Sum('amount')
     )
 
     # Additional aggregations
     recurring_payments_count = daily_transactions.filter(
-        transaction_type='recurring'
+        metadata__is_recurring=True
     ).count()
 
     late_fees_collected = Transaction.objects.filter(
         status='success',
         paid_at__date=today,
         transaction_type='late_fee'
-    ).aggregate(total=Sum('base_rent'))['total'] or Decimal('0.00')
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
     withholding_tax_collected = daily_transactions.aggregate(
-        total=Sum('withholding_tax')
+        total=Sum(F('amount') * Decimal('0.10'))
     )['total'] or Decimal('0.00')
 
     # Create/update daily analytics record
@@ -355,14 +348,7 @@ def aggregate_revenue_analytics():
         date=today,
         period_type='daily',
         defaults={
-            'total_transactions': daily_stats['total_transactions'] or 0,
             'total_volume': daily_stats['total_volume'] or Decimal('0.00'),
-            'gross_platform_revenue': daily_stats['gross_revenue'] or Decimal('0.00'),
-            'gateway_fees_paid': daily_stats['gateway_fees'] or Decimal('0.00'),
-            'net_platform_revenue': daily_stats['net_revenue'] or Decimal('0.00'),
-            'recurring_payments_count': recurring_payments_count,
-            'late_fees_collected': late_fees_collected,
-            'total_withholding_tax': withholding_tax_collected
         }
     )
 
@@ -397,22 +383,18 @@ def aggregate_period_stats(start_date, end_date, period_type):
     )
 
     stats = period_transactions.aggregate(
-        total_transactions=Sum('id', distinct=True),
-        total_volume=Sum('base_rent'),
-        gross_revenue=Sum('gross_platform_revenue'),
-        gateway_fees=Sum('gateway_fee'),
-        net_revenue=Sum('net_platform_revenue'),
-        withholding_tax=Sum('withholding_tax')
+        total_transactions=Count('id'),
+        total_volume=Sum('amount')
     )
 
-    recurring_count = period_transactions.filter(transaction_type='recurring').count()
+    recurring_count = period_transactions.filter(metadata__is_recurring=True).count()
 
     late_fees = Transaction.objects.filter(
         status='success',
         paid_at__date__gte=start_date,
         paid_at__date__lte=end_date,
         transaction_type='late_fee'
-    ).aggregate(total=Sum('base_rent'))['total'] or Decimal('0.00')
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
     # Determine the date key for the period
     if period_type == 'weekly':
@@ -426,14 +408,7 @@ def aggregate_period_stats(start_date, end_date, period_type):
         date=date_key,
         period_type=period_type,
         defaults={
-            'total_transactions': stats['total_transactions'] or 0,
             'total_volume': stats['total_volume'] or Decimal('0.00'),
-            'gross_platform_revenue': stats['gross_revenue'] or Decimal('0.00'),
-            'gateway_fees_paid': stats['gateway_fees'] or Decimal('0.00'),
-            'net_platform_revenue': stats['net_revenue'] or Decimal('0.00'),
-            'recurring_payments_count': recurring_count,
-            'late_fees_collected': late_fees,
-            'total_withholding_tax': stats['withholding_tax'] or Decimal('0.00')
         }
     )
 

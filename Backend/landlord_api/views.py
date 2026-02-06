@@ -113,7 +113,7 @@ class LandlordDashboardOverviewView(APIView):
                 paid_at__date__lte=month_end
             )
             
-            revenue = month_transactions.aggregate(total=Sum('total_charged_amount'))['total'] or 0
+            revenue = month_transactions.aggregate(total=Sum('amount'))['total'] or 0
             occupancy_count = Booking.objects.filter(
                 room__hostel_id__in=hostel_ids,
                 status__in=['confirmed', 'reserved'],
@@ -152,7 +152,7 @@ class LandlordDashboardOverviewView(APIView):
                 status='success',
                 paid_at__date__gte=month_ago,
                 paid_at__date__lte=today
-            ).aggregate(total=Sum('total_charged_amount'))['total'] or 0
+            ).aggregate(total=Sum('amount'))['total'] or 0
             
             hostel_performance.append({
                 'id': hostel.id,
@@ -176,7 +176,7 @@ class LandlordDashboardOverviewView(APIView):
         total_revenue = Transaction.objects.filter(
             booking__room__hostel_id__in=hostel_ids,
             status='success'
-        ).aggregate(total=Sum('total_charged_amount'))['total'] or 0
+        ).aggregate(total=Sum('amount'))['total'] or 0
         
         # Calculate occupancy rate
         total_capacity = sum(hostel.total_rooms for hostel in hostels)
@@ -615,8 +615,8 @@ class LandlordPaymentAnalyticsView(APIView):
                 paid_at__date__lte=month_end
             )
             
-            collected = month_transactions.aggregate(total=Sum('total_charged_amount'))['total'] or 0
-            pending = month_transactions.filter(status='pending').aggregate(total=Sum('total_charged_amount'))['total'] or 0
+            collected = month_transactions.aggregate(total=Sum('amount'))['total'] or 0
+            pending = month_transactions.filter(status='pending').aggregate(total=Sum('amount'))['total'] or 0
             
             collection_rate = (collected / (collected + pending) * 100) if (collected + pending) > 0 else 0
             
@@ -634,8 +634,8 @@ class LandlordPaymentAnalyticsView(APIView):
                 current_date = current_date.replace(month=current_date.month + 1)
         
         # Calculate summary
-        total_collected = queryset.aggregate(total=Sum('total_charged_amount'))['total'] or 0
-        total_pending = queryset.filter(status='pending').aggregate(total=Sum('total_charged_amount'))['total'] or 0
+        total_collected = queryset.aggregate(total=Sum('amount'))['total'] or 0
+        total_pending = queryset.filter(status='pending').aggregate(total=Sum('amount'))['total'] or 0
         avg_collection_rate = sum(item['collection_rate'] for item in monthly_data) / len(monthly_data) if monthly_data else 0
         
         return Response({

@@ -155,7 +155,7 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
         {isExpanded ? (
           <Link href="/" className="flex items-center gap-2 font-bold text-2xl text-primary">
             <div className="relative h-8 w-8">
-              <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" style={{ height: 'auto' }} />
+              <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" />
             </div>
             <span>RUMI</span>
           </Link>
@@ -166,7 +166,6 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                 alt="RUMI Logo" 
                 width={32} 
                 height={32} 
-                style={{ height: 'auto' }}
               />
            </Link>
         )}

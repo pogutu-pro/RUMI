@@ -3,9 +3,32 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
 import uuid
+from django.db.models import QuerySet
 
 
-class Hostel(models.Model):
+class SoftDeleteManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(deleted_at__isnull=True)
+
+
+class SoftDeleteModel(models.Model):
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    
+    objects = SoftDeleteManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        abstract = True
+
+    def delete(self, using=None, keep_parents=False):
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def hard_delete(self):
+        super().delete()
+
+
+class Hostel(SoftDeleteModel):
     """Main hostel/accommodation property"""
 
     HOSTEL_TYPE_CHOICES = [
@@ -45,7 +68,9 @@ class Hostel(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     total_rooms = models.IntegerField(default=0)
     available_rooms = models.IntegerField(default=0)
+
     base_price = models.DecimalField(max_digits=10, decimal_places=2)
+    deposit_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     currency = models.CharField(max_length=3, default='KES')
     
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=Decimal('0.0'))
@@ -61,6 +86,45 @@ class Hostel(models.Model):
         related_name='verified_hostels'
     )
     images = models.JSONField(default=list, blank=True)
+    verification_data = models.JSONField(
+        default=dict, 
+        blank=True,
+        help_text="Detailed verification attributes (e.g. {'id_verified': true, 'in_person_visit': true})"
+    )
+    contact_preferences = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Landlord specific contact rules/availability"
+    )
+    rules = models.TextField(blank=True, null=True)
+    
+    # Wizard Data Fields
+    caretaker_name = models.CharField(max_length=255, blank=True, null=True)
+    caretaker_phone = models.CharField(max_length=50, blank=True, null=True)
+    total_floors = models.IntegerField(default=1)
+    
+    safety_features = models.JSONField(default=list, blank=True, help_text="List of safety features IDs")
+    
+    # Payment & Terms
+    payment_terms = models.TextField(blank=True, null=True)
+    PAYMENT_CYCLE_CHOICES = [
+        ('monthly', 'Monthly'),
+        ('semester', 'Per Semester'),
+        ('annual', 'Annually'),
+    ]
+    payment_cycle = models.CharField(max_length=20, choices=PAYMENT_CYCLE_CHOICES, default='monthly')
+    grace_period_days = models.IntegerField(default=5)
+    late_fee_percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('5.00'))
+    
+    TENANT_TYPE_CHOICES = [
+        ('students_only', 'Students Only'),
+        ('anyone', 'Open to Anyone'),
+    ]
+    tenant_type = models.CharField(max_length=20, choices=TENANT_TYPE_CHOICES, default='students_only')
+    
+    minimum_stay = models.CharField(max_length=50, default='semester')
+    mid_term_joins_allowed = models.BooleanField(default=True)
+
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -76,7 +140,7 @@ class Hostel(models.Model):
         return self.name
 
 
-class Room(models.Model):
+class Room(SoftDeleteModel):
     """Individual room within a hostel"""
 
     ROOM_TYPE_CHOICES = [
@@ -89,7 +153,7 @@ class Room(models.Model):
     STATUS_CHOICES = [
         ('available', 'Available'),
         ('occupied', 'Occupied'),
-        ('maintenance', 'Under Maintenance'),
+        ('under_maintenance', 'Under Maintenance'),
         ('reserved', 'Reserved'),
     ]
 
@@ -102,11 +166,15 @@ class Room(models.Model):
     room_type = models.CharField(max_length=20, choices=ROOM_TYPE_CHOICES)
     floor = models.IntegerField(blank=True, null=True)
     base_price = models.DecimalField(max_digits=10, decimal_places=2)
+    semester_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    deposit_required = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
     capacity = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(10)])
     current_occupancy = models.IntegerField(default=0)
     amenities = models.JSONField(blank=True, null=True)
+    detailed_attributes = models.JSONField(default=dict, blank=True)
     description = models.TextField(blank=True, null=True)
+    images = models.JSONField(default=list, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -153,10 +221,14 @@ class Booking(models.Model):
     duration_months = models.IntegerField(default=12)
     monthly_rent = models.DecimalField(max_digits=10, decimal_places=2)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_status = models.CharField(max_length=20, default='pending')
+    payment_plan = models.CharField(max_length=20, default='monthly')
+    move_in_date = models.DateField(null=True, blank=True)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     balance_due = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     auto_renewal = models.BooleanField(default=False)
+    is_existing_resident = models.BooleanField(default=False)
     special_requests = models.TextField(blank=True, null=True)
     emergency_contact_name = models.CharField(max_length=200)
     emergency_contact_phone = models.CharField(max_length=15)
@@ -186,7 +258,7 @@ class RoomImage(models.Model):
     room = models.ForeignKey(
         Room,
         on_delete=models.CASCADE,
-        related_name='images'
+        related_name='room_photos'
     )
     image_url = models.URLField()
     caption = models.CharField(max_length=255, blank=True, null=True)
@@ -1375,3 +1447,68 @@ class VisitorInvitation(models.Model):
     
     def __str__(self):
         return f"Visitor invitation: {self.visitor_name} for {self.student.user.get_full_name()}"
+
+
+class Favorite(models.Model):
+    """User's favorite hostels"""
+    user = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.CASCADE,
+        related_name='favorite_hostels'
+    )
+    hostel = models.ForeignKey(
+        Hostel,
+        on_delete=models.CASCADE,
+        related_name='favorited_by'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'hostels_favorite'
+        unique_together = ['user', 'hostel']
+        indexes = [
+            models.Index(fields=['user', 'hostel'], name='idx_fav_user_hostel'),
+        ]
+
+    def __str__(self):
+        return f"{self.user.email} - {self.hostel.name}"
+
+
+class Waitlist(models.Model):
+    """Waitlist for students interested in full hostels"""
+    student = models.ForeignKey(
+        'accounts.StudentProfile',
+        on_delete=models.CASCADE,
+        related_name='waitlist_entries'
+    )
+    hostel = models.ForeignKey(
+        Hostel,
+        on_delete=models.CASCADE,
+        related_name='waitlist'
+    )
+    room_type_preference = models.CharField(
+        max_length=20,
+        choices=Room.ROOM_TYPE_CHOICES,
+        blank=True,
+        null=True
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('active', 'Active'),
+            ('contacted', 'Contacted'),
+            ('converted', 'Converted'),
+            ('cancelled', 'Cancelled')
+        ],
+        default='active'
+    )
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'hostels_waitlist'
+        unique_together = ['student', 'hostel']
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Waitlist: {self.student.user.email} for {self.hostel.name}"

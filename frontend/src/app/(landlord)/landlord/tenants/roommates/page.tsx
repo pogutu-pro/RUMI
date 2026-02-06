@@ -48,7 +48,7 @@ export default function RoommatesPage() {
         // Key needs to be unique per room (hostel + room)
         const roomId = (booking.room && typeof booking.room === 'object' && 'id' in booking.room) 
           ? (booking.room as any).id 
-          : (booking.roomNumber || 'unknown');
+          : (booking.room_info?.room_number || 'unknown');
           
         const hostelId = (booking.hostel && typeof booking.hostel === 'object' && 'id' in booking.hostel)
           ? (booking.hostel as any).id
@@ -59,7 +59,7 @@ export default function RoommatesPage() {
         if (!groups[key]) {
             groups[key] = {
                 hostel: (booking.hostel as any).name || 'Unknown Hostel',
-                roomNumber: (booking.room as any).number || booking.roomNumber || 'N/A',
+                roomNumber: (booking.room as any).room_number || booking.room_info?.room_number || 'N/A',
                 roomType: (booking.room as any).type || 'Standard',
                 occupants: []
             };

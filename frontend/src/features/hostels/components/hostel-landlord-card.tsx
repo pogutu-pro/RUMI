@@ -17,6 +17,7 @@ import {
   Shield,
   Star,
   MessageCircle,
+  Check,
 } from 'lucide-react';
 import type { Hostel } from '@/types/entities.types';
 
@@ -51,132 +52,116 @@ export default function HostelLandlordCard({
       transition={{ duration: 0.5 }}
       className="py-12 border-t border-gray-200"
     >
-      <h2 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900">
-        Managed by
-      </h2>
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-2xl font-bold text-gray-900">
+          Managed by
+        </h2>
+        {isVerified && (
+          <Badge className="bg-emerald-600 text-white hover:bg-emerald-700 px-3 py-1">
+            <Shield className="h-3 w-3 mr-1.5" />
+            Verified Partner
+          </Badge>
+        )}
+      </div>
 
-      <Card className="p-6 border-2 border-gray-200 hover:border-emerald-200 transition-colors">
-        <div className="flex flex-col sm:flex-row gap-6">
-          {/* Landlord Avatar */}
-          <div className="relative">
-            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg">
-              <span className="text-2xl font-bold text-white">{initials}</span>
-            </div>
-            {isVerified && (
-              <div className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full bg-emerald-600 border-2 border-white flex items-center justify-center shadow-md">
-                <Shield className="h-4 w-4 text-white" />
-              </div>
-            )}
-          </div>
-
-          {/* Landlord Info */}
-          <div className="flex-1 space-y-4">
-            {/* Name and status */}
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-xl font-bold text-gray-900">
-                  {landlordName}
-                </h3>
+      <div className="grid md:grid-cols-3 gap-8">
+        {/* Main Landlord Profile */}
+        <div className="md:col-span-2">
+           <Card className="p-6 border-0 shadow-lg bg-white/50 backdrop-blur-sm">
+            <div className="flex items-start gap-6">
+              <div className="relative shrink-0">
+                <div className="h-20 w-20 rounded-2xl bg-slate-900 flex items-center justify-center shadow-xl">
+                  <span className="text-2xl font-bold text-white">{initials}</span>
+                </div>
                 {isVerified && (
-                  <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">
-                    <Shield className="h-3 w-3 mr-1" />
-                    Verified
-                  </Badge>
+                  <div className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-emerald-500 border-4 border-white flex items-center justify-center">
+                    <Check className="h-4 w-4 text-white" />
+                  </div>
                 )}
               </div>
-              <p className="text-sm text-gray-600">Property Owner</p>
-            </div>
-
-            {/* Stats */}
-            <div className="flex flex-wrap gap-4 text-sm">
-              <div className="flex items-center gap-1.5 text-gray-600">
-                <Building2 className="h-4 w-4" />
-                <span>1 property</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-gray-600">
-                <Star className="h-4 w-4 fill-gray-400 text-gray-400" />
-                <span>{Number(hostel.rating || 0).toFixed(1)} rating</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-gray-600">
-                <MapPin className="h-4 w-4" />
-                <span>{hostel.city}</span>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Contact Options */}
-            <div className="flex flex-wrap gap-3">
-              {landlordPhone && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300 flex-1 sm:flex-none"
-                  asChild
-                >
-                  <a href={`tel:${landlordPhone}`}>
-                    <Phone className="h-4 w-4" />
-                    <span>Call</span>
-                  </a>
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300 flex-1 sm:flex-none"
-              >
-                <MessageCircle className="h-4 w-4" />
-                <span>Message</span>
-              </Button>
-            </div>
-
-            {/* Contact Info Display */}
-            <div className="pt-2 space-y-2 text-sm">
-              {landlordPhone && (
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Phone className="h-4 w-4" />
-                  <span className="font-medium">{landlordPhone}</span>
+              
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xl font-bold text-gray-900 mb-1">{landlordName}</h3>
+                <p className="text-sm text-gray-500 mb-4">Joined {new Date().getFullYear()}</p>
+                
+                {/* Metrics Grid */}
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  {hostel.landlord_info ? (
+                     <>
+                        <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
+                          <p className="text-xs font-bold text-emerald-800 uppercase tracking-widest mb-1">Trust Score</p>
+                          <p className="text-xl font-black text-emerald-700">{hostel.landlord_info.trust_score}%</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                          <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Response Rate</p>
+                          <p className="text-lg font-bold text-gray-900">{hostel.landlord_info.response_rate}%</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                          <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Reply Time</p>
+                          <p className="text-lg font-bold text-gray-900 text-ellipsis overflow-hidden whitespace-nowrap">{hostel.landlord_info.average_response_time}</p>
+                        </div>
+                     </>
+                  ) : (
+                    <div className="col-span-3 text-sm text-gray-500 italic">Metrics gathering in progress...</div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Response info */}
-            <div className="pt-2">
-              <p className="text-xs text-gray-500">
-                {isVerified
-                  ? '✓ Identity verified • Usually responds within a day'
-                  : 'Usually responds within a few days'}
-              </p>
+                <div className="flex flex-wrap gap-3">
+                   {landlordPhone && (
+                     <Button className="bg-slate-900 text-white hover:bg-slate-800 gap-2 shadow-lg shadow-slate-200" asChild>
+                        <a href={`tel:${landlordPhone}`}>
+                          <Phone className="h-4 w-4" />
+                          Call Host
+                        </a>
+                     </Button>
+                   )}
+                   <Button variant="outline" className="border-slate-200 hover:bg-slate-50 gap-2">
+                      <MessageCircle className="h-4 w-4" />
+                      Message
+                   </Button>
+                </div>
+              </div>
             </div>
-          </div>
+           </Card>
         </div>
 
-        {/* Additional Info */}
-        {isVerified && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="flex items-start gap-3 text-sm text-gray-600">
-              <Shield className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-gray-900 mb-1">
-                  Verified property owner
-                </p>
-                <p className="leading-relaxed">
-                  This landlord identity has been verified by RUMI. They have
-                  provided official documentation and contact information.
-                </p>
+        {/* Caretaker / On-Site Support */}
+        <div className="md:col-span-1">
+          <Card className="h-full p-6 border border-slate-100 bg-slate-50/50 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-4 text-emerald-700">
+                  <User className="h-5 w-5" />
+                  <span className="font-bold uppercase tracking-wider text-xs">On-Site Support</span>
               </div>
+              
+              {hostel.caretaker_name ? (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Caretaker</p>
+                    <p className="text-lg font-semibold text-gray-900">{hostel.caretaker_name}</p>
+                  </div>
+                  {hostel.caretaker_phone && (
+                     <div>
+                        <p className="text-sm text-gray-500 mb-1">Direct Line</p>
+                        <p className="font-mono text-gray-700">{hostel.caretaker_phone}</p>
+                     </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">Direct landlord management.</p>
+              )}
             </div>
-          </div>
-        )}
-      </Card>
-
-      {/* Safety note */}
-      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <p className="text-xs text-gray-600 leading-relaxed">
-          <strong className="text-gray-900">Safety tip:</strong> Never transfer
-          money outside of the RUMI platform. Keep all communication and
-          payments within the platform for your protection.
-        </p>
+            
+            <div className="mt-6 pt-6 border-t border-slate-200">
+               <div className="flex items-start gap-3">
+                  <Shield className="h-4 w-4 text-gray-400 mt-0.5" />
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                     Payments are held in escrow until you verify the room condition.
+                  </p>
+               </div>
+            </div>
+          </Card>
+        </div>
       </div>
     </motion.section>
   );

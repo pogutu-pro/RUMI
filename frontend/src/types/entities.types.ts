@@ -34,11 +34,8 @@ export * from '@/features/inventory/types';
 // Analytics
 export * from '@/features/analytics/types/types';
 
-// Profile Preferences (Lifestyle, Budget etc)
-// These were moved to features/profile/types
 export type {
   LifestylePreferences,
   BudgetPreferences,
   AvailabilityPreferences,
 } from '@/features/profile/types';
-

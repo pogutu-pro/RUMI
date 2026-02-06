@@ -48,8 +48,8 @@ export default function CheckOutProcessPage() {
       
       // Simulate payload
       processCheckOut.mutate({
-          tenantId: typeof booking.student === 'object' ? booking.student.id : booking.student,
-          roomId: typeof booking.room === 'object' ? booking.room.id : '',
+          tenantId: typeof booking.student === 'object' ? booking.student?.id || '' : booking.student || '',
+          roomId: typeof booking.room === 'object' ? booking.room?.id || '' : '',
           actualCheckOutDate: new Date().toISOString(),
           reason: 'semester_end', // Default for now
           roomCondition: deductions > 0 ? 'damaged' : 'clean',
@@ -81,7 +81,7 @@ export default function CheckOutProcessPage() {
 
   const studentName = typeof booking.student === 'object' ? `${booking.student.first_name} ${booking.student.last_name}` : 'Student';
   const hostelName = typeof booking.hostel === 'object' ? booking.hostel.name : 'Hostel';
-  const roomNumber = typeof booking.room === 'object' ? booking.room.number : (booking.roomNumber || 'N/A');
+  const roomNumber = typeof booking.room === 'object' ? booking.room.room_number : (booking.room_info?.room_number || 'N/A');
   const deposit = 10000; // Mock deposit amount since it might not be in basic booking object in frontend yet.
 
   return (

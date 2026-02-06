@@ -140,8 +140,22 @@ export function middleware(request: NextRequest) {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set(
     'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+    'camera=(), microphone=(), geolocation=(self), interest-cohort=()',
   );
+  
+  // Content Security Policy for Google Maps
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://maps.googleapis.com",
+    "img-src 'self' data: blob: https://maps.googleapis.com https://maps.gstatic.com https://*.googleusercontent.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "connect-src 'self' https://maps.googleapis.com",
+    "frame-src 'self' https://www.google.com",
+    "worker-src 'self' blob:",
+  ].join('; ');
+  
+  response.headers.set('Content-Security-Policy', csp);
 
   return response;
 }
