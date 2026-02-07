@@ -98,12 +98,24 @@ class RoomImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'image_url', 'alt_text', 'sort_order']
 
 
+from .bed_models import Bed
+
+class BedSerializer(serializers.ModelSerializer):
+    """Serializer for beds"""
+    
+    class Meta:
+        model = Bed
+        fields = ['id', 'code', 'full_code', 'bed_type', 'price_override', 'is_active', 'custom_account_number']
+        read_only_fields = ['id', 'full_code']
+
+
 class RoomSerializer(serializers.ModelSerializer):
     """Serializer for room listings"""
     images = RoomImageSerializer(many=True, read_only=True)
     hostel_name = serializers.CharField(source='hostel.name', read_only=True)
     compatibility_score = serializers.SerializerMethodField()
     is_available = serializers.SerializerMethodField()
+    beds = BedSerializer(many=True, read_only=True)
 
     class Meta:
         model = Room
@@ -111,7 +123,7 @@ class RoomSerializer(serializers.ModelSerializer):
             'id', 'hostel_name', 'room_number', 'capacity', 'base_price',
             'semester_price', 'deposit_required', 'room_type', 'floor',
             'amenities', 'detailed_attributes', 'images', 'is_available',
-            'compatibility_score'
+            'compatibility_score', 'beds'
         ]
 
     def get_is_available(self, obj):

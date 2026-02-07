@@ -43,6 +43,7 @@ class TransactionSerializer(serializers.ModelSerializer):
             'start_date': obj.rent_period.start_date,
             'end_date': obj.rent_period.end_date,
             'status': obj.rent_period.status,
+            'bed_code': obj.rent_period.bed.full_code if obj.rent_period.bed else obj.rent_period.bed_slot_id,
         }
 
 
@@ -195,6 +196,10 @@ class MpesaPaymentConfigSerializer(serializers.ModelSerializer):
         model = MpesaPaymentConfig
         fields = '__all__'
         read_only_fields = ['created_at', 'updated_at', 'verified_at']
+        extra_kwargs = {
+            'consumer_secret': {'write_only': True},
+            'passkey': {'write_only': True}
+        }
     
     def get_landlord_details(self, obj):
         return {
@@ -231,6 +236,7 @@ class RentPeriodSerializer(serializers.ModelSerializer):
     student_details = serializers.SerializerMethodField()
     hostel_details = serializers.SerializerMethodField()
     room_details = serializers.SerializerMethodField()
+    bed_details = serializers.SerializerMethodField()
     balance = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     transactions = serializers.SerializerMethodField()
     
@@ -238,7 +244,7 @@ class RentPeriodSerializer(serializers.ModelSerializer):
         model = RentPeriod
         fields = [
             'id', 'student', 'student_details', 'hostel', 'hostel_details',
-            'room', 'room_details', 'booking', 'bed_slot_id',
+            'room', 'room_details', 'bed', 'bed_details', 'booking', 'bed_slot_id',
             'start_date', 'end_date', 'amount_due', 'amount_paid', 'balance',
             'status', 'assigned_paybill', 'student_account_ref',
             'transactions', 'created_at', 'updated_at'
@@ -266,6 +272,16 @@ class RentPeriodSerializer(serializers.ModelSerializer):
             'id': obj.room.id,
             'room_number': obj.room.room_number,
             'room_type': obj.room.room_type,
+        }
+    
+    def get_bed_details(self, obj):
+        if not obj.bed:
+            return None
+        return {
+            'id': obj.bed.id,
+            'code': obj.bed.code,
+            'full_code': obj.bed.full_code,
+            'bed_type': obj.bed.bed_type,
         }
     
     def get_transactions(self, obj):

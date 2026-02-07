@@ -31,9 +31,28 @@ describe('Booking Flow Happy Path', () => {
           }]
         }
       }).as('getHostels');
+
+      cy.intercept('GET', '**/api/v1/hostels/search/**', {
+        statusCode: 200,
+        body: {
+          count: 1,
+          results: [{
+            id: 1,
+            name: 'Central Hostel',
+            slug: 'central-hostel',
+            city: 'Nairobi',
+            university: 'UoN',
+            base_price: '5000',
+            images: [],
+            is_verified: true,
+            available_rooms: 5,
+            rating: '4.5'
+          }]
+        }
+      }).as('searchHostels');
   
       cy.intercept('GET', '**/api/v1/hostels/*/', (req) => {
-        if (req.url.includes('/rooms/')) return;
+        if (req.url.includes('/rooms/') || req.url.includes('/search/')) return;
         req.reply({
             statusCode: 200,
             body: {
@@ -71,7 +90,7 @@ describe('Booking Flow Happy Path', () => {
       cy.visit('/hostels');
       
       // 2. Navigate to Hostel Detail
-      cy.contains('h3', 'Central Hostel', { timeout: 10000 }).click({ force: true });
+      cy.contains('a', 'View', { timeout: 10000 }).click({ force: true });
       
       // 3. Verify navigation and select room
       cy.url().should('include', '/hostels/central-hostel');

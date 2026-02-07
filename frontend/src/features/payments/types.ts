@@ -46,7 +46,19 @@ export interface Transaction {
   metadata?: any;
   paid_at?: string;
   rent_period?: number;
+  rent_period_details?: {
+    id: number;
+    start_date: string;
+    end_date: string;
+    status: string;
+    bed_code: string;
+  };
   booking?: number;
+  booking_details?: {
+    id: number;
+    room: string;
+    hostel: string;
+  };
 }
 
 export interface PaymentMethod {
@@ -81,6 +93,13 @@ export interface RentPeriod {
     room_type: string;
   };
   booking: number;
+  bed?: string;
+  bed_details?: {
+    id: string;
+    code: string;
+    full_code: string;
+    bed_type: string;
+  };
   bed_slot_id: string;
   start_date: string;
   end_date: string;
@@ -206,8 +225,11 @@ export interface MpesaConfig {
   payment_type: 'paybill';
   mpesa_number: string;
   business_name: string;
+  consumer_key?: string;
+  consumer_secret?: string;
+  passkey?: string;
   is_default: boolean;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'pending_verification';
   verified_at: string | null;
 }
 
@@ -215,6 +237,9 @@ export interface CreateMpesaConfigRequest {
   payment_type: 'paybill';
   mpesa_number: string;
   business_name: string;
+  consumer_key: string;
+  consumer_secret: string;
+  passkey: string;
   is_default?: boolean;
 }
 

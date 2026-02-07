@@ -19,12 +19,14 @@ import {
 import { useCurrentRentPeriod, useMyWallet, useRentSummary } from '../hooks/use-payments';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils/cn';
+import { PaymentDrawer } from './student/payment-drawer';
 
 export const RentOverview = () => {
   const router = useRouter();
   const { data: currentPeriod, isLoading: isPeriodLoading } = useCurrentRentPeriod();
   const { data: wallet, isLoading: isWalletLoading } = useMyWallet();
   const { data: summary, isLoading: isSummaryLoading } = useRentSummary();
+  const [isPaymentDrawerOpen, setIsPaymentDrawerOpen] = React.useState(false);
 
   const isLoading = isPeriodLoading || isWalletLoading || isSummaryLoading;
 
@@ -109,7 +111,7 @@ export const RentOverview = () => {
             <div className="p-6 flex flex-col justify-center gap-3">
               <Button 
                 className="w-full bg-primary text-primary-foreground font-black uppercase tracking-tight rounded-lg"
-                onClick={() => router.push('/student/payments/new')}
+                onClick={() => setIsPaymentDrawerOpen(true)}
               >
                 <CreditCard className="mr-2 h-4 w-4" />
                 Pay Now
@@ -168,6 +170,15 @@ export const RentOverview = () => {
           </div>
         </CardContent>
       </Card>
+      
+      <PaymentDrawer 
+        isOpen={isPaymentDrawerOpen}
+        onClose={() => setIsPaymentDrawerOpen(false)}
+        bookingId={currentPeriod?.id || 'current'}
+        amount={balance > 0 ? balance : 0}
+        hostelName={currentPeriod?.hostel_details?.name}
+        description={`Rent Payment - ${currentPeriod ? new Date(currentPeriod.start_date).toLocaleDateString('en-KE', { month: 'long' }) : 'Current Cycle'}`}
+      />
     </div>
   );
 };

@@ -1,138 +1,135 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
-import { useStudentDashboard } from '@/features/student/hooks/use-student-dashboard';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/features/auth/hooks/use-auth';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { 
-  Plus,
-  FileText,
-  ShieldCheck,
-  CreditCard,
-  History,
-  Clock,
-  Info,
-  ChevronRight,
-  Building
-} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {  DollarSign, Loader2, AlertCircle } from 'lucide-react';
+import { PaymentOptionsModal } from '@/features/payments/components/payment-options-modal';
+import { PaymentStatusTracker } from '@/features/payments/components/payment-status-tracker';
+import { PaymentHistoryTable } from '@/features/payments/components/payment-history-table';
+import { getCurrentRentPeriod } from '@/features/payments/api/payments';
 
-import { RentOverview } from '@/features/payments/components/rent-overview';
-import { RentHistoryTimeline } from '@/features/payments/components/rent-history-timeline';
+export default function StudentPaymentsPage() {
+  const { user } = useAuth();
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [activeTransactionRef, setActiveTransactionRef] = useState<string | null>(null);
 
-export default function PaymentsPage() {
-  const { data: dashboardData } = useStudentDashboard();
-  const hostelName = (dashboardData as any)?.hostelInfo?.name || 'Assigned Property';
-  const roomNumber = (dashboardData as any)?.hostelInfo?.roomNumber || 'N/A';
-  const bedId = (dashboardData as any)?.hostelInfo?.bedId || 'N/A';
+  // Fetch current rent period for balance
+  const { data: currentPeriod, isLoading: periodLoading } = useQuery({
+    queryKey: ['current-rent-period'],
+    queryFn: getCurrentRentPeriod,
+    enabled: !!user,
+  });
+
+  const balance = currentPeriod?.balance || 0;
+  const amountDue = currentPeriod?.amount_due || 0;
+  const periodLabel = currentPeriod
+    ? `${new Date(currentPeriod.start_date).toLocaleDateString()} - ${new Date(currentPeriod.end_date).toLocaleDateString()}`
+    : 'Current period';
+
+  const handlePaymentInitiated = (transactionRef: string) => {
+    setActiveTransactionRef(transactionRef);
+  };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-16 px-4 sm:px-6">
-
-      {/* Header Section - High Density */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b-2 border-border/10 pb-6 pt-4">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground opacity-70">
-            <Building className="h-3 w-3" />
-            Canonical Space ID
-          </div>
-          <h1 className="text-2xl font-black tracking-tight text-foreground uppercase italic leading-none">
-            {hostelName} <span className="text-muted-foreground/30 mx-1">/</span> Room {roomNumber} <span className="text-muted-foreground/30 mx-1">/</span> Bed {bedId}
-          </h1>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-2">
-          <Button 
-            size="sm"
-            className="font-black h-9 px-4 rounded-lg shadow-lg shadow-primary/20 uppercase tracking-tight italic"
-            asChild
-          >
-            <Link href="/student/payments/new">
-              <Plus className="h-4 w-4 mr-2" />
-              Pay Now
-            </Link>
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="h-9 px-4 rounded-lg border-2 border-border/50 font-black uppercase tracking-tight italic"
-            asChild
-          >
-            <Link href="/student/payments/receipts">
-              <FileText className="h-4 w-4 mr-2" />
-              Export Statements
-            </Link>
-          </Button>
+    <div className="max-w-7xl mx-auto space-y-6 pb-16 px-4 sm:px-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-4">
+        <div>
+          <h1 className="text-2xl font-bold">Payments</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage your rent payments and view transaction history
+          </p>
         </div>
       </div>
 
-
-      {/* Rent Overview & Wallet */}
-      <RentOverview />
-
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-        {/* Left Column: Rent History */}
-        <div className="xl:col-span-8 space-y-8">
-           <RentHistoryTimeline />
-        </div>
-
-        {/* Right Column: Actions & Services */}
-        <div className="xl:col-span-4 space-y-8">
-          <Card className="border border-border/50 bg-card shadow-sm rounded-xl overflow-hidden relative group">
-            <CardContent className="p-8">
-              <ShieldCheck className="h-8 w-8 text-foreground mb-6 opacity-80" />
-              <h3 className="text-xl font-bold mb-2">Verified Ledger</h3>
-              <p className="text-muted-foreground text-xs font-medium leading-relaxed mb-8">
-                All financial data is encrypted and reconciled in real-time. Direct integration with official payment gateways ensures structural integrity.
-              </p>
-              <div className="space-y-3">
-                 <div className="flex items-center gap-3 bg-muted/30 border border-border/50 p-4 rounded-xl">
-                    <div className="h-8 w-8 rounded-lg bg-background border border-border/50 flex items-center justify-center font-bold text-xs">01</div>
-                    <div className="space-y-0.5">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-70">Secured Node</p>
-                      <p className="text-xs font-bold text-foreground">{hostelName}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 bg-muted/30 border border-border/50 p-4 rounded-xl">
-                    <div className="h-8 w-8 rounded-lg bg-background border border-border/50 flex items-center justify-center font-bold text-xs">02</div>
-                    <div className="space-y-0.5">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-70">Processor</p>
-                      <p className="text-xs font-bold text-foreground">STK Push / Paybill / Wallet</p>
-                    </div>
-                  </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="space-y-4">
-            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground opacity-70 px-1">Functional Links</h3>
-            <div className="grid grid-cols-1 gap-3">
-              {[
-                { title: 'Payment Registry', subtitle: 'Method management', icon: CreditCard, link: '/student/payments/methods' },
-                { title: 'Billing Archives', subtitle: 'Historical records', icon: History, link: '/student/payments/receipts' },
-                { title: 'Recurring Setup', subtitle: 'Automatic billing', icon: Clock, link: '/student/payments/recurring' },
-                { title: 'Support Terminal', subtitle: 'Financial assistance', icon: Info, link: '/student/support' },
-              ].map((item, idx) => (
-                <Link 
-                  key={idx} 
-                  href={item.link}
-                  className="flex items-center gap-4 p-4 bg-card border border-border/50 rounded-xl hover:bg-muted/20 transition-all group"
-                >
-                  <div className="p-2.5 bg-muted rounded-lg transition-colors group-hover:bg-background group-hover:border border-border/50">
-                    <item.icon className="h-4 w-4 text-foreground opacity-70" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-foreground">{item.title}</p>
-                    <p className="text-[10px] text-muted-foreground font-medium">{item.subtitle}</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-foreground transition-colors" />
-                </Link>
-              ))}
+      {/* Current Balance Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Current Balance
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {periodLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          </div>
-        </div>
-      </div>
+          ) : (
+            <>
+              <div>
+                <div className="text-4xl font-bold">
+                  KES {balance.toLocaleString()}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Due for {periodLabel}
+                </p>
+              </div>
+
+              {balance > 0 && (
+                <div className="flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/50 rounded-lg">
+                  <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-500 mt-0.5" />
+                  <div className="flex-1 text-sm">
+                    <p className="font-semibold text-yellow-900 dark:text-yellow-200">
+                      Payment Required
+                    </p>
+                    <p className="text-yellow-700 dark:text-yellow-300 mt-1">
+                      You have an outstanding balance of KES {balance.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={() => setShowPaymentModal(true)}
+                disabled={!currentPeriod || balance <= 0}
+              >
+                Make Payment
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Active Payment Tracker */}
+      {activeTransactionRef && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment in Progress</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PaymentStatusTracker transactionRef={activeTransactionRef} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Payment History */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Payment History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <PaymentHistoryTable userId={user?.id} />
+        </CardContent>
+      </Card>
+
+      {/* Payment Options Modal */}
+      {currentPeriod && (
+        <PaymentOptionsModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          bedId={currentPeriod.bed_slot_id}
+          amount={balance}
+          bookingId={currentPeriod.booking}
+          onPaymentInitiated={handlePaymentInitiated}
+        />
+      )}
     </div>
   );
 }
-

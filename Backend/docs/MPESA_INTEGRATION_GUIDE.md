@@ -32,8 +32,7 @@ The RUMI platform now supports M-Pesa payments through Safaricom's Daraja API, e
 2. **C2B Offline** - Customer-initiated payments via phone (automatic processing)
 3. **Send Money** - Direct M-Pesa send money to business (via C2B)
 4. **Till Number** - Pay using business till number (via C2B)
-5. **Pochi la Biashara** - Pay using Pochi business account (via C2B)
-6. **Paybill Number** - Pay using paybill number (via C2B)
+5. **Paybill Number** - Pay using paybill number (via C2B)
 
 ## Prerequisites
 

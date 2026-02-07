@@ -15,6 +15,7 @@ import {
   DollarSign,
   Check,
   Building2,
+  Hash,
 } from "lucide-react";
 
 import { useHostel } from "@/features/hostels";
@@ -126,6 +127,14 @@ export default function HostelDetailPage() {
       icon: Settings,
       color: "text-green-600 dark:text-green-400",
       bgColor: "bg-green-500/10",
+    },
+    {
+      title: "Bed Accounts",
+      description: "Manage M-Pesa account references",
+      href: `/landlord/hostels/${hostelId}/beds`,
+      icon: Hash,
+      color: "text-indigo-600 dark:text-indigo-400",
+      bgColor: "bg-indigo-500/10",
     },
   ];
 

@@ -4,6 +4,8 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 import uuid
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 
 
 class WebhookEvent(models.Model):
@@ -82,6 +84,12 @@ class MpesaPaymentConfig(models.Model):
     payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES, default='paybill')
     mpesa_number = models.CharField(max_length=20, help_text="Paybill Number")
     business_name = models.CharField(max_length=255, help_text="Business name for display")
+    
+    # API Credentials for Multi-Tenant Routing
+    consumer_key = models.CharField(max_length=255, blank=True, null=True, help_text="Daraja App Consumer Key")
+    consumer_secret = models.CharField(max_length=255, blank=True, null=True, help_text="Daraja App Consumer Secret")
+    passkey = models.CharField(max_length=255, blank=True, null=True, help_text="Lipa Na M-Pesa Online Passkey")
+    
     is_default = models.BooleanField(default=False, help_text="Default payment method for this landlord")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_verification')
     verification_code = models.CharField(max_length=10, blank=True, null=True, help_text="SMS verification code")
@@ -158,7 +166,15 @@ class RentPeriod(models.Model):
         null=True,
         related_name='rent_periods'
     )
-    # Conceptual bed slot ID (e.g., '1', 'A', or uuid string)
+    # Canonical link to the physical bed
+    bed = models.ForeignKey(
+        'hostels.Bed',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='rent_periods'
+    )
+    # Conceptual/Legacy bed slot ID
     bed_slot_id = models.CharField(max_length=50, blank=True, null=True)
 
     start_date = models.DateField()
@@ -422,6 +438,49 @@ class RefundRequest(models.Model):
         return f"Refund request for {self.booking.student.user.get_full_name()} - {self.refund_amount}"
 
 
+class PaymentAuditLog(models.Model):
+    """
+    Immutable audit trail for all payment-related actions and state transitions.
+    """
+    ACTION_CHOICES = [
+        ('payment_initiated', 'Payment Initiated'),
+        ('payment_completed', 'Payment Completed'),
+        ('payment_failed', 'Payment Failed'),
+        ('manual_override', 'Manual Override'),
+        ('refund_processed', 'Refund Processed'),
+        ('subscription_enforced', 'Subscription Enforced'),
+        ('invoice_generated', 'Invoice Generated'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+    actor = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True)
+    action = models.CharField(max_length=50, choices=ACTION_CHOICES, db_index=True)
+    
+    # Generic relation to the affected object (Booking, Transaction, Invoice, etc.)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.CharField(max_length=50)
+    content_object = GenericForeignKey('content_type', 'object_id')
+    
+    # State tracking
+    old_state = models.JSONField(default=dict, blank=True)
+    new_state = models.JSONField(default=dict, blank=True)
+    
+    # Context
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['content_type', 'object_id']),
+            models.Index(fields=['actor']),
+        ]
+
+    def __str__(self):
+        return f"{self.action} by {self.actor} on {self.timestamp}"
+
+
 class Receipt(models.Model):
     """Store generated payment receipts"""
     transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='receipt')
@@ -444,3 +503,12 @@ class RevenueAnalytics(models.Model):
     date = models.DateField()
     period_type = models.CharField(max_length=20)
     total_volume = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+
+
+# Import bed payment ledger model
+from .bed_payment_ledger import BedPaymentLedger
+
+
+# Import subscription models
+from .subscription_models import SubscriptionPlan, OccupancySnapshot, SubscriptionInvoice
+from .hostel_payment_config import HostelPaymentConfig

@@ -1,0 +1,39 @@
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+  console.log
+    --- TEST FILE VERSION AT-101 ---
+
+      at Object.log (src/features/payments/__tests__/components.test.tsx:18:9)
+
+PASS src/features/payments/__tests__/components.test.tsx (5.031 s)
+  PaymentOptionsModal
+    ✓ should render modal with offline/online tabs (1744 ms)
+    ✓ should display Paybill number when loaded (242 ms)
+    ✓ should initiate STK Push on button click (598 ms)
+  PaymentStatusTracker
+    ✓ should poll payment status every 5 seconds (100 ms)
+    ✓ should stop polling when status is success (75 ms)
+  PaymentHistoryTable
+    ✓ should render transaction list (85 ms)
+    ✓ should show empty state when no transactions (18 ms)
+  ReceiptGenerator
+    ✓ should generate and download PDF receipt (96 ms)
+  SubscriptionOverviewCard
+    ✓ should display subscription tier and occupancy (59 ms)
+    ✓ should show warning when exceeding plan limit (32 ms)
+  InvoiceHistoryList
+    ✓ should render invoice table (50 ms)
+  PaybillConfigForm
+    ✓ should validate M-Pesa number format (393 ms)
+    ✓ should submit configuration successfully (129 ms)
+  UnmatchedPaymentsDashboard
+    ✓ should display unmatched payments with suggestions (61 ms)
+    ✓ should match payment when clicked (91 ms)
+  PaymentLedgerViewer
+    ✓ should display ledger entries (62 ms)
+    ✓ should search ledger entries (114 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       17 passed, 17 total
+Snapshots:   0 total
+Time:        6.492 s
+Ran all test suites matching src/features/payments/__tests__/components.test.tsx.

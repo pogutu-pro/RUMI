@@ -1,10 +1,19 @@
 from django.urls import path
-from . import views
+from .views import (
+    AdminUserStatsView,
+    AdminLandlordVerificationsView,
+    AdminPlatformStatsView,
+    AdminSystemHealthView,
+    AdminPaymentStatsView
+)
 
 urlpatterns = [
-    # Additional Admin Endpoints (4 endpoints)
-    path('users/stats/', views.AdminUserStatsView.as_view(), name='admin_user_stats'),
-    path('landlord-verifications/', views.AdminLandlordVerificationsView.as_view(), name='admin_landlord_verifications'),
-    path('platform/stats/', views.AdminPlatformStatsView.as_view(), name='admin_platform_stats'),
-    path('system/health/', views.AdminSystemHealthView.as_view(), name='admin_system_health'),
+    # Stats & Analytics
+    path('stats/users/', AdminUserStatsView.as_view(), name='admin-user-stats'),
+    path('stats/platform/', AdminPlatformStatsView.as_view(), name='admin-platform-stats'),
+    path('stats/system-health/', AdminSystemHealthView.as_view(), name='admin-system-health'),
+    path('payments/stats/', AdminPaymentStatsView.as_view(), name='admin-payment-stats'),
+    
+    # Verifications
+    path('landlords/verifications/', AdminLandlordVerificationsView.as_view(), name='admin-landlord-verifications'),
 ]

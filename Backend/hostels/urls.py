@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .endpoints.bed_views import BedUpdateView
 
 urlpatterns = [
     # Hostel management
@@ -12,6 +13,9 @@ urlpatterns = [
     path('rooms/', views.RoomViewSet.as_view({'get': 'list'}), name='rooms_list'),
     path('rooms/<int:pk>/', views.RoomViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='room_detail'),
     path('<int:hostel_id>/rooms/', views.RoomViewSet.as_view({'post': 'create'}), name='room_create'),
+
+    # Bed management
+    path('beds/<uuid:id>/', BedUpdateView.as_view(), name='bed_update'),
 
     # Booking management
     path('bookings/', views.BookingViewSet.as_view({'get': 'list', 'post': 'create'}), name='bookings_list'),

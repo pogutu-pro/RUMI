@@ -128,6 +128,32 @@ class BookingViewSet(TenantModelViewSet):
         return super().get_serializer_class()
 
     def perform_create(self, serializer):
+        # Subscription Enforcement Check
+        room_id = self.request.data.get('room_id') or self.request.data.get('room')
+        if room_id:
+            try:
+                from payments.subscription_models import SubscriptionInvoice
+                from django.db.models import Q
+                
+                room = Room.objects.get(id=room_id)
+                landlord = room.hostel.landlord
+                
+                # Check for severely overdue invoices (> 21 days)
+                critical_overdue = SubscriptionInvoice.objects.filter(
+                    landlord=landlord,
+                    status__in=['issued', 'overdue', 'in_grace'],
+                    due_date__lt=timezone.now().date() - timezone.timedelta(days=21)
+                ).exists()
+                
+                if critical_overdue:
+                    raise PermissionDenied(
+                        "This hostel is currently not accepting new bookings "
+                        "due to administrative reasons. Please try again later or "
+                        "contact support."
+                    )
+            except (Room.DoesNotExist, ImportError):
+                pass
+
         try:
             student_profile = self.request.user.student_profile
             serializer.save(student=student_profile)
@@ -740,7 +766,9 @@ class HostelSearchView(APIView):
         
         Note: Only returns active hostel properties.
         """
-        queryset = Hostel.objects.filter(status='active').prefetch_related('hostel_amenities__amenity')
+        queryset = Hostel.objects.filter(status='active').select_related(
+            'landlord', 'landlord__user'
+        ).prefetch_related('hostel_amenities__amenity')
 
         # Apply filters
         search_query = request.query_params.get('search')
@@ -785,15 +813,11 @@ class HostelSearchView(APIView):
         amenities_filter = request.query_params.get('amenities')
         if amenities_filter:
             # Simple contains filter for now - logic might need M2M filter refinement for strict matching
-            # But for text search / list check, let's keep it simple or implement distinct logic
             amenity_list = amenities_filter.split(',')
-            # Filtering efficiently on M2M in Django for "all items in list" is tricky without multiple filters
-            # For "any item", use:
             queryset = queryset.filter(hostel_amenities__amenity__name__in=amenity_list).distinct()
 
         # Sorting
         sort_by = request.query_params.get('sort_by')
-        # Map frontend sort keys to model fields
         if sort_by == 'price_low':
             queryset = queryset.order_by('base_price')
         elif sort_by == 'price_high':
@@ -801,65 +825,28 @@ class HostelSearchView(APIView):
         elif sort_by == 'rating':
             queryset = queryset.order_by('-rating')
         elif sort_by == 'popularity':
-            # Assuming popularity is based on review count or views (not implemented yet, fallback to new)
             queryset = queryset.order_by('-review_count')
         elif sort_by == 'newest':
              queryset = queryset.order_by('-created_at')
         else:
-            # Default sort
             queryset = queryset.order_by('name')
 
-        # Pagination
-        limit = int(request.query_params.get('limit', 20))
-        offset = int(request.query_params.get('offset', 0))
+        # Use standard DRF pagination
+        from rest_framework.pagination import PageNumberPagination
+        paginator = PageNumberPagination()
+        paginator.page_size = int(request.query_params.get('limit', 20))
+        
+        page = paginator.paginate_queryset(queryset, request)
+        if page is not None:
+            serializer = HostelSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
 
-        total_results = queryset.count()
-        hostels = queryset[offset:offset + limit]
-
-        results = []
-        for hostel in hostels:
-            # Calculate distance from university (mock calculation)
-            distance = round(1.2 + (hostel.id % 10) * 0.3, 1)
-            
-            # Mock rating based on hostel id
-            rating = round(3.5 + (hostel.id % 15) * 0.1, 1)
-            
-            # Extract amenities list
-            amenity_names = [
-                ha.amenity.name 
-                for ha in hostel.hostel_amenities.all() 
-                if ha.is_available
-            ]
-            
-            results.append({
-                'id': hostel.id,
-                'name': hostel.name,
-                'description': hostel.description,
-                'address': hostel.address,
-                'city': getattr(hostel, 'city', 'Nairobi'),
-                'university': hostel.university,
-                'latitude': float(hostel.latitude) if hostel.latitude else 0,
-                'longitude': float(hostel.longitude) if hostel.longitude else 0,
-                'total_rooms': hostel.total_rooms,
-                'available_rooms': hostel.available_rooms,
-                'base_price': float(hostel.base_price),
-                'currency': hostel.currency,
-                'rating': rating,
-                'review_count': hostel.id * 3 + 10,
-                'images': getattr(hostel, 'images', []) or [
-                    'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800'
-                ],
-                'amenities': amenity_names,
-                'gender_policy': hostel.gender_policy,
-                'distance_from_university': distance,
-                'is_verified': hostel.is_verified,
-                'landlord_name': f"Landlord {hostel.id}"
-            })
-
+        # Fallback if pagination fails or not needed
+        serializer = HostelSerializer(queryset, many=True)
         return Response({
-            'total_results': total_results,
-            'results': results
-        }, status=status.HTTP_200_OK)
+            'count': queryset.count(),
+            'results': serializer.data
+        })
 
 
 @swagger_auto_schema(

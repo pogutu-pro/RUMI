@@ -1,217 +1,253 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from 'react';
-import { 
-  Search, 
-  FileText,
-  AlertOctagon,
-  Eye,
-  CreditCard,
-  ShieldAlert
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import  * as React from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-// import { useTechSupportStore } from '@/features/support';
-import { useSupportTransactions } from '@/features/support/hooks/use-support';
-import { TransactionTable } from '@/features/support';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Search, RefreshCw, Loader2, AlertCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import apiClient from '@/lib/api/client';
 
-interface PaymentSupportPageProps {
-  defaultTab?: string;
+interface Transaction {
+  id: string;
+  reference: string;
+  status: string;
+  amount: number;
+  created_at: string;
+  updated_at: string;
+  callback_processed: boolean;
 }
 
-export default function PaymentSupportPage({ defaultTab = "all" }: PaymentSupportPageProps) {
-  const { data: response, isLoading: isLoadingTransactions } = useSupportTransactions();
-  const transactions = response?.data || [];
-  const [searchTerm, setSearchTerm] = useState("");
-  const [refundReason, setRefundReason] = useState("");
-  const [selectedTxnId, setSelectedTxnId] = useState<string | null>(null);
-  const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState(defaultTab);
+interface TechSupportPaymentsPageProps {
+  defaultTab?: 'lookup' | 'failed' | 'disputes';
+}
 
-  const filteredTxns = transactions.filter(txn => {
-    const matchesSearch = txn.transaction_reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    txn.student_name.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Simulate dispute logic for demo purposes if backend doesn't have it explicitly yet
-    // In a real scenario, check txn.status === 'dispute'
-    if (activeTab === 'disputes') {
-       return matchesSearch && (txn.status === 'failed' || txn.status === 'pending');
-    }
-    
-    return matchesSearch;
+export default function TechSupportPaymentsPage({ defaultTab = 'lookup' }: TechSupportPaymentsPageProps) {
+  const [searchRef, setSearchRef] = useState('');
+  const [currentRef, setCurrentRef] = useState('');
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: transaction, isLoading } = useQuery<Transaction>({
+    queryKey: ['transaction-lookup', currentRef],
+    queryFn: async () => {
+      const response = await apiClient.axios.get(`/api/v1/payments/lookup/${currentRef}/`);
+      return response.data.data;
+    },
+    enabled: !!currentRef,
   });
 
-  const handleRequestRefund = (txnId: string) => {
-    setSelectedTxnId(txnId);
-    setIsRefundDialogOpen(true);
+  const { data: failedPayments } = useQuery({
+    queryKey: ['failed-payments'],
+    queryFn: async () => {
+      const response = await apiClient.axios.get('/api/v1/payments/failed/24h/');
+      return response.data.data || [];
+    },
+  });
+
+  const { mutate: retriggerCallback, isPending: retriggering } = useMutation({
+    mutationFn: async (transactionId: string) => {
+      await apiClient.axios.post(`/api/v1/payments/${transactionId}/retrigger-callback/`);
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Callback re-triggered',
+        description: 'Processing callback now',
+      });
+      queryClient.invalidateQueries({ queryKey: ['transaction-lookup'] });
+    },
+    onError: () => {
+      toast({
+        title: 'Failed to re-trigger callback',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleSearch = () => {
+    setCurrentRef(searchRef);
   };
 
-  const handleViewReceipt = (txnId: string) => {
-    console.log("View receipt", txnId);
-  };
-
-  const submitRefundRequest = () => {
-    console.log(`Requested refund for ${selectedTxnId} with reason: ${refundReason}`);
-    setRefundReason("");
-    setSelectedTxnId(null);
-    setIsRefundDialogOpen(false);
+  const formatTimestamp = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="max-w-7xl mx-auto space-y-6 pb-16 px-4 sm:px-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Payment Support
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Monitor individual transactions and resolve disputes.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-           <Badge variant="outline" className="px-3 py-1 border-amber-500/50 text-amber-600 dark:text-amber-500 bg-amber-500/10">
-             <Eye className="mr-2 h-3 w-3" />
-             View Only Access
-           </Badge>
-           <Button variant="outline">
-             <FileText className="mr-2 h-4 w-4" />
-             Export Log
-           </Button>
-        </div>
-      </div>
-
-      {/* Restricted Access Banner */}
-      <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-900 p-4 flex items-start gap-3">
-        <AlertOctagon className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-        <div>
-          <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300">Restricted Financial Access</h3>
-          <p className="text-sm text-blue-700 dark:text-blue-400 mt-1">
-            As a Tech Support agent, you can view individual transaction statuses to assist users with failures or disputes. 
-            You do not have access to total revenue, withdrawal settings, or bank account details.
+          <h1 className="text-2xl font-bold">Payment Support</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Technical troubleshooting tools for payments and disputes
           </p>
         </div>
       </div>
 
-      <Tabs defaultValue={defaultTab} value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="all" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            All Transactions
-          </TabsTrigger>
-          <TabsTrigger value="disputes" className="flex items-center gap-2">
-            <ShieldAlert className="h-4 w-4" />
-            Disputes / Failed
-          </TabsTrigger>
+      <Tabs defaultValue={defaultTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsTrigger value="lookup">Transaction Lookup</TabsTrigger>
+          <TabsTrigger value="failed">Recent Failures</TabsTrigger>
+          <TabsTrigger value="disputes">Disputes</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="all" className="space-y-4">
-             <Card className="border-border/50 shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle>Transaction History</CardTitle>
-                  <CardDescription>
-                    Search by transaction ID (TXN-...) or student name.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {/* Search */}
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="relative flex-1 max-w-sm">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="Search transaction ID or user..." 
-                        className="pl-9 bg-background/50 border-input/60 focus-visible:ring-primary/20"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
+        <TabsContent value="lookup" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Lookup Transaction</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Transaction reference or M-Pesa receipt"
+                  value={searchRef}
+                  onChange={(e) => setSearchRef(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                />
+                <Button onClick={handleSearch} disabled={isLoading} aria-label="search-transaction">
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+
+              {transaction && (
+                <div className="space-y-2 text-sm border border-border/50 rounded-lg p-4">
+                      <div className="grid grid-cols-2 gap-2">
+                    <span className="text-muted-foreground">Transaction ID:</span>
+                    <span className="font-mono text-xs">{transaction.id}</span>
+
+                    <span className="text-muted-foreground">Reference:</span>
+                    <span className="font-mono text-xs">{transaction.reference}</span>
+
+                    <span className="text-muted-foreground">Status:</span>
+                    <Badge>{transaction.status}</Badge>
+
+                    <span className="text-muted-foreground">Created:</span>
+                    <span>{formatTimestamp(transaction.created_at)}</span>
+
+                    <span className="text-muted-foreground">Last Updated:</span>
+                    <span>{formatTimestamp(transaction.updated_at)}</span>
+
+                    <span className="text-muted-foreground">Callback Status:</span>
+                    <span>
+                      {transaction.callback_processed ? '✅ Processed' : '❌ Pending'}
+                    </span>
                   </div>
 
-                  {/* Table */}
-                  <TransactionTable 
-                    transactions={filteredTxns}
-                    isLoading={isLoadingTransactions}
-                    onRequestRefund={handleRequestRefund}
-                    onViewReceipt={handleViewReceipt}
-                  />
-                </CardContent>
-              </Card>
+                  {transaction.status === 'pending' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => retriggerCallback(transaction.id)}
+                      disabled={retriggering}
+                      className="mt-4"
+                    >
+                      {retriggering ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Re-triggering...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Re-trigger Callback Processing
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
-        <TabsContent value="disputes" className="space-y-4">
-            <Card className="border-border/50 shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle>Disputed & Failed Transactions</CardTitle>
-                  <CardDescription>
-                    Transactions requiring attention or manual intervention.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="relative flex-1 max-w-sm">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="Search disputes..." 
-                        className="pl-9 bg-background/50 border-input/60 focus-visible:ring-primary/20"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <TransactionTable 
-                    transactions={filteredTxns}
-                    isLoading={isLoadingTransactions}
-                    onRequestRefund={handleRequestRefund}
-                    onViewReceipt={handleViewReceipt}
-                  />
-                </CardContent>
-            </Card>
+
+        <TabsContent value="failed" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Failed Payments (Last 24h)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {failedPayments && failedPayments.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Reference</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Failed At</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {failedPayments.map((payment: any) => (
+                      <TableRow key={payment.id}>
+                        <TableCell className="font-mono text-xs">
+                          {payment.reference}
+                        </TableCell>
+                        <TableCell>KES {payment.amount}</TableCell>
+                        <TableCell className="text-sm">
+                          {formatTimestamp(payment.updated_at)}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSearchRef(payment.reference);
+                              setCurrentRef(payment.reference);
+                            }}
+                          >
+                            Investigate
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-center py-8 text-muted-foreground">
+                  No failed payments in last 24 hours
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="disputes" className="space-y-6">
+          <Card>
+            <CardContent className="py-12 text-center space-y-4">
+              <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto" />
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Payment Disputes</h3>
+                <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                  Dispute management is currently handled via the main admin portal. 
+                  Integration into tech support tools is coming in the next phase.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Refund Dialog */}
-      <Dialog open={isRefundDialogOpen} onOpenChange={setIsRefundDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Request Refund</DialogTitle>
-            <DialogDescription>
-              Initiate a refund request for transaction <span className="font-mono text-primary">{selectedTxnId}</span>. This will require SuperAdmin approval.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="reason">Reason for Refund</Label>
-              <Textarea 
-                id="reason" 
-                placeholder="e.g. Double charge, Service not delivered..." 
-                className="min-h-[100px]"
-                value={refundReason}
-                onChange={(e) => setRefundReason(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsRefundDialogOpen(false)}>Cancel</Button>
-            <Button onClick={submitRefundRequest}>Submit Request</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

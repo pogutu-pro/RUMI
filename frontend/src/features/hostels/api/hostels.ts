@@ -3,9 +3,9 @@ import type { Hostel, Room } from '@/types/entities.types';
 import type { ApiResponse, PaginatedResponse } from '@/types/api.types';
 
 export interface HostelsResponse {
-  current_page: number; // Adapting to PaginatedResponse likely structure
-  total_pages: number;
   count: number;
+  next: string | null;
+  previous: string | null;
   results: Hostel[];
 }
 
@@ -131,6 +131,16 @@ export const hostelsApi = {
     );
     return res.data.data;
   },
+
+  // Update Bed
+  // PATCH /hostels/beds/{id}/
+  updateBed: async (bedId: string, data: any) => {
+    const res = await apiClient.patch<ApiResponse<any>>(
+      `/hostels/beds/${bedId}/`,
+      data
+    );
+    return res.data;
+  },
 };
 
 // Aliases for compatibility
@@ -149,6 +159,7 @@ export const getHostelBySlug = async (slug: string): Promise<Hostel> => {
 };
 export const getHostel = getHostelBySlug; 
 export const createHostel = hostelsApi.createHostel;
+export const updateBed = hostelsApi.updateBed;
 export const searchRooms = hostelsApi.searchRooms;
 
 export const getRelatedHostels = async (id: string | number): Promise<Hostel[]> => {

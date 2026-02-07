@@ -46,12 +46,23 @@ class MpesaDarajaAPI:
     Handles OAuth authentication, C2B operations, and M-Pesa Express transactions
     """
     
-    def __init__(self):
-        """Initialize M-Pesa API with configuration"""
-        self.consumer_key = getattr(settings, 'MPESA_CONSUMER_KEY', '')
-        self.consumer_secret = getattr(settings, 'MPESA_CONSUMER_SECRET', '')
-        self.shortcode = getattr(settings, 'MPESA_SHORTCODE', '')
-        self.passkey = getattr(settings, 'MPESA_PASSKEY', '')
+    def __init__(self, config=None):
+        """
+        Initialize M-Pesa API with configuration.
+        If config is provided (MpesaPaymentConfig instance), use its values.
+        Otherwise, fall back to global settings.
+        """
+        if config:
+            self.consumer_key = config.consumer_key
+            self.consumer_secret = config.consumer_secret
+            self.shortcode = config.mpesa_number
+            self.passkey = config.passkey
+        else:
+            self.consumer_key = getattr(settings, 'MPESA_CONSUMER_KEY', '')
+            self.consumer_secret = getattr(settings, 'MPESA_CONSUMER_SECRET', '')
+            self.shortcode = getattr(settings, 'MPESA_SHORTCODE', '')
+            self.passkey = getattr(settings, 'MPESA_PASSKEY', '')
+            
         self.callback_url = getattr(settings, 'MPESA_CALLBACK_URL', '')
         self.validation_url = getattr(settings, 'MPESA_VALIDATION_URL', '')
         self.confirmation_url = getattr(settings, 'MPESA_CONFIRMATION_URL', '')
@@ -83,7 +94,8 @@ class MpesaDarajaAPI:
         """
         try:
             # Check cache first for better performance
-            cache_key = 'mpesa_access_token'
+            # Use consumer_key in cache key for multi-tenant isolation
+            cache_key = f'mpesa_access_token_{hashlib.md5(self.consumer_key.encode()).hexdigest()}'
             cached_token = cache.get(cache_key)
             if cached_token:
                 return cached_token
@@ -340,12 +352,6 @@ class MpesaDarajaAPI:
             'till_number': {
                 'name': 'Till Number',
                 'description': 'Pay using business till number',
-                'command_id': 'CustomerPayBillOnline',
-                'type': 'online'
-            },
-            'pochi': {
-                'name': 'Pochi la Biashara',
-                'description': 'Pay using Pochi business account',
                 'command_id': 'CustomerPayBillOnline',
                 'type': 'online'
             },

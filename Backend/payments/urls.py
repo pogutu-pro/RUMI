@@ -3,16 +3,24 @@ from rest_framework.routers import DefaultRouter
 from . import views
 from .mpesa_webhooks import StkPushWebhookView, C2BValidationWebhookView, C2BConfirmationWebhookView
 from .rent_period_views import RentPeriodViewSet, StudentPaymentTrackerViewSet, TransferLogViewSet
+from .additional_views import PaymentDetailsView, ReceiptGenerateView
+from .subscription_views import SubscriptionPlanViewSet, SubscriptionInvoiceViewSet, SubscriptionAccrualView
+from . import verification_views
 
 # DRF Router for RentPeriod architecture endpoints
 router = DefaultRouter()
 router.register(r'rent-periods', RentPeriodViewSet, basename='rentperiod')
 router.register(r'wallet', StudentPaymentTrackerViewSet, basename='studentwallet')
 router.register(r'transfers', TransferLogViewSet, basename='transferlog')
+router.register(r'subscriptions/plans', SubscriptionPlanViewSet, basename='subscriptionplan')
+router.register(r'subscriptions/invoices', SubscriptionInvoiceViewSet, basename='subscriptioninvoice')
 
 urlpatterns = [
     # RentPeriod Architecture API (NEW)
     path('', include(router.urls)),
+    
+    # Subscription Accrual (Custom View)
+    path('subscriptions/accrual/', SubscriptionAccrualView.as_view(), name='subscription-accrual'),
     
     # Payment initialization
     path('initialize/', views.PaymentInitializeView.as_view(), name='payment_initialize'),
@@ -45,8 +53,15 @@ urlpatterns = [
     # Webhooks
     path('webhook/paystack/', views.paystack_webhook, name='paystack_webhook'),
 
-    # Tax reports (Landlord)
+    # Receipts (UPDATED - added generate endpoint)
     path('receipts/<int:transaction_id>/', views.PaymentReceiptView.as_view(), name='payment_receipt'),
+    path('receipts/generate/', ReceiptGenerateView.as_view(), name='receipt_generate'),
+    path('receipts/verify/<int:transaction_id>/', verification_views.ReceiptVerificationView.as_view(), name='receipt_verify'),
+    
+    # Payment Details (NEW - for Week 1 frontend)
+    path('payment-details/<str:bed_id>/', PaymentDetailsView.as_view(), name='payment_details'),
+    
+    # Tax reports (Landlord)
     path('tax-reports/', views.TaxReportsView.as_view(), name='tax_reports'),
     path('tax-reports/<int:report_id>/download/', views.TaxReportDownloadView.as_view(), name='tax_report_download'),
 

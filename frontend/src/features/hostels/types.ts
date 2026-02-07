@@ -62,6 +62,16 @@ export interface Hostel {
   rooms?: Room[];
 }
 
+export interface Bed {
+  id: string;
+  code: string;
+  full_code: string;
+  bed_type: 'single' | 'bunk_top' | 'bunk_bottom' | 'double';
+  price_override: string | null;
+  is_active: boolean;
+  custom_account_number: string | null; // Added custom account number
+}
+
 export interface Room {
   id: string;
   room_number: string;
@@ -76,6 +86,7 @@ export interface Room {
   description?: string;
   amenities?: Record<string, any>;
   bookedDates?: Date[];
+  beds?: Bed[];
 }
 
 export interface HostelInfo {

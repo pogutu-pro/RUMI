@@ -498,15 +498,70 @@ class AdminSystemHealthView(APIView):
         }
         
         # Performance recommendations
-        recommendations = [
-            'Consider scaling up database connection pool during peak hours',
-            'Implement caching for frequently accessed data to improve response times',
-            'Schedule regular database optimization to maintain performance',
-            'Monitor storage usage and plan for扩容 if usage exceeds 80%'
-        ]
+        recommendations = []
         
         return Response({
             'system_health': system_health,
             'recommendations': recommendations,
             'last_updated': timezone.now().isoformat()
         }, status=status.HTTP_200_OK)
+
+
+class AdminPaymentStatsView(APIView):
+    """
+    Get payment statistics and health metrics for the Admin Command Center
+    """
+    permission_classes = [IsAdminOrSuperAdmin]
+
+    def get(self, request):
+        # 1. M-Pesa Health Metrics (Simulated from recent failure rates)
+        last_5_mins = timezone.now() - timedelta(minutes=5)
+        failed_recent = Transaction.objects.filter(
+            updated_at__gte=last_5_mins, status='failed', provider='mpesa'
+        ).count()
+        total_recent = Transaction.objects.filter(
+            updated_at__gte=last_5_mins, provider='mpesa'
+        ).count()
+        
+        failure_rate = 0
+        if total_recent > 0:
+            failure_rate = (failed_recent / total_recent) * 100
+            
+        health_status = 'operational'
+        if failure_rate > 10:
+            health_status = 'degraded'
+        if failure_rate > 50:
+            health_status = 'outage'
+            
+        # 2. Stuck Payments (Processing > 10 mins)
+        stuck_threshold = timezone.now() - timedelta(minutes=10)
+        stuck_payments = Transaction.objects.filter(
+            status='processing',
+            created_at__lte=stuck_threshold
+        ).count()
+        
+        # 3. Recent Transactions Feed
+        recent_txs = Transaction.objects.select_related('student__user').order_by('-created_at')[:20]
+        feed_data = []
+        for tx in recent_txs:
+            feed_data.append({
+                'id': tx.id,
+                'reference': tx.transaction_reference,
+                'amount': float(tx.amount),
+                'status': tx.status,
+                'mpesa_receipt': tx.mpesa_receipt_number,
+                'customer_name': tx.student.user.get_full_name() if tx.student else 'Unknown',
+                'timestamp': tx.created_at.isoformat(),
+                'provider': tx.provider,
+                'failure_reason': tx.metadata.get('failure_reason') if tx.metadata else None
+            })
+
+        return Response({
+            'health': {
+                'status': health_status,
+                'latency_ms': 245, # Placeholder
+                'failure_rate_5m': round(failure_rate, 2)
+            },
+            'stuck_count': stuck_payments,
+            'feed': feed_data
+        })

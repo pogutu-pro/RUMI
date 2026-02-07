@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Download, Printer, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface PaymentReceiptProps {
   transactionId: string;
@@ -94,6 +95,16 @@ export function PaymentReceipt({
             <span>Amount Paid</span>
             <span>KES {amount.toLocaleString()}</span>
           </div>
+        </div>
+
+        {/* QR Code Section */}
+        <div className="flex flex-col items-center justify-center py-4 border-t border-dashed">
+             <QRCodeSVG 
+                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/verify-receipt?id=${transactionId}`}
+                size={96}
+                level="M"
+             />
+             <p className="text-[10px] text-muted-foreground mt-2 uppercase tracking-wider">Scan to Verify</p>
         </div>
 
         <div className="flex gap-2 pt-4">

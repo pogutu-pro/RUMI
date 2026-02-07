@@ -2119,15 +2119,32 @@ class MpesaPaymentInitializeView(APIView):
                 amount = booking.total_amount - booking.amount_paid
                 transaction_type = 'initial'
             
-            # Create transaction with minimal fields
+            # Determine transaction reference (account number)
+            # Default: System generated
             transaction_ref = f"RUMI-{transaction_type.upper()}-{booking.id}-{uuid.uuid4().hex[:8]}"
-            
+            account_reference = transaction_ref
+
+            # Check for custom bed account number
+            current_bed = None
+            if hasattr(booking, 'room') and booking.room:
+                # Find the bed assigned to this booking
+                # Best effort: get active bed occupancy for this booking
+                from hostels.bed_models import BedOccupancy
+                try:
+                    occupancy = BedOccupancy.objects.filter(booking=booking, is_active=True).select_related('bed').first()
+                    if occupancy and occupancy.bed.custom_account_number:
+                        current_bed = occupancy.bed
+                        account_reference = occupancy.bed.custom_account_number
+                except Exception:
+                    # Fallback to default if any error in resolving bed
+                    pass
+
             # Create transaction with fields existing in the model
             transaction_obj = Transaction.objects.create(
                 rent_period=getattr(booking, 'current_rent_period', None), # Try to link rent period if possible
                 booking=booking,
                 student=booking.student,
-                transaction_reference=transaction_ref,
+                transaction_reference=transaction_ref, # Internal reference remains unique UUID
                 transaction_type=transaction_type,
                 payment_method='mpesa',
                 amount=amount,
@@ -2135,7 +2152,8 @@ class MpesaPaymentInitializeView(APIView):
             )
             
             # Fast M-Pesa API call
-            mpesa_api = MpesaDarajaAPI()
+            from .routing import MpesaRoutingEngine
+            mpesa_api = MpesaRoutingEngine.get_api_for_booking(booking)
             formatted_phone = mpesa_api.validate_phone_number(phone_number)
             
             if not formatted_phone:
@@ -2145,7 +2163,7 @@ class MpesaPaymentInitializeView(APIView):
             stk_result = mpesa_api.initiate_stk_push(
                 amount=str(amount),
                 phone_number=formatted_phone,
-                reference=transaction_ref,
+                reference=account_reference, # Use custom ref if available
                 description=f"RUMI {transaction_type.title()} Payment"
             )
             
@@ -2177,9 +2195,9 @@ class MpesaPaymentInitializeView(APIView):
                 'message': 'STK push initiated. Please check your phone for payment prompt.',
                 'c2b_alternative': {
                     'note': 'You can also pay via C2B offline using M-Pesa menu',
-                    'business_number': getattr(settings, 'MPESA_SHORTCODE', 'N/A'),
+                    'business_number': mpesa_api.shortcode,
                     'amount': str(amount),
-                    'reference': transaction_ref
+                    'reference': account_reference # Use custom ref for manual payment too
                 }
             }, status=200)
             
@@ -2387,7 +2405,6 @@ class LandlordMpesaConfigView(APIView):
     Supported Payment Types:
     - Send Money
     - Till Number
-    - Pochi la Biashara
     - Paybill Number
     """
     
@@ -2401,7 +2418,6 @@ class LandlordMpesaConfigView(APIView):
         **Supported Payment Methods:**
         - **Send Money**: Direct M-Pesa send money to business
         - **Till Number**: Pay using business till number
-        - **Pochi la Biashara**: Pay using Pochi business account
         - **Paybill Number**: Pay using paybill number
         
         **Features:**
@@ -2439,30 +2455,16 @@ class LandlordMpesaConfigView(APIView):
         """Add new M-Pesa configuration"""
         landlord = request.user.landlord_profile
         
-        payment_type = request.data.get('payment_type')
-        mpesa_number = request.data.get('mpesa_number')
-        business_name = request.data.get('business_name')
-        is_default = request.data.get('is_default', False)
+        serializer = MpesaPaymentConfigSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                serializer.save(landlord=landlord)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                return Response({
+                    'error': 'Failed to create M-Pesa configuration',
+                    'details': str(e)
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        if not all([payment_type, mpesa_number, business_name]):
-            return Response({
-                'error': 'Payment type, M-Pesa number, and business name are required'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            config = MpesaPaymentConfig.objects.create(
-                landlord=landlord,
-                payment_type=payment_type,
-                mpesa_number=mpesa_number,
-                business_name=business_name,
-                is_default=is_default
-            )
-            
-            serializer = MpesaPaymentConfigSerializer(config)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-            
-        except Exception as e:
-            return Response({
-                'error': 'Failed to create M-Pesa configuration',
-                'details': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+

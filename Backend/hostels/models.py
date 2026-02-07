@@ -1512,3 +1512,6 @@ class Waitlist(models.Model):
 
     def __str__(self):
         return f"Waitlist: {self.student.user.email} for {self.hostel.name}"
+
+# Import bed-related models from separate file
+from .bed_models import Bed, BedOccupancy

@@ -8,6 +8,9 @@ from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from django.core.files.base import ContentFile
+from reportlab.graphics.barcode import qr
+from reportlab.graphics.shapes import Drawing
+from django.conf import settings
 
 
 class ReceiptGenerator:
@@ -95,18 +98,37 @@ class ReceiptGenerator:
         story.append(student_table)
         story.append(Spacer(1, 20))
         
-        # Booking Information
-        story.append(Paragraph("Booking Details", heading_style))
+        # Attribution Information (Booking or Rent Period)
+        story.append(Paragraph("Attribution Details", heading_style))
+        
         booking = self.transaction.booking
-        booking_info_data = [
-            ['Hostel:', booking.room.hostel.name],
-            ['Room:', booking.room.room_number],
-            ['Check-in Date:', booking.check_in_date.strftime("%Y-%m-%d") if booking.check_in_date else 'N/A'],
-            ['Check-out Date:', booking.check_out_date.strftime("%Y-%m-%d") if booking.check_out_date else 'N/A']
+        rent_period = self.transaction.rent_period
+        
+        if booking:
+            hostel_name = booking.room.hostel.name
+            room_number = booking.room.room_number
+            bed_code = booking.bed_slot_id or "N/A"
+            period_text = f"{booking.check_in_date} to {booking.check_out_date}"
+        elif rent_period:
+            hostel_name = rent_period.hostel.name
+            room_number = rent_period.room.room_number if rent_period.room else "N/A"
+            bed_code = rent_period.bed_slot_id or "N/A"
+            period_text = f"{rent_period.start_date} to {rent_period.end_date}"
+        else:
+            hostel_name = "N/A"
+            room_number = "N/A"
+            bed_code = "N/A"
+            period_text = "N/A"
+
+        attribution_info_data = [
+            ['Hostel:', hostel_name],
+            ['Room:', room_number],
+            ['Bed Slot:', bed_code],
+            ['Period:', period_text]
         ]
         
-        booking_table = Table(booking_info_data, colWidths=[2.5*inch, 3*inch])
-        booking_table.setStyle(TableStyle([
+        attribution_table = Table(attribution_info_data, colWidths=[2.5*inch, 3*inch])
+        attribution_table.setStyle(TableStyle([
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
             ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
@@ -114,7 +136,7 @@ class ReceiptGenerator:
             ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
         ]))
         
-        story.append(booking_table)
+        story.append(attribution_table)
         story.append(Spacer(1, 20))
         
         # Payment Details
@@ -146,6 +168,30 @@ class ReceiptGenerator:
         # Footer
         story.append(Paragraph("Thank you for using RUMI!", styles['Normal']))
         story.append(Paragraph("For inquiries: support@rumi.co.ke", styles['Normal']))
+
+        # QR Code Verification
+        story.append(Spacer(1, 20))
+        
+        # Determine verification URL
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://app.rumi.co.ke')
+        verify_url = f"{frontend_url}/verify-receipt?id={self.transaction.id}"
+        
+        # Create QR Code
+        qr_code = qr.QrCodeWidget(verify_url)
+        qr_code.barWidth = 2.5
+        qr_code.barHeight = 2.5
+        qr_code.qrVersion = 1
+        
+        d = Drawing(100, 100)
+        d.add(qr_code)
+        
+        # Center QR Code in a table
+        qr_table = Table([[d, Paragraph("Scan to Verify", heading_style)]], colWidths=[1.5*inch, 2*inch])
+        qr_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        story.append(qr_table)
         
         # Build PDF
         doc.build(story)

@@ -554,3 +554,120 @@ def reconcile_missed_webhooks():
             results['failed'] += 1
             
     return results
+
+
+@shared_task
+def capture_daily_occupancy_snapshots():
+    """
+    Capture the state of every bed in the system at 23:59:59 daily.
+    Used for bed-day subscription billing.
+    """
+    from hostels.models import Hostel, Room, Booking
+    from .subscription_models import OccupancySnapshot
+    
+    today = timezone.now().date()
+    hostels = Hostel.objects.filter(status='active')
+    
+    snapshots_created = 0
+    for hostel in hostels:
+        # Get all bookings active for this date in this hostel
+        active_bookings = Booking.objects.filter(
+            room__hostel=hostel,
+            status='confirmed',
+            check_in_date__lte=today,
+            check_out_date__gte=today
+        ).select_related('room', 'student')
+
+        # Total capacity of the hostel
+        total_beds = Room.objects.filter(hostel=hostel).aggregate(total=Sum('capacity'))['total'] or 0
+        occupied_beds = active_bookings.count()
+        
+        # Detailed breakdown
+        bed_data = {
+            str(b.room.id): {
+                'room_number': b.room.room_number,
+                'student_id': b.student.id,
+                'booking_id': b.id
+            } for b in active_bookings
+        }
+
+        OccupancySnapshot.objects.update_or_create(
+            hostel=hostel,
+            snapshot_date=today,
+            defaults={
+                'total_beds': total_beds,
+                'occupied_beds': occupied_beds,
+                'vacant_beds': max(0, total_beds - occupied_beds),
+                'bed_occupancy_data': bed_data
+            }
+        )
+        snapshots_created += 1
+        
+    return {'snapshots_created': snapshots_created, 'date': str(today)}
+
+
+@shared_task
+def generate_monthly_subscription_invoices():
+    """
+    Run on the 1st of every month to consolidate the previous month's snapshots.
+    """
+    from hostels.models import Hostel
+    from .subscription_models import OccupancySnapshot, SubscriptionInvoice, SubscriptionPlan
+    
+    today = timezone.now().date()
+    first_of_month = today.replace(day=1)
+    # Previous month range
+    last_month_end = first_of_month - timezone.timedelta(days=1)
+    last_month_start = last_month_end.replace(day=1)
+    
+    hostels = Hostel.objects.filter(status='active')
+    invoices_created = 0
+    
+    for hostel in hostels:
+        # Consolidate snapshots
+        snapshots = OccupancySnapshot.objects.filter(
+            hostel=hostel,
+            snapshot_date__gte=last_month_start,
+            snapshot_date__lte=last_month_end
+        )
+        
+        if not snapshots.exists():
+            continue
+            
+        total_bed_days = snapshots.aggregate(total=Sum('occupied_beds'))['total'] or 0
+        avg_occupancy = Decimal(str(total_bed_days)) / Decimal(str(snapshots.count()))
+        
+        # Use default plan price (KES 29) for now
+        # In a full system, we'd lookup Hostel.landlord.subscription_plan
+        unit_price = Decimal('29.00')
+        subtotal = (Decimal(str(total_bed_days)) / Decimal('30.00')) * unit_price
+        total_amount = subtotal # Tax can be added here
+        
+        # Generate unique invoice number
+        invoice_number = f"RUMI-SUB-{hostel.id}-{last_month_start.strftime('%Y%m')}"
+        
+        SubscriptionInvoice.objects.update_or_create(
+            invoice_number=invoice_number,
+            defaults={
+                'hostel': hostel,
+                'landlord': hostel.landlord,
+                'subscription_plan': SubscriptionPlan.objects.get(slug='starter'), # Default
+                'invoice_date': today,
+                'due_date': today + timezone.timedelta(days=7),
+                'period_start': last_month_start,
+                'period_end': last_month_end,
+                'occupancy_snapshot': [
+                    {'snapshot_date': str(s['snapshot_date']), 'occupied_beds': s['occupied_beds']}
+                    for s in snapshots.values('snapshot_date', 'occupied_beds')
+                ],
+                'total_bed_days': total_bed_days,
+                'average_occupancy': avg_occupancy,
+                'unit_price': unit_price,
+                'subtotal': subtotal,
+                'total_amount': total_amount,
+                'status': 'issued'
+            }
+        )
+        invoices_created += 1
+        
+    return {'invoices_created': invoices_created, 'period': f"{last_month_start} to {last_month_end}"}

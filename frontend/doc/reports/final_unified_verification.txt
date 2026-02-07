@@ -1,0 +1,30 @@
+🧪 Running Frontend Payment Tests...
+====================================
+
+[1;33m📦 Running Component Unit Tests...[0m
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+PASS src/lib/utils/__tests__/currency.test.ts
+PASS src/lib/validations/__tests__/profile.test.ts
+PASS src/lib/utils/__tests__/data-derivation.test.ts
+PASS src/lib/validations/__tests__/booking.test.ts
+PASS src/__tests__/sample.test.tsx
+PASS src/features/payments/__tests__/components.test.tsx (5.089 s)
+
+Test Suites: 6 passed, 6 total
+Tests:       35 passed, 35 total
+Snapshots:   0 total
+Time:        8.333 s
+Ran all test suites.
+[0;32m✅ Unit tests passed![0m
+
+[0;32m✅ All frontend tests completed successfully![0m
+
+⚛️  Preparing Frontend Tests...
+
+🚀 Running: /home/ogutu/Pictures/RUMI/frontend/run_frontend_tests.sh

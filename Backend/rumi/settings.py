@@ -93,6 +93,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'rumi.middleware.PerformanceMonitoringMiddleware',
+    'payments.middleware.PrometheusMetricsMiddleware',
     'rumi.middleware.DatabaseQueryCountMiddleware',
     'rumi.middleware.APIResponseCacheMiddleware',
     'rumi.middleware.RateLimitMiddleware',

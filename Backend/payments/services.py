@@ -16,6 +16,7 @@ from datetime import date
 import uuid
 
 from .models import RentPeriod, StudentPaymentTracker, Transaction, TransferLog
+from .bed_payment_ledger import BedPaymentLedger
 from hostels.models import Booking
 
 
@@ -33,7 +34,9 @@ def generate_rent_periods_for_booking(booking):
     rent_periods = []
     current_date = booking.check_in_date
     
-    # Generate a unique bed_slot_id (can be enhanced with actual bed tracking)
+    # Try to find a bed in this room (fall back to room-student id if none)
+    from hostels.bed_models import Bed
+    bed_obj = Bed.objects.filter(room=booking.room, is_active=True).first()
     bed_slot_id = f"{booking.room.room_number}-{booking.student.id}"
     
     for month_offset in range(booking.duration_months):
@@ -48,6 +51,7 @@ def generate_rent_periods_for_booking(booking):
             hostel=booking.room.hostel,
             booking=booking,
             room=booking.room,
+            bed=bed_obj,
             bed_slot_id=bed_slot_id,
             start_date=period_start,
             end_date=period_end,
@@ -71,8 +75,23 @@ def get_or_create_student_payment_tracker(student):
     return tracker
 
 
+def create_bed_ledger_entry(transaction, rent_period, amount):
+    """Create an immutable BedPaymentLedger entry for a successful payment attribution."""
+    if not rent_period.bed:
+        return None
+        
+    return BedPaymentLedger.objects.create(
+        bed=rent_period.bed,
+        transaction=transaction,
+        amount_allocated=amount,
+        allocated_to_period_start=rent_period.start_date,
+        allocated_to_period_end=rent_period.end_date,
+        attributed_by='system'
+    )
+
+
 @transaction.atomic
-def process_payment_to_rent_periods(student, amount, payment_method, metadata=None):
+def process_payment_to_rent_periods(student, amount, payment_method, metadata=None, booking=None):
     """
     Process a payment and apply it to the oldest unpaid RentPeriods.
     Excess amount goes to StudentPaymentTracker.
@@ -82,6 +101,7 @@ def process_payment_to_rent_periods(student, amount, payment_method, metadata=No
         amount: Decimal amount paid
         payment_method: 'mpesa' or 'paystack'
         metadata: dict of payment gateway metadata
+        booking: Optional Booking instance to scope payments to a specific booking
     
     Returns:
         dict: {
@@ -95,10 +115,15 @@ def process_payment_to_rent_periods(student, amount, payment_method, metadata=No
     rent_periods_updated = []
     
     # Get unpaid/partially paid RentPeriods, oldest first
-    unpaid_periods = RentPeriod.objects.filter(
-        student=student,
-        status__in=['due', 'partially_paid', 'overdue']
-    ).order_by('start_date')
+    query_filters = {
+        'student': student,
+        'status__in': ['due', 'partially_paid', 'overdue']
+    }
+    
+    if booking:
+        query_filters['booking'] = booking
+        
+    unpaid_periods = RentPeriod.objects.filter(**query_filters).order_by('start_date')
     
     for rent_period in unpaid_periods:
         if remaining_amount <= 0:
@@ -138,6 +163,9 @@ def process_payment_to_rent_periods(student, amount, payment_method, metadata=No
         
         rent_period.save()
         rent_periods_updated.append(rent_period)
+        
+        # New: Record attribution in immutable bed ledger
+        create_bed_ledger_entry(txn, rent_period, payment_to_apply)
         
         remaining_amount -= payment_to_apply
     
@@ -246,85 +274,104 @@ def process_confirmed_payment(student, amount, reference, payment_method, metada
     from hostels.models import Booking
 
     # 1. Resolve Target from Reference
-    # Format: RUMI-{TYPE}-{ID}-{UUID}
+    # Check if reference is our standard format: RUMI-{TYPE}-{ID}-{UUID}
+    # If not, it might be a custom account number or external reference
     parts = reference.split('-')
-    if len(parts) < 3:
-        raise ValueError(f"Invalid reference format: {reference}")
+    is_standard_format = len(parts) >= 3 and parts[0] == 'RUMI'
 
-    ref_type = parts[1] # INITIAL (Booking) or RENT (RentPeriod)
-    ref_id = parts[2]
+    if is_standard_format:
+        ref_type = parts[1] # INITIAL (Booking) or RENT (RentPeriod)
+        ref_id = parts[2]
 
-    transaction_obj = None
+        transaction_obj = None
 
-    if ref_type == 'INITIAL':
-        # This is a booking deposit
+        if ref_type == 'INITIAL':
+            # ... (Existing INITIAL logic) ...
+            # This is a booking deposit
+            try:
+                booking = Booking.objects.select_related('student').get(id=ref_id)
+                if student and booking.student != student:
+                    raise ValueError(f"Booking/Student mismatch: {booking.student.id} != {student.id}")
+                student = student or booking.student
+            except Booking.DoesNotExist:
+                raise ValueError(f"Booking {ref_id} not found")
+
+            # Check if transaction already exists for this reference
+            transaction_obj = Transaction.objects.filter(transaction_reference=reference, status='success').first()
+            if transaction_obj:
+                return {"type": "booking", "booking_id": booking.id, "status": "already_processed"}
+
+            # Update or create transaction for this reference
+            transaction_obj, created = Transaction.objects.update_or_create(
+                transaction_reference=reference,
+                defaults={
+                    'booking': booking,
+                    'student': student,
+                    'amount': amount,
+                    'transaction_type': 'deposit',
+                    'payment_method': payment_method,
+                    'status': 'success',
+                    'metadata': metadata or {},
+                    'paid_at': timezone.now()
+                }
+            )
+
+            LifecycleService.activate_tenancy(booking, transaction_obj)
+            return {"type": "booking", "booking_id": booking.id}
+
+        elif ref_type == 'RENT':
+            # ... (Existing RENT logic) ...
+            # This is a standard rent payment
+            try:
+                rent_period = RentPeriod.objects.select_related('student', 'booking').get(id=ref_id)
+                if student and rent_period.student != student:
+                    raise ValueError(f"RentPeriod/Student mismatch: {rent_period.student.id} != {student.id}")
+                student = student or rent_period.student
+            except RentPeriod.DoesNotExist:
+                raise ValueError(f"RentPeriod {ref_id} not found")
+
+            transaction_obj = Transaction.objects.filter(transaction_reference=reference, status='success').first()
+            if transaction_obj:
+                return {"type": "rent", "rent_period_id": rent_period.id, "status": "already_processed"}
+
+            transaction_obj = Transaction.objects.create(
+                rent_period=rent_period,
+                booking=rent_period.booking,
+                student=student,
+                transaction_reference=reference,
+                amount=amount,
+                transaction_type='rent',
+                payment_method=payment_method,
+                status='success',
+                metadata=metadata or {},
+                paid_at=timezone.now()
+            )
+
+            rent_period.amount_paid += amount
+            if rent_period.amount_paid >= rent_period.amount_due:
+                rent_period.status = 'paid'
+            else:
+                rent_period.status = 'partially_paid'
+            rent_period.save()
+
+            # New: Record attribution in immutable bed ledger
+            create_bed_ledger_entry(transaction_obj, rent_period, amount)
+
+            return {"type": "rent", "rent_period_id": rent_period.id}
+
+    # If we fall through here, it's either unknown Reference format OR we need greedy processing
+    # Check if metadata contains booking_id (e.g. from C2B custom account lookup)
+    target_booking = None
+    if metadata and 'booking_id' in metadata:
         try:
-            booking = Booking.objects.select_related('student').get(id=ref_id)
-            if student and booking.student != student:
-                raise ValueError(f"Booking/Student mismatch: {booking.student.id} != {student.id}")
-            student = student or booking.student
+            target_booking = Booking.objects.get(id=metadata['booking_id'])
+            # Validate ownership if student is known
+            if student and target_booking.student != student:
+                # This logic mismatch shouldn't happen if caller did their job, but safety first
+                pass 
+            else:
+                student = target_booking.student
         except Booking.DoesNotExist:
-            raise ValueError(f"Booking {ref_id} not found")
+            pass
 
-        # Check if transaction already exists for this reference
-        transaction_obj = Transaction.objects.filter(transaction_reference=reference, status='success').first()
-        if transaction_obj:
-            return {"type": "booking", "booking_id": booking.id, "status": "already_processed"}
-
-        # Update or create transaction for this reference
-        transaction_obj, created = Transaction.objects.update_or_create(
-            transaction_reference=reference,
-            defaults={
-                'booking': booking,
-                'student': student,
-                'amount': amount,
-                'transaction_type': 'deposit',
-                'payment_method': payment_method,
-                'status': 'success',
-                'metadata': metadata or {},
-                'paid_at': timezone.now()
-            }
-        )
-
-        LifecycleService.activate_tenancy(booking, transaction_obj)
-        return {"type": "booking", "booking_id": booking.id}
-
-    elif ref_type == 'RENT':
-        # This is a standard rent payment
-        try:
-            rent_period = RentPeriod.objects.select_related('student', 'booking').get(id=ref_id)
-            if student and rent_period.student != student:
-                raise ValueError(f"RentPeriod/Student mismatch: {rent_period.student.id} != {student.id}")
-            student = student or rent_period.student
-        except RentPeriod.DoesNotExist:
-            raise ValueError(f"RentPeriod {ref_id} not found")
-
-        transaction_obj = Transaction.objects.filter(transaction_reference=reference, status='success').first()
-        if transaction_obj:
-            return {"type": "rent", "rent_period_id": rent_period.id, "status": "already_processed"}
-
-        transaction_obj = Transaction.objects.create(
-            rent_period=rent_period,
-            booking=rent_period.booking,
-            student=student,
-            transaction_reference=reference,
-            amount=amount,
-            transaction_type='rent',
-            payment_method=payment_method,
-            status='success',
-            metadata=metadata or {},
-            paid_at=timezone.now()
-        )
-
-        rent_period.amount_paid += amount
-        if rent_period.amount_paid >= rent_period.amount_due:
-            rent_period.status = 'paid'
-        else:
-            rent_period.status = 'partially_paid'
-        rent_period.save()
-
-        return {"type": "rent", "rent_period_id": rent_period.id}
-
-    else:
-        # Fallback to greedy processing if type is unknown or mismatched
-        return process_payment_to_rent_periods(student, amount, payment_method, metadata)
+    return process_payment_to_rent_periods(student, amount, payment_method, metadata, booking=target_booking)
