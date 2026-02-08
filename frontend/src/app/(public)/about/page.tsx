@@ -3,9 +3,9 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'About Rumi - The Operating System for Student Housing',
+  title: 'About Rumia - The Operating System for Student Housing',
   description:
-    'Rumi is the infrastructure layer for student housing in kenya, connecting listings, bookings, payments, and operations.',
+    'Rumia is the infrastructure layer for student housing in kenya, connecting listings, bookings, payments, and operations.',
 };
 
 export default function AboutPage() {
@@ -93,7 +93,7 @@ export default function AboutPage() {
                   System of Record
                 </h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Rumi provides a single source of truth for financial
+                  Rumia provides a single source of truth for financial
                   reporting, reducing disputes and giving owners real-time
                   visibility.
                 </p>
@@ -112,7 +112,7 @@ export default function AboutPage() {
             </h2>
             <p className="text-xl text-gray-700 font-medium leading-relaxed mb-8">
               To bring order, transparency, and scalability to student housing
-              in kenya. Rumi is the platform that brings modern financial and
+              in kenya. Rumia is the platform that brings modern financial and
               operational workflows to the student accommodation sector.
             </p>
             <div className="flex justify-center gap-4">

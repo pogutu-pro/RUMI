@@ -6,7 +6,7 @@ import { AUTH_ROUTES } from '@/lib/constants/routes';
 
 export const metadata: Metadata = {
   title: 'Pricing',
-  description: 'Rumi rental management platform pricing. Per-bed monthly billing.',
+  description: 'Rumia rental management platform pricing. Per-bed monthly billing.',
 };
 
 interface PricingPlan {
@@ -206,7 +206,7 @@ export default function PricingPage() {
             <div className="flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="text-center md:text-left">
                 <p className="font-bold text-primary text-xl mb-1">Still have questions?</p>
-                <p className="text-gray-600 font-medium">We're here to help you get started with Rumi.</p>
+                <p className="text-gray-600 font-medium">We're here to help you get started with Rumia.</p>
               </div>
               <Link href="/contact">
                 <Button className="bg-primary text-white hover:bg-primary/90 px-8 rounded-xl h-12 font-bold">Contact Us</Button>

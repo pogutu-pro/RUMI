@@ -5,7 +5,7 @@ import { AUTH_ROUTES } from '@/lib/constants/routes';
 
 export const metadata: Metadata = {
   title: 'How It Works',
-  description: 'How Rumi rental management platform works for landlords and students.',
+  description: 'How Rumia rental management platform works for landlords and students.',
 };
 
 const LANDLORD_FEATURES = [
@@ -51,7 +51,7 @@ export default function HowItWorksPage() {
       <section className="border-b border-gray-200 py-16 px-4">
         <div className="container mx-auto max-w-3xl">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            How Rumi Works
+            How Rumia Works
           </h1>
           <p className="text-lg text-gray-700">
             Digital operations for student hostels. Rent tracking, occupancy management, and tenant records.
@@ -180,7 +180,7 @@ export default function HowItWorksPage() {
       <section className="py-16 px-4 bg-gray-900 text-white">
         <div className="container mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold mb-6">
-            Start Using Rumi
+            Start Using Rumia
           </h2>
           <p className="text-lg text-gray-300 mb-8">
             Replace spreadsheets and WhatsApp with dedicated hostel management software.

@@ -82,8 +82,8 @@ export default function PayoutsPage() {
       {/* Header Section */}
       <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-4">
         <div className="space-y-1">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-950 dark:text-white">Payouts & Settlements</h1>
-          <p className="text-slate-700 dark:text-slate-300 max-w-xl text-lg md:text-xl font-medium">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-primary">Payouts & Settlements</h1>
+          <p className="text-muted-foreground max-w-xl text-lg md:text-xl font-medium">
              Manage your withdrawals and view settlement history.
           </p>
         </div>
@@ -96,20 +96,20 @@ export default function PayoutsPage() {
               <CardContent className="p-10">
                  <div className="flex justify-between items-start mb-10">
                    <div className="space-y-1">
-                     <p className="text-sm font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest">Available For Payout</p>
-                     <h2 className="text-5xl md:text-6xl font-black tracking-tighter text-slate-950 dark:text-white mt-3">
+                     <p className="text-sm font-black text-muted-foreground uppercase tracking-widest">Available For Payout</p>
+                     <h2 className="text-5xl md:text-6xl font-black tracking-tighter text-primary mt-3">
                        KES {stats?.availableBalance?.toLocaleString() || '0'}
                      </h2>
                    </div>
-                   <div className="h-14 w-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700">
-                     <Wallet className="h-7 w-7 text-slate-900 dark:text-slate-300" />
+                   <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center border border-border">
+                     <Wallet className="h-7 w-7 text-primary" />
                    </div>
                  </div>
 
                  <div className="flex gap-4">
                    <Dialog open={isRequestModalOpen} onOpenChange={setIsRequestModalOpen}>
                      <DialogTrigger asChild>
-                       <Button className="h-14 px-8 bg-slate-950 dark:bg-white text-white dark:text-slate-900 hover:opacity-95 rounded-xl font-black text-lg flex-1 shadow-lg">
+                       <Button className="h-14 px-8 bg-primary text-primary-foreground hover:opacity-95 rounded-xl font-black text-lg flex-1 shadow-lg">
                          Request Payout
                          <ArrowUpRight className="ml-2 h-6 w-6" />
                        </Button>
@@ -118,15 +118,15 @@ export default function PayoutsPage() {
                      <DialogContent className="sm:max-w-md">
                          <DialogHeader>
                            <DialogTitle className="text-xl font-bold">Withdraw Funds</DialogTitle>
-                           <DialogDescription className="text-slate-700 dark:text-slate-400">
+                           <DialogDescription className="text-muted-foreground">
                              Funds will be sent to your registered M-Pesa account.
                            </DialogDescription>
                          </DialogHeader>
                          <form onSubmit={handleRequestPayout} className="space-y-4 py-2">
                            <div className="space-y-2">
                               <Label htmlFor="amount" className="font-bold">Amount (KES)</Label>
-                              <Input id="amount" placeholder="e.g. 50000" type="number" required className="h-12 text-lg font-bold border-slate-300" />
-                              <p className="text-sm text-slate-700 dark:text-slate-500 font-bold">Available: KES {stats?.availableBalance?.toLocaleString() || '0'}</p>
+                              <Input id="amount" placeholder="e.g. 50000" type="number" required className="h-12 text-lg font-bold border-border" />
+                              <p className="text-sm text-muted-foreground font-bold">Available: KES {stats?.availableBalance?.toLocaleString() || '0'}</p>
                            </div>
                            <DialogFooter className="gap-2">
                              <DialogClose asChild>
@@ -138,7 +138,7 @@ export default function PayoutsPage() {
                      </DialogContent>
                    </Dialog>
                    
-                   <Button variant="outline" className="h-14 px-6 border-slate-300 dark:border-slate-700 font-black rounded-xl text-slate-900 dark:text-slate-200 shadow-sm">
+                   <Button variant="outline" className="h-14 px-6 border-border font-black rounded-xl text-foreground shadow-sm">
                      <CreditCard className="mr-2 h-6 w-6" />
                      Manage Accounts
                    </Button>
@@ -147,35 +147,35 @@ export default function PayoutsPage() {
            </Card>
 
           {/* Upcoming Projections */}
-          <Card className="border border-slate-200 dark:border-slate-800 shadow-md bg-card">
-              <CardHeader className="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
-                <CardTitle className="text-xl font-black text-slate-950 dark:text-white flex items-center gap-2">
-                  <TrendingUp className="h-6 w-6 text-emerald-600" />
+          <Card className="border border-border shadow-md bg-card">
+              <CardHeader className="p-6 border-b border-border bg-muted/30">
+                <CardTitle className="text-xl font-black text-primary flex items-center gap-2">
+                  <TrendingUp className="h-6 w-6 text-success" />
                   Incoming Settlements
                 </CardTitle>
-                <CardDescription className="text-slate-700 dark:text-slate-400 font-medium">Estimated funds from pending tenant payments.</CardDescription>
+                <CardDescription className="text-muted-foreground font-medium">Estimated funds from pending tenant payments.</CardDescription>
               </CardHeader>
              <CardContent className="p-0">
                {pendingAmount > 0 ? (
-                    <div className="p-6 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-colors">
+                    <div className="p-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
                        <div className="flex items-center gap-4">
-                          <div className="h-12 w-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-400 font-black">
+                          <div className="h-12 w-12 rounded-xl bg-info/10 flex items-center justify-center text-info font-black">
                              <Clock className="h-6 w-6" />
                           </div>
                           <div>
-                             <p className="font-black text-slate-950 dark:text-white text-lg">Pending Rent Collection</p>
-                             <p className="text-sm text-slate-700 dark:text-slate-400 font-bold">Expected within 7 days</p>
+                             <p className="font-black text-primary text-lg">Pending Rent Collection</p>
+                             <p className="text-sm text-muted-foreground font-bold">Expected within 7 days</p>
                           </div>
                        </div>
-                       <p className="font-black text-slate-950 dark:text-white text-2xl">+ KES {pendingAmount.toLocaleString()}</p>
+                       <p className="font-black text-primary text-2xl">+ KES {pendingAmount.toLocaleString()}</p>
                     </div>
                ) : (
-                   <div className="p-8 text-center bg-slate-50 dark:bg-slate-900/30">
-                       <p className="text-sm text-slate-500 font-medium">No pending settlements found.</p>
+                   <div className="p-8 text-center bg-muted/30">
+                       <p className="text-sm text-muted-foreground font-medium">No pending settlements found.</p>
                    </div>
                )}
-                              <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-900/40">
-                  <p className="text-xs text-slate-600 dark:text-slate-500 font-black flex items-center justify-center gap-2 uppercase tracking-wide">
+                              <div className="p-4 border-t border-border bg-muted/40">
+                  <p className="text-xs text-muted-foreground font-black flex items-center justify-center gap-2 uppercase tracking-wide">
                     <AlertCircle className="h-4 w-4" />
                     Settlements are processed automatically every Tuesday.
                   </p>
@@ -186,43 +186,43 @@ export default function PayoutsPage() {
 
         {/* Payout History */}
         <motion.div variants={itemVariants} className="lg:col-span-5 space-y-6">
-          <Card className="border border-slate-200 dark:border-slate-800 shadow-md bg-card h-full">
-            <CardHeader className="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex flex-row items-center justify-between">
+          <Card className="border border-border shadow-md bg-card h-full">
+            <CardHeader className="p-6 border-b border-border bg-muted/30 flex flex-row items-center justify-between">
               <div className="space-y-1">
-                <CardTitle className="text-xl font-black text-slate-950 dark:text-white">Transfer History</CardTitle>
-                <CardDescription className="text-slate-700 dark:text-slate-400 font-medium">Recent withdrawals</CardDescription>
+                <CardTitle className="text-xl font-black text-primary">Transfer History</CardTitle>
+                <CardDescription className="text-muted-foreground font-medium">Recent withdrawals</CardDescription>
               </div>
-              <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-900">
+              <Button variant="ghost" size="icon" className="h-10 w-10 text-foreground">
                  <CalendarDays className="h-5 w-5" />
               </Button>
             </CardHeader>
             <CardContent className="p-0">
                {isPayoutsLoading ? (
-                 <div className="p-8 text-center text-slate-400 font-medium">Loading history...</div>
+                 <div className="p-8 text-center text-muted-foreground font-medium">Loading history...</div>
                ) : payoutsData?.data && payoutsData.data.length > 0 ? (
-                  <div className="divide-y divide-slate-200 dark:divide-slate-800 font-sans">
+                  <div className="divide-y divide-border font-sans">
                     {payoutsData.data.slice(0, 6).map((payout: any) => (
-                      <div key={payout.id} className="p-5 flex items-center gap-4 hover:bg-slate-100 dark:hover:bg-slate-900/30 transition-colors">
+                      <div key={payout.id} className="p-5 flex items-center gap-4 hover:bg-muted/30 transition-colors">
                          <div className={cn(
                            "h-12 w-12 rounded-full flex items-center justify-center border-2",
-                           payout.status === 'completed' ? "bg-emerald-100 border-emerald-300 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400" :
-                           payout.status === 'pending' ? "bg-amber-100 border-amber-300 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400" :
-                           "bg-red-100 border-red-300 text-red-700 dark:bg-red-500/20 dark:text-red-400"
+                           payout.status === 'completed' ? "bg-success/10 border-success/30 text-success" :
+                           payout.status === 'pending' ? "bg-warning/10 border-warning/30 text-warning" :
+                           "bg-destructive/10 border-destructive/30 text-destructive"
                          )}>
                             {payout.status === 'completed' ? <CheckCircle className="h-6 w-6" /> :
                              payout.status === 'pending' ? <Clock className="h-6 w-6" /> : <XCircle className="h-6 w-6" />}
                          </div>
                          <div className="flex-1 min-w-0">
-                           <p className="font-black text-slate-950 dark:text-white text-base truncate">
+                           <p className="font-black text-primary text-base truncate">
                               To {payout.recipient || 'M-PESA Account'}
                            </p>
-                           <p className="text-sm text-slate-700 dark:text-slate-500 font-bold">
+                           <p className="text-sm text-muted-foreground font-bold">
                              {format(new Date(payout.createdAt || Date.now()), 'MMM d, h:mm a')}
                            </p>
                          </div>
                          <div className="text-right">
-                           <p className="font-black text-slate-950 dark:text-white text-base">- KES {payout.amount.toLocaleString()}</p>
-                           <Badge variant="outline" className="text-[11px] h-6 px-2 uppercase font-black border-0 bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-400">
+                           <p className="font-black text-primary text-base">- KES {payout.amount.toLocaleString()}</p>
+                           <Badge variant="outline" className="text-[11px] h-6 px-2 uppercase font-black border-0 bg-muted text-muted-foreground">
                               {payout.status}
                            </Badge>
                          </div>
@@ -231,16 +231,16 @@ export default function PayoutsPage() {
                  </div>
                ) : (
                  <div className="p-12 text-center">
-                    <div className="h-12 w-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
-                       <History className="h-6 w-6 text-slate-400" />
+                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                       <History className="h-6 w-6 text-muted-foreground" />
                     </div>
-                    <p className="text-slate-900 dark:text-white font-bold">No payouts yet</p>
-                    <p className="text-xs text-slate-500">Your transfer history will appear here.</p>
+                    <p className="text-primary font-bold">No payouts yet</p>
+                    <p className="text-xs text-muted-foreground">Your transfer history will appear here.</p>
                  </div>
                )}
                
-               <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-                  <Button variant="outline" className="w-full h-12 font-black border-dashed border-slate-400 dark:border-slate-700 text-slate-800 dark:text-slate-300 hover:text-slate-950 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-all text-base">
+               <div className="p-4 border-t border-border">
+                  <Button variant="outline" className="w-full h-12 font-black border-dashed border-border text-foreground hover:text-primary hover:bg-muted/50 transition-all text-base">
                     <Download className="mr-2 h-5 w-5" /> Download Statement
                   </Button>
                </div>

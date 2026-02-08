@@ -13,6 +13,7 @@ import { sanitizeInput, sanitizeImageUrl } from '@/lib/utils/security';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { PublicMenuContent } from '@/components/layouts/public-menu-content';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
+import { RumiaLogoCompact } from '@/components/ui/rumia-animated-logo';
 
 const LOGIN_HREF = AUTH_ROUTES.LOGIN;
 
@@ -71,24 +72,17 @@ export const PublicHeader = React.memo(function PublicHeader({
               href="/"
               className="flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-sm group shrink-0"
             >
-              <div className="relative h-8 w-8 xs:h-9 xs:w-9 overflow-hidden rounded-lg transition-transform group-hover:scale-105">
+              <div className="relative h-16 w-16 xs:h-20 xs:w-20 overflow-hidden rounded-lg transition-transform group-hover:scale-105">
                 <Image
                   src="/images/logo/logo.svg"
-                  alt="RUMI"
-                  width={36}
-                  height={36}
+                  alt="Rumia Logo"
+                  width={80}
+                  height={80}
                   priority
                   style={{ height: 'auto' }}
                 />
               </div>
-              <span
-                className={cn(
-                  'font-bold text-lg xs:text-xl hidden sm:block tracking-tight transition-colors',
-                  !isScrolled && isHome ? 'text-primary' : 'text-primary',
-                )}
-              >
-                RUMI
-              </span>
+              <RumiaLogoCompact />
             </Link>
 
             {/* Center – Quick Links */}

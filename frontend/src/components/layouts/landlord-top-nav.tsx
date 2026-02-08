@@ -1,25 +1,12 @@
-'use client';
-
 import * as React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import {
-  Bell,
-  Menu,
-  LogOut,
-  User,
-  Settings,
-  CheckCircle2,
-  AlertCircle,
-  Info,
-  Search,
-  Building2,
-  DollarSign,
-  X,
-  type LucideIcon,
-} from 'lucide-react';
+import { Bell, User, Settings, LogOut } from 'lucide-react';
+import { useAuth } from '@/features/auth';
+import { useNotifications } from '@/features/notifications';
+import { Notification } from '@/features/notifications';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,80 +15,69 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { useAuth } from '@/features/auth';
-import { useNotifications } from '@/features/notifications';
-import { Notification as AppNotification } from '@/features/auth/types/types';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils/cn';
 import { getUserInitials } from '@/lib/utils/user';
 import { sanitizeImageUrl } from '@/lib/utils/security';
-import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Clock, CheckCircle, AlertTriangle, Info, type LucideIcon } from 'lucide-react';
 
-// Helper function to format relative time
+// Helper functions for notification display
 function formatRelativeTime(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) return 'Just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
   return date.toLocaleDateString();
 }
 
-// Helper function to get notification icon and colors based on type
-function getNotificationStyle(type: string): { icon: LucideIcon; color: string; bgColor: string } {
+function getNotificationStyle(type?: string): { icon: LucideIcon; borderClass: string; textClass: string; bgClass: string } {
   switch (type) {
-    case 'success':
-      return { icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-500', bgColor: 'bg-emerald-500/10' };
     case 'warning':
-      return { icon: AlertCircle, color: 'text-amber-600 dark:text-amber-500', bgColor: 'bg-amber-500/10' };
-    case 'error':
-      return { icon: X, color: 'text-red-600 dark:text-red-500', bgColor: 'bg-red-500/10' };
-    case 'info':
+    case 'alert':
+      return { icon: AlertTriangle, borderClass: 'border-l-warning', textClass: 'text-warning', bgClass: 'bg-warning/10' };
+    case 'success':
+    case 'booking':
+    case 'payment':
+      return { icon: CheckCircle, borderClass: 'border-l-success', textClass: 'text-success', bgClass: 'bg-success/10' };
     default:
-      return { icon: Info, color: 'text-blue-600 dark:text-blue-500', bgColor: 'bg-blue-500/10' };
+      return { icon: Info, borderClass: 'border-l-info', textClass: 'text-info', bgClass: 'bg-info/10' };
   }
 }
 
 interface LandlordTopNavProps {
-  onMenuClick: () => void;
-  isSidebarOpen: boolean;
-  isMobile: boolean;
+  onMenuClick?: () => void;
+  isSidebarOpen?: boolean;
+  isMobile?: boolean;
 }
 
-export function LandlordTopNav({
-  onMenuClick,
-  isSidebarOpen,
-  isMobile,
-}: LandlordTopNavProps) {
-  const router = useRouter();
+export function LandlordTopNav({ onMenuClick, isSidebarOpen, isMobile }: LandlordTopNavProps) {
   const { user, logout } = useAuth();
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
-
-  // Fetch real notifications from API
-  const { data: notificationsData, isLoading: isLoadingNotifications } = useNotifications({ page: 1 });
-  const notifications = notificationsData?.data || [];
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  
+  // Real notifications from API
+  const { data: notificationsData, isLoading: notificationsLoading } = useNotifications();
+  const notifications = notificationsData?.data?.slice(0, 5) || [];
+  const unreadCount = notifications.filter((n: Notification) => !n.isRead).length;
 
   const displayName = React.useMemo(() => {
     if (!user) return 'Landlord';
     if (user.first_name || user.last_name) {
       return [user.first_name, user.last_name].filter(Boolean).join(' ');
     }
-    return user.email.split('@')[0];
+    return user.email;
   }, [user]);
 
   const initials = React.useMemo(() => {
-    return displayName ? getUserInitials(displayName) : '';
+    return displayName ? getUserInitials(displayName) : 'LL';
   }, [displayName]);
 
   const image = React.useMemo(() => {
@@ -117,198 +93,147 @@ export function LandlordTopNav({
     }
   }, [logout]);
 
-  const handleSearch = React.useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      // Navigate to search results page with query
-      router.push(`/landlord/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      console.log('Searching for:', searchQuery);
-    }
-  }, [searchQuery, router]);
-
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-md transition-all duration-300"
-      )}
-    >
-      {/* Toggle Button - Positioned at the edge of sidebar */}
-      {/* Toggle Button - Positioned at the edge of sidebar */}
-      <div 
-        className={cn(
-          "hidden md:flex items-center justify-center shrink-0 transition-all duration-300",
-          !isMobile && (isSidebarOpen ? "w-72" : "w-20")
-        )}
-      >
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={onMenuClick}
-          className="shrink-0"
-        >
-          <Menu className="h-5 w-5" />
-          <span className="sr-only">Toggle Menu</span>
-        </Button>
-      </div>
-
-      {/* Zone 1: Branding - Logo + RUMI */}
-      <div className="flex items-center gap-2 mr-4">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="relative h-8 w-8">
-            <Image 
-              src="/images/logo/logo.svg" 
-              alt="RUMI Logo" 
-              width={32} 
-              height={32} 
-              className="object-contain" 
-            />
+    <header className="sticky top-0 z-30 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+      <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col">
+            <span className="text-xs font-bold uppercase tracking-[0.18em] text-foreground">
+              RUMI · Landlord
+            </span>
+            <span className="text-sm font-medium text-muted-foreground hidden sm:block">
+              Manage your properties and tenants
+            </span>
           </div>
-          <span className="font-bold text-lg text-emerald-600 dark:text-emerald-400">RUMI</span>
-        </Link>
-      </div>
+        </div>
 
-      {/* Zone 2: Global Search */}
-      <div className="flex-1 flex justify-center">
-        <form onSubmit={handleSearch} className="w-full max-w-md hidden md:block">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search hostels, tenants, bookings..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-20 bg-muted/50 border-muted-foreground/20 focus-visible:ring-emerald-500"
-            />
-            <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-              <span className="text-xs">⌘</span>K
-            </kbd>
-          </div>
-        </form>
-        {/* Mobile Search Icon Toggle could go here if needed, but keeping clean for now */}
-      </div>
-
-      {/* Zone 3: Utilities */}
-      <div className="flex items-center gap-2 pr-4">
-        <ThemeToggle />
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-950" />
-              )}
-              <span className="sr-only">Notifications</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-80" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold">Notifications {unreadCount > 0 && `(${unreadCount})`}</p>
-                <Link href="/landlord/notifications" className="text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">
-                  View all
-                </Link>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <ScrollArea className="h-[300px]">
-              <div className="flex flex-col gap-1 p-1">
-                {isLoadingNotifications ? (
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="flex items-start gap-3 rounded-md p-2">
-                      <Skeleton className="h-8 w-8 rounded-full" />
-                      <div className="flex-1 space-y-2">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-full" />
-                        <Skeleton className="h-2 w-1/4" />
-                      </div>
-                    </div>
-                  ))
-                ) : notifications.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                    <Bell className="h-8 w-8 mb-2 opacity-50" />
-                    <p className="text-sm">No notifications yet</p>
-                  </div>
-                ) : (
-                  notifications.slice(0, 5).map((notification: AppNotification) => {
-                    const style = getNotificationStyle(notification.type);
-                    const IconComponent = style.icon;
-                    return (
-                      <div
-                        key={notification.id}
-                        className={cn(
-                          "flex items-start gap-3 rounded-md p-2 hover:bg-muted transition-colors cursor-pointer",
-                          !notification.isRead && "bg-muted/50"
-                        )}
-                      >
-                        <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", style.bgColor)}>
-                          <IconComponent className={cn("h-4 w-4", style.color)} />
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <p className="text-sm font-medium leading-none">{notification.title}</p>
-                          <p className="text-xs text-muted-foreground line-clamp-2">
-                            {notification.message}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">{formatRelativeTime(notification.createdAt)}</p>
-                        </div>
-                      </div>
-                    );
-                  })
+        <div className="flex items-center gap-3">
+          {/* Notifications */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5 text-muted-foreground hover:text-foreground" />
+                {unreadCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]"
+                  >
+                    {unreadCount}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="end">
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="font-semibold text-foreground">Notifications</h3>
+                {unreadCount > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {unreadCount} new
+                  </Badge>
                 )}
               </div>
-            </ScrollArea>
-            <DropdownMenuSeparator />
-            <div className="p-2">
-              <Button asChild variant="outline" className="w-full justify-center text-xs h-8">
-                <Link href="/landlord/notifications">
-                  View All Notifications
-                </Link>
-              </Button>
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <ScrollArea className="h-[400px]">
+                {notificationsLoading ? (
+                  <div className="p-4 space-y-3">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="space-y-2">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-full" />
+                        <Skeleton className="h-3 w-1/4" />
+                      </div>
+                    ))}
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="p-8 text-center text-sm text-muted-foreground">
+                    <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No notifications</p>
+                  </div>
+                ) : (
+                  <div className="divide-y border-border">
+                    {notifications.map((notification: Notification) => {
+                      const style = getNotificationStyle(notification.type);
+                      return (
+                          <div
+                          key={notification.id}
+                          className={cn(
+                            "p-4 hover:bg-muted/50 transition-colors cursor-pointer border-l-4",
+                            !notification.isRead && "bg-muted/30",
+                            style.borderClass
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <h4 className="font-semibold text-sm text-foreground">{notification.title}</h4>
+                            {!notification.isRead && (
+                              <span className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-1" />
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {notification.message}
+                          </p>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {formatRelativeTime(notification.createdAt)}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </ScrollArea>
+              {notifications.length > 0 && (
+                <div className="p-2 border-t">
+                  <Button variant="ghost" size="sm" className="w-full text-primary hover:text-primary/80" asChild>
+                    <Link href="/landlord/notifications">View all notifications</Link>
+                  </Button>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={image} alt={displayName} />
-                <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                  {initials || 'LL'}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{displayName}</p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  {user?.email}
-                </p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/landlord/profile">
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/landlord/settings">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+
+          {/* User Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-10 gap-2 px-2 group">
+                <Avatar className="h-8 w-8 ring-offset-background transition-all group-hover:ring-2 group-hover:ring-primary">
+                  <AvatarImage src={image} alt={displayName} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="hidden sm:flex flex-col items-start text-left">
+                  <span className="text-xs font-semibold truncate max-w-[140px] text-foreground">
+                    {displayName}
+                  </span>
+                  <span className="text-xs text-muted-foreground font-medium">
+                    Landlord
+                  </span>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="text-foreground">My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/landlord/profile" className="cursor-pointer flex items-center">
+                  <User className="mr-2 h-4 w-4" />
+                  Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/landlord/settings" className="cursor-pointer flex items-center">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   );

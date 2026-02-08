@@ -14,10 +14,12 @@ MIDDLEWARE = [
 # Provide all required cache backends expected by rumi.cache_utils
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
     },
     'sessions': {
-        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'sessions',
     },
     'template_fragments': {
         'BACKEND': 'django.core.cache.backends.dummy.DummyCache',

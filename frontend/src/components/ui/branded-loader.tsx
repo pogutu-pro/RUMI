@@ -9,7 +9,7 @@ interface BrandedLoaderProps extends React.HTMLAttributes<HTMLDivElement> {
 export function BrandedLoader({
   className,
   size = 120,
-  text = 'Preparing your Rumi experience',
+  text = 'Preparing your Rumia experience',
   ...props
 }: BrandedLoaderProps) {
   return (
@@ -26,7 +26,7 @@ export function BrandedLoader({
       >
         <Image
           src="/images/logo/logo.svg"
-          alt="Rumi Logo"
+          alt="Rumia Logo"
           fill
           priority
           className="object-contain"

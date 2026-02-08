@@ -238,7 +238,7 @@ EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@rumi.co.ke')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@rumia.co.ke')
 
 # SMS Configuration (kenya's Talking)
 kenyaSTALKING_USERNAME = os.getenv('kenyaSTALKING_USERNAME', 'sandbox')
@@ -256,7 +256,7 @@ MPESA_SHORTCODE = os.getenv('MPESA_SHORTCODE')
 MPESA_PASSKEY = os.getenv('MPESA_PASSKEY')
 
 # Webhook URLs (must include /api/v1/ and trailing slash)
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rumi.co.ke').rstrip('/')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rumia.co.ke').rstrip('/')
 MPESA_CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL', f"{FRONTEND_URL}/api/v1/payments/webhook/mpesa/stk_push/")
 MPESA_VALIDATION_URL = os.getenv('MPESA_VALIDATION_URL', f"{FRONTEND_URL}/api/v1/payments/webhook/mpesa/c2b_validation/")
 MPESA_CONFIRMATION_URL = os.getenv('MPESA_C2B_CONFIRMATION_URL', f"{FRONTEND_URL}/api/v1/payments/webhook/mpesa/c2b_confirmation/")

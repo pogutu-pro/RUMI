@@ -4,9 +4,9 @@ import type { Metadata, Route } from 'next';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 
 export const metadata: Metadata = {
-  title: 'Auth | Rumi',
+  title: 'Auth | Rumia',
   description:
-    'Authenticate to access Rumi — student accommodation and hostel management.',
+    'Authenticate to access Rumia — student accommodation and hostel management.',
 };
 
 export default async function AuthIndexPage({

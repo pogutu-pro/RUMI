@@ -6,9 +6,9 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { TechSupportSidebar } from '@/components/layouts/tech-support-sidebar';
 import { TechSupportTopNav } from '@/components/layouts/tech-support-top-nav';
 import { TechSupportBottomNav } from '@/components/layouts/tech-support-bottom-nav';
-import { DashboardThemeProvider } from '@/components/providers/dashboard-theme-provider';
+import { UnifiedThemeProvider } from '@/components/providers/unified-theme-provider';
 import { cn } from '@/lib/utils/cn';
-import { useAppStore } from '@/stores/app.store';
+import { useUiStore } from '@/stores/ui.store';
 
 interface TechSupportLayoutProps {
   children: ReactNode;
@@ -16,12 +16,11 @@ interface TechSupportLayoutProps {
 
 export default function Layout({ children }: TechSupportLayoutProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const isSidebarOpen = useAppStore((state) => state.isSidebarOpen);
-  const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
-  const [isMobileOpen, setIsMobileOpen] = React.useState(false);
+  const isSidebarOpen = useUiStore((state) => state.isSidebarOpen);
+  const setSidebarOpen = useUiStore((state) => state.setSidebarOpen);
 
   return (
-    <DashboardThemeProvider>
+    <UnifiedThemeProvider>
       <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
         {/* Desktop/Tablet Sidebar - Hidden on Mobile */}
         <div className="hidden md:block">
@@ -29,15 +28,6 @@ export default function Layout({ children }: TechSupportLayoutProps) {
             isOpen={isSidebarOpen}
             setIsOpen={setSidebarOpen}
             isMobile={false}
-          />
-        </div>
-
-        {/* Mobile Sidebar Sheet - Hidden in favor of Bottom Nav */}
-        <div className="hidden">
-          <TechSupportSidebar
-            isOpen={isMobileOpen}
-            setIsOpen={setIsMobileOpen}
-            isMobile={true}
           />
         </div>
 
@@ -50,7 +40,6 @@ export default function Layout({ children }: TechSupportLayoutProps) {
             if (isDesktop) {
               setSidebarOpen(!isSidebarOpen);
             }
-            // Mobile menu click disabled
           }}
           isSidebarOpen={isSidebarOpen}
           isMobile={!isDesktop}
@@ -60,24 +49,18 @@ export default function Layout({ children }: TechSupportLayoutProps) {
         <main
           className={cn(
             "relative z-0 transition-all duration-300 ease-in-out min-h-screen",
-            // Mobile: edge-to-edge, minimal top padding, added bottom padding
             "px-3 pt-20 pb-24 sm:px-4",
-            // Desktop: more padding, always leave space for collapsed sidebar only
             "md:px-6 md:pt-24 lg:px-10 lg:py-8",
-            isSidebarOpen ? "md:ml-72" : "md:ml-20" // Adjust margin based on sidebar state
+            isSidebarOpen ? "md:ml-72" : "md:ml-20"
           )}
         >
           <div className={cn(
-            "mx-auto",
-            // Mobile: full width
-            "w-full",
-            // Desktop: constrained width
-            "md:max-w-6xl xl:max-w-7xl"
+            "mx-auto w-full md:max-w-6xl xl:max-w-7xl"
           )}>
             {children}
           </div>
         </main>
       </div>
-    </DashboardThemeProvider>
+    </UnifiedThemeProvider>
   );
 }

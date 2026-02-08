@@ -64,9 +64,9 @@ interface RevenueDistribution {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-900 border-none p-4 rounded-xl shadow-2xl">
-        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">{label}</p>
-        <p className="text-white font-black text-lg">
+      <div className="bg-popover border border-border p-4 rounded-xl shadow-2xl">
+        <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mb-1">{label}</p>
+        <p className="text-popover-foreground font-black text-lg">
           {typeof payload[0].value === 'number' && payload[0].value > 100 
             ? `KES ${payload[0].value.toLocaleString()}` 
             : payload[0].value}
@@ -124,17 +124,17 @@ export default function AnalyticsPage() {
       {/* Header Section */}
       <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-4">
         <div className="space-y-1">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-950 dark:text-white">Property Intelligence</h1>
-          <p className="text-slate-700 dark:text-slate-300 max-w-xl text-lg md:text-xl font-medium">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-primary">Property Intelligence</h1>
+          <p className="text-muted-foreground max-w-xl text-lg md:text-xl font-medium">
             Deep insights into occupancy, revenue trends, and platform ROI.
           </p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[180px] h-12 rounded-xl bg-card border-slate-300 dark:border-slate-800 font-black text-slate-950 dark:text-white shadow-sm">
+            <SelectTrigger className="w-[180px] h-12 rounded-xl bg-card border-border font-black text-primary shadow-sm">
               <div className="flex items-center gap-2">
-                 <CalendarDays className="h-5 w-5 text-slate-600" />
+                 <CalendarDays className="h-5 w-5 text-muted-foreground" />
                  <SelectValue />
               </div>
             </SelectTrigger>
@@ -145,10 +145,10 @@ export default function AnalyticsPage() {
               <SelectItem value="1y" className="font-bold">Last Year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="h-12 px-6 rounded-xl border-slate-300 dark:border-slate-800 font-black text-slate-900 dark:text-slate-200 shadow-sm">
+          <Button variant="outline" className="h-12 px-6 rounded-xl border-border font-black text-primary shadow-sm">
             <Filter className="mr-2 h-5 w-5" /> Compare Hostels
           </Button>
-          <Button className="h-12 px-6 rounded-xl bg-slate-950 dark:bg-white text-white dark:text-slate-900 font-black shadow-md">
+          <Button className="h-12 px-6 rounded-xl bg-primary text-primary-foreground font-black shadow-md">
             <Download className="mr-2 h-5 w-5" /> Export Report
           </Button>
         </div>
@@ -158,26 +158,26 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
          {/* ROI Card - Highlight */}
          <motion.div variants={itemVariants} className="md:col-span-2">
-           <Card className="h-full border border-slate-200 dark:border-slate-800 shadow-lg bg-card overflow-hidden relative">
+           <Card className="h-full border border-border shadow-lg bg-card overflow-hidden relative">
              <CardContent className="p-10 relative z-10 flex flex-col justify-between h-full">
                <div className="flex justify-between items-start">
                  <div>
-                   <Badge className="bg-emerald-100 text-emerald-900 border-emerald-200 mb-6 px-4 py-1.5 hover:bg-emerald-200 font-black text-xs uppercase tracking-widest">Subscription ROI</Badge>
-                   <h3 className="text-4xl md:text-5xl font-black text-slate-950 dark:text-white tracking-tighter">KES {estimatedMoneySaved.toLocaleString()}</h3>
-                   <p className="text-slate-700 dark:text-slate-400 font-bold text-lg mt-2">Estimated savings this month</p>
+                   <Badge className="bg-success/10 text-success border-success/20 mb-6 px-4 py-1.5 hover:bg-success/20 font-black text-xs uppercase tracking-widest">Subscription ROI</Badge>
+                   <h3 className="text-4xl md:text-5xl font-black text-primary tracking-tighter">KES {estimatedMoneySaved.toLocaleString()}</h3>
+                   <p className="text-muted-foreground font-bold text-lg mt-2">Estimated savings this month</p>
                  </div>
-                 <div className="h-16 w-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center border border-emerald-100 dark:border-emerald-800 shadow-sm">
-                   <Zap className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+                 <div className="h-16 w-16 bg-success/10 rounded-2xl flex items-center justify-center border border-success/20 shadow-sm">
+                   <Zap className="h-8 w-8 text-success" />
                  </div>
                </div>
-               <div className="mt-10 pt-8 border-t border-slate-200 dark:border-slate-800 flex items-center gap-12">
+               <div className="mt-10 pt-8 border-t border-border flex items-center gap-12">
                  <div>
-                   <p className="text-[11px] text-slate-500 dark:text-slate-500 uppercase font-black tracking-widest mb-1">Time Saved</p>
-                   <p className="text-2xl font-black text-slate-950 dark:text-white">{estimatedTimeSaved} Hours</p>
+                   <p className="text-[11px] text-muted-foreground uppercase font-black tracking-widest mb-1">Time Saved</p>
+                   <p className="text-2xl font-black text-primary">{estimatedTimeSaved} Hours</p>
                  </div>
                  <div>
-                   <p className="text-[11px] text-slate-500 dark:text-slate-500 uppercase font-black tracking-widest mb-1">Efficiency Boost</p>
-                   <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">+145%</p>
+                   <p className="text-[11px] text-muted-foreground uppercase font-black tracking-widest mb-1">Efficiency Boost</p>
+                   <p className="text-2xl font-black text-success">+145%</p>
                  </div>
                </div>
              </CardContent>
@@ -200,24 +200,24 @@ export default function AnalyticsPage() {
            }
          ].map((metric, i) => (
             <motion.div key={i} variants={itemVariants}>
-              <Card className="h-full border border-slate-200 dark:border-slate-800 shadow-md bg-card p-8 flex flex-col justify-center hover:shadow-lg transition-all">
+              <Card className="h-full border border-border shadow-md bg-card p-8 flex flex-col justify-center hover:shadow-lg transition-all">
                 <div className="flex justify-between items-start mb-6">
-                  <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <metric.icon className="h-7 w-7 text-slate-950 dark:text-white" />
+                  <div className="p-4 bg-muted rounded-2xl border border-border shadow-sm">
+                    <metric.icon className="h-7 w-7 text-primary" />
                   </div>
                   <Badge 
                     variant="secondary" 
                     className={cn(
                       "font-black px-3 py-1 text-sm border shadow-sm",
-                      metric.change >= 0 ? "text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30" : "text-red-700 bg-red-50 border-red-200 dark:bg-red-950/30"
+                      metric.change >= 0 ? "text-success bg-success/10 border-success/20" : "text-destructive bg-destructive/10 border-destructive/20"
                     )}
                   >
                     {metric.change >= 0 ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownRight className="h-4 w-4 mr-1" />}
                     {Math.abs(metric.change)}%
                   </Badge>
                 </div>
-                <h3 className="text-3xl md:text-4xl font-black text-slate-950 dark:text-white tracking-tight">{metric.value}</h3>
-                <p className="text-slate-700 dark:text-slate-400 text-base font-black uppercase tracking-wider mt-2">{metric.label}</p>
+                <h3 className="text-3xl md:text-4xl font-black text-primary tracking-tight">{metric.value}</h3>
+                <p className="text-muted-foreground text-base font-black uppercase tracking-wider mt-2">{metric.label}</p>
               </Card>
             </motion.div>
          ))}
@@ -230,8 +230,8 @@ export default function AnalyticsPage() {
         <motion.div variants={itemVariants} className="lg:col-span-2">
           <Card className="h-[450px] border shadow-sm bg-card overflow-hidden flex flex-col">
             <CardHeader className="p-10 pb-2">
-              <CardTitle className="text-2xl font-black text-slate-950 dark:text-white">Revenue Trends</CardTitle>
-              <CardDescription className="text-slate-700 dark:text-slate-400 font-bold text-base">Income performance over time</CardDescription>
+              <CardTitle className="text-2xl font-black text-primary">Revenue Trends</CardTitle>
+              <CardDescription className="text-muted-foreground font-bold text-base">Income performance over time</CardDescription>
             </CardHeader>
             <CardContent className="p-10 pt-6 flex-1 min-h-[300px]">
               <div style={{ width: '100%', height: '100%', minHeight: 300 }}>
@@ -268,10 +268,10 @@ export default function AnalyticsPage() {
 
         {/* Revenue Distribution */}
         <motion.div variants={itemVariants} className="lg:col-span-1">
-          <Card className="h-[450px] border border-slate-200 dark:border-slate-800 shadow-md bg-card overflow-hidden flex flex-col">
+          <Card className="h-[450px] border border-border shadow-md bg-card overflow-hidden flex flex-col">
             <CardHeader className="p-10 pb-2">
-              <CardTitle className="text-2xl font-black text-slate-950 dark:text-white">Revenue Source</CardTitle>
-              <CardDescription className="text-slate-700 dark:text-slate-400 font-bold text-base">Breakdown by category</CardDescription>
+              <CardTitle className="text-2xl font-black text-primary">Revenue Source</CardTitle>
+              <CardDescription className="text-muted-foreground font-bold text-base">Breakdown by category</CardDescription>
             </CardHeader>
             <CardContent className="p-10 pt-4 flex-1 min-h-[300px]">
               <div style={{ width: '100%', height: '100%', minHeight: 300 }}>
@@ -301,10 +301,10 @@ export default function AnalyticsPage() {
 
         {/* Property Performance Bar Chart */}
         <motion.div variants={itemVariants} className="lg:col-span-3">
-          <Card className="border border-slate-200 dark:border-slate-800 shadow-md bg-card overflow-hidden">
+          <Card className="border border-border shadow-md bg-card overflow-hidden">
             <CardHeader className="p-10 pb-2">
-              <CardTitle className="text-2xl font-black text-slate-950 dark:text-white">Hostel Performance</CardTitle>
-              <CardDescription className="text-slate-700 dark:text-slate-400 font-bold text-base">Occupancy levels by property</CardDescription>
+              <CardTitle className="text-2xl font-black text-primary">Hostel Performance</CardTitle>
+              <CardDescription className="text-muted-foreground font-bold text-base">Occupancy levels by property</CardDescription>
             </CardHeader>
             <CardContent className="p-10 pt-6 h-[400px]">
                <div style={{ width: '100%', height: '100%', minHeight: 300 }}>

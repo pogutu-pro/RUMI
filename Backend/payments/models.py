@@ -245,6 +245,21 @@ class Transaction(models.Model):
         null=True,
         related_name='transactions'
     )
+    # Direct links for per-bed and per-hostel tracking
+    hostel = models.ForeignKey(
+        'hostels.Hostel',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='transactions'
+    )
+    bed = models.ForeignKey(
+        'hostels.Bed',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='transactions'
+    )
     
     student = models.ForeignKey(
         'accounts.StudentProfile',

@@ -73,3 +73,4 @@ channels_redis==4.2.0  # Redis channel layer for Channels
 paystackapi==2.1.3  # Paystack API wrapper
 africastalking==1.2.5  # From tools
 python-dotenv==1.0.1
+pandas>=2.0.0

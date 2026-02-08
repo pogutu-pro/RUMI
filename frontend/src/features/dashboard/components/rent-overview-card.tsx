@@ -36,14 +36,14 @@ export function RentOverviewCard({ rentStatus, loading }: RentOverviewCardProps)
         <div className="flex items-center justify-between">
            <CardTitle className="text-base font-bold flex items-center gap-2">
              Payment Status
-             {isFullyPaid && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+             {isFullyPaid && <CheckCircle2 className="h-4 w-4 text-success" />}
            </CardTitle>
-           {!isFullyPaid && (
-             <div className="flex items-center gap-1.5 text-rose-700 bg-rose-50 px-2.5 py-1 rounded-none text-[10px] font-black uppercase tracking-widest border-2 border-rose-200">
-               <AlertCircle className="h-3 w-3" />
-               Action Required
-             </div>
-           )}
+             {!isFullyPaid && (
+               <div className="flex items-center gap-1.5 text-destructive bg-destructive/10 px-2.5 py-1 rounded-none text-[10px] font-black uppercase tracking-widest border-2 border-destructive/20">
+                 <AlertCircle className="h-3 w-3" />
+                 Action Required
+               </div>
+             )}
         </div>
       </CardHeader>
 

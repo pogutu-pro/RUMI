@@ -361,7 +361,8 @@ export function useGoogleLogin() {
  * Hook for fetching user profile
  */
 export function useProfile() {
-  const { setProfile, user } = useAuth();
+  const { setProfile, user, status } = useAuth();
+  const rehydrate = useAuthStore((s) => s.rehydrate);
   
   const query = useQuery({
     queryKey: ['profile'],
@@ -369,9 +370,7 @@ export function useProfile() {
       const response = await authApi.getProfile();
       return response;
     },
-    // Only fetch if we have a token AND we have a user (meaning we are authenticated)
-    // OR if we are in a specific 'checking' state?
-    // Actually, usually we fetch profile to hydrate the store.
+    // Only fetch if we have a token
     enabled: !!getAccessToken(),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
@@ -379,17 +378,16 @@ export function useProfile() {
   const { data } = query;
   
   // Robust Synchronization
-  // Only update if data exists AND it's different or we don't have it yet.
   React.useEffect(() => {
-    if (data?.profile && user) {
-        // We could add a deep comparison here to avoid setProfile if identical,
-        // but for now, we trust React's batching or Zustand's equality check (if implemented).
-        // Since setProfile just replaces the object, it might trigger updates.
-        // Ideally, we check an ID or version.
-        // For this refactor, we ensure it only runs when 'data' changes.
+    if (!data) return;
+
+    if (data.profile && user) {
         setProfile(data.profile);
+    } else if (data.profile && data.user && (status === 'checking' || !user)) {
+        // Re-hydrate the store if we were checking or lost user state on refresh
+        rehydrate(data.user, data.profile);
     }
-  }, [data, setProfile, user]); // Added user to deps to ensure we don't set profile if user is null
+  }, [data, setProfile, user, status, rehydrate]);
 
   return query;
 }

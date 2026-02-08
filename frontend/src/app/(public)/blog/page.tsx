@@ -109,7 +109,7 @@ export default function BlogPage() {
         setLoading(true);
         const response = await getBlogPosts({ limit: 20 });
         // Handle different possible API response structures
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         const responseAny = response as any;
         let postsData: ApiBlogPost[] = [];
         if (Array.isArray(responseAny)) {
@@ -195,7 +195,7 @@ export default function BlogPage() {
               className="mb-5 inline-flex items-center gap-2 border-border bg-background/80 px-4 py-2 text-sm font-semibold text-foreground"
             >
               <BookOpen className="h-4 w-4" />
-              Rumi Blog
+              Rumia Blog
             </Badge>
             <h1 className="mb-5 text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl leading-tight">
               Insights for better

@@ -153,19 +153,20 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
     <div className="flex flex-col h-full py-4 bg-card border-r border-border transition-colors duration-200">
       <div className={cn("flex items-center h-14 px-6 mb-2", isExpanded ? "justify-between" : "justify-center")}>
         {isExpanded ? (
-          <Link href="/" className="flex items-center gap-2 font-bold text-2xl text-primary">
-            <div className="relative h-8 w-8">
+          <Link href="/" className="flex items-center gap-2 font-bold text-2xl text-primary group">
+            <div className="relative h-8 w-8 transition-transform group-hover:scale-110">
               <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" />
             </div>
             <span>RUMI</span>
           </Link>
         ) : (
-           <Link href="/" className="relative h-8 w-8">
+           <Link href="/" className="relative h-8 w-8 group">
               <Image 
                 src="/images/logo/logo.svg" 
                 alt="RUMI Logo" 
                 width={32} 
                 height={32} 
+                className="transition-transform group-hover:scale-110"
               />
            </Link>
         )}
@@ -174,7 +175,7 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
            <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 ml-auto text-muted-foreground hover:text-foreground"
+            className="h-8 w-8 ml-auto text-foreground/80 hover:text-foreground"
             onClick={() => setIsOpen(!isOpen)}
           >
             <PanelLeft className="h-5 w-5" />
@@ -217,7 +218,7 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                       />
                     </Button>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="pl-0 space-y-1 mt-1 bg-muted/30 py-2 rounded-b-lg border-l-2 border-primary/20 ml-4">
+                  <CollapsibleContent className="pl-0 space-y-1 mt-1 bg-muted/50 py-2 rounded-b-lg border-l-2 border-primary/20 ml-4">
                     {item.items.map((subItem, subIndex) => (
                       <Link
                         key={subIndex}
@@ -226,7 +227,7 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                           "flex items-center gap-2 px-4 py-2 text-base transition-colors duration-200 border-l-2 -ml-[2px]",
                           pathname === subItem.href || pathname.startsWith(subItem.href + '/')
                             ? "border-primary text-primary font-bold bg-primary/10"
-                            : "border-transparent text-muted-foreground font-medium hover:text-foreground hover:bg-accent"
+                            : "border-transparent text-foreground/80 font-medium hover:text-foreground hover:bg-accent"
                         )}
                       >
                         {subItem.icon && <subItem.icon className="h-3.5 w-3.5 opacity-70" />}

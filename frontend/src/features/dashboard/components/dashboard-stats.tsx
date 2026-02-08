@@ -33,14 +33,14 @@ export function DashboardStat({ title, value, icon, trend, className }: Dashboar
         </div>
         {trend && (
           <div className="mt-1 flex items-center text-xs font-medium">
-            {trend.direction === 'up' && <ArrowUpIcon className="mr-1 h-3 w-3 text-emerald-600 dark:text-emerald-500" />}
-            {trend.direction === 'down' && <ArrowDownIcon className="mr-1 h-3 w-3 text-red-600 dark:text-red-500" />}
+            {trend.direction === 'up' && <ArrowUpIcon className="mr-1 h-3 w-3 text-success" />}
+            {trend.direction === 'down' && <ArrowDownIcon className="mr-1 h-3 w-3 text-destructive" />}
             {trend.direction === 'neutral' && <MinusIcon className="mr-1 h-3 w-3 text-muted-foreground" />}
             <span
               className={cn(
                 "font-bold",
-                trend.direction === 'up' && "text-emerald-600 dark:text-emerald-500",
-                trend.direction === 'down' && "text-red-600 dark:text-red-500",
+                trend.direction === 'up' && "text-success",
+                trend.direction === 'down' && "text-destructive",
                 trend.direction === 'neutral' && "text-muted-foreground"
               )}
             >

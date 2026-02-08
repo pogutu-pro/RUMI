@@ -24,7 +24,6 @@ interface CaretakerState {
   selectedMaintenanceId: string | null;
 
   // UI state
-  isSidebarOpen: boolean;
   activeView: 'grid' | 'list';
 
   // Actions
@@ -44,7 +43,6 @@ interface CaretakerState {
   setSelectedRoom: (id: string | null) => void;
   setSelectedMaintenance: (id: string | null) => void;
 
-  setSidebarOpen: (open: boolean) => void;
   setActiveView: (view: 'grid' | 'list') => void;
 }
 
@@ -78,7 +76,6 @@ export const useCaretakerStore = create<CaretakerState>()(
       selectedTenantId: null,
       selectedRoomId: null,
       selectedMaintenanceId: null,
-      isSidebarOpen: true,
       activeView: 'grid',
 
       // Filter actions
@@ -118,13 +115,11 @@ export const useCaretakerStore = create<CaretakerState>()(
       setSelectedMaintenance: (id) => set({ selectedMaintenanceId: id }),
 
       // UI actions
-      setSidebarOpen: (open) => set({ isSidebarOpen: open }),
       setActiveView: (view) => set({ activeView: view }),
     }),
     {
       name: 'caretaker-storage',
       partialize: (state) => ({
-        isSidebarOpen: state.isSidebarOpen,
         activeView: state.activeView,
         tenantFilters: state.tenantFilters,
         maintenanceFilters: state.maintenanceFilters,

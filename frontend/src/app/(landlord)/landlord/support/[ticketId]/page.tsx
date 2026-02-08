@@ -72,14 +72,14 @@ export default function TicketDetailsPage() {
                       {ticket.subject}
                       <Badge variant="outline" className="text-xs uppercase font-normal">{ticket.priority}</Badge>
                   </h1>
-                  <p className="text-sm text-slate-500 flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
                       Ticket #{ticket.id.slice(0,8)} • {format(new Date(ticket.createdAt), 'MMM dd, HH:mm')}
                   </p>
               </div>
           </div>
           <div className="flex gap-2">
               {ticket.status !== 'resolved' && (
-                  <Button variant="outline" className="text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={handleResolve}>
+                  <Button variant="outline" className="text-success border-success/20 hover:bg-success/10" onClick={handleResolve}>
                       <CheckCircle2 className="h-4 w-4 mr-2" />
                       Mark Resolved
                   </Button>
@@ -89,22 +89,22 @@ export default function TicketDetailsPage() {
 
       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 min-h-0">
           {/* Chat Area */}
-          <Card className="md:col-span-2 flex flex-col border-none shadow-md overflow-hidden bg-slate-50 dark:bg-slate-900/50">
+          <Card className="md:col-span-2 flex flex-col border-none shadow-md overflow-hidden bg-muted/30">
               <ScrollArea className="flex-1 p-4">
                   <div className="space-y-6">
                       {/* Original Issue */}
                       <div className="flex gap-4">
-                          <Avatar className="h-10 w-10 border border-slate-200">
-                             <AvatarFallback className="bg-slate-200 text-slate-600">
+                          <Avatar className="h-10 w-10 border border-border">
+                             <AvatarFallback className="bg-muted text-muted-foreground">
                                 <User className="h-5 w-5" />
                              </AvatarFallback>
                           </Avatar>
                           <div className="space-y-1 max-w-[85%]">
                               <div className="flex items-baseline gap-2">
                                   <span className="font-semibold text-sm">Tenant</span>
-                                  <span className="text-xs text-slate-400">{format(new Date(ticket.createdAt), 'HH:mm')}</span>
+                                  <span className="text-xs text-muted-foreground">{format(new Date(ticket.createdAt), 'HH:mm')}</span>
                               </div>
-                              <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl rounded-tl-none shadow-sm text-sm leading-relaxed border border-slate-100 dark:border-slate-700">
+                              <div className="p-4 bg-card rounded-2xl rounded-tl-none shadow-sm text-sm leading-relaxed border border-border">
                                   {ticket.description}
                               </div>
                           </div>
@@ -116,16 +116,16 @@ export default function TicketDetailsPage() {
                           return (
                               <div key={i} className={`flex gap-4 ${isMe ? 'flex-row-reverse' : ''}`}>
                                   <Avatar className="h-8 w-8">
-                                      <AvatarFallback className={isMe ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200'}>
+                                      <AvatarFallback className={isMe ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}>
                                           {isMe ? 'ME' : 'U'}
                                       </AvatarFallback>
                                   </Avatar>
                                    <div className={`space-y-1 max-w-[85%] ${isMe ? 'items-end flex flex-col' : ''}`}>
                                       <div className="flex items-baseline gap-2">
                                           <span className="font-semibold text-xs">{isMe ? 'You' : 'User'}</span>
-                                          <span className="text-xs text-slate-400">{msg.created_at ? format(new Date(msg.created_at), 'HH:mm') : ''}</span>
+                                          <span className="text-xs text-muted-foreground">{msg.created_at ? format(new Date(msg.created_at), 'HH:mm') : ''}</span>
                                       </div>
-                                      <div className={`p-3 rounded-2xl shadow-sm text-sm leading-relaxed ${isMe ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-tl-none'}`}>
+                                      <div className={`p-3 rounded-2xl shadow-sm text-sm leading-relaxed ${isMe ? 'bg-success text-success-foreground rounded-tr-none' : 'bg-card border border-border rounded-tl-none'}`}>
                                           {msg.message}
                                       </div>
                                   </div>
@@ -135,22 +135,22 @@ export default function TicketDetailsPage() {
                   </div>
               </ScrollArea>
               
-              <div className="p-4 bg-white dark:bg-slate-900 border-t">
+              <div className="p-4 bg-card border-t">
                   <div className="flex items-end gap-2">
-                       <Button variant="ghost" size="icon" className="shrink-0 text-slate-400">
+                       <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground">
                           <Paperclip className="h-5 w-5" />
                        </Button>
                        <Textarea 
                           value={reply}
                           onChange={(e) => setReply(e.target.value)}
                           placeholder="Type your reply..." 
-                          className="min-h-[50px] max-h-[150px] resize-none border-0 focus-visible:ring-0 bg-slate-50 dark:bg-slate-800 rounded-xl"
+                          className="min-h-[50px] max-h-[150px] resize-none border-0 focus-visible:ring-0 bg-muted rounded-xl"
                        />
                        <Button 
                           onClick={handleSend} 
                           disabled={!reply.trim() || addReply.isPending}
                           size="icon" 
-                          className="shrink-0 bg-emerald-600 hover:bg-emerald-700 rounded-xl h-10 w-10"
+                          className="shrink-0 bg-success hover:bg-success/90 rounded-xl h-10 w-10"
                        >
                            <Send className="h-4 w-4" />
                        </Button>
@@ -162,34 +162,34 @@ export default function TicketDetailsPage() {
           <div className="space-y-4">
               <Card className="border-none shadow-sm">
                   <CardHeader>
-                      <CardTitle className="text-sm uppercase tracking-wider text-slate-500">Details</CardTitle>
+                      <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground">Details</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4 text-sm">
                       <div className="flex justify-between border-b pb-2">
-                          <span className="text-slate-500">Status</span>
+                          <span className="text-muted-foreground">Status</span>
                           <Badge variant="secondary" className="capitalize">{ticket.status}</Badge>
                       </div>
                       <div className="flex justify-between border-b pb-2">
-                          <span className="text-slate-500">Priority</span>
+                          <span className="text-muted-foreground">Priority</span>
                           <span className="font-medium capitalize">{ticket.priority}</span>
                       </div>
                       <div className="flex justify-between border-b pb-2">
-                          <span className="text-slate-500">Category</span>
+                          <span className="text-muted-foreground">Category</span>
                           <span className="font-medium capitalize">{ticket.category}</span>
                       </div>
                        <div className="flex justify-between pb-2">
-                          <span className="text-slate-500">Assigned To</span>
+                          <span className="text-muted-foreground">Assigned To</span>
                           <span className="font-medium">Unassigned</span>
                       </div>
                   </CardContent>
               </Card>
 
-              <Card className="border-none shadow-sm bg-blue-50 dark:bg-blue-900/10">
+              <Card className="border-none shadow-sm bg-info/10">
                   <CardContent className="p-4 flex items-start gap-3">
-                      <AlertCircle className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                      <AlertCircle className="h-5 w-5 text-info shrink-0 mt-0.5" />
                       <div className="space-y-1">
-                          <p className="font-semibold text-blue-900 dark:text-blue-300 text-sm">Response SLA</p>
-                          <p className="text-xs text-blue-700 dark:text-blue-400">High priority tickets should be responded to within 4 hours.</p>
+                          <p className="font-semibold text-info text-sm">Response SLA</p>
+                          <p className="text-xs text-info/80">High priority tickets should be responded to within 4 hours.</p>
                       </div>
                   </CardContent>
               </Card>

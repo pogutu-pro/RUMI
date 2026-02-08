@@ -142,6 +142,8 @@ def process_payment_to_rent_periods(student, amount, payment_method, metadata=No
         txn = Transaction.objects.create(
             rent_period=rent_period,
             booking=rent_period.booking,
+            hostel=rent_period.hostel,
+            bed=rent_period.bed,
             student=student,
             transaction_reference=transaction_ref,
             amount=payment_to_apply,
@@ -181,6 +183,7 @@ def process_payment_to_rent_periods(student, amount, payment_method, metadata=No
         tracker_txn_ref = f"RUMI-TRACKER-{student.id}-{uuid.uuid4().hex[:8]}"
         tracker_txn = Transaction.objects.create(
             student=student,
+            hostel=booking.room.hostel if booking else None,
             transaction_reference=tracker_txn_ref,
             amount=remaining_amount,
             transaction_type='wallet_credit',
@@ -306,6 +309,8 @@ def process_confirmed_payment(student, amount, reference, payment_method, metada
                 transaction_reference=reference,
                 defaults={
                     'booking': booking,
+                    'hostel': booking.room.hostel,
+                    'bed': booking.rent_periods.first().bed if booking.rent_periods.exists() else None,
                     'student': student,
                     'amount': amount,
                     'transaction_type': 'deposit',
@@ -337,6 +342,8 @@ def process_confirmed_payment(student, amount, reference, payment_method, metada
             transaction_obj = Transaction.objects.create(
                 rent_period=rent_period,
                 booking=rent_period.booking,
+                hostel=rent_period.hostel,
+                bed=rent_period.bed,
                 student=student,
                 transaction_reference=reference,
                 amount=amount,

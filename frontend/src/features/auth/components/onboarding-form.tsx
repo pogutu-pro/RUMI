@@ -390,7 +390,7 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="font-bold uppercase text-xs text-gray-500">Company / Property Name</FormLabel>
-                      <FormControl><Input {...field} placeholder="e.g. Rumi Property Management" className="rounded-none border-2 h-14" /></FormControl>
+                      <FormControl><Input {...field} placeholder="e.g. Rumia Property Management" className="rounded-none border-2 h-14" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

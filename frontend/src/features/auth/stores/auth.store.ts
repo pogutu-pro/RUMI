@@ -1,59 +1,150 @@
-import { useAppStore } from '@/stores/app.store';
-import { UserRole } from './auth.types';
+import { create } from 'zustand';
+import { persist, devtools } from 'zustand/middleware';
+import { AuthSlice, LoginPayload, AuthStatus, UserRole } from './auth.types';
+import { getAccessToken, setTokens, clearTokens, setOnboardingStage, setUserRole } from '@/lib/auth/token';
 
-// Re-export removed to avoid conflict
+export const useAuthStore = create<AuthSlice>()(
+  devtools(
+    persist(
+      (set, get) => ({
+        status: 'idle',
+        user: null,
+        profile: null,
+        accessToken: null,
+        error: null,
 
+        login: (payload: LoginPayload) => {
+          const { user, accessToken, refreshToken, profile } = payload;
+          
+          setTokens(accessToken, refreshToken || '');
+          if (user.role) setUserRole(user.role);
+          if (user.onboarding_stage) setOnboardingStage(user.onboarding_stage);
+          
+          set({ 
+            status: 'authenticated', 
+            user, 
+            accessToken, 
+            profile: profile || null, 
+            error: null 
+          });
+        },
 
-// -- Selectors --
-export const useAuthStore = useAppStore;
+        logout: () => {
+          clearTokens();
+          set({ 
+            status: 'unauthenticated', 
+            user: null, 
+            profile: null, 
+            accessToken: null,
+            error: null
+          });
+        },
 
-export const useAuthUser = () => useAppStore((s) => s.user);
-export const useAuthProfile = () => useAppStore((s) => s.profile);
-export const useIsAuthenticated = () => useAppStore((s) => s.status === 'authenticated');
-export const useAuthStatus = () => useAppStore((s) => s.status);
-export const useAuthError = () => useAppStore((s) => s.error);
+        hydrate: () => {
+          const token = getAccessToken();
+          const { user, status } = get();
 
-export const useUserRole = () => useAppStore((s) => s.user?.role ?? null);
+          if (token) {
+            if (status === 'authenticated' && user) return;
 
-export const useAccessToken = () => useAppStore((s) => s.accessToken);
+            if (user) {
+              set({ status: 'authenticated', accessToken: token });
+            } else {
+              set({ status: 'checking', accessToken: token });
+            }
+          } else {
+            set({ status: 'unauthenticated', accessToken: null, user: null, profile: null });
+          }
+        },
+
+        setProfile: (profile) => {
+          const { user } = get();
+          if (user) {
+            set({ profile });
+          }
+        },
+
+        updateUser: (updates) => {
+          const { user } = get();
+          if (user) {
+            if (updates.onboarding_stage) {
+              setOnboardingStage(updates.onboarding_stage);
+            }
+            set({ user: { ...user, ...updates } });
+          }
+        },
+
+        rehydrate: (user, profile) => {
+          set({
+            status: 'authenticated',
+            user,
+            profile,
+            accessToken: getAccessToken(),
+            error: null
+          });
+        },
+
+        setError: (error) => set({ error, status: 'error' as AuthStatus }),
+      }),
+      {
+        name: 'rumi-auth-storage',
+        partialize: (state) => ({
+          user: state.user,
+          profile: state.profile,
+        }),
+      }
+    ),
+    { name: 'AuthStore' }
+  )
+);
+
+// -- Selective Hooks for Performance --
+export const useAuthUser = () => useAuthStore((s) => s.user);
+export const useAuthProfile = () => useAuthStore((s) => s.profile);
+export const useIsAuthenticated = () => useAuthStore((s) => s.status === 'authenticated');
+export const useAuthStatus = () => useAuthStore((s) => s.status);
+export const useAuthError = () => useAuthStore((s) => s.error);
+export const useUserRole = () => useAuthStore((s) => s.user?.role ?? null);
+export const useAccessToken = () => useAuthStore((s) => s.accessToken);
 
 export const useIsStudent = () =>
-  useAppStore((s) => s.user?.role === UserRole.STUDENT);
+  useAuthStore((s) => s.user?.role === UserRole.STUDENT);
 
 export const useIsLandlord = () =>
-  useAppStore((s) => s.user?.role === UserRole.LANDLORD);
+  useAuthStore((s) => s.user?.role === UserRole.LANDLORD);
 
 export const useIsCaretaker = () =>
-  useAppStore((s) => s.user?.role === UserRole.CARETAKER);
+  useAuthStore((s) => s.user?.role === UserRole.CARETAKER);
 
 export const useIsAdmin = () =>
-  useAppStore(
+  useAuthStore(
     (s) =>
       s.user?.role === UserRole.SUPER_ADMIN ||
       s.user?.role === UserRole.TECH_SUPPORT_ADMIN
   );
 
 // -- Actions --
-export const hydrateAuthStore = () => useAppStore.getState().hydrate();
-export const logout = () => useAppStore.getState().logout();
+export const hydrateAuthStore = () => useAuthStore.getState().hydrate();
+export const logout = () => useAuthStore.getState().logout();
+
+// Trigger hydration as soon as possible if in browser
+if (typeof window !== 'undefined') {
+  hydrateAuthStore();
+}
 
 // Profile completeness checks
 export const useIsStudentProfileComplete = () =>
-  useAppStore((s) => {
-    if (
-      s.profile?.type === 'student'
-    ) {
+  useAuthStore((s) => {
+    if (s.profile?.type === 'student') {
       return Boolean(s.profile.is_profile_complete);
     }
     return true; 
   });
 
 export const useIsLandlordVerified = () =>
-    useAppStore((s) => {
-      if (
-        s.profile?.type === 'landlord'
-      ) {
-        return Boolean(s.profile.is_verified);
-      }
-      return true;
-    });
+  useAuthStore((s) => {
+    if (s.profile?.type === 'landlord') {
+      return Boolean(s.profile.is_verified);
+    }
+    return true;
+  });

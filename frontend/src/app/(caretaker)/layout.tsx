@@ -10,7 +10,7 @@ import { useNotifications } from '@/features/notifications';
 import type { Notification } from '@/features/notifications';
 import { CaretakerSidebar } from '@/components/layouts/caretaker-sidebar';
 import { CaretakerBottomNav } from '@/components/layouts/caretaker-bottom-nav';
-import { DashboardThemeProvider } from '@/components/providers/dashboard-theme-provider';
+import { UnifiedThemeProvider } from '@/components/providers/unified-theme-provider';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,7 @@ import { cn } from '@/lib/utils/cn';
 import { getUserInitials } from '@/lib/utils/user';
 import { sanitizeImageUrl } from '@/lib/utils/security';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { useAppStore } from '@/stores/app.store';
+import { useUiStore } from '@/stores/ui.store';
 
 // Helper functions for notification display
 function formatRelativeTime(dateString: string): string {
@@ -53,13 +53,16 @@ function getNotificationStyle(type?: string): { icon: LucideIcon; borderClass: s
   switch (type) {
     case 'warning':
     case 'alert':
-      return { icon: AlertTriangle, borderClass: 'border-l-amber-500' };
+      return { icon: AlertTriangle, borderClass: 'border-l-warning' };
     case 'success':
     case 'booking':
     case 'payment':
-      return { icon: CheckCircle, borderClass: 'border-l-green-500' };
+      return { icon: CheckCircle, borderClass: 'border-l-success' };
+    case 'error':
+      return { icon: AlertTriangle, borderClass: 'border-l-destructive' };
+    case 'info':
     default:
-      return { icon: Info, borderClass: 'border-l-blue-500' };
+      return { icon: Info, borderClass: 'border-l-info' };
   }
 }
 
@@ -77,8 +80,8 @@ export default function Layout({ children }: CaretakerLayoutProps) {
   const unreadCount = notifications.filter((n: Notification) => !n.isRead).length;
   
   // Connect to Global UI Store
-  const isSidebarOpen = useAppStore((state) => state.isSidebarOpen);
-  const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
+  const isSidebarOpen = useUiStore((state) => state.isSidebarOpen);
+  const setSidebarOpen = useUiStore((state) => state.setSidebarOpen);
 
   const displayName = React.useMemo(() => {
     if (!user) return 'Caretaker';
@@ -106,7 +109,7 @@ export default function Layout({ children }: CaretakerLayoutProps) {
   }, [logout]);
 
   return (
-    <DashboardThemeProvider>
+    <UnifiedThemeProvider>
       <div className="min-h-screen bg-background flex">
         {/* Sidebar - Hidden on Mobile */}
         {!isMobile && (
@@ -124,11 +127,11 @@ export default function Layout({ children }: CaretakerLayoutProps) {
           )}
         >
           {/* Top Navigation Bar */}
-          <header className="sticky top-0 z-30 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+          <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
               <div className="flex items-center gap-4">
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold uppercase tracking-[0.18em] text-foreground">
+                <div className="flex flex-col group">
+                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary transition-colors group-hover:text-primary/80">
                     RUMI · Caretaker
                   </span>
                   <span className="text-sm font-medium text-muted-foreground hidden sm:block">
@@ -155,7 +158,7 @@ export default function Layout({ children }: CaretakerLayoutProps) {
                   </PopoverTrigger>
                   <PopoverContent className="w-80 p-0" align="end">
                     <div className="flex items-center justify-between p-4 border-b">
-                      <h3 className="font-semibold">Notifications</h3>
+                      <h3 className="font-semibold text-foreground">Notifications</h3>
                       {unreadCount > 0 && (
                         <Badge variant="secondary" className="text-xs">
                           {unreadCount} new
@@ -192,7 +195,7 @@ export default function Layout({ children }: CaretakerLayoutProps) {
                                 )}
                               >
                                 <div className="flex items-start justify-between gap-2 mb-1">
-                                  <h4 className="font-medium text-sm">{notification.title}</h4>
+                                  <h4 className="font-semibold text-sm text-foreground">{notification.title}</h4>
                                   {!notification.isRead && (
                                     <span className="h-2 w-2 rounded-full bg-blue-600 flex-shrink-0 mt-1" />
                                   )}
@@ -224,25 +227,25 @@ export default function Layout({ children }: CaretakerLayoutProps) {
                 {/* User Menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-10 gap-2 px-2">
-                      <Avatar className="h-8 w-8">
+                    <Button variant="ghost" className="relative h-10 gap-2 px-2 group">
+                      <Avatar className="h-8 w-8 ring-offset-background transition-all group-hover:ring-2 group-hover:ring-primary">
                         <AvatarImage src={image} alt={displayName} />
-                        <AvatarFallback className="bg-emerald-100 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-400 text-xs font-semibold">
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
                           {initials}
                         </AvatarFallback>
                       </Avatar>
                       <div className="hidden sm:flex flex-col items-start text-left">
-                        <span className="text-xs font-medium truncate max-w-[140px]">
+                        <span className="text-xs font-semibold truncate max-w-[140px] text-foreground">
                           {displayName}
                         </span>
-                        <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
+                        <span className="text-[11px] text-muted-foreground font-medium">
                           Caretaker
                         </span>
                       </div>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuLabel className="text-foreground">My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link href="/caretaker/profile" className="cursor-pointer flex items-center">
@@ -257,7 +260,7 @@ export default function Layout({ children }: CaretakerLayoutProps) {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSignOut} className="text-red-600 dark:text-red-400 cursor-pointer">
+                    <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
                       Sign out
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -282,6 +285,6 @@ export default function Layout({ children }: CaretakerLayoutProps) {
         {/* Bottom Navigation - Mobile Only */}
         <CaretakerBottomNav />
       </div>
-    </DashboardThemeProvider>
+    </UnifiedThemeProvider>
   );
 }

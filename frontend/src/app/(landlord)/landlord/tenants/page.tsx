@@ -181,7 +181,7 @@ export default function TenantsPage() {
               <CardContent className="p-6">
                   <div className="flex flex-col gap-1">
                       <span className="text-sm font-medium text-muted-foreground">Occupancy Rate</span>
-                      <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{occupancyRate}%</span>
+                      <span className="text-3xl font-bold text-success">{occupancyRate}%</span>
                   </div>
               </CardContent>
           </Card>
@@ -189,7 +189,7 @@ export default function TenantsPage() {
               <CardContent className="p-6">
                   <div className="flex flex-col gap-1">
                       <span className="text-sm font-medium text-muted-foreground">Overdue Rent</span>
-                      <span className="text-3xl font-bold text-red-600 dark:text-red-400">{overdueCount}</span>
+                      <span className="text-3xl font-bold text-destructive">{overdueCount}</span>
                   </div>
               </CardContent>
           </Card>
@@ -197,7 +197,7 @@ export default function TenantsPage() {
               <CardContent className="p-6">
                   <div className="flex flex-col gap-1">
                       <span className="text-sm font-medium text-muted-foreground">Vacating Soon</span>
-                      <span className="text-3xl font-bold text-orange-600 dark:text-orange-400">{vacatingCount}</span>
+                      <span className="text-3xl font-bold text-warning">{vacatingCount}</span>
                   </div>
               </CardContent>
           </Card>
@@ -302,7 +302,7 @@ export default function TenantsPage() {
                                                         <h3 className="text-lg font-bold text-foreground truncate">{name}</h3>
                                                     </Link>
                                                      {occupancyStatus === 'vacating' && (
-                                                        <Badge variant="secondary" className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-0">
+                                                        <Badge variant="secondary" className="bg-warning/10 text-warning hover:bg-warning/10 border-0">
                                                             Vacating Soon
                                                         </Badge>
                                                     )}
@@ -333,9 +333,9 @@ export default function TenantsPage() {
                                                 <span className="text-sm font-medium text-muted-foreground">Status</span>
                                                  <span className={cn(
                                                     "text-sm font-bold uppercase px-2 py-0.5 rounded flex items-center gap-1.5",
-                                                    paymentStatus === 'current' ? "text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400" :
-                                                    paymentStatus === 'late' ? "text-orange-700 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400" :
-                                                    "text-red-700 bg-red-100 dark:bg-red-900/30 dark:text-red-400"
+                                                    paymentStatus === 'current' ? "text-success bg-success/10" :
+                                                    paymentStatus === 'late' ? "text-warning bg-warning/10" :
+                                                    "text-destructive bg-destructive/10"
                                                 )}>
                                                     {isLate && <AlertTriangle className="h-3 w-3" />}
                                                     {paymentStatus}
@@ -385,7 +385,7 @@ export default function TenantsPage() {
                                                        </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                     <DropdownMenuItem className="text-orange-600 focus:text-orange-600 dark:text-orange-400 dark:focus:text-orange-400" onClick={() => handleMarkVacated(tenant.id)}>
+                                                     <DropdownMenuItem className="text-warning focus:text-warning" onClick={() => handleMarkVacated(tenant.id)}>
                                                       <LogOut className="h-4 w-4 mr-2" />
                                                       Mark as Vacating
                                                     </DropdownMenuItem>
@@ -396,7 +396,7 @@ export default function TenantsPage() {
                                             {isLate && (
                                                 <Button 
                                                     size="sm" 
-                                                    className="w-full bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 border-0 shadow-none mt-0 lg:mt-2"
+                                                    className="w-full bg-destructive/10 text-destructive hover:bg-destructive/20 border-0 shadow-none mt-0 lg:mt-2"
                                                     onClick={() => handleSendReminder(tenant.id)}
                                                 >
                                                     <Bell className="h-3 w-3 mr-2" />

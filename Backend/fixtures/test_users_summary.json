@@ -1,0 +1,71 @@
+{
+  "seed_metadata": {
+    "test_seeded_by": "rumia_ide",
+    "seed_date": "2026-02-08"
+  },
+  "environment": "staging",
+  "users": [
+    {
+      "email": "amani.ochieng@test.rumia.co.ke",
+      "role": "student",
+      "name": "Amani Ochieng"
+    },
+    {
+      "email": "james.mwangi@test.rumia.co.ke",
+      "role": "landlord",
+      "name": "James Mwangi"
+    },
+    {
+      "email": "grace.wanjiku@test.rumia.co.ke",
+      "role": "caretaker",
+      "name": "Grace Wanjiku"
+    },
+    {
+      "email": "kevin.njoroge@test.rumia.co.ke",
+      "role": "tech_support",
+      "name": "Kevin Njoroge"
+    },
+    {
+      "email": "admin.rumia@test.rumia.co.ke",
+      "role": "super_admin",
+      "name": "Admin Rumia"
+    }
+  ],
+  "created_objects": {
+    "users": [
+      "amani.ochieng@test.rumia.co.ke",
+      "james.mwangi@test.rumia.co.ke",
+      "grace.wanjiku@test.rumia.co.ke",
+      "kevin.njoroge@test.rumia.co.ke",
+      "admin.rumia@test.rumia.co.ke"
+    ],
+    "profiles": [
+      "StudentProfile:amani.ochieng@test.rumia.co.ke",
+      "LandlordProfile:james.mwangi@test.rumia.co.ke",
+      "CaretakerProfile:grace.wanjiku@test.rumia.co.ke"
+    ],
+    "hostels": [
+      "Test Hostel Kilimani"
+    ],
+    "rooms": [
+      "Test Hostel Kilimani - 101",
+      "Test Hostel Kilimani - 102"
+    ],
+    "beds": [
+      "KLM-101-A",
+      "KLM-101-B",
+      "KLM-101-C",
+      "KLM-101-D",
+      "KLM-102-A",
+      "KLM-102-B",
+      "KLM-102-C",
+      "KLM-102-D"
+    ],
+    "bookings": [
+      "BK-TEST-2026-001"
+    ],
+    "payment_configs": [
+      "174379"
+    ]
+  }
+}

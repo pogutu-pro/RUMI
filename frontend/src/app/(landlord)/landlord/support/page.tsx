@@ -43,38 +43,38 @@ export default function SupportPage() {
   const tickets = ticketsData?.data || [];
 
   const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400 border-red-200 dark:border-red-900';
-      case 'medium': return 'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400 border-orange-200 dark:border-orange-900';
-      default: return 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400 border-blue-200 dark:border-blue-900';
-    }
-  };
+   switch (priority) {
+     case 'high': return 'bg-destructive/10 text-destructive border-destructive/20';
+     case 'medium': return 'bg-warning/10 text-warning border-warning/20';
+     default: return 'bg-info/10 text-info border-info/20';
+   }
+ };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open': return 'text-blue-600 bg-blue-50 dark:bg-blue-900/20';
-      case 'in_progress': return 'text-orange-600 bg-orange-50 dark:bg-orange-900/20';
-      case 'resolved': return 'text-green-600 bg-green-50 dark:bg-green-900/20';
-      case 'closed': return 'text-slate-600 bg-slate-50 dark:bg-slate-900/20';
-      default: return 'text-slate-600 bg-slate-50';
-    }
-  };
+   switch (status) {
+     case 'open': return 'text-info bg-info/10';
+     case 'in_progress': return 'text-warning bg-warning/10';
+     case 'resolved': return 'text-success bg-success/10';
+     case 'closed': return 'text-muted-foreground bg-muted';
+     default: return 'text-muted-foreground bg-muted';
+   }
+ };
 
   return (
     <div className="space-y-6 lg:space-y-8 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-3">
-            <Ticket className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+          <h1 className="text-3xl font-bold tracking-tight text-primary flex items-center gap-3">
+            <Ticket className="h-8 w-8 text-success" />
             Support Center
           </h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          <p className="mt-1 text-sm text-muted-foreground">
             Manage support requests and communicate with your tenants
           </p>
         </div>
 
-        <Button className="gap-2 bg-gradient-to-r from-emerald-600 to-cyan-600">
+        <Button className="gap-2 bg-gradient-to-r from-success to-info text-success-foreground">
           <Plus className="h-4 w-4" />
           Create Ticket
         </Button>
@@ -82,12 +82,12 @@ export default function SupportPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+        <Card className="border-none shadow-md bg-gradient-to-br from-card to-muted/30">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Open Tickets
             </CardTitle>
-            <Ticket className="h-4 w-4 text-blue-500" />
+            <Ticket className="h-4 w-4 text-info" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">--</div>
@@ -95,12 +95,12 @@ export default function SupportPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+        <Card className="border-none shadow-md bg-gradient-to-br from-card to-muted/30">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               High Priority
             </CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-500" />
+            <AlertCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
              <div className="text-2xl font-bold">--</div>
@@ -108,12 +108,12 @@ export default function SupportPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
+        <Card className="border-none shadow-md bg-gradient-to-br from-card to-muted/30">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Avg. Response Time
             </CardTitle>
-            <Clock className="h-4 w-4 text-emerald-500" />
+            <Clock className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
              <div className="text-2xl font-bold">2.4h</div>
@@ -125,7 +125,7 @@ export default function SupportPage() {
       {/* Main Content */}
       <Tabs defaultValue="open" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="flex items-center justify-between">
-          <TabsList className="bg-slate-100 dark:bg-slate-800">
+          <TabsList className="bg-muted">
             <TabsTrigger value="open" className="gap-2">
               <AlertCircle className="h-4 w-4" /> Open
             </TabsTrigger>
@@ -151,11 +151,11 @@ export default function SupportPage() {
           ) : tickets.length === 0 ? (
             <Card className="border-none shadow-md py-12">
               <div className="flex flex-col items-center justify-center text-center">
-                <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
-                   <Ticket className="h-10 w-10 text-slate-400" />
+                <div className="p-4 rounded-full bg-muted mb-4">
+                   <Ticket className="h-10 w-10 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">No tickets found</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs mt-2">
+                <h3 className="text-lg font-semibold text-primary">No tickets found</h3>
+                <p className="text-sm text-muted-foreground max-w-xs mt-2">
                   There are no {activeTab === 'all' ? '' : activeTab.replace('_', ' ')} tickets at the moment.
                 </p>
               </div>
@@ -169,12 +169,12 @@ export default function SupportPage() {
                 transition={{ duration: 0.2, delay: index * 0.05 }}
               >
                 <Link href={`/landlord/support/${ticket.id}`} className="block">
-                  <Card className="border-none shadow-sm hover:shadow-md transition-all duration-200 group bg-white dark:bg-slate-900/50">
+                  <Card className="border-none shadow-sm hover:shadow-md transition-all duration-200 group bg-card">
                     <CardContent className="p-6">
                       <div className="flex flex-col md:flex-row md:items-center gap-4">
                         {/* Status Icon */}
-                        <div className="hidden md:flex items-center justify-center h-12 w-12 rounded-full bg-slate-100 dark:bg-slate-800 shrink-0 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20 transition-colors">
-                           <MessageSquare className="h-6 w-6 text-slate-500 dark:text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400" />
+                        <div className="hidden md:flex items-center justify-center h-12 w-12 rounded-full bg-muted shrink-0 group-hover:bg-success/10 transition-colors">
+                           <MessageSquare className="h-6 w-6 text-muted-foreground group-hover:text-success" />
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -185,20 +185,20 @@ export default function SupportPage() {
                             <Badge className={cn("capitalize", getStatusColor(ticket.status))}>
                               {ticket.status.replace('_', ' ')}
                             </Badge>
-                            <span className="text-xs text-slate-400 flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
                                <Clock className="h-3 w-3" />
                                {format(new Date(ticket.created_at), 'MMM dd, yyyy')}
                             </span>
                           </div>
-                          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                          <h3 className="text-lg font-semibold text-primary group-hover:text-success transition-colors">
                             {ticket.subject}
                           </h3>
-                          <p className="text-sm text-slate-500 line-clamp-1 mt-1">
+                          <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
                             {ticket.description}
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-4 text-sm text-slate-500">
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
                            <div className="flex items-center gap-1">
                               <MessageSquare className="h-4 w-4" />
                               <span>Coming soon</span>

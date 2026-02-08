@@ -63,7 +63,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Settings</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-primary">Settings</h1>
         <p className="text-muted-foreground mt-1">
           Manage your application preferences, notifications, and security.
         </p>
@@ -80,7 +80,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                <div className="p-2 rounded-lg bg-success/10 text-success">
                   <Bell className="h-5 w-5" />
                 </div>
                 <div>
@@ -171,7 +171,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                <div className="p-2 rounded-lg bg-info/10 text-info">
                   <Lock className="h-5 w-5" />
                 </div>
                 <div>
@@ -241,7 +241,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
+                <div className="p-2 rounded-lg bg-primary/10 text-primary">
                   <Shield className="h-5 w-5" />
                 </div>
                 <div>
@@ -280,7 +280,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                <div className="p-2 rounded-lg bg-warning/10 text-warning">
                   <Laptop className="h-5 w-5" />
                 </div>
                 <div>
@@ -328,7 +328,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400">
+                <div className="p-2 rounded-lg bg-info/10 text-info">
                   <Globe className="h-5 w-5" />
                 </div>
                 <div>

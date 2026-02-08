@@ -97,7 +97,7 @@ export function ReceiptVerification() {
         </div>
         <CardTitle className="text-green-800">Verified Receipt</CardTitle>
         <CardDescription>
-            Official Record from Rumi
+            Official Record from Rumia
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 pt-6">

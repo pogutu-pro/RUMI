@@ -178,14 +178,18 @@ export function LoginForm({
 
       {step === 'email' ? (
         <div className="space-y-4">
+          <div className="text-center mb-8 border-b-2 border-primary/10 pb-4">
+            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter">Identity Check</h2>
+          </div>
+
           <FormField
             label="Email"
             type="email"
-            placeholder="Email address"
+            placeholder="enter your email"
             autoComplete="email"
             error={errors.email?.message}
             required
-            className="h-14 text-lg"
+            className="h-12 text-base rounded-none border-2 focus:border-primary"
             aria-invalid={!!errors.email}
             {...register('email')}
           />
@@ -193,7 +197,7 @@ export function LoginForm({
           <Button
             type="button"
             onClick={handleContinue}
-            className="w-full h-12 text-base font-semibold bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg"
+            className="w-full h-12 text-base font-black bg-primary hover:bg-primary/90 text-white rounded-none uppercase tracking-widest"
             disabled={isCheckingEmail}
           >
             {isCheckingEmail ? (

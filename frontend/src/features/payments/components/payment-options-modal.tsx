@@ -23,8 +23,8 @@ import {
   Check
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useMutation } from '@tanstack/react-query';
-import { initializeMpesaPayment } from '../api/payments';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { initializeMpesaPayment, getPaybillDetails } from '../api/payments';
 import type { MpesaInitializeRequest } from '../types';
 
 interface PaymentDetailsData {
@@ -106,17 +106,24 @@ export function PaymentOptionsModal({
   const [paymentMethod, setPaymentMethod] = useState<'offline' | 'online'>('offline');
   const { toast } = useToast();
 
-  // Mock payment details - in production, fetch from API
-  const paymentDetails: PaymentDetailsData = {
-    paybill_number: '548548',
+  // Fetch real payment details
+  const { data: apiResponse, isLoading: loadingDetails } = useQuery({
+    queryKey: ['paybill-details', bedId],
+    queryFn: () => getPaybillDetails({ bedId }),
+    enabled: isOpen && !!bedId,
+  });
+
+  const paymentDetails = apiResponse?.data || {
+    paybill_number: 'PENDING',
     till_number: null,
-    account_number: 'KBH-101-A-47',
+    account_number: 'PENDING',
     amount: amount,
-    hostel_name: 'Kenyatta Boys Hostel',
-    bed_code: bedId || 'Room 101, Bed A', // Use bedId if available
-    student_phone: '254712345678',
-    ussd_code: `*234*548548*KBH-101-A-47*${amount}#`
+    hostel_name: 'Loading...',
+    bed_code: 'Loading...',
+    student_phone: '', // Should be fetched from auth user
   };
+
+  const ussdCode = `*234*${paymentDetails.paybill_number}*${paymentDetails.account_number}*${amount}#`;
 
   // STK Push mutation
   const { mutate: initiateSTK, isPending: stkLoading } = useMutation({
@@ -252,23 +259,19 @@ export function PaymentOptionsModal({
                 </div>
               </div>
 
-              {/* Quick USSD (if available) */}
-              {paymentDetails.ussd_code && (
-                <>
-                  <Separator className="my-4" />
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase text-muted-foreground font-semibold">
-                      Quick Dial (Optional)
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      <Code className="flex-1 break-all">
-                        {paymentDetails.ussd_code}
-                      </Code>
-                      <CopyButton value={paymentDetails.ussd_code} />
-                    </div>
-                  </div>
-                </>
-              )}
+              {/* Quick USSD */}
+              <Separator className="my-4" />
+              <div className="space-y-2">
+                <Label className="text-xs uppercase text-muted-foreground font-semibold">
+                  Quick Dial (Optional)
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Code className="flex-1 break-all">
+                    {ussdCode}
+                  </Code>
+                  <CopyButton value={ussdCode} />
+                </div>
+              </div>
             </div>
 
             <Separator className="my-4" />

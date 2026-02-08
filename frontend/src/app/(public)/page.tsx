@@ -11,21 +11,22 @@ import {
 import { ArrowRight, Search, CheckCircle2 } from 'lucide-react';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 import RumiVideo from '@/components/ui/RumiVideo/rumivideo';
+import { RumiaLogoLabel3D } from '@/components/ui/rumia-logo-label';
 
 export const metadata: Metadata = {
-  title: 'Rumi - The Complete Platform for Student Housing in kenya',
+  title: 'Rumia - The Complete Platform for Student Housing in kenya',
   description:
-    'Rumi connects listing, booking, and payments in one app. The complete student housing system for landlords and students in Kenya.',
+    'Rumia connects listing, booking, and payments in one app. The complete student housing system for landlords and students in Kenya.',
   openGraph: {
-    title: 'Rumi - The Complete Platform for Student Housing',
+    title: 'Rumia - The Complete Platform for Student Housing',
     description:
       'Manage student hostels with ease. Automated rent collection, bed-level bookings, and full operational control in one verified component.',
-    url: 'https://rumi.co.ke',
-    siteName: 'Rumi',
+    url: 'https://rumia.co.ke',
+    siteName: 'Rumia',
     images: [
       {
         url: '/og-image.png',
-        alt: 'Rumi - Student Housing Platform',
+        alt: 'Rumia - Student Housing Platform',
         width: 1200,
         height: 630,
       },
@@ -53,72 +54,110 @@ export default function HomePage() {
     <main className="flex flex-col bg-white text-gray-900 font-sans">
       {/* Hero Section */}
       <section
-        className="relative bg-white"
+        className="relative overflow-hidden bg-white"
         aria-label="Hero introduction"
       >
-        <div className="container mx-auto px-4 py-16 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl">
-            <h1 className="mb-6 text-4xl font-bold tracking-tight text-primary sm:text-5xl">
-              The Complete Platform for Student Housing in kenya
-            </h1>
-            <p className="mb-8 text-xl text-gray-700 leading-relaxed">
-              Everything you need to list, book, and manage student hostels. One app for students, landlords, and caretakers.
-            </p>
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <Link href="/hostels" prefetch className="w-full sm:w-auto">
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white rounded-none"
-                >
-                  <Search className="mr-2 h-5 w-5" />
-                  Find a Hostel
-                </Button>
-              </Link>
-              <Link
-                href={AUTH_ROUTES.REGISTER}
-                prefetch
-                className="w-full sm:w-auto"
-              >
-                <Button
-                  size="lg"
-                  variant="outline"
+        <div className="container mx-auto px-4 py-16 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left Column - Content */}
+            <div className="max-w-2xl relative z-10">
+              <h1 className="mb-6 text-4xl font-bold tracking-tight text-primary sm:text-5xl lg:text-6xl">
+                The Complete Platform for Student Housing in kenya
+              </h1>
+              <p className="mb-8 text-xl text-gray-700 leading-relaxed">
+                Everything you need to list, book, and manage student hostels. One app for students, landlords, and caretakers.
+              </p>
+              <div className="flex flex-col gap-4 sm:flex-row">
+                <Link href="/hostels" prefetch className="w-full sm:w-auto">
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white rounded-none"
+                  >
+                    <Search className="mr-2 h-5 w-5" />
+                    Find a Hostel
+                  </Button>
+                </Link>
+                <Link
+                  href={AUTH_ROUTES.REGISTER}
+                  prefetch
                   className="w-full sm:w-auto"
                 >
-                  Create Student Account
-                </Button>
-              </Link>
-              <Link
-                href={`${AUTH_ROUTES.REGISTER}?role=landlord`}
-                prefetch
-                className="w-full sm:w-auto"
-              >
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="w-full sm:w-auto border-2 border-primary text-primary hover:bg-primary/5 rounded-none"
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                  >
+                    Create Student Account
+                  </Button>
+                </Link>
+                <Link
+                  href={`${AUTH_ROUTES.REGISTER}?role=landlord`}
+                  prefetch
+                  className="w-full sm:w-auto"
                 >
-                    List Your Property
-                </Button>
-              </Link>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full sm:w-auto border-2 border-primary text-primary hover:bg-primary/5 rounded-none"
+                  >
+                      List Your Property
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Column - Images (Now also visible on mobile as background-ish or below) */}
+            <div className="relative mt-12 lg:mt-0">
+              <div className="relative w-full max-w-xl mx-auto lg:ml-auto">
+                {/* Main Large Image */}
+                <div className="border border-gray-200 bg-gray-50 p-2 rounded-2xl shadow-2xl overflow-hidden transform rotate-2 transition-transform hover:rotate-0 duration-500">
+                  <img 
+                    src="/images/carousel/carousel-01.jpeg" 
+                    alt="Rumia Dashboard" 
+                    className="w-full h-auto rounded-xl"
+                  />
+                </div>
+                
+                {/* Overlapping Small Image (Bottom Left) */}
+                <div className="absolute -bottom-8 -left-8 w-[60%] border border-gray-200 bg-white p-2 rounded-xl shadow-2xl overflow-hidden transform -rotate-3 z-20 transition-transform hover:-rotate-1 duration-500">
+                  <img 
+                    src="/images/carousel/carousel-02.jpeg" 
+                    alt="Rumia Mobile View" 
+                    className="w-full h-auto rounded-lg"
+                  />
+                </div>
+
+                {/* Decorative blob for mobile background feel */}
+                <div className="absolute -top-10 -right-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10 animate-pulse lg:hidden" />
+              </div>
             </div>
           </div>
+        </div>
+        
+        {/* Background Elements for Mobile */}
+        <div className="absolute inset-0 z-0 opacity-10 lg:hidden overflow-hidden pointer-events-none">
+           <img 
+              src="/images/carousel/carousel-04.jpeg" 
+              alt="" 
+              className="absolute -right-20 top-20 w-80 h-auto blur-sm transform rotate-12"
+            />
         </div>
       </section>
 
       {/* Platform Overview */}
       <section
         className="py-24 bg-white"
-        aria-label="See Rumi in action"
+        aria-label="See Rumia in action"
       >
         <div className="container mx-auto px-0 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-5xl">
             <h2 className="mb-6 text-2xl font-bold text-primary px-4 sm:px-0">
-              See How Rumi Works
+              See How Rumia Works
             </h2>
             <div className="border border-gray-200 bg-white overflow-hidden rounded-none shadow-sm">
                 <RumiVideo
                 url="https://www.youtube.com/watch?v=sBY5a0QZKUk"
-                title="Rumi Hostel Management Demo"
+                title="Rumia Hostel Management Demo"
                 autoplay={false}
                 muted
                 loop={false}
@@ -132,7 +171,7 @@ export default function HomePage() {
       {/* How It Works Section */}
       <section
         className="py-24 bg-white"
-        aria-label="How Rumi works"
+        aria-label="How Rumia works"
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl">
@@ -202,7 +241,7 @@ export default function HomePage() {
               {[
                 {
                   title: 'Book Safely',
-                  desc: 'Every hostel on Rumi is verified. No scams, no fake listings.',
+                  desc: 'Every hostel on Rumia is verified. No scams, no fake listings.',
                 },
                 {
                   title: 'Pay Easily',

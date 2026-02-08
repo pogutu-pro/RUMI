@@ -82,11 +82,11 @@ export function BookingsList({ status = 'all' }: BookingsListProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400 border-green-200 dark:border-green-900';
-      case 'pending': return 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400 border-orange-200 dark:border-orange-900';
-      case 'cancelled': return 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400 border-red-200 dark:border-red-900';
-      case 'completed': return 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 border-blue-200 dark:border-blue-900';
-      default: return 'bg-slate-100 text-slate-700 dark:bg-slate-950/30 dark:text-slate-400 border-slate-200 dark:border-slate-800';
+      case 'confirmed': return 'bg-success/10 text-success border-success/20';
+      case 'pending': return 'bg-warning/10 text-warning border-warning/20';
+      case 'cancelled': return 'bg-destructive/10 text-destructive border-destructive/20';
+      case 'completed': return 'bg-info/10 text-info border-info/20';
+      default: return 'bg-muted text-muted-foreground border-border';
     }
   };
 
@@ -113,12 +113,12 @@ export function BookingsList({ status = 'all' }: BookingsListProps) {
       <Card className="border-none shadow-sm bg-muted/30">
         <CardContent className="p-4">
              <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by reference, student, hostel or room..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-white dark:bg-slate-950"
+                className="pl-10 bg-card"
               />
             </div>
         </CardContent>
@@ -143,8 +143,8 @@ export function BookingsList({ status = 'all' }: BookingsListProps) {
         ) : filteredBookings.length === 0 ? (
           <Card className="border-none shadow-sm py-12 bg-muted/10">
             <div className="flex flex-col items-center justify-center text-center">
-              <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
-                <CalendarCheck className="h-10 w-10 text-slate-400" />
+              <div className="p-4 rounded-full bg-muted mb-4">
+                <CalendarCheck className="h-10 w-10 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-semibold">No bookings found</h3>
               <p className="text-sm text-muted-foreground max-w-xs mt-2">
@@ -171,35 +171,35 @@ export function BookingsList({ status = 'all' }: BookingsListProps) {
                                 <div className="flex flex-col md:flex-row md:items-center gap-6">
                                     {/* Student Info */}
                                     <div className="flex items-center gap-4 min-w-[250px]">
-                                        <Avatar className="h-12 w-12 border-2 border-slate-100 dark:border-slate-800">
-                                            <AvatarFallback className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 font-bold">
+                                        <Avatar className="h-12 w-12 border-2 border-border">
+                                            <AvatarFallback className="bg-success/10 text-success font-bold">
                                                 {getInitials(studentName)}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div>
-                                            <h3 className="font-semibold text-slate-900 dark:text-slate-100">{studentName}</h3>
-                                            <p className="text-sm text-slate-500">Ref: {booking.booking_reference || booking.id.slice(0,8).toUpperCase()}</p>
+                                            <h3 className="font-semibold text-primary">{studentName}</h3>
+                                            <p className="text-sm text-muted-foreground">Ref: {booking.booking_reference || booking.id.slice(0,8).toUpperCase()}</p>
                                         </div>
                                     </div>
 
                                     {/* Booking Details */}
                                     <div className="flex-1 grid grid-cols-2 gap-4">
                                         <div className="space-y-1">
-                                            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                 <Building2 className="h-4 w-4" />
                                                 <span className="truncate">{hostelName}</span>
                                             </div>
-                                            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                 <User className="h-4 w-4" />
                                                 <span>Room {roomNumber}</span>
                                             </div>
                                         </div>
                                         <div className="space-y-1">
-                                             <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                 <Calendar className="h-4 w-4" />
                                                 <span>In: {format(new Date(booking.move_in_date), 'MMM dd, yyyy')}</span>
                                             </div>
-                                             <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                 <DollarSign className="h-4 w-4" />
                                                 <span>KES {booking.total_amount?.toLocaleString()}</span>
                                             </div>
@@ -230,11 +230,11 @@ export function BookingsList({ status = 'all' }: BookingsListProps) {
                                                 </DropdownMenuItem>
                                                 {booking.status === 'pending' && (
                                                     <>
-                                                        <DropdownMenuItem onClick={() => handleStatusUpdate(booking.id, 'confirmed')} className="text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50">
+                                                        <DropdownMenuItem onClick={() => handleStatusUpdate(booking.id, 'confirmed')} className="text-success focus:text-success focus:bg-success/10">
                                                             <Check className="h-4 w-4 mr-2" />
                                                             Approve
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => handleStatusUpdate(booking.id, 'cancelled')} className="text-red-600 focus:text-red-700 focus:bg-red-50">
+                                                        <DropdownMenuItem onClick={() => handleStatusUpdate(booking.id, 'cancelled')} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                                                             <X className="h-4 w-4 mr-2" />
                                                             Reject
                                                         </DropdownMenuItem>

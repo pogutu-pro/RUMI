@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -88,10 +89,13 @@ export function DashboardSidebar({ userRole = 'admin', onSignOut }: DashboardSid
   return (
     <div className="hidden border-r bg-card dark:bg-gray-900 md:block fixed left-0 top-0 h-screen w-64 z-40">
       <div className="flex h-full max-h-screen flex-col gap-2">
-        <div className="flex h-14 items-center border-b dark:border-gray-800 px-4 lg:h-[60px] lg:px-6">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
-            <span className="text-emerald-600 dark:text-emerald-400">RUMI</span>
-            <span className="text-xs text-muted-foreground">{roleLabel}</span>
+        <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+          <Link href="/" className="flex items-center gap-2 font-bold text-xl text-primary group">
+            <div className="relative h-7 w-7 transition-transform group-hover:scale-110">
+              <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" />
+            </div>
+            <span>RUMI</span>
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-medium ml-1">{roleLabel}</span>
           </Link>
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -101,34 +105,22 @@ export function DashboardSidebar({ userRole = 'admin', onSignOut }: DashboardSid
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all hover:text-primary dark:hover:text-emerald-400",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-200",
                   pathname === item.href || pathname.startsWith(item.href + '/')
-                    ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-semibold"
-                    : "text-muted-foreground hover:bg-muted dark:hover:bg-gray-800"
+                    ? "bg-primary/10 text-primary font-bold shadow-sm"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground font-medium"
                 )}
               >
-                <item.icon className="h-4 w-4" />
+                <item.icon className={cn("h-4 w-4", pathname === item.href ? "text-primary" : "text-muted-foreground/70")} />
                 {item.label}
               </Link>
             ))}
           </nav>
         </div>
-        <div className="mt-auto p-4 space-y-2 border-t dark:border-gray-800">
+        <div className="mt-auto p-4 space-y-2 border-t">
           <Button
-            variant="outline"
-            className="w-full justify-start gap-2 dark:border-gray-700 dark:hover:bg-gray-800"
-            onClick={toggleTheme}
-          >
-            {theme === 'dark' ? (
-              <Sun className="h-4 w-4" />
-            ) : (
-              <Moon className="h-4 w-4" />
-            )}
-            {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-start gap-2 dark:border-gray-700 dark:hover:bg-gray-800"
+            variant="ghost"
+            className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
             onClick={onSignOut}
           >
             <LogOut className="h-4 w-4" />

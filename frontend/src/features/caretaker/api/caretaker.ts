@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api/client';
+import type { ApiResponse } from '@/types/api.types';
 import type {
   CaretakerDashboardData,
   TenantInfo,
@@ -26,20 +27,20 @@ import type {
 // ==================== Dashboard ====================
 
 export async function getCaretakerDashboard(): Promise<CaretakerDashboardData> {
-  const response = await apiClient.axios.get<CaretakerDashboardData>('/caretaker/dashboard');
-  return response.data;
+  const response = await apiClient.axios.get<ApiResponse<CaretakerDashboardData>>('/caretaker/dashboard');
+  return response.data.data || response.data as unknown as CaretakerDashboardData;
 }
 
 // ==================== Tenant Management ====================
 
 export async function getTenants(filters?: TenantFilters): Promise<TenantInfo[]> {
-  const response = await apiClient.axios.get<TenantInfo[]>('/caretaker/tenants', { params: filters });
-  return response.data;
+  const response = await apiClient.axios.get<ApiResponse<TenantInfo[]>>('/caretaker/tenants', { params: filters });
+  return response.data.data || [];
 }
 
 export async function getTenant(id: string): Promise<TenantInfo> {
-  const response = await apiClient.axios.get<TenantInfo>(`/caretaker/tenants/${id}`);
-  return response.data;
+  const response = await apiClient.axios.get<ApiResponse<TenantInfo>>(`/caretaker/tenants/${id}`);
+  return response.data.data!; 
 }
 
 export async function updateTenant(id: string, data: Partial<TenantInfo>): Promise<TenantInfo> {
@@ -50,18 +51,18 @@ export async function updateTenant(id: string, data: Partial<TenantInfo>): Promi
 // ==================== Roommate Management ====================
 
 export async function getRoommateGroups():Promise<RoommateGroup[]> {
-  const response = await apiClient.axios.get<RoommateGroup[]>('/caretaker/roommates/groups');
-  return response.data;
+  const response = await apiClient.axios.get<ApiResponse<RoommateGroup[]>>('/caretaker/roommates/groups');
+  return response.data.data || [];
 }
 
 export async function getRoommateGroup(roomId: string): Promise<RoommateGroup> {
-  const response = await apiClient.axios.get<RoommateGroup>(`/caretaker/roommates/groups/${roomId}`);
-  return response.data;
+  const response = await apiClient.axios.get<ApiResponse<RoommateGroup>>(`/caretaker/roommates/groups/${roomId}`);
+  return response.data.data!;
 }
 
 export async function getRoommateMatchRequests(): Promise<RoommateMatchRequest[]> {
-  const response = await apiClient.axios.get<RoommateMatchRequest[]>('/caretaker/roommates/match-requests');
-  return response.data;
+  const response = await apiClient.axios.get<ApiResponse<RoommateMatchRequest[]>>('/caretaker/roommates/match-requests');
+  return response.data.data || [];
 }
 
 export async function approveRoommateMatch(requestId: string, assignment: RoommateAssignment): Promise<void> {
@@ -119,13 +120,13 @@ export async function uploadCheckOutPhotos(photos: File[]): Promise<string[]> {
 // ==================== Room Management ====================
 
 export async function getRooms(): Promise<RoomStatus[]> {
-  const response = await apiClient.axios.get<RoomStatus[]>('/caretaker/rooms');
-  return response.data;
+  const response = await apiClient.axios.get<ApiResponse<RoomStatus[]>>('/caretaker/rooms');
+  return response.data.data || [];
 }
 
 export async function getRoom(id: string): Promise<RoomStatus> {
-  const response = await apiClient.axios.get<RoomStatus>(`/caretaker/rooms/${id}`);
-  return response.data;
+  const response = await apiClient.axios.get<ApiResponse<RoomStatus>>(`/caretaker/rooms/${id}`);
+  return response.data.data!;
 }
 
 export async function assignRoom(assignment: RoomAssignment): Promise<void> {
@@ -152,13 +153,13 @@ export async function updateRoomNotes(roomId: string, notes: string): Promise<vo
 // ==================== Maintenance ====================
 
 export async function getMaintenanceRequests(filters?: MaintenanceFilters): Promise<MaintenanceRequest[]> {
-  const response = await apiClient.axios.get<MaintenanceRequest[]>('/caretaker/maintenance', { params: filters });
-  return response.data;
+  const response = await apiClient.axios.get<ApiResponse<MaintenanceRequest[]>>('/caretaker/maintenance', { params: filters });
+  return response.data.data || [];
 }
 
 export async function getMaintenanceRequest(id: string): Promise<MaintenanceRequest> {
-  const response = await apiClient.axios.get<MaintenanceRequest>(`/caretaker/maintenance/${id}`);
-  return response.data;
+  const response = await apiClient.axios.get<ApiResponse<MaintenanceRequest>>(`/caretaker/maintenance/${id}`);
+  return response.data.data!;
 }
 
 export async function createMaintenanceRequest(data: Omit<MaintenanceRequest, 'id' | 'createdAt' | 'updatedAt' | 'updates'>): Promise<MaintenanceRequest> {
@@ -188,8 +189,8 @@ export async function notifyLandlordAboutMaintenance(id: string): Promise<void> 
 // ==================== Security Monitoring ====================
 
 export async function getVisitorLogs(filters?: SecurityFilters): Promise<VisitorLog[]> {
-  const response = await apiClient.axios.get<VisitorLog[]>('/caretaker/security/visitors', { params: filters });
-  return response.data;
+  const response = await apiClient.axios.get<ApiResponse<VisitorLog[]>>('/caretaker/security/visitors', { params: filters });
+  return response.data.data || [];
 }
 
 export async function createVisitorLog(data: Omit<VisitorLog, 'id' | 'loggedBy' | 'loggedByName'>): Promise<VisitorLog> {
@@ -203,8 +204,8 @@ export async function updateVisitorLogCheckOut(id: string, timeOut: string): Pro
 }
 
 export async function getNightCheckReports(filters?: SecurityFilters): Promise<NightCheckReport[]> {
-  const response = await apiClient.axios.get<NightCheckReport[]>('/caretaker/security/night-checks', { params: filters });
-  return response.data;
+  const response = await apiClient.axios.get<ApiResponse<NightCheckReport[]>>('/caretaker/security/night-checks', { params: filters });
+  return response.data.data || [];
 }
 
 export async function createNightCheckReport(data: Omit<NightCheckReport, 'id' | 'performedBy' | 'performedByName' | 'createdAt'>): Promise<NightCheckReport> {
@@ -213,8 +214,8 @@ export async function createNightCheckReport(data: Omit<NightCheckReport, 'id' |
 }
 
 export async function getLateEntryLogs(filters?: SecurityFilters): Promise<LateEntryLog[]> {
-  const response = await apiClient.axios.get<LateEntryLog[]>('/caretaker/security/late-entries', { params: filters });
-  return response.data;
+  const response = await apiClient.axios.get<ApiResponse<LateEntryLog[]>>('/caretaker/security/late-entries', { params: filters });
+  return response.data.data || [];
 }
 
 export async function createLateEntryLog(data: Omit<LateEntryLog, 'id' | 'loggedBy' | 'loggedByName' | 'createdAt'>): Promise<LateEntryLog> {
@@ -225,13 +226,13 @@ export async function createLateEntryLog(data: Omit<LateEntryLog, 'id' | 'logged
 // ==================== Messaging ====================
 
 export async function getCaretakerConversations(): Promise<CaretakerConversation[]> {
-  const response = await apiClient.axios.get<CaretakerConversation[]>('/caretaker/conversations');
-  return response.data;
+  const response = await apiClient.axios.get<ApiResponse<CaretakerConversation[]>>('/caretaker/conversations');
+  return response.data.data || [];
 }
 
 export async function getConversationMessages(conversationId: string): Promise<CaretakerMessage[]> {
-  const response = await apiClient.axios.get<CaretakerMessage[]>(`/caretaker/conversations/${conversationId}/messages`);
-  return response.data;
+  const response = await apiClient.axios.get<ApiResponse<CaretakerMessage[]>>(`/caretaker/conversations/${conversationId}/messages`);
+  return response.data.data || [];
 }
 
 export async function sendCaretakerMessage(conversationId: string, content: string, type: 'text' | 'image' | 'file' = 'text'): Promise<CaretakerMessage> {

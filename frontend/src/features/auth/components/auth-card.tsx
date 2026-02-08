@@ -42,9 +42,9 @@ export function AuthCard({
             <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
           )}
           {description && (
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <div className="text-sm text-gray-600 leading-relaxed">
               {description}
-            </p>
+            </div>
           )}
         </header>
       )}

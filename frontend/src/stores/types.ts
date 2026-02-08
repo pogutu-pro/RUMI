@@ -1,4 +1,4 @@
 import { AuthSlice } from '@/features/auth/stores/auth.types';
-import { UiSlice } from './ui.slice';
+import { UiStore } from './ui.store';
 
-export type AppState = AuthSlice & UiSlice;
+export type AppState = AuthSlice & UiStore;

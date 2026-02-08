@@ -337,6 +337,16 @@ export const getRentPeriods = async (filters?: any): Promise<RentPeriod[]> => {
   return Array.isArray(data) ? data : data?.results || [];
 };
 
+export const getPaybillDetails = async (
+  params: { bedId?: string; hostelId?: string }
+): Promise<ApiResponse<any>> => {
+  const queryParams = new URLSearchParams();
+  if (params.bedId) queryParams.append('bed_id', params.bedId);
+  if (params.hostelId) queryParams.append('hostel_id', params.hostelId);
+  
+  const response = await apiClient.axios.get(`/api/v1/payments/paybill/?${queryParams.toString()}`);
+  return response.data;
+};
 
 /**
  * Get the current active rent period

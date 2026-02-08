@@ -67,15 +67,15 @@ const getActivityIconAndColor = (type: string) => {
     case 'booking':
       return { icon: <Home className="w-4 h-4 text-primary" />, color: "bg-primary/10" };
     case 'payment':
-      return { icon: <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />, color: "bg-emerald-500/10" };
+      return { icon: <DollarSign className="w-4 h-4 text-success" />, color: "bg-success/10" };
     case 'user_registration':
-      return { icon: <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />, color: "bg-blue-500/10" };
+      return { icon: <Users className="w-4 h-4 text-info" />, color: "bg-info/10" };
     case 'verification_request':
-      return { icon: <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />, color: "bg-amber-500/10" };
+      return { icon: <ShieldCheck className="w-4 h-4 text-warning" />, color: "bg-warning/10" };
     case 'maintenance':
-      return { icon: <Wrench className="w-4 h-4 text-orange-600 dark:text-orange-400" />, color: "bg-orange-500/10" };
+      return { icon: <Wrench className="w-4 h-4 text-warning" />, color: "bg-warning/10" };
     case 'system':
-      return { icon: <Settings className="w-4 h-4 text-gray-600 dark:text-gray-400" />, color: "bg-gray-500/10" };
+      return { icon: <Settings className="w-4 h-4 text-muted-foreground" />, color: "bg-muted" };
     default:
       return { icon: <Activity className="w-4 h-4 text-primary" />, color: "bg-primary/10" };
   }
@@ -97,32 +97,32 @@ export default function Page() {
             count: pendingBookings, 
             href: '/admin/bookings?status=pending', 
             icon: Calendar,
-            color: 'text-orange-600',
-            bg: 'bg-orange-50'
+            color: 'text-warning',
+            bg: 'bg-warning/10'
           },
           { 
             label: 'Hostel Verifications', 
-            count: 0, // Placeholder as endpoint doesn't return this yet
+            count: 0, 
             href: '/admin/hostels/pending', 
             icon: Home,
-            color: 'text-blue-600',
-            bg: 'bg-blue-50'
+            color: 'text-info',
+            bg: 'bg-info/10'
           },
           { 
             label: 'Landlord Approvals', 
-            count: 0, // Placeholder
+            count: 0, 
             href: '/admin/users/landlords', 
             icon: ShieldCheck,
-            color: 'text-purple-600',
-            bg: 'bg-purple-50'
+            color: 'text-primary',
+            bg: 'bg-primary/10'
           },
           {
             label: 'Open Disputes',
-            count: 0, // Placeholder
+            count: 0, 
             href: '/admin/payments/disputes',
             icon: AlertCircle,
-            color: 'text-red-600',
-            bg: 'bg-red-50'
+            color: 'text-destructive',
+            bg: 'bg-destructive/10'
           }
       ];
   }, [stats]);
@@ -346,8 +346,8 @@ export default function Page() {
             value: `KES ${stats?.totalRevenue?.toLocaleString() || '0'}`,
             growth: stats?.revenueGrowth?.percentage || 0,
             icon: DollarSign,
-            color: "text-emerald-600 dark:text-emerald-400",
-            bg: "bg-emerald-500/10",
+            color: "text-success",
+            bg: "bg-success/10",
             href: "/admin/payments"
           },
           {
@@ -355,8 +355,8 @@ export default function Page() {
             value: stats?.totalUsers?.toLocaleString() || '0',
             growth: stats?.userGrowth?.percentage || 0,
             icon: Users,
-            color: "text-blue-600 dark:text-blue-400",
-            bg: "bg-blue-500/10",
+            color: "text-info",
+            bg: "bg-info/10",
              href: "/admin/users"
           },
           {
@@ -365,8 +365,8 @@ export default function Page() {
             growth: 0, 
             label: "active properties",
             icon: Home,
-            color: "text-amber-600 dark:text-amber-400",
-            bg: "bg-amber-500/10",
+            color: "text-warning",
+            bg: "bg-warning/10",
              href: "/admin/hostels"
           },
           {
@@ -374,8 +374,8 @@ export default function Page() {
             value: stats?.totalBookings?.toLocaleString() || '0',
             growth: stats?.bookingGrowth?.percentage || 0,
             icon: Activity,
-            color: "text-indigo-600 dark:text-indigo-400",
-            bg: "bg-indigo-500/10",
+            color: "text-primary",
+            bg: "bg-primary/10",
             href: "/admin/bookings"
           },
         ].map((item, i) => (
@@ -390,11 +390,11 @@ export default function Page() {
                     <item.icon className={cn("w-5 h-5", item.color)} />
                     </div>
                     {item.growth !== undefined && (
-                    <div className={cn(
+                     <div className={cn(
                         "flex items-center px-2 py-1 rounded-full text-xs font-semibold ring-1 ring-inset",
                         item.growth >= 0 
-                        ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-900/30 dark:text-emerald-400" 
-                        : "bg-red-50 text-red-700 ring-red-600/20 dark:bg-red-900/30 dark:text-red-400"
+                        ? "bg-success/10 text-success ring-success/20" 
+                        : "bg-destructive/10 text-destructive ring-destructive/20"
                     )}>
                         {item.growth >= 0 ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
                         {Math.abs(item.growth)}%

@@ -1,0 +1,1293 @@
+frontend/src/app/(admin)/admin/settings/page.tsx:90:              // Assuming payload has qr_code (base64 or url)
+frontend/src/app/(admin)/admin/bookings/[id]/page.tsx:196:                            <span className="capitalize font-medium">{booking.payment_status || 'Pending'}</span>
+frontend/src/app/(admin)/admin/dashboard/page.tsx:69:    case 'payment':
+frontend/src/app/(admin)/admin/dashboard/page.tsx:122:            href: '/admin/payments/disputes',
+frontend/src/app/(admin)/admin/dashboard/page.tsx:322:                    <Link href="/admin/payments/disputes" passHref>
+frontend/src/app/(admin)/admin/dashboard/page.tsx:351:            href: "/admin/payments"
+frontend/src/app/(admin)/admin/users/landlords/[id]/page.tsx:90:    payouts: [
+frontend/src/app/(admin)/admin/users/landlords/[id]/page.tsx:110:        type: "payout",
+frontend/src/app/(admin)/admin/users/landlords/[id]/page.tsx:111:        description: "Received November commission payout",
+frontend/src/app/(admin)/admin/users/landlords/[id]/page.tsx:293:          <TabsTrigger value="payouts">Payouts</TabsTrigger>
+frontend/src/app/(admin)/admin/users/landlords/[id]/page.tsx:433:        <TabsContent value="payouts">
+frontend/src/app/(admin)/admin/users/landlords/[id]/page.tsx:437:              <CardDescription>Commission payouts to landlord</CardDescription>
+frontend/src/app/(admin)/admin/users/landlords/[id]/page.tsx:451:                  {landlord.payouts.map((payout) => (
+frontend/src/app/(admin)/admin/users/landlords/[id]/page.tsx:452:                    <TableRow key={payout.id}>
+frontend/src/app/(admin)/admin/users/landlords/[id]/page.tsx:453:                      <TableCell className="font-medium">{payout.id}</TableCell>
+frontend/src/app/(admin)/admin/users/landlords/[id]/page.tsx:454:                      <TableCell>{payout.description}</TableCell>
+frontend/src/app/(admin)/admin/users/landlords/[id]/page.tsx:456:                        {new Date(payout.date).toLocaleDateString()}
+frontend/src/app/(admin)/admin/users/landlords/[id]/page.tsx:459:                        KES {payout.amount.toLocaleString()}
+frontend/src/app/(admin)/admin/users/landlords/[id]/page.tsx:463:                          {payout.status}
+frontend/src/app/(admin)/admin/users/students/[id]/page.tsx:88:    payments: [
+frontend/src/app/(admin)/admin/users/students/[id]/page.tsx:115:        type: "payment",
+frontend/src/app/(admin)/admin/users/students/[id]/page.tsx:283:          <TabsTrigger value="payments">Payments</TabsTrigger>
+frontend/src/app/(admin)/admin/users/students/[id]/page.tsx:438:        <TabsContent value="payments">
+frontend/src/app/(admin)/admin/users/students/[id]/page.tsx:442:              <CardDescription>All transactions and payments</CardDescription>
+frontend/src/app/(admin)/admin/users/students/[id]/page.tsx:456:                  {student.payments.map((payment) => (
+frontend/src/app/(admin)/admin/users/students/[id]/page.tsx:457:                    <TableRow key={payment.id}>
+frontend/src/app/(admin)/admin/users/students/[id]/page.tsx:458:                      <TableCell className="font-medium">{payment.id}</TableCell>
+frontend/src/app/(admin)/admin/users/students/[id]/page.tsx:459:                      <TableCell>{payment.description}</TableCell>
+frontend/src/app/(admin)/admin/users/students/[id]/page.tsx:461:                        {new Date(payment.date).toLocaleDateString()}
+frontend/src/app/(admin)/admin/users/students/[id]/page.tsx:464:                        KES {payment.amount.toLocaleString()}
+frontend/src/app/(admin)/admin/users/students/[id]/page.tsx:468:                          {payment.status}
+frontend/src/app/(admin)/admin/payments/disputes/page.tsx:71:          <p className="mt-1 text-muted-foreground">Resolve financial issues and transaction disputes.</p>
+frontend/src/app/(admin)/admin/payments/page.tsx:5:import { UnmatchedPaymentsDashboard } from '@/features/payments/components/unmatched-payments-dashboard';
+frontend/src/app/(admin)/admin/payments/page.tsx:6:import { PaymentLedgerViewer } from '@/features/payments/components/payment-ledger-viewer';
+frontend/src/app/(admin)/admin/payments/subscriptions/page.tsx:190:                        <TableCell>{sub.paymentMethod}</TableCell>
+frontend/src/app/(admin)/admin/reports/page.tsx:26:  { id: 'financial', title: 'Financial Report', desc: 'Revenue, payouts, and commission summaries.', icon: BarChart, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10' },
+frontend/src/app/(public)/faq/page.tsx:48:        question: 'What payment methods do you accept?',
+frontend/src/app/(public)/faq/page.tsx:50:          'We currently accept M-PESA payments for instant booking. All transactions are secure and you\'ll receive a payment confirmation immediately.',
+frontend/src/app/(public)/faq/page.tsx:60:          'You\'ll be charged when you complete the booking. The payment is processed securely through M-PESA, and you\'ll receive a confirmation receipt.',
+frontend/src/app/(public)/faq/page.tsx:93:        question: 'What fees do landlords pay?',
+frontend/src/app/(public)/faq/page.tsx:100:          'Use your landlord dashboard to view all bookings, manage availability, communicate with students, and track payments. Everything is in one place.',
+frontend/src/app/(public)/faq/page.tsx:103:        question: 'How quickly will I receive payments?',
+frontend/src/app/(public)/contact/page.tsx:177:                          <SelectItem value="payment">Payment Issue</SelectItem>
+frontend/src/app/(public)/privacy/page.tsx:56:                  <li>Process transactions and send related information</li>
+frontend/src/app/(public)/how-it-works/page.tsx:21:    description: 'Rent verification, payment history tracking, room transfers, and export capabilities.',
+frontend/src/app/(public)/how-it-works/page.tsx:28:    features: ['Compliance-ready reports', 'Priority 24/7 support', 'Collections onboarding', 'Risk-managed payouts'],
+frontend/src/app/(public)/how-it-works/page.tsx:160:                  <p className="text-sm text-gray-700">One login for students, payments, and transfers.</p>
+frontend/src/app/(public)/how-it-works/page.tsx:168:                <li>• M-PESA payment integration</li>
+frontend/src/app/(public)/how-it-works/page.tsx:170:                <li>• Rent payment tracking</li>
+frontend/src/app/(public)/page.tsx:19:    'Rumia connects listing, booking, and payments in one app. The complete student housing system for landlords and students in Kenya.',
+frontend/src/app/(public)/page.tsx:44:    'M-PESA rent payment',
+frontend/src/app/(public)/page.tsx:197:                  description: 'Track payments and request room repairs anytime.',
+frontend/src/app/(public)/page.tsx:202:                  description: 'For landlords: see payments, vacancies, and issues.',
+frontend/src/app/(public)/page.tsx:282:                <img src="/images/carousel/carousel-02.jpeg" alt="Rent payment interface" className="w-full" />
+frontend/src/app/(public)/page.tsx:381:                  Select a hostel, choose room type, and pay via M-PESA. You receive instant confirmation.
+frontend/src/app/(public)/page.tsx:396:                value="payments"
+frontend/src/app/(public)/page.tsx:400:                  How does payment work?
+frontend/src/app/(public)/page.tsx:403:                  We use M-PESA for secure, instant payments. You get a digital receipt immediately.
+frontend/src/app/(public)/terms/page.tsx:73:                  must be made through approved payment methods. Cancellation
+frontend/src/app/(public)/pricing/page.tsx:43:      'Rent verification & payment history',
+frontend/src/app/(public)/about/page.tsx:8:    'Rumia is the infrastructure layer for student housing in kenya, connecting listings, bookings, payments, and operations.',
+frontend/src/app/(public)/about/page.tsx:46:                frequent payments, and operational complexity handled by
+frontend/src/app/(public)/features/page.tsx:29:      'Access past bookings and payment receipts from your dashboard.',
+frontend/src/app/(public)/features/page.tsx:47:      'View all incoming M-PESA payments and download reports.',
+frontend/src/app/layout.tsx:49:    'Find and book verified student hostels near your university. Manage bookings, payments, and roommates seamlessly with the RUMIA Platform.',
+frontend/src/app/(auth)/verify-email/page.tsx:66:      const payload: ResendOtpRequest = { email: emailFromQuery };
+frontend/src/app/(auth)/verify-email/page.tsx:67:      await resendHook.mutateAsync(payload);
+frontend/src/app/(auth)/register/landlord/page.tsx:8:    'List your hostels, manage tenants, and track payouts with Rumi.',
+frontend/src/app/(auth)/register/landlord/page.tsx:17:          description="Create an account to list hostels, manage bookings, and receive secure payouts."
+frontend/src/app/(auth)/verify-phone/page.tsx:61:        const payload = { phone: data.phone ?? phoneFromQuery, otp: data.otp };
+frontend/src/app/(auth)/verify-phone/page.tsx:64:          await verifyHook.mutateAsync(payload as any);
+frontend/src/app/(auth)/verify-phone/page.tsx:67:            verifyHook.mutate(payload as any, {
+frontend/src/app/(auth)/verify-phone/page.tsx:88:      const payload = { phone: phoneFromQuery };
+frontend/src/app/(auth)/verify-phone/page.tsx:90:        await resendHook.mutateAsync(payload as any);
+frontend/src/app/(auth)/verify-phone/page.tsx:93:          resendHook.mutate(payload as any, {
+frontend/src/app/(auth)/reset-password/page.tsx:86:    const payload = { ...data, token };
+frontend/src/app/(auth)/reset-password/page.tsx:89:      await resetMutation.mutateAsync(payload);
+frontend/src/app/tech-support/dashboard/page.tsx:91:    { name: 'Payments', status: health.payment_gateway || 'degraded' },
+frontend/src/app/tech-support/support/page.tsx:33:      question: "What is the procedure for handling payment disputes?",
+frontend/src/app/tech-support/support/page.tsx:34:      answer: "When a student reports a payment issue, first verify the transaction ID in the Payments tab. If the transaction is marked as 'Failed' but money was deducted, escalate to Super Admin for reconciliation. If it's a double charge, initiate a refund request."
+frontend/src/app/tech-support/support/page.tsx:161:                  Steps to validate claims, process refunds, and handle fraudulent transaction reports.
+frontend/src/app/tech-support/payments/page.tsx:43:  const { data: transaction, isLoading } = useQuery<Transaction>({
+frontend/src/app/tech-support/payments/page.tsx:44:    queryKey: ['transaction-lookup', currentRef],
+frontend/src/app/tech-support/payments/page.tsx:46:      const response = await apiClient.axios.get(`/api/v1/payments/lookup/${currentRef}/`);
+frontend/src/app/tech-support/payments/page.tsx:53:    queryKey: ['failed-payments'],
+frontend/src/app/tech-support/payments/page.tsx:55:      const response = await apiClient.axios.get('/api/v1/payments/failed/24h/');
+frontend/src/app/tech-support/payments/page.tsx:61:    mutationFn: async (transactionId: string) => {
+frontend/src/app/tech-support/payments/page.tsx:62:      await apiClient.axios.post(`/api/v1/payments/${transactionId}/retrigger-callback/`);
+frontend/src/app/tech-support/payments/page.tsx:69:      queryClient.invalidateQueries({ queryKey: ['transaction-lookup'] });
+frontend/src/app/tech-support/payments/page.tsx:100:            Technical troubleshooting tools for payments and disputes
+frontend/src/app/tech-support/payments/page.tsx:125:                <Button onClick={handleSearch} disabled={isLoading} aria-label="search-transaction">
+frontend/src/app/tech-support/payments/page.tsx:134:              {transaction && (
+frontend/src/app/tech-support/payments/page.tsx:138:                    <span className="font-mono text-xs">{transaction.id}</span>
+frontend/src/app/tech-support/payments/page.tsx:141:                    <span className="font-mono text-xs">{transaction.reference}</span>
+frontend/src/app/tech-support/payments/page.tsx:144:                    <Badge>{transaction.status}</Badge>
+frontend/src/app/tech-support/payments/page.tsx:147:                    <span>{formatTimestamp(transaction.created_at)}</span>
+frontend/src/app/tech-support/payments/page.tsx:150:                    <span>{formatTimestamp(transaction.updated_at)}</span>
+frontend/src/app/tech-support/payments/page.tsx:154:                      {transaction.callback_processed ? '✅ Processed' : '❌ Pending'}
+frontend/src/app/tech-support/payments/page.tsx:158:                  {transaction.status === 'pending' && (
+frontend/src/app/tech-support/payments/page.tsx:162:                      onClick={() => retriggerCallback(transaction.id)}
+frontend/src/app/tech-support/payments/page.tsx:202:                    {failedPayments.map((payment: any) => (
+frontend/src/app/tech-support/payments/page.tsx:203:                      <TableRow key={payment.id}>
+frontend/src/app/tech-support/payments/page.tsx:205:                          {payment.reference}
+frontend/src/app/tech-support/payments/page.tsx:207:                        <TableCell>KES {payment.amount}</TableCell>
+frontend/src/app/tech-support/payments/page.tsx:209:                          {formatTimestamp(payment.updated_at)}
+frontend/src/app/tech-support/payments/page.tsx:216:                              setSearchRef(payment.reference);
+frontend/src/app/tech-support/payments/page.tsx:217:                              setCurrentRef(payment.reference);
+frontend/src/app/tech-support/payments/page.tsx:229:                  No failed payments in last 24 hours
+frontend/src/app/(caretaker)/layout.tsx:59:    case 'payment':
+frontend/src/app/(caretaker)/caretaker/tenants/page.tsx:41:    if (tenantFilters.paymentStatus && tenantFilters.paymentStatus !== 'all') {
+frontend/src/app/(caretaker)/caretaker/tenants/page.tsx:42:      filtered = filtered.filter(t => t.paymentStatus === tenantFilters.paymentStatus);
+frontend/src/app/(caretaker)/caretaker/tenants/page.tsx:97:              value={tenantFilters.paymentStatus || 'all'}
+frontend/src/app/(caretaker)/caretaker/tenants/page.tsx:98:              onValueChange={(value) => setTenantFilters({ paymentStatus: value as any })}
+frontend/src/app/(caretaker)/caretaker/tenants/page.tsx:127:          {(tenantFilters.search || tenantFilters.paymentStatus !== 'all' || tenantFilters.status !== 'active') && (
+frontend/src/app/(caretaker)/caretaker/tenants/page.tsx:184:                          <Badge className={getPaymentStatusColor(tenant.paymentStatus)}>
+frontend/src/app/(caretaker)/caretaker/tenants/page.tsx:185:                            {tenant.paymentStatus.toUpperCase()}
+frontend/src/app/(caretaker)/caretaker/payments/page.tsx:7:import { PaymentHistoryTable } from '@/features/payments/components/payment-history-table';
+frontend/src/app/(caretaker)/caretaker/payments/page.tsx:23:  const { data: paymentSummary } = useQuery({
+frontend/src/app/(caretaker)/caretaker/payments/page.tsx:24:    queryKey: ['payment-summary', hostelData?.id],
+frontend/src/app/(caretaker)/caretaker/payments/page.tsx:26:      const response = await apiClient.axios.get(`/api/v1/payments/summary/${hostelData?.id}/`);
+frontend/src/app/(caretaker)/caretaker/payments/page.tsx:47:            View payment activity and transaction history (read-only)
+frontend/src/app/(caretaker)/caretaker/payments/page.tsx:61:              {formatCurrency(paymentSummary?.total_this_month || 0)}
+frontend/src/app/(caretaker)/caretaker/payments/page.tsx:64:              {paymentSummary?.transactions_count || 0} payments
+frontend/src/app/(caretaker)/caretaker/payments/page.tsx:76:              {paymentSummary?.pending_count || 0}
+frontend/src/app/(caretaker)/caretaker/payments/page.tsx:89:              {paymentSummary?.payment_rate || 0}%
+frontend/src/app/(landlord)/layout.tsx:59:    case 'payment':
+frontend/src/app/(landlord)/landlord/hostels/[id]/analytics/page.tsx:49:const CustomTooltip = ({ active, payload, label }: any) => {
+frontend/src/app/(landlord)/landlord/hostels/[id]/analytics/page.tsx:50:  if (active && payload && payload.length) {
+frontend/src/app/(landlord)/landlord/hostels/[id]/analytics/page.tsx:54:        {payload.map((entry: any, index: number) => (
+frontend/src/app/(landlord)/landlord/hostels/new/page.tsx:79:  paymentCycle: 'monthly' | 'semester' | 'annual';
+frontend/src/app/(landlord)/landlord/hostels/new/page.tsx:115:  paymentCycle: 'monthly',
+frontend/src/app/(landlord)/landlord/hostels/new/page.tsx:323:        payment_cycle: formData.paymentCycle,
+frontend/src/app/(landlord)/landlord/hostels/new/page.tsx:927:                      value={formData.paymentCycle}
+frontend/src/app/(landlord)/landlord/hostels/new/page.tsx:928:                      onValueChange={(value) => updateField('paymentCycle', value as any)}
+frontend/src/app/(landlord)/landlord/hostels/new/page.tsx:939:                            id={`payment-${option.value}`}
+frontend/src/app/(landlord)/landlord/hostels/new/page.tsx:943:                            htmlFor={`payment-${option.value}`}
+frontend/src/app/(landlord)/landlord/hostels/new/page.tsx:947:                              formData.paymentCycle === option.value
+frontend/src/app/(landlord)/landlord/analytics/page.tsx:64:const CustomTooltip = ({ active, payload, label }: any) => {
+frontend/src/app/(landlord)/landlord/analytics/page.tsx:65:  if (active && payload && payload.length) {
+frontend/src/app/(landlord)/landlord/analytics/page.tsx:70:          {typeof payload[0].value === 'number' && payload[0].value > 100 
+frontend/src/app/(landlord)/landlord/analytics/page.tsx:71:            ? `KES ${payload[0].value.toLocaleString()}` 
+frontend/src/app/(landlord)/landlord/analytics/page.tsx:72:            : payload[0].value}
+frontend/src/app/(landlord)/landlord/settings/page.tsx:155:                <Label className="flex-1 cursor-pointer" htmlFor="rent-payment">Rent Payments</Label>
+frontend/src/app/(landlord)/landlord/settings/page.tsx:156:                <Switch id="rent-payment" defaultChecked />
+frontend/src/app/(landlord)/landlord/bookings/page.tsx:83:    payment_proof_url?: string;
+frontend/src/app/(landlord)/landlord/bookings/page.tsx:100:      payment_proof_url: (b as any).payment_proof_url || null
+frontend/src/app/(landlord)/landlord/bookings/page.tsx:177:            Review applications, verify payments, and manage reservations.
+frontend/src/app/(landlord)/landlord/dashboard/page.tsx:39:import { usePaymentStats } from '@/features/payments';
+frontend/src/app/(landlord)/landlord/dashboard/page.tsx:43:const CustomTooltip = ({ active, payload, label }: any) => {
+frontend/src/app/(landlord)/landlord/dashboard/page.tsx:44:  if (active && payload && payload.length) {
+frontend/src/app/(landlord)/landlord/dashboard/page.tsx:48:        {payload.map((entry: any, index: number) => (
+frontend/src/app/(landlord)/landlord/dashboard/page.tsx:66:    payment: DollarSign,
+frontend/src/app/(landlord)/landlord/dashboard/page.tsx:78:    payment: 'text-blue-600 dark:text-blue-400',
+frontend/src/app/(landlord)/landlord/dashboard/page.tsx:89:  const { data: paymentStats, isLoading: statsLoading } = usePaymentStats();
+frontend/src/app/(landlord)/landlord/dashboard/page.tsx:102:  const totalRevenue = paymentStats?.totalRevenue || 0;
+frontend/src/app/(landlord)/landlord/dashboard/page.tsx:137:      href: "/landlord/payments"
+frontend/src/app/(landlord)/landlord/dashboard/page.tsx:180:      description: "Track transactions",
+frontend/src/app/(landlord)/landlord/dashboard/page.tsx:181:      href: "/landlord/payments",
+frontend/src/app/(landlord)/landlord/notifications/page.tsx:49:      case 'payment':
+frontend/src/app/(landlord)/landlord/tenants/check-out/[bookingId]/page.tsx:49:      // Simulate payload
+frontend/src/app/(landlord)/landlord/tenants/[id]/page.tsx:114:               <TabsTrigger value="payments">Payments</TabsTrigger>
+frontend/src/app/(landlord)/landlord/tenants/[id]/page.tsx:159:                               "Quiet tenant, always pays rent on time. Reported one issue with tap which was fixed."
+frontend/src/app/(landlord)/landlord/tenants/page.tsx:68:    payment_status?: 'current' | 'late' | 'overdue';
+frontend/src/app/(landlord)/landlord/tenants/page.tsx:69:    last_payment_date?: string;
+frontend/src/app/(landlord)/landlord/tenants/page.tsx:80:  const [paymentFilter, setPaymentFilter] = useState('all');
+frontend/src/app/(landlord)/landlord/tenants/page.tsx:112:    const paymentStatus = tenant.payment_status || 'current';
+frontend/src/app/(landlord)/landlord/tenants/page.tsx:113:    const matchesPayment = paymentFilter === 'all' || paymentStatus === paymentFilter;
+frontend/src/app/(landlord)/landlord/tenants/page.tsx:134:  const overdueCount = tenants.filter(t => t.payment_status === 'overdue').length;
+frontend/src/app/(landlord)/landlord/tenants/page.tsx:163:            Manage tenancy agreements and payments.
+frontend/src/app/(landlord)/landlord/tenants/page.tsx:218:                 <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+frontend/src/app/(landlord)/landlord/tenants/page.tsx:276:                    const paymentStatus = tenant.payment_status || 'current';
+frontend/src/app/(landlord)/landlord/tenants/page.tsx:277:                    const isLate = paymentStatus === 'late' || paymentStatus === 'overdue';
+frontend/src/app/(landlord)/landlord/tenants/page.tsx:336:                                                    paymentStatus === 'current' ? "text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400" :
+frontend/src/app/(landlord)/landlord/tenants/page.tsx:337:                                                    paymentStatus === 'late' ? "text-orange-700 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400" :
+frontend/src/app/(landlord)/landlord/tenants/page.tsx:341:                                                    {paymentStatus}
+frontend/src/app/(landlord)/landlord/tenants/page.tsx:353:                                                    {tenant.last_payment_date ? format(new Date(tenant.last_payment_date), 'MMM dd') : '-'}
+frontend/src/app/(landlord)/landlord/profile/page.tsx:54:      description: 'Bank account and payout details',
+frontend/src/app/(landlord)/landlord/profile/edit/page.tsx:56:  mpesaPaybill: z.string().optional(),
+frontend/src/app/(landlord)/landlord/profile/edit/page.tsx:136:      mpesaPaybill: '',
+frontend/src/app/(landlord)/landlord/profile/edit/page.tsx:239:        description: 'Your payment details have been saved successfully',
+frontend/src/app/(landlord)/landlord/profile/edit/page.tsx:580:              <CardDescription>Payment and payout details for rent collection</CardDescription>
+frontend/src/app/(landlord)/landlord/profile/edit/page.tsx:671:                    name="mpesaPaybill"
+frontend/src/app/(landlord)/landlord/profile/edit/page.tsx:679:                          Optional - your M-PESA paybill for rent payments
+frontend/src/app/(landlord)/landlord/profile/edit/page.tsx:708:                Your banking details are encrypted and securely stored. They are only used for processing rental payments and will never be shared with third parties.
+frontend/src/app/(landlord)/landlord/payments/mpesa-settings/page.tsx:7:import { MpesaSettingsList } from '@/features/payments/components/mpesa-settings-list';
+frontend/src/app/(landlord)/landlord/payments/mpesa-settings/page.tsx:8:import { MpesaSettingsForm } from '@/features/payments/components/mpesa-settings-form';
+frontend/src/app/(landlord)/landlord/payments/mpesa-settings/page.tsx:34:                <Link href="/landlord/payments" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
+frontend/src/app/(landlord)/landlord/payments/mpesa-settings/page.tsx:50:                        Configure how you receive payments from tenants. Add your Till Numbers or Paybills here.
+frontend/src/app/(landlord)/landlord/payments/mpesa-settings/page.tsx:82:                            Your payment details are encrypted. Only authorized tenants can view these payment details.
+frontend/src/app/(landlord)/landlord/payments/payouts/page.tsx:42:import { useLandlordPayouts, usePaymentStats } from '@/features/payments';
+frontend/src/app/(landlord)/landlord/payments/payouts/page.tsx:46:  const { data: payoutsData, isLoading: isPayoutsLoading } = useLandlordPayouts();
+frontend/src/app/(landlord)/landlord/payments/payouts/page.tsx:50:  // Projections: In a real app this would come from an endpoint like /payouts/projections/
+frontend/src/app/(landlord)/landlord/payments/payouts/page.tsx:156:                <CardDescription className="text-slate-700 dark:text-slate-400 font-medium">Estimated funds from pending tenant payments.</CardDescription>
+frontend/src/app/(landlord)/landlord/payments/payouts/page.tsx:202:               ) : payoutsData?.data && payoutsData.data.length > 0 ? (
+frontend/src/app/(landlord)/landlord/payments/payouts/page.tsx:204:                    {payoutsData.data.slice(0, 6).map((payout: any) => (
+frontend/src/app/(landlord)/landlord/payments/payouts/page.tsx:205:                      <div key={payout.id} className="p-5 flex items-center gap-4 hover:bg-slate-100 dark:hover:bg-slate-900/30 transition-colors">
+frontend/src/app/(landlord)/landlord/payments/payouts/page.tsx:208:                           payout.status === 'completed' ? "bg-emerald-100 border-emerald-300 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400" :
+frontend/src/app/(landlord)/landlord/payments/payouts/page.tsx:209:                           payout.status === 'pending' ? "bg-amber-100 border-amber-300 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400" :
+frontend/src/app/(landlord)/landlord/payments/payouts/page.tsx:212:                            {payout.status === 'completed' ? <CheckCircle className="h-6 w-6" /> :
+frontend/src/app/(landlord)/landlord/payments/payouts/page.tsx:213:                             payout.status === 'pending' ? <Clock className="h-6 w-6" /> : <XCircle className="h-6 w-6" />}
+frontend/src/app/(landlord)/landlord/payments/payouts/page.tsx:217:                              To {payout.recipient || 'M-PESA Account'}
+frontend/src/app/(landlord)/landlord/payments/payouts/page.tsx:220:                             {format(new Date(payout.createdAt || Date.now()), 'MMM d, h:mm a')}
+frontend/src/app/(landlord)/landlord/payments/payouts/page.tsx:224:                           <p className="font-black text-slate-950 dark:text-white text-base">- KES {payout.amount.toLocaleString()}</p>
+frontend/src/app/(landlord)/landlord/payments/payouts/page.tsx:226:                              {payout.status}
+frontend/src/app/(landlord)/landlord/payments/payouts/page.tsx:237:                    <p className="text-slate-900 dark:text-white font-bold">No payouts yet</p>
+frontend/src/app/(landlord)/landlord/payments/page.tsx:15:import { SubscriptionOverviewCard } from '@/features/payments/components/subscription-overview-card';
+frontend/src/app/(landlord)/landlord/payments/page.tsx:16:import { InvoiceHistoryList } from '@/features/payments/components/invoice-history-list';
+frontend/src/app/(landlord)/landlord/payments/page.tsx:17:import { PaybillConfigForm } from '@/features/payments/components/paybill-config-form';
+frontend/src/app/(landlord)/landlord/payments/page.tsx:47:            Manage subscriptions, invoices, and payment configuration
+frontend/src/app/(landlord)/landlord/payments/subscription/page.tsx:15:import { useMySubscription, useSubscriptionPlans } from '@/features/payments';
+frontend/src/app/(student)/student/check-out/page.tsx:81:    // Transform to payload
+frontend/src/app/(student)/student/check-out/page.tsx:82:    const payload = {
+frontend/src/app/(student)/student/check-out/page.tsx:91:    submitMutation.mutate(payload, {
+frontend/src/app/(student)/student/search/page.tsx:13:import { usePayments } from '@/features/payments';
+frontend/src/app/(student)/student/search/page.tsx:45:  const { data: paymentsResponse, isLoading: paymentsLoading } = usePayments();
+frontend/src/app/(student)/student/search/page.tsx:46:  const payments = (paymentsResponse as any)?.results || (paymentsResponse as any)?.data || [];
+frontend/src/app/(student)/student/search/page.tsx:60:    if (!payments || !debouncedQuery) return [];
+frontend/src/app/(student)/student/search/page.tsx:62:    return payments.filter((payment: any) => 
+frontend/src/app/(student)/student/search/page.tsx:63:      payment.reference?.toLowerCase().includes(query) ||
+frontend/src/app/(student)/student/search/page.tsx:64:      payment.status?.toLowerCase().includes(query) ||
+frontend/src/app/(student)/student/search/page.tsx:65:      payment.type?.toLowerCase().includes(query)
+frontend/src/app/(student)/student/search/page.tsx:67:  }, [payments, debouncedQuery]);
+frontend/src/app/(student)/student/search/page.tsx:73:  const isLoading = hostelsLoading || bookingsLoading || paymentsLoading;
+frontend/src/app/(student)/student/search/page.tsx:94:            placeholder="Search hostels, bookings, payments..."
+frontend/src/app/(student)/student/search/page.tsx:148:              Search across hostels, bookings, payments, and more.
+frontend/src/app/(student)/student/search/page.tsx:179:                  <p className="text-xs text-muted-foreground">Search transactions and receipts</p>
+frontend/src/app/(student)/student/search/page.tsx:317:                {filteredPayments.slice(0, 5).map((payment: any) => (
+frontend/src/app/(student)/student/search/page.tsx:319:                    key={payment.id}
+frontend/src/app/(student)/student/search/page.tsx:320:                    href={`/student/payments/${payment.id}`}
+frontend/src/app/(student)/student/search/page.tsx:325:                        {payment.reference || 'Payment'}
+frontend/src/app/(student)/student/search/page.tsx:328:                        KES {payment.amount?.toLocaleString()} • {payment.status}
+frontend/src/app/(student)/student/search/page.tsx:336:                    <Link href="/student/payments">
+frontend/src/app/(student)/student/profile/page.tsx:103:      description: 'Manage clearing accounts, recurring payment nodes, and billing history.',
+frontend/src/app/(student)/student/profile/page.tsx:104:      href: '/student/payments/methods',
+frontend/src/app/(student)/student/check-in/page.tsx:94:    // Transform to payload
+frontend/src/app/(student)/student/check-in/page.tsx:95:    const payload = {
+frontend/src/app/(student)/student/check-in/page.tsx:104:    submitMutation.mutate(payload, {
+frontend/src/app/(student)/student/payments/wallet/page.tsx:17:import { useMyWallet, useTransferHistory } from '@/features/payments/hooks/use-payments';
+frontend/src/app/(student)/student/payments/wallet/page.tsx:44:          <p className="text-sm text-muted-foreground">Manage your credits and overpayments</p>
+frontend/src/app/(student)/student/payments/wallet/page.tsx:70:              onClick={() => router.push('/student/payments/pay')}
+frontend/src/app/(student)/student/payments/wallet/page.tsx:104:                            log.reason.includes('payment') ? "bg-emerald-500/10 text-emerald-600" :
+frontend/src/app/(student)/student/payments/wallet/page.tsx:141:                    <p className="text-xs text-muted-foreground leading-relaxed">Credits are automatically deducted from your outstanding rent balance when you make a payment.</p>
+frontend/src/app/(student)/student/payments/wallet/page.tsx:144:                    <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Overpayments</p>
+frontend/src/app/(student)/student/payments/recurring/page.tsx:13:  const [payments, setPayments] = React.useState([
+frontend/src/app/(student)/student/payments/recurring/page.tsx:45:    paymentMethod: 'M-Pesa +254 712 345 678',
+frontend/src/app/(student)/student/payments/recurring/page.tsx:52:        <Link href="/student/payments">
+frontend/src/app/(student)/student/payments/recurring/page.tsx:63:            Manage your automatic rent payments
+frontend/src/app/(student)/student/payments/recurring/page.tsx:76:              Your current auto-pay settings
+frontend/src/app/(student)/student/payments/recurring/page.tsx:136:                    {recurringPayment.paymentMethod}
+frontend/src/app/(student)/student/payments/recurring/page.tsx:143:              <Link href="/student/payments/methods">
+frontend/src/app/(student)/student/payments/recurring/page.tsx:157:            <strong>Note:</strong> Automatic payments will be processed 3 days before the due date. 
+frontend/src/app/(student)/student/payments/recurring/page.tsx:158:            You'll receive a notification 5 days before each payment.
+frontend/src/app/(student)/student/payments/history/page.tsx:7:import { RentHistoryTimeline } from '@/features/payments/components/rent-history-timeline';
+frontend/src/app/(student)/student/payments/history/page.tsx:27:            <p className="text-sm text-muted-foreground">Complete record of your rental periods and payments</p>
+frontend/src/app/(student)/student/payments/history/page.tsx:51:          Each period includes associated M-Pesa transactions and any room transfers. 
+frontend/src/app/(student)/student/payments/page.tsx:10:import { PaymentOptionsModal } from '@/features/payments/components/payment-options-modal';
+frontend/src/app/(student)/student/payments/page.tsx:11:import { PaymentStatusTracker } from '@/features/payments/components/payment-status-tracker';
+frontend/src/app/(student)/student/payments/page.tsx:12:import { PaymentHistoryTable } from '@/features/payments/components/payment-history-table';
+frontend/src/app/(student)/student/payments/page.tsx:13:import { getCurrentRentPeriod } from '@/features/payments/api/payments';
+frontend/src/app/(student)/student/payments/page.tsx:33:  const handlePaymentInitiated = (transactionRef: string) => {
+frontend/src/app/(student)/student/payments/page.tsx:34:    setActiveTransactionRef(transactionRef);
+frontend/src/app/(student)/student/payments/page.tsx:44:            Manage your rent payments and view transaction history
+frontend/src/app/(student)/student/payments/page.tsx:107:            <PaymentStatusTracker transactionRef={activeTransactionRef} />
+frontend/src/app/(student)/student/payments/receipts/page.tsx:5:import { usePayments } from '@/features/payments';
+frontend/src/app/(student)/student/payments/receipts/page.tsx:33:  const { data: payments, isLoading } = usePayments();
+frontend/src/app/(student)/student/payments/receipts/page.tsx:39:    if (!payments) return [];
+frontend/src/app/(student)/student/payments/receipts/page.tsx:41:    return payments.filter((payment) => {
+frontend/src/app/(student)/student/payments/receipts/page.tsx:42:      const matchesSearch = payment.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
+frontend/src/app/(student)/student/payments/receipts/page.tsx:43:        payment.type.toLowerCase().includes(searchQuery.toLowerCase());
+frontend/src/app/(student)/student/payments/receipts/page.tsx:44:      const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
+frontend/src/app/(student)/student/payments/receipts/page.tsx:45:      const matchesType = typeFilter === 'all' || payment.type === typeFilter;
+frontend/src/app/(student)/student/payments/receipts/page.tsx:49:  }, [payments, searchQuery, statusFilter, typeFilter]);
+frontend/src/app/(student)/student/payments/receipts/page.tsx:52:    if (!payments) return { all: 0, completed: 0, pending: 0, failed: 0 };
+frontend/src/app/(student)/student/payments/receipts/page.tsx:55:      all: payments.length,
+frontend/src/app/(student)/student/payments/receipts/page.tsx:56:      completed: payments.filter(p => p.status === 'completed').length,
+frontend/src/app/(student)/student/payments/receipts/page.tsx:57:      pending: payments.filter(p => p.status === 'pending').length,
+frontend/src/app/(student)/student/payments/receipts/page.tsx:58:      failed: payments.filter(p => p.status === 'failed').length,
+frontend/src/app/(student)/student/payments/receipts/page.tsx:60:  }, [payments]);
+frontend/src/app/(student)/student/payments/receipts/page.tsx:67:          <Link href="/student/payments">
+frontend/src/app/(student)/student/payments/receipts/page.tsx:76:              View and download all your payment receipts
+frontend/src/app/(student)/student/payments/receipts/page.tsx:209:              {filteredPayments.map((payment) => (
+frontend/src/app/(student)/student/payments/receipts/page.tsx:211:                  key={payment.id}
+frontend/src/app/(student)/student/payments/receipts/page.tsx:217:                    payment.status === 'completed' && "bg-emerald-100 dark:bg-emerald-900/30",
+frontend/src/app/(student)/student/payments/receipts/page.tsx:218:                    payment.status === 'pending' && "bg-amber-100 dark:bg-amber-900/30",
+frontend/src/app/(student)/student/payments/receipts/page.tsx:219:                    payment.status === 'failed' && "bg-red-100 dark:bg-red-900/30"
+frontend/src/app/(student)/student/payments/receipts/page.tsx:221:                    {payment.status === 'completed' && <CheckCircle className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />}
+frontend/src/app/(student)/student/payments/receipts/page.tsx:222:                    {payment.status === 'pending' && <Clock className="h-6 w-6 text-amber-600 dark:text-amber-400" />}
+frontend/src/app/(student)/student/payments/receipts/page.tsx:223:                    {payment.status === 'failed' && <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" />}
+frontend/src/app/(student)/student/payments/receipts/page.tsx:230:                        {payment.type.toUpperCase()} Payment
+frontend/src/app/(student)/student/payments/receipts/page.tsx:233:                        variant={payment.status === 'completed' ? 'default' : 'secondary'}
+frontend/src/app/(student)/student/payments/receipts/page.tsx:236:                          payment.status === 'completed' && "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400",
+frontend/src/app/(student)/student/payments/receipts/page.tsx:237:                          payment.status === 'pending' && "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400",
+frontend/src/app/(student)/student/payments/receipts/page.tsx:238:                          payment.status === 'failed' && "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400"
+frontend/src/app/(student)/student/payments/receipts/page.tsx:241:                        {payment.status}
+frontend/src/app/(student)/student/payments/receipts/page.tsx:246:                      <span>{new Date(payment.date).toLocaleDateString()}</span>
+frontend/src/app/(student)/student/payments/receipts/page.tsx:248:                      <span className="uppercase">{payment.method}</span>
+frontend/src/app/(student)/student/payments/receipts/page.tsx:250:                      <span className="text-xs">{payment.reference}</span>
+frontend/src/app/(student)/student/payments/receipts/page.tsx:258:                        KES {payment.amount.toLocaleString()}
+frontend/src/app/(student)/student/payments/receipts/page.tsx:262:                      {payment.status === 'completed' && (
+frontend/src/app/(student)/student/payments/receipts/page.tsx:264:                          <Link href={`/student/payments/receipts/${payment.id}`}>
+frontend/src/app/(student)/student/payments/receipts/page.tsx:269:                      {payment.status === 'completed' && (
+frontend/src/app/(student)/student/payments/receipts/page.tsx:284:              <p className="text-sm text-muted-foreground mb-2">No payments found</p>
+frontend/src/app/(student)/student/payments/receipts/page.tsx:288:                  : 'Your payment history will appear here'}
+frontend/src/app/(student)/student/payments/methods/page.tsx:18:      type: 'mpesa',
+frontend/src/app/(student)/student/payments/methods/page.tsx:25:  const [selectedType, setSelectedType] = React.useState<'mpesa' | 'card' | null>(null);
+frontend/src/app/(student)/student/payments/methods/page.tsx:38:    toast.success('Default payment method updated');
+frontend/src/app/(student)/student/payments/methods/page.tsx:42:    if (selectedType === 'mpesa' && formData.phone) {
+frontend/src/app/(student)/student/payments/methods/page.tsx:45:        type: 'mpesa',
+frontend/src/app/(student)/student/payments/methods/page.tsx:72:        <Link href="/student/payments">
+frontend/src/app/(student)/student/payments/methods/page.tsx:83:            Manage your saved payment options
+frontend/src/app/(student)/student/payments/methods/page.tsx:103:                    onClick={() => setSelectedType('mpesa')}
+frontend/src/app/(student)/student/payments/methods/page.tsx:108:                      <div className="text-sm text-muted-foreground">Mobile money payment</div>
+frontend/src/app/(student)/student/payments/methods/page.tsx:123:              ) : selectedType === 'mpesa' ? (
+frontend/src/app/(student)/student/payments/methods/page.tsx:197:                  {method.type === 'mpesa' ? (
+frontend/src/app/(student)/student/payments/methods/page.tsx:249:              No payment methods
+frontend/src/app/(student)/student/payments/methods/page.tsx:252:              Add a payment method to make transactions easier
+frontend/src/app/(student)/student/payments/new/page.tsx:5:import { useRentPeriods, useCurrentRentPeriod, useInitializeMpesaPayment, useMpesaPaymentStatus } from '@/features/payments/hooks/use-payments';
+frontend/src/app/(student)/student/payments/new/page.tsx:42:  const [transactionId, setTransactionId] = React.useState('');
+frontend/src/app/(student)/student/payments/new/page.tsx:44:  const [paymentSuccess, setPaymentSuccess] = React.useState(false);
+frontend/src/app/(student)/student/payments/new/page.tsx:45:  const [paymentMethod, setPaymentMethod] = React.useState<'stk_push' | 'paybill' | 'paystack'>('stk_push');
+frontend/src/app/(student)/student/payments/new/page.tsx:49:    { transaction_id: transactionId }, 
+frontend/src/app/(student)/student/payments/new/page.tsx:76:    if (paymentMethod === 'paybill') {
+frontend/src/app/(student)/student/payments/new/page.tsx:81:    if (paymentMethod === 'paystack') {
+frontend/src/app/(student)/student/payments/new/page.tsx:115:        payment_type: 'rent',
+frontend/src/app/(student)/student/payments/new/page.tsx:116:        payment_method: 'stk_push',
+frontend/src/app/(student)/student/payments/new/page.tsx:122:          setTransactionId(data.transaction_id.toString());
+frontend/src/app/(student)/student/payments/new/page.tsx:150:  if (paymentSuccess) {
+frontend/src/app/(student)/student/payments/new/page.tsx:163:                      <span className="font-mono font-black text-foreground">{transactionId || 'N/A'}</span>
+frontend/src/app/(student)/student/payments/new/page.tsx:171:                  <Link href="/student/payments">Back to Ledger</Link>
+frontend/src/app/(student)/student/payments/new/page.tsx:276:                                { id: 'paybill', label: 'Manual Paybill', icon: Hash },
+frontend/src/app/(student)/student/payments/new/page.tsx:277:                                { id: 'paystack', label: 'Card/Bank', icon: CreditCard }
+frontend/src/app/(student)/student/payments/new/page.tsx:284:                                        paymentMethod === method.id 
+frontend/src/app/(student)/student/payments/new/page.tsx:316:                                {paymentMethod === 'stk_push' && (
+frontend/src/app/(student)/student/payments/new/page.tsx:329:                                {paymentMethod === 'paybill' && (
+frontend/src/app/(student)/student/payments/new/page.tsx:335:                                                    <span className="text-xl font-black font-mono">{selectedPeriod?.assigned_paybill || '174379'}</span>
+frontend/src/app/(student)/student/payments/new/page.tsx:336:                                                    <Button variant="ghost" size="icon" onClick={() => copyToClipboard(selectedPeriod?.assigned_paybill || '174379', 'Paybill')}>
+frontend/src/app/(student)/student/payments/new/page.tsx:362:                                        <p className="text-xs font-bold text-muted-foreground">Enter the amount you wish to pay.</p>
+frontend/src/app/(student)/student/payments/new/page.tsx:366:                                        <p className="text-xs font-bold text-muted-foreground">Select your preferred payment method.</p>
+frontend/src/app/(student)/student/payments/new/page.tsx:392:                                        {paymentMethod === 'stk_push' ? 'Pay with M-Pesa' : 'Confirm Selection'}
+frontend/src/app/(student)/student/payments/new/page.tsx:416:                              Enter your M-Pesa PIN on your phone to complete the transaction of <span className="text-foreground">KES {editableAmount}</span>.
+frontend/src/app/verify-receipt/page.tsx:1:import { ReceiptVerification } from '@/features/payments/components/receipt-verification';
+frontend/src/app/verify-receipt/page.tsx:10:            Verify the authenticity of a payment receipt using the official Rumia verification system.
+frontend/src/components/layouts/student-bottom-nav.tsx:56:  { icon: CreditCard, label: 'Payments', href: '/student/payments' },
+frontend/src/components/layouts/student-bottom-nav.tsx:57:  { icon: Files, label: 'History', href: '/student/payments/receipts' },
+frontend/src/components/layouts/student-bottom-nav.tsx:58:  { icon: Wallet, label: 'Methods', href: '/student/payments/methods' },
+frontend/src/components/layouts/caretaker-sidebar.tsx:77:      { title: 'Rent Roll', href: '/caretaker/payments', icon: DollarSign },
+frontend/src/components/layouts/tech-support-bottom-nav.tsx:38:  '/tech-support/payments',
+frontend/src/components/layouts/tech-support-bottom-nav.tsx:73:    { icon: CreditCard, label: 'Payments', href: '/tech-support/payments' },
+frontend/src/components/layouts/public-footer.tsx:30:      { href: '/payments/payouts', label: 'Payouts' },
+frontend/src/components/layouts/admin-bottom-nav.tsx:42:  '/admin/payments',
+frontend/src/components/layouts/admin-bottom-nav.tsx:81:    { icon: Wallet, label: 'Finance', href: '/admin/payments' },
+frontend/src/components/layouts/dashboard-sidebar.tsx:42:    { icon: CreditCard, label: 'Payments', href: '/student/payments' },
+frontend/src/components/layouts/dashboard-sidebar.tsx:53:    { icon: CreditCard, label: 'Payments', href: '/landlord/payments' },
+frontend/src/components/layouts/dashboard-sidebar.tsx:72:    { icon: CreditCard, label: 'Payments', href: '/admin/payments' },
+frontend/src/components/layouts/user-menu.tsx:67:          href: `${base}/payments` as const,
+frontend/src/components/layouts/user-menu.tsx:81:          href: `${base}/payments` as const,
+frontend/src/components/layouts/admin-sidebar.tsx:99:      { title: 'Payments', href: '/admin/payments', icon: CreditCard },
+frontend/src/components/layouts/admin-sidebar.tsx:100:      { title: 'Subscriptions', href: '/admin/payments/subscriptions', icon: Wallet },
+frontend/src/components/layouts/admin-sidebar.tsx:101:      { title: 'Refunds & Disputes', href: '/admin/payments/disputes', icon: ShieldCheck },
+frontend/src/components/layouts/landlord-bottom-nav.tsx:49:  { icon: CreditCard, label: 'Payments', href: '/landlord/payments' },
+frontend/src/components/layouts/landlord-bottom-nav.tsx:50:  { icon: Wallet, label: 'Payouts', href: '/landlord/payments/payouts' },
+frontend/src/components/layouts/landlord-bottom-nav.tsx:51:  { icon: FileText, label: 'Reports', href: '/landlord/payments/reports' },
+frontend/src/components/layouts/landlord-sidebar.tsx:103:      { title: 'Payments', href: '/landlord/payments', icon: CreditCard },
+frontend/src/components/layouts/landlord-sidebar.tsx:104:      { title: 'Payouts', href: '/landlord/payments/payouts', icon: Wallet },
+frontend/src/components/layouts/landlord-sidebar.tsx:105:      { title: 'M-Pesa Settings', href: '/landlord/payments/mpesa-settings', icon: Smartphone },
+frontend/src/components/layouts/landlord-sidebar.tsx:106:      { title: 'Reports', href: '/landlord/payments/reports', icon: FileText },
+frontend/src/components/layouts/student-sidebar.tsx:116:      { title: 'Payments', href: '/student/payments', icon: CreditCard },
+frontend/src/components/layouts/student-sidebar.tsx:117:      { title: 'History', href: '/student/payments/receipts', icon: FileText },
+frontend/src/components/layouts/student-sidebar.tsx:120:        href: '/student/payments/methods',
+frontend/src/components/layouts/tech-support-sidebar.tsx:85:      { title: 'Transactions', href: '/tech-support/payments', icon: FileText },
+frontend/src/components/layouts/tech-support-sidebar.tsx:86:      { title: 'Disputes', href: '/tech-support/payments/disputes', icon: ShieldAlert, badge: 2 },
+frontend/src/components/receipt/ReceiptViewer.tsx:3: * React component for displaying and managing payment receipts
+frontend/src/components/receipt/ReceiptViewer.tsx:14:  transactionId: number;
+frontend/src/components/receipt/ReceiptViewer.tsx:19:  transactionId,
+frontend/src/components/receipt/ReceiptViewer.tsx:31:        const receiptData = await receiptAPI.getReceipt(transactionId);
+frontend/src/components/receipt/ReceiptViewer.tsx:41:  }, [transactionId]);
+frontend/src/components/receipt/ReceiptViewer.tsx:96:  const { transaction_details: td } = receipt;
+frontend/src/components/receipt/ReceiptViewer.tsx:178:              <span>{receiptUtils.formatCurrency(td.payment_details.base_rent)}</span>
+frontend/src/components/receipt/ReceiptViewer.tsx:182:              <span>{receiptUtils.formatCurrency(td.payment_details.service_fee)}</span>
+frontend/src/components/receipt/ReceiptViewer.tsx:187:                {receiptUtils.formatCurrency(td.payment_details.total_charged)}
+frontend/src/components/receipt/ReceiptViewer.tsx:197:            <span className="font-mono font-medium">{td.transaction_reference}</span>
+frontend/src/components/receipt/ReceiptViewer.tsx:203:              {receiptUtils.formatDate(td.payment_details.paid_at)}
+frontend/src/components/receipt/ReceiptViewer.tsx:210:              className={receiptUtils.getStatusColor(td.payment_details.status)}
+frontend/src/components/receipt/ReceiptViewer.tsx:212:              {td.payment_details.status}
+frontend/src/lib/api/error-mapping.ts:129:  const payload = mapApiError(error);
+frontend/src/lib/api/error-mapping.ts:130:  return payload.message;
+frontend/src/lib/api/notifications.ts:17:  paymentReminders?: boolean;
+frontend/src/lib/receipt-api.ts:3: * Frontend service for interacting with payment receipt endpoints
+frontend/src/lib/receipt-api.ts:15:  transaction_details: {
+frontend/src/lib/receipt-api.ts:16:    transaction_reference: string;
+frontend/src/lib/receipt-api.ts:17:    paystack_reference: string | null;
+frontend/src/lib/receipt-api.ts:33:    payment_details: {
+frontend/src/lib/receipt-api.ts:38:      landlord_payout: number;
+frontend/src/lib/receipt-api.ts:52:  transaction_reference: string;
+frontend/src/lib/receipt-api.ts:53:  transaction_type: string;
+frontend/src/lib/receipt-api.ts:63:  total_transactions: number;
+frontend/src/lib/receipt-api.ts:64:  transactions: Transaction[];
+frontend/src/lib/receipt-api.ts:91:   * Get receipt for a specific transaction
+frontend/src/lib/receipt-api.ts:93:  async getReceipt(transactionId: number): Promise<Receipt> {
+frontend/src/lib/receipt-api.ts:94:    return this.makeRequest<Receipt>(`/payments/receipts/${transactionId}/`);
+frontend/src/lib/receipt-api.ts:98:   * List all transactions for the authenticated student
+frontend/src/lib/receipt-api.ts:116:    const endpoint = `/payments/transactions/student/${queryString ? `?${queryString}` : ''}`;
+frontend/src/lib/receipt-api.ts:122:   * Get detailed information about a specific transaction
+frontend/src/lib/receipt-api.ts:124:  async getTransactionDetail(transactionId: number): Promise<Transaction> {
+frontend/src/lib/receipt-api.ts:125:    return this.makeRequest<Transaction>(`/payments/transactions/student/${transactionId}/`);
+frontend/src/lib/receipt-api.ts:131:  async downloadReceiptPDF(transactionId: number): Promise<Blob> {
+frontend/src/lib/receipt-api.ts:134:    const response = await fetch(`${API_BASE_URL}/payments/receipts/${transactionId}/`, {
+frontend/src/lib/receipt-api.ts:148:   * Check if a transaction has a receipt
+frontend/src/lib/receipt-api.ts:150:  async checkReceiptExists(transactionId: number): Promise<boolean> {
+frontend/src/lib/receipt-api.ts:152:      await this.getReceipt(transactionId);
+frontend/src/lib/receipt-api.ts:160:   * Get transactions with receipt status
+frontend/src/lib/receipt-api.ts:165:    // Enhance transactions with receipt information
+frontend/src/lib/receipt-api.ts:167:      response.transactions.map(async (transaction) => {
+frontend/src/lib/receipt-api.ts:168:        const hasReceipt = await this.checkReceiptExists(transaction.id);
+frontend/src/lib/receipt-api.ts:170:          ...transaction,
+frontend/src/lib/receipt-api.ts:172:          receipt_number: hasReceipt ? `RUMI-${transaction.id}` : undefined,
+frontend/src/lib/receipt-api.ts:179:      transactions: enhancedTransactions,
+frontend/src/lib/validations/payment.schema.ts:3:export const paymentSchema = z.object({
+frontend/src/lib/validations/payment.schema.ts:5:  method: z.enum(['mpesa', 'bank']),
+frontend/src/lib/validations/payment.schema.ts:6:  transactionId: z.string().optional(),
+frontend/src/lib/validations/booking.schema.ts:14:  paymentMethodId: z.string().optional(),
+frontend/src/lib/auth/permissions.ts:17:  VIEW_PAYMENTS = 'view_payments',
+frontend/src/lib/auth/permissions.ts:18:  PROCESS_PAYMENT = 'process_payment',
+frontend/src/lib/auth/permissions.ts:20:  VIEW_PAYOUTS = 'view_payouts',
+frontend/src/lib/auth/token.ts:88:    const [, payload] = token.split('.');
+frontend/src/lib/auth/token.ts:89:    if (!payload) return null;
+frontend/src/lib/auth/token.ts:90:    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+frontend/src/lib/auth/token.ts:103:  const payload = decodeToken<{ exp?: number }>(jwt);
+frontend/src/lib/auth/token.ts:104:  if (!payload?.exp) return null;
+frontend/src/lib/auth/token.ts:105:  return payload.exp * 1000;
+frontend/src/lib/constants/routes.ts:60:    INDEX: '/student/payments',
+frontend/src/lib/constants/routes.ts:61:    METHODS: '/student/payments/methods',
+frontend/src/lib/constants/routes.ts:124:    INDEX: '/landlord/payments',
+frontend/src/lib/constants/routes.ts:125:    PAYOUTS: '/landlord/payments/payouts',
+frontend/src/lib/constants/routes.ts:126:    COMMISSION: '/landlord/payments/commission',
+frontend/src/lib/constants/routes.ts:127:    REPORTS: '/landlord/payments/reports',
+frontend/src/lib/constants/routes.ts:174:    INDEX: '/admin/payments',
+frontend/src/lib/constants/routes.ts:175:    COMMISSION: '/admin/payments/commission',
+frontend/src/lib/constants/routes.ts:176:    DISPUTES: '/admin/payments/disputes',
+frontend/src/lib/constants/routes.ts:177:    REFUNDS: '/admin/payments/refunds',
+frontend/src/lib/constants/routes.ts:178:    TAX_REPORTS: '/admin/payments/tax-reports',
+frontend/src/lib/constants/routes.ts:204:    PAYMENT: '/admin/settings/payment',
+frontend/src/lib/constants/routes.ts:224:  PAYMENTS: '/api/payments',
+frontend/src/lib/react-query/query-keys.ts:94:  payments: {
+frontend/src/lib/react-query/query-keys.ts:95:    all: ['payments'] as const,
+frontend/src/lib/react-query/query-keys.ts:98:    ): QueryKey => [...queryKeys.payments.all, 'list', filters ?? null] as QueryKey,
+frontend/src/lib/react-query/query-keys.ts:99:    transactions: (): QueryKey =>
+frontend/src/lib/react-query/query-keys.ts:100:      [...queryKeys.payments.all, 'transactions'] as QueryKey,
+frontend/src/lib/react-query/query-keys.ts:101:    methods: (): QueryKey => [...queryKeys.payments.all, 'methods'] as QueryKey,
+frontend/src/lib/react-query/query-keys.ts:103:      [...queryKeys.payments.all, 'recurring'] as QueryKey,
+frontend/src/lib/react-query/query-keys.ts:104:    stats: (): QueryKey => [...queryKeys.payments.all, 'stats'] as QueryKey,
+frontend/src/lib/react-query/query-keys.ts:172:    transactions: (limit?: number) => 
+frontend/src/lib/react-query/query-keys.ts:173:      [...queryKeys.studentDashboard.all, 'transactions', { limit }] as const,
+frontend/src/lib/utils/caretaker-helpers.ts:78: * Get payment status badge color
+frontend/src/lib/utils/caretaker-helpers.ts:149:  sortBy: 'name' | 'room' | 'checkIn' | 'payment'
+frontend/src/lib/utils/caretaker-helpers.ts:160:    case 'payment':
+frontend/src/lib/utils/caretaker-helpers.ts:161:      const paymentOrder = { overdue: 0, pending: 1, paid: 2 };
+frontend/src/lib/utils/caretaker-helpers.ts:162:      return sorted.sort((a, b) => paymentOrder[a.paymentStatus] - paymentOrder[b.paymentStatus]);
+frontend/src/lib/utils/data-derivation.ts:1:import type { UserSubscription } from '@/features/payments/types';
+frontend/src/lib/utils/data-derivation.ts:21: * USE INSTEAD OF: GET /payments/rent-status/
+frontend/src/types/subscription.types.ts:1:export * from '@/features/payments/types';
+frontend/src/types/entities.types.ts:14:export * from '@/features/payments/types';
+frontend/src/__tests__/e2e/payments.spec.ts:5: * - Student making payment (offline + online)
+frontend/src/__tests__/e2e/payments.spec.ts:7: * - Admin reconciling unmatched payments
+frontend/src/__tests__/e2e/payments.spec.ts:29:  test('should display current balance and payment alert', async ({ page }) => {
+frontend/src/__tests__/e2e/payments.spec.ts:30:    await page.goto('/student/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:39:      await expect(page.getByText(/payment due/i)).toBeVisible();
+frontend/src/__tests__/e2e/payments.spec.ts:43:  test('should open payment modal and display offline payment details', async ({ page }) => {
+frontend/src/__tests__/e2e/payments.spec.ts:44:    await page.goto('/student/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:46:    // Open payment modal
+frontend/src/__tests__/e2e/payments.spec.ts:61:  test('should initiate STK Push payment', async ({ page }) => {
+frontend/src/__tests__/e2e/payments.spec.ts:62:    await page.goto('/student/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:81:  test('should display payment history', async ({ page }) => {
+frontend/src/__tests__/e2e/payments.spec.ts:82:    await page.goto('/student/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:93:  test('should download receipt for completed payment', async ({ page }) => {
+frontend/src/__tests__/e2e/payments.spec.ts:94:    await page.goto('/student/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:128:    await page.goto('/landlord/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:142:    await page.goto('/landlord/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:144:    // Scroll to payment configuration
+frontend/src/__tests__/e2e/payments.spec.ts:148:    await page.click('select[name="payment_type"]');
+frontend/src/__tests__/e2e/payments.spec.ts:152:    await page.fill('input[name="mpesa_number"]', '548548');
+frontend/src/__tests__/e2e/payments.spec.ts:163:    await page.goto('/landlord/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:177:    await page.goto('/landlord/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:207:  test('should display unmatched payments', async ({ page }) => {
+frontend/src/__tests__/e2e/payments.spec.ts:208:    await page.goto('/admin/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:217:  test('should match payment with suggested student', async ({ page }) => {
+frontend/src/__tests__/e2e/payments.spec.ts:218:    await page.goto('/admin/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:234:  test('should search payment ledger', async ({ page }) => {
+frontend/src/__tests__/e2e/payments.spec.ts:235:    await page.goto('/admin/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:251:    await page.goto('/admin/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:262:    expect(download.suggestedFilename()).toContain('payment_ledger');
+frontend/src/__tests__/e2e/payments.spec.ts:280:    await page.goto('/landlord/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:283:    await expect(page).not.toHaveURL('/landlord/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:294:    await page.goto('/admin/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:297:    await expect(page).not.toHaveURL('/admin/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:308:  test('payment modal should be mobile-friendly', async ({ page }) => {
+frontend/src/__tests__/e2e/payments.spec.ts:314:    await page.goto('/student/payments');
+frontend/src/__tests__/e2e/payments.spec.ts:332:    await page.goto('/student/payments');
+frontend/src/features/hostels/components/hostel-info.tsx:13:  paymentTerms?: string;
+frontend/src/features/hostels/components/hostel-info.tsx:26:    paymentTerms,
+frontend/src/features/hostels/components/hostel-info.tsx:106:          {paymentTerms && (
+frontend/src/features/hostels/components/hostel-info.tsx:124:                    {paymentTerms}
+frontend/src/features/hostels/components/hostel-booking-widget.tsx:47:import PaymentInstructionsModal from './payment-instructions-modal';
+frontend/src/features/hostels/components/hostel-booking-widget.tsx:75:    paymentTimerStartedAt,
+frontend/src/features/hostels/components/hostel-booking-widget.tsx:132:    if (currentStep === 'payment' && paymentTimerStartedAt) {
+frontend/src/features/hostels/components/hostel-booking-widget.tsx:135:        const diff = differenceInSeconds(addMinutes(paymentTimerStartedAt, 15), now);
+frontend/src/features/hostels/components/hostel-booking-widget.tsx:148:  }, [currentStep, paymentTimerStartedAt]);
+frontend/src/features/hostels/components/hostel-booking-widget.tsx:202:      setStep('payment');
+frontend/src/features/hostels/components/hostel-booking-widget.tsx:247:             description: "You'll receive an SMS once our system verifies the transaction.",
+frontend/src/features/hostels/components/hostel-booking-widget.tsx:436:                  <span>15-minute payment window to prevent holding</span>
+frontend/src/features/hostels/components/hostel-booking-widget.tsx:441:                    <span>Split payment available for roommates</span>
+frontend/src/features/hostels/components/hostel-booking-widget.tsx:489:          <h4 className="font-bold text-amber-900 text-sm">Complete payment in {timeLeft !== null ? formatTime(timeLeft) : '--:--'}</h4>
+frontend/src/features/hostels/components/hostel-booking-widget.tsx:516:                <p className="text-xs text-slate-500 mt-1">Paying for your slot only. Your friend will pay separately.</p>
+frontend/src/features/hostels/components/hostel-booking-widget.tsx:525:            After paying via M-Pesa, wait for the confirmation SMS then click the button below.
+frontend/src/features/hostels/components/hostel-booking-widget.tsx:572:              Share this link with your friend. They have 15 minutes to pay for their slot to secure the room.
+frontend/src/features/hostels/components/hostel-booking-widget.tsx:597:          {currentStep === 'payment' ? 'Confirm & Pay' : 'Book your stay'}
+frontend/src/features/hostels/components/hostel-booking-widget.tsx:622:        {currentStep === 'payment' ? (
+frontend/src/features/hostels/components/hostel-booking-widget.tsx:624:            key="payment"
+frontend/src/features/hostels/components/dashboard-hostel-detail.tsx:126:          paymentTerms={`Rent is paid ${hostel.payment_cycle?.replace('_', ' ') || 'monthly'}. \nDeposit: ${hostel.currency} ${hostel.deposit_amount}. \nGrace Period: ${hostel.grace_period_days} days.`}
+frontend/src/features/hostels/components/trust-badges.tsx:9:  type: 'verified' | 'top_rated' | 'secure_payment' | 'fast_response' | 'identity_verified';
+frontend/src/features/hostels/components/trust-badges.tsx:26:  secure_payment: {
+frontend/src/features/hostels/components/trust-badges.tsx:30:    description: 'All payments protected by RUMI Escrow'
+frontend/src/features/hostels/components/booking-mode-selector.tsx:69:              <span className="text-[10px] text-slate-500 uppercase font-bold">+ Friend pays same</span>
+frontend/src/features/hostels/components/payment-instructions-modal.tsx:31:  paybillNumber?: string;
+frontend/src/features/hostels/components/payment-instructions-modal.tsx:43: * PaymentInstructionsModal - Display payment details and instructions
+frontend/src/features/hostels/components/payment-instructions-modal.tsx:44: * Shows hostel-specific payment methods (M-Pesa Paybill or Bank Transfer)
+frontend/src/features/hostels/components/payment-instructions-modal.tsx:52:  paybillNumber,
+frontend/src/features/hostels/components/payment-instructions-modal.tsx:67:  const hasPaybill = paybillNumber && accountNumber;
+frontend/src/features/hostels/components/payment-instructions-modal.tsx:107:                      {paybillNumber}
+frontend/src/features/hostels/components/payment-instructions-modal.tsx:112:                      onClick={() => copyToClipboard(paybillNumber, 'Paybill number')}
+frontend/src/features/hostels/components/payment-instructions-modal.tsx:154:                    <li>Enter Business Number: <strong>{paybillNumber}</strong></li>
+frontend/src/features/hostels/components/payment-instructions-modal.tsx:226:            <strong>Important:</strong> After making payment, click "I have paid" below. 
+frontend/src/features/hostels/components/payment-instructions-modal.tsx:227:            Our team will verify your payment within 24 hours.
+frontend/src/features/hostels/components/payment-instructions-modal.tsx:268:          Keep your payment confirmation message for reference
+frontend/src/features/hostels/components/public-hostel-detail.tsx:45:            Don't pay anything outside the RUMI platform. We protect your deposit until you move in.
+frontend/src/features/hostels/components/public-hostel-detail.tsx:67:          paymentTerms={`Rent is paid ${hostel.payment_cycle?.replace('_', ' ') || 'monthly'}. \nDeposit: ${hostel.currency} ${hostel.deposit_amount}. \nGrace Period: ${hostel.grace_period_days} days.`}
+frontend/src/features/hostels/types.ts:51:  payment_terms?: string;
+frontend/src/features/hostels/types.ts:52:  payment_cycle?: 'monthly' | 'semester' | 'annual';
+frontend/src/features/hostels/index.ts:24:export * from './components/payment-instructions-modal';
+frontend/src/features/admin/api/reports.ts:8:    // GET /payments/tax-reports/
+frontend/src/features/admin/api/reports.ts:9:    const response = await api.axios.get<ApiResponse<any>>('/payments/tax-reports/');
+frontend/src/features/admin/api/reports.ts:22:    // GET /payments/refunds/list/
+frontend/src/features/admin/api/reports.ts:23:    const response = await api.axios.get<ApiResponse<any>>('/payments/refunds/list/');
+frontend/src/features/admin/api/admin.ts:78:  // Let's use the /accounts/ one for verify if I'm not sure, OR assume the admin one is better if I can guess the payload.
+frontend/src/features/admin/api/analytics.ts:25:    const response = await api.axios.get<ApiResponse<any>>('/admin/super/payments/disputes/stats/');
+frontend/src/features/admin/hooks/use-admin-analytics.ts:40:        queryKey: ['admin-payment-dispute-stats'],
+frontend/src/features/admin/components/transaction-table.tsx:19:  transactions: Payment[];
+frontend/src/features/admin/components/transaction-table.tsx:23:export function TransactionTable({ transactions, isLoading }: TransactionTableProps) {
+frontend/src/features/admin/components/transaction-table.tsx:25:    return <div>Loading transactions...</div>;
+frontend/src/features/admin/components/transaction-table.tsx:43:          {transactions.map((trx) => (
+frontend/src/features/admin/components/sms-template-editor.tsx:16:  { id: 'payment-received', name: 'Payment Received' },
+frontend/src/features/admin/components/tax-report-generator.tsx:92:            <li>• Landlord payouts</li>
+frontend/src/features/admin/components/payment-command-center.tsx:17:  mpesa_receipt?: string;
+frontend/src/features/admin/components/payment-command-center.tsx:21:  provider: 'mpesa' | 'paystack' | 'manual';
+frontend/src/features/admin/components/payment-command-center.tsx:34:    { id: '1', reference: 'RUMI-INIT-B101-20240201', amount: 15000, status: 'success', mpesa_receipt: 'QDJ9J3W45H', customer_name: 'John Doe', timestamp: new Date().toISOString(), provider: 'mpesa' },
+frontend/src/features/admin/components/payment-command-center.tsx:35:    { id: '2', reference: 'RUMI-RENT-R204-20240201', amount: 7500, status: 'processing', customer_name: 'Jane Smith', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), provider: 'mpesa' }, // 5 mins ago
+frontend/src/features/admin/components/payment-command-center.tsx:36:    { id: '3', reference: 'RUMI-LATE-L303-20240201', amount: 500, status: 'failed', failure_reason: 'Insufficient Funds', customer_name: 'Bob Johnson', timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(), provider: 'mpesa' },
+frontend/src/features/admin/components/payment-command-center.tsx:47:  const { data: transactions, isLoading, refetch } = useQuery({
+frontend/src/features/admin/components/payment-command-center.tsx:48:    queryKey: ['admin-transactions'],
+frontend/src/features/admin/components/payment-command-center.tsx:54:    queryKey: ['mpesa-health'],
+frontend/src/features/admin/components/payment-command-center.tsx:74:  const filteredTransactions = transactions?.filter(t => 
+frontend/src/features/admin/components/payment-command-center.tsx:76:    t.mpesa_receipt?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+frontend/src/features/admin/components/payment-command-center.tsx:106:                        {transactions?.filter(t => t.status === 'processing' && (Date.now() - new Date(t.timestamp).getTime() > 1000 * 60 * 10)).length || 0}
+frontend/src/features/admin/components/payment-command-center.tsx:140:                    <CardDescription>Real-time view of all inbound payments.</CardDescription>
+frontend/src/features/admin/components/payment-command-center.tsx:179:                            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No transactions found.</TableCell>
+frontend/src/features/admin/components/payment-command-center.tsx:194:                                <TableCell className="font-mono text-xs text-emerald-400">{tx.mpesa_receipt || '-'}</TableCell>
+frontend/src/features/admin/components/email-template-editor.tsx:17:  { id: 'payment-received', name: 'Payment Received', subject: 'Payment Confirmation' },
+frontend/src/features/admin/components/commission-settings-form.tsx:29:  paymentProcessingFee: z.number().min(0).max(100),
+frontend/src/features/admin/components/commission-settings-form.tsx:39:  paymentProcessingFee: 2.5,
+frontend/src/features/admin/components/commission-settings-form.tsx:101:              name="paymentProcessingFee"
+frontend/src/features/admin/components/commission-settings-form.tsx:114:                    Fee for processing payments
+frontend/src/features/admin/components/commission-settings-form.tsx:136:                    Commission on landlord payouts
+frontend/src/features/admin/components/commission-settings-form.tsx:157:                    Minimum commission amount per transaction
+frontend/src/features/admin/components/commission-settings-form.tsx:182:                    Maximum commission cap per transaction
+frontend/src/features/admin/components/user-details-dialog.tsx:83:            <TabsTrigger value="payments">Payments</TabsTrigger>
+frontend/src/features/admin/components/user-details-dialog.tsx:166:            <TabsContent value="payments">
+frontend/src/features/admin/stores/admin.store.ts:31:  paymentFilters: PaymentFilters;
+frontend/src/features/admin/stores/admin.store.ts:82:      paymentFilters: defaultPaymentFilters,
+frontend/src/features/admin/stores/admin.store.ts:103:          paymentFilters: { ...state.paymentFilters, ...filters },
+frontend/src/features/admin/stores/admin.store.ts:105:      resetPaymentFilters: () => set({ paymentFilters: defaultPaymentFilters }),
+frontend/src/features/admin/stores/admin.store.ts:121:        paymentFilters: state.paymentFilters,
+frontend/src/features/admin/stores/admin.store.ts:131:  const paymentFilters = useAdminStore((state) => state.paymentFilters);
+frontend/src/features/admin/stores/admin.store.ts:132:  return { userFilters, hostelFilters, paymentFilters };
+frontend/src/features/admin/index.ts:11:export * from './components/transaction-table';
+frontend/src/features/analytics/api/subscriptions.ts:16:  paymentMethod: string;
+frontend/src/features/analytics/api/admin.ts:10:  type: 'booking' | 'payment' | 'user_registration' | 'verification_request' | 'maintenance' | 'system';
+frontend/src/features/analytics/api/admin.ts:70:  paymentId: string;
+frontend/src/features/analytics/api/admin.ts:92: * Get all payment disputes (admin only)
+frontend/src/features/analytics/api/admin.ts:93: * Endpoint: GET /api/v1/admin/payments/disputes/
+frontend/src/features/analytics/api/admin.ts:96:  const res = await axios.get<ApiResponse<PaymentDispute[]>>('/admin/payments/disputes/');
+frontend/src/features/analytics/api/admin.ts:102: * Endpoint: GET /api/v1/admin/payments/disputes/stats/
+frontend/src/features/analytics/api/admin.ts:105:  const res = await axios.get<ApiResponse<DisputeStats>>('/admin/payments/disputes/stats/');
+frontend/src/features/analytics/api/admin.ts:120: * Endpoint: PATCH /api/v1/admin/payments/disputes/:id/status/
+frontend/src/features/analytics/api/admin.ts:128:    `/admin/payments/disputes/${id}/status/`,
+frontend/src/features/analytics/api/admin.ts:140: * Endpoint: POST /api/v1/admin/payments/disputes/:id/resolve/
+frontend/src/features/analytics/api/admin.ts:147:    `/admin/payments/disputes/${id}/resolve/`,
+frontend/src/features/analytics/api/analytics.ts:55:  category: 'users' | 'bookings' | 'revenue' | 'payments',
+frontend/src/features/analytics/api/analytics.ts:115:    '/landlord/payments/reports/generate/',
+frontend/src/features/analytics/hooks/use-analytics.ts:67:  category: 'users' | 'bookings' | 'revenue' | 'payments',
+frontend/src/features/analytics/hooks/use-admin.ts:31: * Hook to fetch all payment disputes
+frontend/src/features/analytics/hooks/use-admin.ts:35:    queryKey: ['admin', 'payments', 'disputes'],
+frontend/src/features/analytics/hooks/use-admin.ts:46:    queryKey: ['admin', 'payments', 'disputes', 'stats'],
+frontend/src/features/analytics/hooks/use-admin.ts:62:      queryClient.invalidateQueries({ queryKey: ['admin', 'payments', 'disputes'] });
+frontend/src/features/analytics/hooks/use-admin.ts:81:      queryClient.invalidateQueries({ queryKey: ['admin', 'payments', 'disputes'] });
+frontend/src/features/analytics/hooks/use-admin.ts:82:      queryClient.invalidateQueries({ queryKey: ['admin', 'payments', 'disputes', 'stats'] });
+frontend/src/features/analytics/components/analytics-dashboard.tsx:8:import { PaymentSuccessRateChart } from './payment-success-rate-chart';
+frontend/src/features/analytics/index.ts:5:export * from './components/payment-success-rate-chart';
+frontend/src/features/bookings/api/bookings.ts:163: * Confirm payment for a booking
+frontend/src/features/bookings/api/bookings.ts:167:  paymentProof?: string,
+frontend/src/features/bookings/stores/use-booking.store.ts:4:export type BookingStep = 'selection' | 'profile_check' | 'payment' | 'success';
+frontend/src/features/bookings/stores/use-booking.store.ts:20:  paymentTimerStartedAt: number | null; // Timestamp
+frontend/src/features/bookings/stores/use-booking.store.ts:51:      paymentTimerStartedAt: null,
+frontend/src/features/bookings/stores/use-booking.store.ts:63:      startPaymentTimer: () => set({ paymentTimerStartedAt: Date.now() }),
+frontend/src/features/bookings/stores/use-booking.store.ts:64:      resetPaymentTimer: () => set({ paymentTimerStartedAt: null }),
+frontend/src/features/bookings/stores/use-booking.store.ts:72:        paymentTimerStartedAt: null,
+frontend/src/features/bookings/types/types.ts:40:  payment_status: 'pending' | 'paid' | 'partial' | 'failed';
+frontend/src/features/dashboard/components/smart-action-grid.tsx:62:      key: "pay-rent",
+frontend/src/features/dashboard/components/smart-action-grid.tsx:64:      description: "Process your monthly payment via M-Pesa",
+frontend/src/features/dashboard/components/smart-action-grid.tsx:66:      href: "/student/payments/new",
+frontend/src/features/dashboard/components/quick-actions.tsx:22:    href: '/student/payments/new',
+frontend/src/features/dashboard/components/recent-activity.tsx:15:    case 'payment':
+frontend/src/features/dashboard/components/recent-activity.tsx:35:    case 'payment':
+frontend/src/features/dashboard/components/rent-overview-card.tsx:10:import { RentStatusInfo } from '@/features/payments/types';
+frontend/src/features/dashboard/components/rent-overview-card.tsx:89:          <Link href="/student/payments/new">
+frontend/src/features/transfers/components/price-difference-indicator.tsx:100:            ? '⚠️ Additional payment required'
+frontend/src/features/student/api/dashboard.ts:9:import { paymentsApi } from '@/features/payments';
+frontend/src/features/student/api/dashboard.ts:55: * Get recent transactions
+frontend/src/features/student/api/dashboard.ts:56: * Endpoint: /payments/transactions/student/
+frontend/src/features/student/api/dashboard.ts:60:    const res = await axios.get<{ results?: Transaction[], data?: Transaction[] } | Transaction[]>('/payments/transactions/student/');
+frontend/src/features/student/api/dashboard.ts:62:    let transactions: Transaction[] = [];
+frontend/src/features/student/api/dashboard.ts:64:        transactions = res.data;
+frontend/src/features/student/api/dashboard.ts:66:        transactions = res.data.results;
+frontend/src/features/student/api/dashboard.ts:68:        transactions = res.data.data;
+frontend/src/features/student/api/dashboard.ts:71:    return transactions.slice(0, limit);
+frontend/src/features/student/api/dashboard.ts:73:    console.error('Failed to fetch recent transactions', error);
+frontend/src/features/student/hooks/use-student-dashboard.ts:27: * Hook to fetch rent payment status
+frontend/src/features/student/hooks/use-student-dashboard.ts:41: * Hook to fetch recent transactions
+frontend/src/features/student/hooks/use-student-dashboard.ts:42: * @param limit - Number of transactions to fetch (default: 5)
+frontend/src/features/student/hooks/use-student-dashboard.ts:46:    queryKey: queryKeys.studentDashboard.transactions(limit),
+frontend/src/features/student/components/rent-status-indicator.tsx:61:              Next payment due: <span className="text-foreground">{nextPaymentDate ? new Date(nextPaymentDate).toLocaleDateString() : 'Not scheduled'}</span>
+frontend/src/features/student/components/rent-status-indicator.tsx:78:                  <>{daysUntilDue} day{daysUntilDue !== 1 ? 's' : ''} until payment</>
+frontend/src/features/student/components/transaction-list.tsx:10:  transactions: Transaction[];
+frontend/src/features/student/components/transaction-list.tsx:15:export function TransactionList({ transactions, limit = 5, className }: TransactionListProps) {
+frontend/src/features/student/components/transaction-list.tsx:16:  const displayTransactions = transactions.slice(0, limit);
+frontend/src/features/student/components/transaction-list.tsx:54:            No transactions yet
+frontend/src/features/student/components/transaction-list.tsx:58:            {displayTransactions.map((transaction) => (
+frontend/src/features/student/components/transaction-list.tsx:59:              <div key={transaction.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+frontend/src/features/student/components/transaction-list.tsx:63:                      KES {transaction.amount.toLocaleString()}
+frontend/src/features/student/components/transaction-list.tsx:66:                    <span className="text-xs text-muted-foreground">{getTypeLabel(transaction.type)}</span>
+frontend/src/features/student/components/transaction-list.tsx:69:                    {new Date(transaction.date).toLocaleDateString('en-US', {
+frontend/src/features/student/components/transaction-list.tsx:74:                    {transaction.method && <> • {transaction.method}</>}
+frontend/src/features/student/components/transaction-list.tsx:76:                  {transaction.description && (
+frontend/src/features/student/components/transaction-list.tsx:77:                    <p className="text-xs text-muted-foreground mt-1 truncate">{transaction.description}</p>
+frontend/src/features/student/components/transaction-list.tsx:80:                <Badge variant="outline" className={cn('text-[10px] font-medium ml-3', getStatusColor(transaction.status))}>
+frontend/src/features/student/components/transaction-list.tsx:81:                  {transaction.status}
+frontend/src/features/student/components/activity-feed.tsx:30:      case 'payment':
+frontend/src/features/student/types.ts:1:import { RentStatusInfo, Transaction } from '@/features/payments/types';
+frontend/src/features/student/types.ts:20:  type: 'invoice' | 'payment' | 'message' | 'roommate' | 'ticket' | 'booking' | 'announcement';
+frontend/src/features/student/index.ts:10:export * from './components/transaction-list';
+frontend/src/features/caretaker/stores/caretaker.store.ts:53:  paymentStatus: 'all',
+frontend/src/features/caretaker/types.ts:97:  paymentStatus: 'paid' | 'pending' | 'overdue';
+frontend/src/features/caretaker/types.ts:115:  paymentStatus?: 'paid' | 'pending' | 'overdue' | 'all';
+frontend/src/features/inventory/api/inventory.ts:162:export const createReport = async (payload: CreateReportPayload): Promise<InventoryReport> => {
+frontend/src/features/inventory/api/inventory.ts:165:    `/hostels/checkin/${payload.bookingId}/start/`,
+frontend/src/features/inventory/api/inventory.ts:166:    { type: payload.type }
+frontend/src/features/inventory/api/inventory.ts:172:export const submitReport = async (payload: SubmitReportPayload): Promise<InventoryReport> => {
+frontend/src/features/inventory/api/inventory.ts:175:    `/hostels/checkin/${payload.reportId}/submit/`,
+frontend/src/features/inventory/api/inventory.ts:176:    { items: payload.items }
+frontend/src/features/inventory/api/inventory.ts:182:export const verifyReport = async (payload: VerifyReportPayload): Promise<InventoryReport> => {
+frontend/src/features/inventory/api/inventory.ts:185:    `/hostels/checkin/${payload.reportId}/verify/`,
+frontend/src/features/inventory/api/inventory.ts:186:    payload
+frontend/src/features/inventory/api/inventory.ts:192:export const approveReport = async (payload: ApproveReportPayload): Promise<InventoryReport> => {
+frontend/src/features/inventory/api/inventory.ts:197:    `/hostels/checkin/${payload.reportId}/approve/`,
+frontend/src/features/inventory/api/inventory.ts:198:    payload
+frontend/src/features/inventory/api/damage-reports.ts:69:  payload: CreateDamageReportPayload,
+frontend/src/features/inventory/api/damage-reports.ts:73:    payload,
+frontend/src/features/inventory/hooks/use-damage-reports.ts:36:    mutationFn: (payload: CreateDamageReportPayload) =>
+frontend/src/features/inventory/hooks/use-damage-reports.ts:37:      damageReportsApi.createDamageReport(payload),
+frontend/src/features/inventory/hooks/use-inventory-query.ts:43:    mutationFn: (payload: CreateReportPayload) => inventoryApi.createReport(payload),
+frontend/src/features/inventory/hooks/use-inventory-query.ts:57:    mutationFn: (payload: SubmitReportPayload) => inventoryApi.submitReport(payload),
+frontend/src/features/inventory/hooks/use-inventory-query.ts:71:    mutationFn: (payload: VerifyReportPayload) => inventoryApi.verifyReport(payload),
+frontend/src/features/auth/hooks/use-registration-form.ts:84:    const payload = { ...data } as Record<string, any>;
+frontend/src/features/auth/hooks/use-registration-form.ts:85:    if (payload.phone_number && typeof payload.phone_number === 'string') {
+frontend/src/features/auth/hooks/use-registration-form.ts:86:      payload.phone_number = payload.phone_number.replace(/[^\d+]/g, '');
+frontend/src/features/auth/hooks/use-registration-form.ts:89:    await mutation.mutateAsync(payload as T);
+frontend/src/features/auth/hooks/use-auth.ts:97:  const login = React.useCallback((payload: LoginPayload) => {
+frontend/src/features/auth/hooks/use-auth.ts:98:    storeLogin(payload);
+frontend/src/features/auth/components/role-selector.tsx:18:    description: 'Find verified hostels, pay rent via M-Pesa, and find roommates.',
+frontend/src/features/auth/components/role-selector.tsx:24:    description: 'List your property, track payments, and manage your tenants.',
+frontend/src/features/auth/components/verify-email-form.tsx:88:      const payload = token ? { token } : { email: email || '' };
+frontend/src/features/auth/components/verify-email-form.tsx:89:      resendVerification(payload as any, {
+frontend/src/features/auth/components/verify-phone-form.tsx:89:      const payload = { phone: phone || '' };
+frontend/src/features/auth/components/verify-phone-form.tsx:90:      resendVerification(payload as any, {
+frontend/src/features/auth/stores/auth.slice.ts:18:  login: (payload: LoginPayload) => {
+frontend/src/features/auth/stores/auth.slice.ts:19:    const { user, accessToken, refreshToken, profile } = payload;
+frontend/src/features/auth/stores/auth.types.ts:42:  login: (payload: LoginPayload) => void;
+frontend/src/features/auth/types/types.ts:183:    transactional: boolean;
+frontend/src/features/notifications/api/notifications.ts:18:  paymentReminders?: boolean;
+frontend/src/features/notifications/api/notifications.ts:199: * paymentReminders, roommateUpdates, marketplaceUpdates
+frontend/src/features/landlord/api/caretakers.ts:40: * Request payload for creating a caretaker
+frontend/src/features/landlord/api/caretakers.ts:53: * Request payload for updating a caretaker
+frontend/src/features/landlord/api/dashboard.ts:41:  type: 'booking' | 'payment' | 'alert' | 'cancellation' | 'maintenance';
+frontend/src/features/landlord/hooks/use-landlord-dashboard.ts:20: * Returns recent activities like bookings, payments, maintenance requests
+frontend/src/features/landlord/components/net-revenue-widget.tsx:7:import { useLandlordTransactions } from '@/features/payments/hooks/use-payments';
+frontend/src/features/landlord/components/net-revenue-widget.tsx:13:  const { data: transactions, isLoading } = useLandlordTransactions();
+frontend/src/features/landlord/components/net-revenue-widget.tsx:20:  const totalRevenue = transactions?.reduce((acc: number, t: any) => acc + (t.amount || 0), 0) || 0;
+frontend/src/features/landlord/components/landlord-create-caretaker-form.tsx:243:                Can view payment information
+frontend/src/features/landlord/components/interactive-invoice.tsx:24:import { useSubscriptionAccrual } from '@/features/payments/hooks/use-subscription-accrual';
+frontend/src/features/support/api/tech-support.ts:29:  transaction_reference: string;
+frontend/src/features/support/api/tech-support.ts:121:    const response = await apiClient.axios.get<ApiResponse<TechSupportTransaction[]>>('/support/transactions/', { params });
+frontend/src/features/support/api/tech-support.ts:124:  requestRefund: async (transactionId: string, reason: string) => {
+frontend/src/features/support/api/tech-support.ts:125:    return apiClient.axios.post(`/support/transactions/${transactionId}/refund-request/`, { reason });
+frontend/src/features/support/hooks/use-support.ts:116:    queryKey: ['tech-support', 'transactions', params],
+frontend/src/features/support/components/transaction-table.tsx:30:  transactions: TechSupportTransaction[];
+frontend/src/features/support/components/transaction-table.tsx:36:export function TransactionTable({ transactions, isLoading, onRequestRefund, onViewReceipt }: TransactionTableProps) {
+frontend/src/features/support/components/transaction-table.tsx:38:    return <div className="p-8 text-center text-slate-500">Loading transactions...</div>;
+frontend/src/features/support/components/transaction-table.tsx:56:          {transactions.map((txn) => (
+frontend/src/features/support/components/transaction-table.tsx:58:              <TableCell className="font-mono text-xs">{txn.transaction_reference}</TableCell>
+frontend/src/features/support/index.ts:2:export * from './components/transaction-table';
+frontend/src/features/profile/types.ts:72:    payments: boolean;
+frontend/src/features/profile/types.ts:90:    payment_reminders?: boolean;
+frontend/src/features/profile/types.ts:139:  paystack_subaccount_code?: Nullable<string>;
+frontend/src/features/payments/api/subscriptions.ts:24:    const response = await api.axios.get<ApiResponse<any[]>>('/accounts/subscriptions/payments/history/');
+frontend/src/features/payments/api/subscriptions.ts:29:    const response = await api.axios.post<ApiResponse<any>>('/accounts/subscriptions/payments/initiate/', {
+frontend/src/features/payments/api/payments.ts:30: * Get all payments with optional filters
+frontend/src/features/payments/api/payments.ts:33: * Get all payments with optional filters
+frontend/src/features/payments/api/payments.ts:34: * Note: The endpoint /payments/transactions/ is marked as MISSING in the backend reference.
+frontend/src/features/payments/api/payments.ts:38: * Get student transaction history
+frontend/src/features/payments/api/payments.ts:39: * Confirmed Endpoint: /payments/history/
+frontend/src/features/payments/api/payments.ts:43:    const response = await apiClient.axios.get<ApiResponse<Payment[]>>('/payments/history/', {
+frontend/src/features/payments/api/payments.ts:49:    console.warn("Fetching student payments failed", error);
+frontend/src/features/payments/api/payments.ts:55: * Get landlord transaction history
+frontend/src/features/payments/api/payments.ts:56: * Confirmed Endpoint: /payments/transactions/landlord/
+frontend/src/features/payments/api/payments.ts:60:    const response = await apiClient.axios.get<ApiResponse<Payment[]>>('/payments/transactions/landlord/', {
+frontend/src/features/payments/api/payments.ts:66:    console.warn("Fetching landlord payments failed", error);
+frontend/src/features/payments/api/payments.ts:72: * Get admin transaction history
+frontend/src/features/payments/api/payments.ts:73: * Confirmed Endpoint: /payments/transactions/admin/
+frontend/src/features/payments/api/payments.ts:77:    const response = await apiClient.axios.get<ApiResponse<Payment[]>>('/payments/transactions/admin/', {
+frontend/src/features/payments/api/payments.ts:83:     console.warn("Fetching admin payments failed", error);
+frontend/src/features/payments/api/payments.ts:89: * Get payment statistics
+frontend/src/features/payments/api/payments.ts:92:  const response = await apiClient.axios.get<ApiResponse<PaymentStats>>('/landlord/payments/analytics/');
+frontend/src/features/payments/api/payments.ts:107: * Initiate a payment (Generic/Legacy)
+frontend/src/features/payments/api/payments.ts:111:): Promise<{ success: boolean; transactionId: string }> => {
+frontend/src/features/payments/api/payments.ts:114:    transactionId: string;
+frontend/src/features/payments/api/payments.ts:115:  }>>('/payments/initialize/', data);
+frontend/src/features/payments/api/payments.ts:117:  return response.data.data || { success: false, transactionId: '' };
+frontend/src/features/payments/api/payments.ts:122: * Endpoint: /api/v1/payments/mpesa/initialize/
+frontend/src/features/payments/api/payments.ts:128:  const payload = {
+frontend/src/features/payments/api/payments.ts:134:    '/payments/mpesa/initialize/', 
+frontend/src/features/payments/api/payments.ts:135:    payload
+frontend/src/features/payments/api/payments.ts:138:    transaction_id: 0, 
+frontend/src/features/payments/api/payments.ts:139:    transaction_reference: '', 
+frontend/src/features/payments/api/payments.ts:141:    payment_method: '', 
+frontend/src/features/payments/api/payments.ts:142:    mpesa_payment_type: '', 
+frontend/src/features/payments/api/payments.ts:154: * Endpoint: /api/v1/payments/mpesa/status/
+frontend/src/features/payments/api/payments.ts:157:  transaction_id?: string | number;
+frontend/src/features/payments/api/payments.ts:161:    '/payments/mpesa/status/',
+frontend/src/features/payments/api/payments.ts:167:    transaction: { id: 0, date: '', amount: 0, type: 'rent', status: 'failed', method: 'mpesa', reference: '' }
+frontend/src/features/payments/api/payments.ts:173: * Endpoint: /api/v1/payments/mpesa/config/
+frontend/src/features/payments/api/payments.ts:177:    '/payments/mpesa/config/'
+frontend/src/features/payments/api/payments.ts:184: * Endpoint: /api/v1/payments/mpesa/config/
+frontend/src/features/payments/api/payments.ts:190:    '/payments/mpesa/config/',
+frontend/src/features/payments/api/payments.ts:195:    payment_type: 'paybill' as const, 
+frontend/src/features/payments/api/payments.ts:196:    mpesa_number: '', 
+frontend/src/features/payments/api/payments.ts:206: * Verify a payment
+frontend/src/features/payments/api/payments.ts:211:  transactionId: string
+frontend/src/features/payments/api/payments.ts:215:  // Docs mention /receipts/<transaction_id>/
+frontend/src/features/payments/api/payments.ts:217:    const response = await apiClient.axios.get<ApiResponse<any>>(`/payments/receipts/${transactionId}/`);
+frontend/src/features/payments/api/payments.ts:226:  const response = await apiClient.axios.post<ApiResponse<any>>('/payments/recurring/enable/', data);
+frontend/src/features/payments/api/payments.ts:231:  const response = await apiClient.axios.put<ApiResponse<any>>(`/payments/recurring/${id}/pause/`);
+frontend/src/features/payments/api/payments.ts:236:  const response = await apiClient.axios.put<ApiResponse<any>>(`/payments/recurring/${id}/resume/`);
+frontend/src/features/payments/api/payments.ts:241:  const response = await apiClient.axios.delete<ApiResponse<any>>(`/payments/recurring/${id}/cancel/`);
+frontend/src/features/payments/api/payments.ts:247:  const response = await apiClient.axios.get<ApiResponse<any[]>>('/payments/payment-methods/');
+frontend/src/features/payments/api/payments.ts:252:  const response = await apiClient.axios.put<ApiResponse<any>>(`/payments/payment-methods/${id}/default/`);
+frontend/src/features/payments/api/payments.ts:257:  const response = await apiClient.axios.delete<ApiResponse<any>>(`/payments/payment-methods/${id}/`);
+frontend/src/features/payments/api/payments.ts:263:  const response = await apiClient.axios.get<ApiResponse<any>>(`/payments/late-fees/${bookingId}/`);
+frontend/src/features/payments/api/payments.ts:267:export const payLateFee = async (id: string) => {
+frontend/src/features/payments/api/payments.ts:268:  const response = await apiClient.axios.post<ApiResponse<any>>(`/payments/late-fees/${id}/pay/`);
+frontend/src/features/payments/api/payments.ts:274:  const response = await apiClient.axios.get<ApiResponse<any[]>>('/payments/tax-reports/');
+frontend/src/features/payments/api/payments.ts:279:  const response = await apiClient.axios.get<ApiResponse<any>>(`/payments/tax-reports/${id}/download/`);
+frontend/src/features/payments/api/payments.ts:286:    '/payments/payouts/landlord/'
+frontend/src/features/payments/api/payments.ts:294:    '/payments/refunds/list/'
+frontend/src/features/payments/api/payments.ts:301:    '/payments/refunds/',
+frontend/src/features/payments/api/payments.ts:309:    `/payments/refunds/${refundId}/process/`
+frontend/src/features/payments/api/payments.ts:315:export const getReceipt = async (transactionId: string | number): Promise<any> => {
+frontend/src/features/payments/api/payments.ts:316:  const response = await apiClient.axios.get<ApiResponse<any>>(`/payments/receipts/${transactionId}/`);
+frontend/src/features/payments/api/payments.ts:321:  const response = await apiClient.axios.get<ApiResponse<any>>('/payments/transactions/student/', {
+frontend/src/features/payments/api/payments.ts:324:  return response.data.data?.transactions || [];
+frontend/src/features/payments/api/payments.ts:336:  const { data } = await apiClient.get<any>('/payments/rent-periods/', { params: filters });
+frontend/src/features/payments/api/payments.ts:346:    const response = await apiClient.axios.get<ApiResponse<RentPeriod>>('/payments/rent-periods/current/');
+frontend/src/features/payments/api/payments.ts:357:  const response = await apiClient.axios.get<ApiResponse<RentPeriod[]>>('/payments/rent-periods/overdue/');
+frontend/src/features/payments/api/payments.ts:362: * Get rent payment summary
+frontend/src/features/payments/api/payments.ts:365:  const response = await apiClient.axios.get<ApiResponse<any>>('/payments/rent-periods/summary/');
+frontend/src/features/payments/api/payments.ts:374:    const response = await apiClient.axios.get<ApiResponse<StudentWallet>>('/payments/wallet/my_wallet/');
+frontend/src/features/payments/api/payments.ts:385:  const { data } = await apiClient.get<any>('/payments/transfers/', { params: filters });
+frontend/src/features/payments/api/payments.ts:390:  const { data } = await apiClient.get<any>('/payments/wallet/', { params: filters });
+frontend/src/features/payments/api/payments.ts:395:export const paymentsApi = {
+frontend/src/features/payments/api/payments.ts:414:  payLateFee,
+frontend/src/features/payments/api/__tests__/payments.test.ts:8:} from '../payments';
+frontend/src/features/payments/api/__tests__/payments.test.ts:38:    it('should fetch student payments and return data array', async () => {
+frontend/src/features/payments/api/__tests__/payments.test.ts:44:      expect(mockAxios.get).toHaveBeenCalledWith('/payments/history/', { params: undefined });
+frontend/src/features/payments/api/__tests__/payments.test.ts:58:    it('should fetch landlord payments', async () => {
+frontend/src/features/payments/api/__tests__/payments.test.ts:64:      expect(mockAxios.get).toHaveBeenCalledWith('/payments/transactions/landlord/', { params: undefined });
+frontend/src/features/payments/api/__tests__/payments.test.ts:71:      const payload = { booking_id: '123', amount: 5000, phone_number: '254700000000' };
+frontend/src/features/payments/api/__tests__/payments.test.ts:72:      const mockResponse = { transaction_id: 456, status: 'pending' };
+frontend/src/features/payments/api/__tests__/payments.test.ts:75:      const result = await initializeMpesaPayment(payload as any);
+frontend/src/features/payments/api/__tests__/payments.test.ts:77:      expect(mockAxios.post).toHaveBeenCalledWith('/payments/mpesa/initialize/', {
+frontend/src/features/payments/api/__tests__/payments.test.ts:78:        ...payload,
+frontend/src/features/payments/api/__tests__/payments.test.ts:95:    it('should fetch payment status by transaction ID', async () => {
+frontend/src/features/payments/api/__tests__/payments.test.ts:96:      const mockResponse = { status: 'success', transaction: { id: 456 } };
+frontend/src/features/payments/api/__tests__/payments.test.ts:99:      const result = await getMpesaPaymentStatus({ transaction_id: '456' });
+frontend/src/features/payments/api/__tests__/payments.test.ts:101:      expect(mockAxios.get).toHaveBeenCalledWith('/payments/mpesa/status/', {
+frontend/src/features/payments/api/__tests__/payments.test.ts:102:        params: { transaction_id: '456' }
+frontend/src/features/payments/api/__tests__/payments.test.ts:110:      const mockConfigs = [{ id: 1, mpesa_number: '123456' }];
+frontend/src/features/payments/api/__tests__/payments.test.ts:126:      expect(mockAxios.get).toHaveBeenCalledWith('/payments/rent-periods/current/');
+frontend/src/features/payments/hooks/use-subscriptions.ts:11:} from '@/features/payments';
+frontend/src/features/payments/hooks/use-payment-methods.ts:9:  type: 'mpesa' | 'card' | 'bank';
+frontend/src/features/payments/hooks/use-payment-methods.ts:20: * Hook to fetch all payment methods for the current user
+frontend/src/features/payments/hooks/use-payment-methods.ts:21: * @returns Query result with payment methods data
+frontend/src/features/payments/hooks/use-payment-methods.ts:25:    queryKey: ['paymentMethods'],
+frontend/src/features/payments/hooks/use-payment-methods.ts:28:        '/api/v1/payment-methods/'
+frontend/src/features/payments/hooks/use-payment-methods.ts:37: * Hook to fetch a single payment method by ID
+frontend/src/features/payments/hooks/use-payment-methods.ts:38: * @param paymentMethodId - The ID of the payment method
+frontend/src/features/payments/hooks/use-payment-methods.ts:39: * @returns Query result with payment method data
+frontend/src/features/payments/hooks/use-payment-methods.ts:41:export const usePaymentMethod = (paymentMethodId: string | null | undefined) => {
+frontend/src/features/payments/hooks/use-payment-methods.ts:43:    queryKey: ['paymentMethod', paymentMethodId],
+frontend/src/features/payments/hooks/use-payment-methods.ts:45:      if (!paymentMethodId) throw new Error('Payment method ID is required');
+frontend/src/features/payments/hooks/use-payment-methods.ts:47:        `/api/v1/payment-methods/${paymentMethodId}/`
+frontend/src/features/payments/hooks/use-payment-methods.ts:51:    enabled: !!paymentMethodId,
+frontend/src/features/payments/hooks/use-payment-methods.ts:57: * Hook to add a new payment method
+frontend/src/features/payments/hooks/use-payment-methods.ts:58: * @returns Mutation for adding a payment method
+frontend/src/features/payments/hooks/use-payment-methods.ts:66:        '/api/v1/payment-methods/',
+frontend/src/features/payments/hooks/use-payment-methods.ts:70:      queryClient.invalidateQueries({ queryKey: ['paymentMethods'] });
+frontend/src/features/payments/hooks/use-payment-methods.ts:74:      const message = error?.response?.data?.message || 'Failed to add payment method';
+frontend/src/features/payments/hooks/use-payment-methods.ts:81: * Hook to update a payment method
+frontend/src/features/payments/hooks/use-payment-methods.ts:82: * @param paymentMethodId - The ID of the payment method to update
+frontend/src/features/payments/hooks/use-payment-methods.ts:83: * @returns Mutation for updating a payment method
+frontend/src/features/payments/hooks/use-payment-methods.ts:85:export const useUpdatePaymentMethod = (paymentMethodId: string) => {
+frontend/src/features/payments/hooks/use-payment-methods.ts:91:        `/api/v1/payment-methods/${paymentMethodId}/`,
+frontend/src/features/payments/hooks/use-payment-methods.ts:95:      queryClient.invalidateQueries({ queryKey: ['paymentMethods'] });
+frontend/src/features/payments/hooks/use-payment-methods.ts:96:      queryClient.invalidateQueries({ queryKey: ['paymentMethod', paymentMethodId] });
+frontend/src/features/payments/hooks/use-payment-methods.ts:100:      const message = error?.response?.data?.message || 'Failed to update payment method';
+frontend/src/features/payments/hooks/use-payment-methods.ts:107: * Hook to delete a payment method
+frontend/src/features/payments/hooks/use-payment-methods.ts:108: * @param paymentMethodId - The ID of the payment method to delete
+frontend/src/features/payments/hooks/use-payment-methods.ts:109: * @returns Mutation for deleting a payment method
+frontend/src/features/payments/hooks/use-payment-methods.ts:115:    mutationFn: (paymentMethodId: string) =>
+frontend/src/features/payments/hooks/use-payment-methods.ts:116:      apiClient.axios.delete(`/api/v1/payment-methods/${paymentMethodId}/`),
+frontend/src/features/payments/hooks/use-payment-methods.ts:118:      queryClient.invalidateQueries({ queryKey: ['paymentMethods'] });
+frontend/src/features/payments/hooks/use-payment-methods.ts:122:      const message = error?.response?.data?.message || 'Failed to delete payment method';
+frontend/src/features/payments/hooks/use-payment-methods.ts:129: * Hook to set a payment method as default
+frontend/src/features/payments/hooks/use-payment-methods.ts:130: * @returns Mutation for setting default payment method
+frontend/src/features/payments/hooks/use-payment-methods.ts:136:    mutationFn: (paymentMethodId: string) =>
+frontend/src/features/payments/hooks/use-payment-methods.ts:137:      apiClient.axios.post(`/api/v1/payment-methods/${paymentMethodId}/set-default/`),
+frontend/src/features/payments/hooks/use-payment-methods.ts:139:      queryClient.invalidateQueries({ queryKey: ['paymentMethods'] });
+frontend/src/features/payments/hooks/use-payment-methods.ts:140:      toast.success('Default payment method updated');
+frontend/src/features/payments/hooks/use-payment-methods.ts:143:      const message = error?.response?.data?.message || 'Failed to set default payment method';
+frontend/src/features/payments/hooks/use-payments.ts:5:import { paymentsApi } from '../api/payments';
+frontend/src/features/payments/hooks/use-payments.ts:22:    queryKey: [...queryKeys.payments.all, 'student', filters],
+frontend/src/features/payments/hooks/use-payments.ts:23:    queryFn: () => paymentsApi.getStudentTransactionsWithReceipts(filters),
+frontend/src/features/payments/hooks/use-payments.ts:29:    queryKey: [...queryKeys.payments.all, 'landlord', filters],
+frontend/src/features/payments/hooks/use-payments.ts:30:    queryFn: () => paymentsApi.getLandlordPayments(filters),
+frontend/src/features/payments/hooks/use-payments.ts:36:    queryKey: [...queryKeys.payments.all, 'landlord', 'payouts'],
+frontend/src/features/payments/hooks/use-payments.ts:37:    queryFn: () => paymentsApi.getLandlordPayouts(),
+frontend/src/features/payments/hooks/use-payments.ts:43:    queryKey: [...queryKeys.payments.all, 'admin', filters],
+frontend/src/features/payments/hooks/use-payments.ts:44:    queryFn: () => paymentsApi.getAdminPayments(filters),
+frontend/src/features/payments/hooks/use-payments.ts:50:    queryKey: queryKeys.payments.stats(),
+frontend/src/features/payments/hooks/use-payments.ts:51:    queryFn: () => paymentsApi.getPaymentStats(),
+frontend/src/features/payments/hooks/use-payments.ts:55:export const useReceipt = (transactionId: string | number) => {
+frontend/src/features/payments/hooks/use-payments.ts:57:    queryKey: [...queryKeys.payments.all, 'receipt', transactionId],
+frontend/src/features/payments/hooks/use-payments.ts:58:    queryFn: () => paymentsApi.getReceipt(transactionId),
+frontend/src/features/payments/hooks/use-payments.ts:59:    enabled: !!transactionId,
+frontend/src/features/payments/hooks/use-payments.ts:67:    mutationFn: (data: MpesaInitializeRequest) => paymentsApi.initializeMpesaPayment(data),
+frontend/src/features/payments/hooks/use-payments.ts:69:      toast.error(error.message || 'Failed to initiate M-Pesa payment');
+frontend/src/features/payments/hooks/use-payments.ts:75:  transaction_id?: string | number; 
+frontend/src/features/payments/hooks/use-payments.ts:79:    queryKey: [...queryKeys.payments.all, 'mpesa', 'status', params.transaction_id || params.checkout_request_id],
+frontend/src/features/payments/hooks/use-payments.ts:80:    queryFn: () => paymentsApi.getMpesaPaymentStatus(params),
+frontend/src/features/payments/hooks/use-payments.ts:81:    enabled: options?.enabled !== false && (!!params.transaction_id || !!params.checkout_request_id),
+frontend/src/features/payments/hooks/use-payments.ts:88:    queryKey: [...queryKeys.payments.all, 'mpesa', 'configs'],
+frontend/src/features/payments/hooks/use-payments.ts:89:    queryFn: () => paymentsApi.getMpesaConfigs(),
+frontend/src/features/payments/hooks/use-payments.ts:96:    mutationFn: (data: CreateMpesaConfigRequest) => paymentsApi.createMpesaConfig(data),
+frontend/src/features/payments/hooks/use-payments.ts:99:      queryClient.invalidateQueries({ queryKey: [...queryKeys.payments.all, 'mpesa', 'configs'] });
+frontend/src/features/payments/hooks/use-payments.ts:111:    mutationFn: (data: PaymentInitializeRequest) => paymentsApi.initiatePayment(data),
+frontend/src/features/payments/hooks/use-payments.ts:116:      toast.error(error.message || 'Failed to initiate payment');
+frontend/src/features/payments/hooks/use-payments.ts:127:    queryKey: [...queryKeys.payments.all, 'rent-periods', filters],
+frontend/src/features/payments/hooks/use-payments.ts:128:    queryFn: () => paymentsApi.getRentPeriods(filters),
+frontend/src/features/payments/hooks/use-payments.ts:135:    queryKey: [...queryKeys.payments.all, 'rent-periods', 'current'],
+frontend/src/features/payments/hooks/use-payments.ts:136:    queryFn: () => paymentsApi.getCurrentRentPeriod(),
+frontend/src/features/payments/hooks/use-payments.ts:142:    queryKey: [...queryKeys.payments.all, 'rent-periods', 'overdue'],
+frontend/src/features/payments/hooks/use-payments.ts:143:    queryFn: () => paymentsApi.getOverdueRentPeriods(),
+frontend/src/features/payments/hooks/use-payments.ts:149:    queryKey: [...queryKeys.payments.all, 'rent-periods', 'summary'],
+frontend/src/features/payments/hooks/use-payments.ts:150:    queryFn: () => paymentsApi.getRentSummary(),
+frontend/src/features/payments/hooks/use-payments.ts:156:    queryKey: [...queryKeys.payments.all, 'wallet', 'my'],
+frontend/src/features/payments/hooks/use-payments.ts:157:    queryFn: () => paymentsApi.getMyWallet(),
+frontend/src/features/payments/hooks/use-payments.ts:163:    queryKey: [...queryKeys.payments.all, 'transfers', filters],
+frontend/src/features/payments/hooks/use-payments.ts:164:    queryFn: () => paymentsApi.getTransferHistory(filters),
+frontend/src/features/payments/hooks/use-payments.ts:170:    queryKey: [...queryKeys.payments.all, 'wallets', 'all', filters],
+frontend/src/features/payments/hooks/use-payments.ts:171:    queryFn: () => paymentsApi.getAllWallets(filters),
+frontend/src/features/payments/hooks/use-subscription-accrual.ts:20:      const response = await apiClient.get<SubscriptionAccrual>('/payments/subscriptions/accrual/');
+frontend/src/features/payments/components/payout-list.tsx:3:import { PayoutCard } from './payout-card';
+frontend/src/features/payments/components/payout-list.tsx:4:import { useLandlordPayouts } from '../hooks/use-payments'; // Use the relative or absolute path correctly
+frontend/src/features/payments/components/payout-list.tsx:10:      return <div>Loading payouts...</div>;
+frontend/src/features/payments/components/payout-list.tsx:14:      return <div className="text-red-500">Failed to load payouts.</div>;
+frontend/src/features/payments/components/payout-list.tsx:17:  const payouts = data?.data || [];
+frontend/src/features/payments/components/payout-list.tsx:26:      {payouts.length === 0 ? (
+frontend/src/features/payments/components/payout-list.tsx:27:          <p className="text-muted-foreground">No payout history found.</p>
+frontend/src/features/payments/components/payout-list.tsx:30:            {payouts.map((payout) => (
+frontend/src/features/payments/components/payout-list.tsx:31:              <PayoutCard key={payout.id} payout={payout} />
+frontend/src/features/payments/components/transaction-card.tsx:11:  type: 'payment' | 'refund' | 'payout';
+frontend/src/features/payments/components/transaction-card.tsx:19:  transaction: Transaction;
+frontend/src/features/payments/components/transaction-card.tsx:23:export function TransactionCard({ transaction, onClick }: TransactionCardProps) {
+frontend/src/features/payments/components/transaction-card.tsx:24:  const isPositive = transaction.type !== 'payment';
+frontend/src/features/payments/components/transaction-card.tsx:33:          <p className="text-sm font-black text-foreground capitalize">{transaction.type}</p>
+frontend/src/features/payments/components/transaction-card.tsx:36:            {format(transaction.date, 'PPp')}
+frontend/src/features/payments/components/transaction-card.tsx:41:            transaction.status === 'completed'
+frontend/src/features/payments/components/transaction-card.tsx:43:              : transaction.status === 'failed'
+frontend/src/features/payments/components/transaction-card.tsx:45:              : transaction.status === 'processing'
+frontend/src/features/payments/components/transaction-card.tsx:51:            transaction.status === 'completed' && "bg-emerald-500 hover:bg-emerald-600",
+frontend/src/features/payments/components/transaction-card.tsx:52:            transaction.status === 'processing' && "border-amber-500 text-amber-500",
+frontend/src/features/payments/components/transaction-card.tsx:55:          {transaction.status}
+frontend/src/features/payments/components/transaction-card.tsx:60:          <p className="text-sm text-muted-foreground font-black">{transaction.description}</p>
+frontend/src/features/payments/components/transaction-card.tsx:67:              {isPositive ? '+' : ''}KES {transaction.amount.toLocaleString()}
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:23:  mpesa_receipt: string;
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:41:  const { data: payments, isLoading } = useQuery<UnmatchedPayment[]>({
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:42:    queryKey: ['unmatched-payments'],
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:44:      const response = await apiClient.axios.get('/api/v1/payments/unmatched/');
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:50:    mutationFn: async (data: { paymentId: string; bedId: string }) => {
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:51:      await apiClient.axios.post(`/api/v1/payments/unmatched/${data.paymentId}/match/`, {
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:59:      queryClient.invalidateQueries({ queryKey: ['unmatched-payments'] });
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:64:        title: 'Failed to match payment',
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:71:    mutationFn: async (paymentId: string) => {
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:72:      await apiClient.axios.post(`/api/v1/payments/unmatched/${paymentId}/reject/`);
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:78:      queryClient.invalidateQueries({ queryKey: ['unmatched-payments'] });
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:82:        title: 'Failed to reject payment',
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:112:  const filteredPayments = payments?.filter(payment =>
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:113:    payment.mpesa_receipt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:114:    payment.phone_number.includes(searchQuery) ||
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:115:    (payment.suggested_match?.student_name.toLowerCase().includes(searchQuery.toLowerCase()))
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:135:              Manual reconciliation for M-Pesa transactions
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:139:            {payments?.filter((p) => p.status === 'unmatched').length || 0} pending
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:170:              {filteredPayments.map((payment) => {
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:171:                const confidenceBadge = payment.suggested_match
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:172:                  ? getConfidenceBadge(payment.suggested_match.confidence)
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:176:                  <TableRow key={payment.id}>
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:178:                      {payment.mpesa_receipt}
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:181:                      {payment.phone_number}
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:184:                      {formatCurrency(payment.amount)}
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:187:                      {formatTimestamp(payment.timestamp)}
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:190:                      {payment.suggested_match ? (
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:192:                          <div className="font-medium">{payment.suggested_match.student_name}</div>
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:194:                            {payment.suggested_match.bed_code}
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:209:                      {payment.suggested_match && payment.status === 'unmatched' && (
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:216:                                paymentId: payment.id,
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:217:                                bedId: payment.suggested_match!.bed_code,
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:228:                            onClick={() => rejectPayment(payment.id)}
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:236:                      {payment.status === 'matched' && (
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:239:                      {payment.status === 'rejected' && (
+frontend/src/features/payments/components/unmatched-payments-dashboard.tsx:250:            <p className="text-muted-foreground">No unmatched payments</p>
+frontend/src/features/payments/components/recurring-payment-card.tsx:19:  payment: RecurringPayment;
+frontend/src/features/payments/components/recurring-payment-card.tsx:25:  payment,
+frontend/src/features/payments/components/recurring-payment-card.tsx:34:          <span className="text-sm font-medium capitalize">{payment.frequency}</span>
+frontend/src/features/payments/components/recurring-payment-card.tsx:38:            payment.status === 'active'
+frontend/src/features/payments/components/recurring-payment-card.tsx:40:              : payment.status === 'paused'
+frontend/src/features/payments/components/recurring-payment-card.tsx:45:          {payment.status}
+frontend/src/features/payments/components/recurring-payment-card.tsx:51:            <p className="text-2xl font-bold">KES {payment.amount.toLocaleString()}</p>
+frontend/src/features/payments/components/recurring-payment-card.tsx:52:            <p className="text-xs text-muted-foreground">per {payment.frequency.replace('ly', '')}</p>
+frontend/src/features/payments/components/recurring-payment-card.tsx:57:            <span>Next: {format(payment.nextPaymentDate, 'PP')}</span>
+frontend/src/features/payments/components/recurring-payment-card.tsx:60:          <p className="text-sm text-muted-foreground">via {payment.method}</p>
+frontend/src/features/payments/components/recurring-payment-card.tsx:62:          {payment.status === 'active' && (
+frontend/src/features/payments/components/transaction-table.tsx:3:import { usePayments } from '@/features/payments';
+frontend/src/features/payments/components/transaction-table.tsx:17:  const { data: payments, isLoading } = usePayments();
+frontend/src/features/payments/components/transaction-table.tsx:20:    return <div>Loading transactions...</div>;
+frontend/src/features/payments/components/transaction-table.tsx:37:          {payments?.map((payment) => (
+frontend/src/features/payments/components/transaction-table.tsx:38:            <TableRow key={payment.id} className="hover:bg-muted/30 transition-colors">
+frontend/src/features/payments/components/transaction-table.tsx:39:              <TableCell className="font-mono text-sm font-black text-foreground">{payment.reference}</TableCell>
+frontend/src/features/payments/components/transaction-table.tsx:40:              <TableCell className="text-muted-foreground font-black text-xs">{format(new Date(payment.date), 'PP')}</TableCell>
+frontend/src/features/payments/components/transaction-table.tsx:41:              <TableCell className="capitalize font-black text-foreground text-xs">{payment.type}</TableCell>
+frontend/src/features/payments/components/transaction-table.tsx:42:              <TableCell className="text-muted-foreground font-black text-xs uppercase">{payment.method}</TableCell>
+frontend/src/features/payments/components/transaction-table.tsx:44:                KES {payment.amount.toLocaleString()}
+frontend/src/features/payments/components/transaction-table.tsx:50:                    payment.status === 'completed' && "bg-emerald-500 hover:bg-emerald-600",
+frontend/src/features/payments/components/transaction-table.tsx:51:                    payment.status === 'pending' && "bg-amber-500/10 text-amber-600 border-none",
+frontend/src/features/payments/components/transaction-table.tsx:52:                    payment.status === 'failed' && "bg-red-500/10 text-red-600 border-none"
+frontend/src/features/payments/components/transaction-table.tsx:55:                  {payment.status}
+frontend/src/features/payments/components/mpesa-settings-form.tsx:10:import { useCreateMpesaConfig } from '../hooks/use-payments';
+frontend/src/features/payments/components/mpesa-settings-form.tsx:22:    mpesa_number: '',
+frontend/src/features/payments/components/mpesa-settings-form.tsx:23:    payment_type: 'paybill' as 'paybill',
+frontend/src/features/payments/components/mpesa-settings-form.tsx:33:    if (!formData.business_name || !formData.mpesa_number || !formData.consumer_key || !formData.consumer_secret || !formData.passkey) {
+frontend/src/features/payments/components/mpesa-settings-form.tsx:62:          <p className="text-xs text-slate-500 font-medium pl-1">This name will be shown to tenants when making payments.</p>
+frontend/src/features/payments/components/mpesa-settings-form.tsx:71:            value={formData.mpesa_number}
+frontend/src/features/payments/components/mpesa-settings-form.tsx:72:            onChange={e => setFormData({...formData, mpesa_number: e.target.value})}
+frontend/src/features/payments/components/payment-methods-list.tsx:3:import { usePaymentMethods } from '@/features/payments';
+frontend/src/features/payments/components/payment-methods-list.tsx:4:import { PaymentMethodCard } from './payment-method-card';
+frontend/src/features/payments/components/payment-methods-list.tsx:17:    return <div>Loading payment methods...</div>;
+frontend/src/features/payments/components/payment-methods-list.tsx:42:          No payment methods added yet
+frontend/src/features/payments/components/rent-history-timeline.tsx:4:import { useRentPeriods } from '../hooks/use-payments';
+frontend/src/features/payments/components/rent-history-timeline.tsx:157:                      {period.transactions && period.transactions.length > 0 && (
+frontend/src/features/payments/components/rent-history-timeline.tsx:170:                                    {period.transactions.map(txn => (
+frontend/src/features/payments/components/transaction-details.tsx:16:  transactionId: string;
+frontend/src/features/payments/components/transaction-details.tsx:22:  transactionId,
+frontend/src/features/payments/components/transaction-details.tsx:27:  const transaction = {
+frontend/src/features/payments/components/transaction-details.tsx:28:    id: transactionId,
+frontend/src/features/payments/components/transaction-details.tsx:30:    type: 'payment',
+frontend/src/features/payments/components/transaction-details.tsx:35:    description: 'Hostel booking payment',
+frontend/src/features/payments/components/transaction-details.tsx:48:            <Badge variant="default">{transaction.status}</Badge>
+frontend/src/features/payments/components/transaction-details.tsx:56:              <span className="font-mono">{transaction.id}</span>
+frontend/src/features/payments/components/transaction-details.tsx:61:              <span className="font-mono">{transaction.reference}</span>
+frontend/src/features/payments/components/transaction-details.tsx:66:              <span>{format(transaction.date, 'PPp')}</span>
+frontend/src/features/payments/components/transaction-details.tsx:71:              <span>{transaction.method}</span>
+frontend/src/features/payments/components/transaction-details.tsx:76:              <span className="capitalize">{transaction.type}</span>
+frontend/src/features/payments/components/transaction-details.tsx:84:            <p className="text-sm text-muted-foreground">{transaction.description}</p>
+frontend/src/features/payments/components/transaction-details.tsx:91:            <span>KES {transaction.amount.toLocaleString()}</span>
+frontend/src/features/payments/components/payment-method-card.tsx:15:  mpesa: Smartphone,
+frontend/src/features/payments/components/payment-method-card.tsx:40:              {method.type === 'mpesa' && method.details.phoneNumber}
+frontend/src/features/payments/components/payment-options-modal.tsx:27:import { initializeMpesaPayment } from '../api/payments';
+frontend/src/features/payments/components/payment-options-modal.tsx:31:  paybill_number: string;
+frontend/src/features/payments/components/payment-options-modal.tsx:47:  onPaymentInitiated?: (transactionRef: string) => void;
+frontend/src/features/payments/components/payment-options-modal.tsx:106:  const [paymentMethod, setPaymentMethod] = useState<'offline' | 'online'>('offline');
+frontend/src/features/payments/components/payment-options-modal.tsx:109:  // Mock payment details - in production, fetch from API
+frontend/src/features/payments/components/payment-options-modal.tsx:110:  const paymentDetails: PaymentDetailsData = {
+frontend/src/features/payments/components/payment-options-modal.tsx:111:    paybill_number: '548548',
+frontend/src/features/payments/components/payment-options-modal.tsx:129:      if (onPaymentInitiated && data.transaction_reference) {
+frontend/src/features/payments/components/payment-options-modal.tsx:130:        onPaymentInitiated(data.transaction_reference);
+frontend/src/features/payments/components/payment-options-modal.tsx:136:        title: 'Failed to initiate payment',
+frontend/src/features/payments/components/payment-options-modal.tsx:146:      payment_type: 'rent',
+frontend/src/features/payments/components/payment-options-modal.tsx:147:      payment_method: 'stk_push',
+frontend/src/features/payments/components/payment-options-modal.tsx:148:      phone_number: paymentDetails.student_phone,
+frontend/src/features/payments/components/payment-options-modal.tsx:167:            Choose your preferred payment method
+frontend/src/features/payments/components/payment-options-modal.tsx:171:        <Tabs value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as typeof paymentMethod)}>
+frontend/src/features/payments/components/payment-options-modal.tsx:186:                {paymentDetails.till_number ? 'Till Number' : 'Paybill Number'}
+frontend/src/features/payments/components/payment-options-modal.tsx:190:                  {paymentDetails.till_number || paymentDetails.paybill_number}
+frontend/src/features/payments/components/payment-options-modal.tsx:192:                <CopyButton value={paymentDetails.till_number || paymentDetails.paybill_number} />
+frontend/src/features/payments/components/payment-options-modal.tsx:197:            {!paymentDetails.till_number && (
+frontend/src/features/payments/components/payment-options-modal.tsx:204:                    {paymentDetails.account_number}
+frontend/src/features/payments/components/payment-options-modal.tsx:206:                  <CopyButton value={paymentDetails.account_number} />
+frontend/src/features/payments/components/payment-options-modal.tsx:232:                    <strong>M-Pesa App:</strong> Lipa na M-Pesa → {paymentDetails.till_number ? 'Buy Goods' : 'Paybill'}
+frontend/src/features/payments/components/payment-options-modal.tsx:256:              {paymentDetails.ussd_code && (
+frontend/src/features/payments/components/payment-options-modal.tsx:265:                        {paymentDetails.ussd_code}
+frontend/src/features/payments/components/payment-options-modal.tsx:267:                      <CopyButton value={paymentDetails.ussd_code} />
+frontend/src/features/payments/components/payment-options-modal.tsx:280:ibold">After payment:</p>
+frontend/src/features/payments/components/payment-options-modal.tsx:292:              We'll send a payment prompt to your phone. Enter your M-Pesa PIN to complete.
+frontend/src/features/payments/components/payment-options-modal.tsx:298:                <span className="text-sm text-muted-foreground">Amount to pay</span>
+frontend/src/features/payments/components/payment-options-modal.tsx:302:                To: {paymentDetails.hostel_name} • Bed: {paymentDetails.bed_code}
+frontend/src/features/payments/components/payment-options-modal.tsx:311:                value={paymentDetails.student_phone}
+frontend/src/features/payments/components/payment-options-modal.tsx:330:                  Sending payment prompt...
+frontend/src/features/payments/components/payment-options-modal.tsx:341:              Secure payment powered by Safaricom M-Pesa
+frontend/src/features/payments/components/payment-form.tsx:25:import { useInitiatePayment } from '@/features/payments';
+frontend/src/features/payments/components/payment-form.tsx:27:const paymentSchema = z.object({
+frontend/src/features/payments/components/payment-form.tsx:29:  method: z.enum(['mpesa', 'bank']),
+frontend/src/features/payments/components/payment-form.tsx:34:type PaymentFormValues = z.infer<typeof paymentSchema>;
+frontend/src/features/payments/components/payment-form.tsx:46:    resolver: zodResolver(paymentSchema),
+frontend/src/features/payments/components/payment-form.tsx:49:      method: 'mpesa',
+frontend/src/features/payments/components/payment-form.tsx:69:        method: data.method === 'bank' ? 'paystack' : 'mpesa' 
+frontend/src/features/payments/components/payment-form.tsx:120:                      <SelectItem value="mpesa">M-Pesa</SelectItem>
+frontend/src/features/payments/components/payment-form.tsx:129:            {selectedMethod === 'mpesa' && (
+frontend/src/features/payments/components/student/payment-hero-card.tsx:7:import { useCurrentRentPeriod, useRentSummary } from '../../hooks/use-payments';
+frontend/src/features/payments/components/student/payment-hero-card.tsx:8:import { PaymentDrawer } from './payment-drawer';
+frontend/src/features/payments/components/student/payment-hero-card.tsx:92:                     Secure M-Pesa payment. Instant confirmation.
+frontend/src/features/payments/components/student/payment-drawer.tsx:30:import { useInitializeMpesaPayment, useMpesaPaymentStatus } from '../../hooks/use-payments';
+frontend/src/features/payments/components/student/payment-drawer.tsx:56:  const [transactionId, setTransactionId] = React.useState<string | number | null>(null);
+frontend/src/features/payments/components/student/payment-drawer.tsx:73:    { transaction_id: transactionId || undefined, checkout_request_id: checkoutId || undefined },
+frontend/src/features/payments/components/student/payment-drawer.tsx:148:        payment_type: 'initial', // Should be dynamic based on context
+frontend/src/features/payments/components/student/payment-drawer.tsx:149:        payment_method: 'stk_push',
+frontend/src/features/payments/components/student/payment-drawer.tsx:155:          setTransactionId(data.transaction_id);
+frontend/src/features/payments/components/student/payment-drawer.tsx:226:                            Encrypted 256-bit transaction
+frontend/src/features/payments/components/student/payment-drawer.tsx:274:                            Enter your M-Pesa PIN to complete the payment of 
+frontend/src/features/payments/components/student/payment-drawer.tsx:299:                        <p className="text-emerald-700">Receipt #{transactionId || 'PENDING'}</p>
+frontend/src/features/payments/components/student/payment-drawer.tsx:312:                            <span className="font-mono">{statusData?.transaction?.reference || transactionId}</span>
+frontend/src/features/payments/components/student/payment-drawer.tsx:331:                              Use the M-Pesa menu to pay directly to the verified till details below.
+frontend/src/features/payments/components/student/payment-drawer.tsx:388:                         I have made the payment
+frontend/src/features/payments/components/add-payment-method-dialog.tsx:33:const paymentMethodSchema = z.object({
+frontend/src/features/payments/components/add-payment-method-dialog.tsx:34:  type: z.enum(['mpesa', 'card', 'bank']),
+frontend/src/features/payments/components/add-payment-method-dialog.tsx:41:type PaymentMethodFormValues = z.infer<typeof paymentMethodSchema>;
+frontend/src/features/payments/components/add-payment-method-dialog.tsx:57:    resolver: zodResolver(paymentMethodSchema),
+frontend/src/features/payments/components/add-payment-method-dialog.tsx:59:      type: 'mpesa',
+frontend/src/features/payments/components/add-payment-method-dialog.tsx:64:  const paymentType = form.watch('type');
+frontend/src/features/payments/components/add-payment-method-dialog.tsx:74:      toast.error('Failed to add payment method');
+frontend/src/features/payments/components/add-payment-method-dialog.tsx:86:            Add a new payment method to your account
+frontend/src/features/payments/components/add-payment-method-dialog.tsx:108:                      <SelectItem value="mpesa">M-Pesa</SelectItem>
+frontend/src/features/payments/components/add-payment-method-dialog.tsx:132:            {paymentType === 'mpesa' && (
+frontend/src/features/payments/components/add-payment-method-dialog.tsx:148:            {paymentType === 'bank' && (
+frontend/src/features/payments/components/add-payment-method-dialog.tsx:179:            {paymentType === 'card' && (
+frontend/src/features/payments/components/payout-card.tsx:11:  payout: Payout;
+frontend/src/features/payments/components/payout-card.tsx:14:export function PayoutCard({ payout }: PayoutCardProps) {
+frontend/src/features/payments/components/payout-card.tsx:16:  const dateValue = new Date(payout.created_at);
+frontend/src/features/payments/components/payout-card.tsx:21:        <CardTitle className="text-sm font-black text-foreground">Payout #{payout.id}</CardTitle>
+frontend/src/features/payments/components/payout-card.tsx:25:            payout.status === 'success' ? "bg-emerald-500 hover:bg-emerald-600" : "bg-muted text-muted-foreground"
+frontend/src/features/payments/components/payout-card.tsx:28:          {payout.status}
+frontend/src/features/payments/components/payout-card.tsx:35:              KES {payout.amount.toLocaleString()}
+frontend/src/features/payments/components/billing-history.tsx:40:      const response = await api.get('/payments/subscriptions/invoices/');
+frontend/src/features/payments/components/mpesa-settings-list.tsx:8:import { useMpesaConfigs } from '../hooks/use-payments';
+frontend/src/features/payments/components/mpesa-settings-list.tsx:37:          You haven't added any M-Pesa payment details yet. Add one to start tracking payments automatically.
+frontend/src/features/payments/components/mpesa-settings-list.tsx:69:                        <span className="text-xs uppercase tracking-wider text-slate-500 font-bold">{config.payment_type.replace('_', ' ')}</span>
+frontend/src/features/payments/components/mpesa-settings-list.tsx:71:                   <span className="font-mono font-bold tracking-wide text-slate-900 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/50 py-1 px-2 rounded-md">{config.mpesa_number}</span>
+frontend/src/features/payments/components/payment-receipt.tsx:11:  transactionId: string;
+frontend/src/features/payments/components/payment-receipt.tsx:14:  paymentMethod: string;
+frontend/src/features/payments/components/payment-receipt.tsx:24:  transactionId,
+frontend/src/features/payments/components/payment-receipt.tsx:27:  paymentMethod,
+frontend/src/features/payments/components/payment-receipt.tsx:62:            <span className="font-mono">{transactionId}</span>
+frontend/src/features/payments/components/payment-receipt.tsx:77:            <span className="capitalize">{paymentMethod}</span>
+frontend/src/features/payments/components/payment-receipt.tsx:103:                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/verify-receipt?id=${transactionId}`}
+frontend/src/features/payments/components/payment-ledger-viewer.tsx:23:  transaction_date: string;
+frontend/src/features/payments/components/payment-ledger-viewer.tsx:26:  transaction_type: 'credit' | 'debit';
+frontend/src/features/payments/components/payment-ledger-viewer.tsx:38:    queryKey: ['payment-ledger', currentSearch],
+frontend/src/features/payments/components/payment-ledger-viewer.tsx:41:      const response = await apiClient.axios.get(`/api/v1/payments/ledger/${searchParam}`);
+frontend/src/features/payments/components/payment-ledger-viewer.tsx:51:    const response = await apiClient.axios.get('/api/v1/payments/ledger/export/', {
+frontend/src/features/payments/components/payment-ledger-viewer.tsx:57:    link.setAttribute('download', `payment_ledger_${new Date().toISOString()}.csv`);
+frontend/src/features/payments/components/payment-ledger-viewer.tsx:133:                      {formatDate(entry.transaction_date)}
+frontend/src/features/payments/components/payment-ledger-viewer.tsx:139:                        variant={entry.transaction_type === 'credit' ? 'default' : 'secondary'}
+frontend/src/features/payments/components/payment-ledger-viewer.tsx:142:                        {entry.transaction_type}
+frontend/src/features/payments/components/payment-ledger-viewer.tsx:153:                        entry.transaction_type === 'credit' ? 'text-green-600' : 'text-red-600'
+frontend/src/features/payments/components/payment-ledger-viewer.tsx:156:                      {entry.transaction_type === 'credit' ? '+' : '-'}
+frontend/src/features/payments/components/payment-status-tracker.tsx:5:import { getMpesaPaymentStatus } from '../api/payments';
+frontend/src/features/payments/components/payment-status-tracker.tsx:10:  transactionRef: string;
+frontend/src/features/payments/components/payment-status-tracker.tsx:25:    label: 'Waiting for payment'
+frontend/src/features/payments/components/payment-status-tracker.tsx:48:  transactionRef,
+frontend/src/features/payments/components/payment-status-tracker.tsx:52:    queryKey: ['payment-status', transactionRef],
+frontend/src/features/payments/components/payment-status-tracker.tsx:54:      transaction_id: transactionRef,
+frontend/src/features/payments/components/payment-status-tracker.tsx:58:      // Stop polling if payment succeeded or failed
+frontend/src/features/payments/components/payment-status-tracker.tsx:62:    enabled: !!transactionRef,
+frontend/src/features/payments/components/payment-status-tracker.tsx:74:  // Build timeline from transaction data
+frontend/src/features/payments/components/payment-status-tracker.tsx:83:      timestamp: data.transaction?.date || new Date().toISOString(),
+frontend/src/features/payments/components/payment-status-tracker.tsx:135:              {event.status === 'failed' && data?.transaction.id && (
+frontend/src/features/payments/components/payment-status-tracker.tsx:146:      {data?.transaction && data.status === 'success' && (
+frontend/src/features/payments/components/payment-status-tracker.tsx:149:          <p className="text-sm font-mono font-semibold">{data.transaction.reference}</p>
+frontend/src/features/payments/components/payment-history-table.tsx:5:import { getPayments } from '../api/payments';
+frontend/src/features/payments/components/payment-history-table.tsx:35:  const { data: payments, isLoading } = useQuery({
+frontend/src/features/payments/components/payment-history-table.tsx:36:    queryKey: ['payments', userId, limit],
+frontend/src/features/payments/components/payment-history-table.tsx:65:  if (!payments || payments.length === 0) {
+frontend/src/features/payments/components/payment-history-table.tsx:68:        <p className="text-muted-foreground">No payment history yet</p>
+frontend/src/features/payments/components/payment-history-table.tsx:87:          {payments.map((payment) => (
+frontend/src/features/payments/components/payment-history-table.tsx:88:            <TableRow key={payment.id}>
+frontend/src/features/payments/components/payment-history-table.tsx:90:                {formatDate(payment.date)}
+frontend/src/features/payments/components/payment-history-table.tsx:93:                {formatCurrency(payment.amount)}
+frontend/src/features/payments/components/payment-history-table.tsx:97:                  {payment.method}
+frontend/src/features/payments/components/payment-history-table.tsx:102:                  {payment.reference}
+frontend/src/features/payments/components/payment-history-table.tsx:107:                  {(payment as any).rent_period_details?.bed_code || '-'}
+frontend/src/features/payments/components/payment-history-table.tsx:111:                <Badge variant={STATUS_VARIANTS[payment.status as keyof typeof STATUS_VARIANTS] || 'default'}>
+frontend/src/features/payments/components/payment-history-table.tsx:112:                  {payment.status}
+frontend/src/features/payments/components/payment-history-table.tsx:116:                {(payment.status === 'success' || payment.status === 'completed') && (
+frontend/src/features/payments/components/payment-history-table.tsx:118:                    transactionRef={payment.reference} 
+frontend/src/features/payments/components/receipt-verification.tsx:19:  payment_method: string;
+frontend/src/features/payments/components/receipt-verification.tsx:44:        const response = await axios.get<VerificationResult>(`/payments/receipts/verify/${id}/`);
+frontend/src/features/payments/components/receipt-generator.tsx:12:  transactionRef: string;
+frontend/src/features/payments/components/receipt-generator.tsx:22:export function ReceiptGenerator({ transactionRef, trigger }: ReceiptGeneratorProps) {
+frontend/src/features/payments/components/receipt-generator.tsx:28:        '/payments/receipts/generate/',
+frontend/src/features/payments/components/receipt-generator.tsx:29:        { transaction_reference: transactionRef }
+frontend/src/features/payments/components/receipt-generator.tsx:89:export async function emailReceipt(transactionRef: string, email: string) {
+frontend/src/features/payments/components/receipt-generator.tsx:90:  const response = await apiClient.axios.post('/payments/receipts/email/', {
+frontend/src/features/payments/components/receipt-generator.tsx:91:    transaction_reference: transactionRef,
+frontend/src/features/payments/components/recurring-payment-settings.tsx:31:  paymentMethod: z.string(),
+frontend/src/features/payments/components/recurring-payment-settings.tsx:50:      toast.success('Recurring payment set up successfully');
+frontend/src/features/payments/components/recurring-payment-settings.tsx:52:      toast.error('Failed to set up recurring payment');
+frontend/src/features/payments/components/paybill-config-form.tsx:23:const paybillSchema = z.object({
+frontend/src/features/payments/components/paybill-config-form.tsx:24:  payment_type: z.enum(['paybill', 'till']),
+frontend/src/features/payments/components/paybill-config-form.tsx:25:  mpesa_number: z.string().regex(/^\d{5,7}$/, 'Must be 5-7 digits'),
+frontend/src/features/payments/components/paybill-config-form.tsx:29:type PaybillFormData = z.infer<typeof paybillSchema>;
+frontend/src/features/payments/components/paybill-config-form.tsx:47:    resolver: zodResolver(paybillSchema),
+frontend/src/features/payments/components/paybill-config-form.tsx:49:      payment_type: 'paybill',
+frontend/src/features/payments/components/paybill-config-form.tsx:53:  const paymentType = watch('payment_type');
+frontend/src/features/payments/components/paybill-config-form.tsx:59:        `/api/v1/hostels/${hostelId}/payment-config/`,
+frontend/src/features/payments/components/paybill-config-form.tsx:69:      queryClient.invalidateQueries({ queryKey: ['payment-config', hostelId] });
+frontend/src/features/payments/components/paybill-config-form.tsx:81:  // Test payment verification mutation
+frontend/src/features/payments/components/paybill-config-form.tsx:85:        `/api/v1/hostels/${hostelId}/payment-config/verify/`
+frontend/src/features/payments/components/paybill-config-form.tsx:100:        description: 'Please check your payment details',
+frontend/src/features/payments/components/paybill-config-form.tsx:114:        <Label htmlFor="payment-method">Payment Method</Label>
+frontend/src/features/payments/components/paybill-config-form.tsx:116:          value={paymentType}
+frontend/src/features/payments/components/paybill-config-form.tsx:117:          onValueChange={(value) => setValue('payment_type', value as 'paybill' | 'till')}
+frontend/src/features/payments/components/paybill-config-form.tsx:119:          <SelectTrigger id="payment-method">
+frontend/src/features/payments/components/paybill-config-form.tsx:123:            <SelectItem value="paybill">M-Pesa Paybill</SelectItem>
+frontend/src/features/payments/components/paybill-config-form.tsx:131:        <Label htmlFor="mpesa_number">{paymentType === 'paybill' ? 'Paybill Number' : 'Till Number'}</Label>
+frontend/src/features/payments/components/paybill-config-form.tsx:133:          id="mpesa_number"
+frontend/src/features/payments/components/paybill-config-form.tsx:134:          {...register('mpesa_number')}
+frontend/src/features/payments/components/paybill-config-form.tsx:135:          placeholder={paymentType === 'paybill' ? 'e.g., 548548' : 'e.g., 5123456'}
+frontend/src/features/payments/components/paybill-config-form.tsx:138:        {errors.mpesa_number && (
+frontend/src/features/payments/components/paybill-config-form.tsx:139:          <p className="text-xs text-red-600">{errors.mpesa_number.message}</p>
+frontend/src/features/payments/components/paybill-config-form.tsx:173:                <p className="text-green-700 dark:text-green-300 mt-1">Your payment setup is active</p>
+frontend/src/features/payments/components/paybill-config-form.tsx:182:                <p className="text-blue-700 dark:text-blue-300 mt-1">Sending test payment...</p>
+frontend/src/features/payments/components/paybill-config-form.tsx:238:            <li>We'll sent a test payment of KES 50</li>
+frontend/src/features/payments/components/rent-overview.tsx:19:import { useCurrentRentPeriod, useMyWallet, useRentSummary } from '../hooks/use-payments';
+frontend/src/features/payments/components/rent-overview.tsx:22:import { PaymentDrawer } from './student/payment-drawer';
+frontend/src/features/payments/components/rent-overview.tsx:143:              <CardDescription className="text-xs font-bold text-primary/60">Credits & Overpayments</CardDescription>
+frontend/src/features/payments/components/rent-overview.tsx:165:              onClick={() => router.push('/student/payments/wallet')}
+frontend/src/features/payments/components/pay-rent-modal.tsx:28:import { useInitializeMpesaPayment, useMpesaPaymentStatus } from '../hooks/use-payments';
+frontend/src/features/payments/components/pay-rent-modal.tsx:45:  const [transactionId, setTransactionId] = React.useState<string | number | null>(null);
+frontend/src/features/payments/components/pay-rent-modal.tsx:57:    { transaction_id: transactionId || undefined, checkout_request_id: checkoutId || undefined },
+frontend/src/features/payments/components/pay-rent-modal.tsx:113:        payment_type: 'initial',
+frontend/src/features/payments/components/pay-rent-modal.tsx:114:        payment_method: 'stk_push',
+frontend/src/features/payments/components/pay-rent-modal.tsx:119:          setTransactionId(data.transaction_id);
+frontend/src/features/payments/components/pay-rent-modal.tsx:160:                  Secure transaction for {hostelName || 'Booking'}
+frontend/src/features/payments/components/pay-rent-modal.tsx:179:                  <Label htmlFor="pay-amount" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Amount to Pay</Label>
+frontend/src/features/payments/components/pay-rent-modal.tsx:183:                      id="pay-amount"
+frontend/src/features/payments/components/pay-rent-modal.tsx:289:                  <span className="font-mono font-black text-foreground bg-background px-2 py-1 border-2 border-border">{transactionId}</span>
+frontend/src/features/payments/components/pay-rent-modal.tsx:308:                  Manual M-Pesa payment
+frontend/src/features/payments/components/transaction-list.tsx:3:import { usePayments } from '@/features/payments';
+frontend/src/features/payments/components/transaction-list.tsx:4:import { TransactionCard } from './transaction-card';
+frontend/src/features/payments/components/transaction-list.tsx:6:import { TransactionDetails } from './transaction-details';
+frontend/src/features/payments/components/transaction-list.tsx:9:  const { data: payments, isLoading } = usePayments();
+frontend/src/features/payments/components/transaction-list.tsx:13:    return <div>Loading transactions...</div>;
+frontend/src/features/payments/components/transaction-list.tsx:16:  const transactions = payments?.map((payment) => ({
+frontend/src/features/payments/components/transaction-list.tsx:17:    id: payment.id,
+frontend/src/features/payments/components/transaction-list.tsx:18:    type: 'payment' as const,
+frontend/src/features/payments/components/transaction-list.tsx:19:    amount: payment.amount,
+frontend/src/features/payments/components/transaction-list.tsx:20:    status: payment.status as 'completed' | 'pending' | 'failed' | 'processing',
+frontend/src/features/payments/components/transaction-list.tsx:21:    date: new Date(payment.date),
+frontend/src/features/payments/components/transaction-list.tsx:22:    description: payment.reference,
+frontend/src/features/payments/components/transaction-list.tsx:27:      {transactions?.map((transaction) => (
+frontend/src/features/payments/components/transaction-list.tsx:29:          key={transaction.id}
+frontend/src/features/payments/components/transaction-list.tsx:30:          transaction={transaction}
+frontend/src/features/payments/components/transaction-list.tsx:31:          onClick={() => setSelectedTransaction(transaction.id)}
+frontend/src/features/payments/components/transaction-list.tsx:35:      {transactions?.length === 0 && (
+frontend/src/features/payments/components/transaction-list.tsx:37:          No transactions found
+frontend/src/features/payments/components/transaction-list.tsx:43:          transactionId={selectedTransaction}
+frontend/src/features/payments/types.ts:66:  type: 'mpesa' | 'bank' | 'card';
+frontend/src/features/payments/types.ts:110:  assigned_paybill?: string;
+frontend/src/features/payments/types.ts:112:  transactions: Array<{
+frontend/src/features/payments/types.ts:116:    payment_method: string;
+frontend/src/features/payments/types.ts:174:  transactionId: string;
+frontend/src/features/payments/types.ts:181:  transactionId: string;
+frontend/src/features/payments/types.ts:191:  payment_type: 'initial' | 'rent' | 'late_fee';
+frontend/src/features/payments/types.ts:192:  payment_method: 'stk_push' | 'paybill';
+frontend/src/features/payments/types.ts:199:  transaction_id: number;
+frontend/src/features/payments/types.ts:200:  transaction_reference: string;
+frontend/src/features/payments/types.ts:202:  payment_method: string;
+frontend/src/features/payments/types.ts:203:  mpesa_payment_type: string;
+frontend/src/features/payments/types.ts:218:  transaction: Transaction;
+frontend/src/features/payments/types.ts:225:  payment_type: 'paybill';
+frontend/src/features/payments/types.ts:226:  mpesa_number: string;
+frontend/src/features/payments/types.ts:237:  payment_type: 'paybill';
+frontend/src/features/payments/types.ts:238:  mpesa_number: string;
+frontend/src/features/payments/types.ts:249:  method: 'mpesa' | 'paystack';
+frontend/src/features/payments/index.ts:1:// payments Feature Public API
+frontend/src/features/payments/index.ts:2:export * from './components/payout-list';
+frontend/src/features/payments/index.ts:3:export * from './components/transaction-card';
+frontend/src/features/payments/index.ts:4:export * from './components/recurring-payment-card';
+frontend/src/features/payments/index.ts:6:export * from './components/transaction-table';
+frontend/src/features/payments/index.ts:8:export * from './components/payment-methods-list';
+frontend/src/features/payments/index.ts:9:export * from './components/transaction-details';
+frontend/src/features/payments/index.ts:10:export * from './components/payment-method-card';
+frontend/src/features/payments/index.ts:11:export * from './components/payment-breakdown';
+frontend/src/features/payments/index.ts:12:export * from './components/payment-form';
+frontend/src/features/payments/index.ts:13:export * from './components/add-payment-method-dialog';
+frontend/src/features/payments/index.ts:14:export * from './components/payout-card';
+frontend/src/features/payments/index.ts:15:export * from './components/payment-receipt';
+frontend/src/features/payments/index.ts:16:export * from './components/recurring-payment-settings';
+frontend/src/features/payments/index.ts:17:export * from './components/transaction-list';
+frontend/src/features/payments/index.ts:18:export * from './components/pay-rent-modal';
+frontend/src/features/payments/index.ts:19:export * from './components/mpesa-settings-form';
+frontend/src/features/payments/index.ts:20:export * from './components/mpesa-settings-list';
+frontend/src/features/payments/index.ts:21:export * from './api/payments';
+frontend/src/features/payments/index.ts:23:export * from './hooks/use-payment-methods';
+frontend/src/features/payments/index.ts:24:export * from './hooks/use-payments';
+frontend/src/features/payments/__tests__/components.test.tsx:4: * Tests Week 1-3 payment components:
+frontend/src/features/payments/__tests__/components.test.tsx:71:    const { PaymentOptionsModal } = require('@/features/payments/components/payment-options-modal');
+frontend/src/features/payments/__tests__/components.test.tsx:91:          paybill_number: '548548',
+frontend/src/features/payments/__tests__/components.test.tsx:98:    const { PaymentOptionsModal } = require('@/features/payments/components/payment-options-modal');
+frontend/src/features/payments/__tests__/components.test.tsx:125:    const { PaymentOptionsModal } = require('@/features/payments/components/payment-options-modal');
+frontend/src/features/payments/__tests__/components.test.tsx:145:      const payButton = screen.queryByText(/Pay.*5,000/i);
+frontend/src/features/payments/__tests__/components.test.tsx:146:      expect(payButton).toBeInTheDocument();
+frontend/src/features/payments/__tests__/components.test.tsx:149:    const payButton = screen.getByText(/Pay.*5,000/i);
+frontend/src/features/payments/__tests__/components.test.tsx:150:    fireEvent.click(payButton);
+frontend/src/features/payments/__tests__/components.test.tsx:154:        expect.stringContaining('/mpesa/initialize/'),
+frontend/src/features/payments/__tests__/components.test.tsx:170:  it('should poll payment status every 5 seconds', async () => {
+frontend/src/features/payments/__tests__/components.test.tsx:180:    const { PaymentStatusTracker } = require('@/features/payments/components/payment-status-tracker');
+frontend/src/features/payments/__tests__/components.test.tsx:183:      <PaymentStatusTracker transactionRef="TXN-123" />,
+frontend/src/features/payments/__tests__/components.test.tsx:209:        data: { data: { status: 'success', mpesa_receipt: 'RCPT123' } },
+frontend/src/features/payments/__tests__/components.test.tsx:212:    const { PaymentStatusTracker } = require('@/features/payments/components/payment-status-tracker');
+frontend/src/features/payments/__tests__/components.test.tsx:215:      <PaymentStatusTracker transactionRef="TXN-123" />,
+frontend/src/features/payments/__tests__/components.test.tsx:244:  it('should render transaction list', async () => {
+frontend/src/features/payments/__tests__/components.test.tsx:260:    const { PaymentHistoryTable } = require('@/features/payments/components/payment-history-table');
+frontend/src/features/payments/__tests__/components.test.tsx:270:  it('should show empty state when no transactions', async () => {
+frontend/src/features/payments/__tests__/components.test.tsx:276:    const { PaymentHistoryTable } = require('@/features/payments/components/payment-history-table');
+frontend/src/features/payments/__tests__/components.test.tsx:281:      expect(screen.getByText(/No payment history yet/i)).toBeInTheDocument();
+frontend/src/features/payments/__tests__/components.test.tsx:300:    const { ReceiptGenerator } = require('@/features/payments/components/receipt-generator');
+frontend/src/features/payments/__tests__/components.test.tsx:304:        transactionRef="TXN-123" 
+frontend/src/features/payments/__tests__/components.test.tsx:338:    const { SubscriptionOverviewCard } = require('@/features/payments/components/subscription-overview-card');
+frontend/src/features/payments/__tests__/components.test.tsx:364:    const { SubscriptionOverviewCard } = require('@/features/payments/components/subscription-overview-card');
+frontend/src/features/payments/__tests__/components.test.tsx:397:    const { InvoiceHistoryList } = require('@/features/payments/components/invoice-history-list');
+frontend/src/features/payments/__tests__/components.test.tsx:413:    const { PaybillConfigForm } = require('@/features/payments/components/paybill-config-form');
+frontend/src/features/payments/__tests__/components.test.tsx:439:    const { PaybillConfigForm } = require('@/features/payments/components/paybill-config-form');
+frontend/src/features/payments/__tests__/components.test.tsx:457:        expect.stringContaining('/payment-config/'),
+frontend/src/features/payments/__tests__/components.test.tsx:459:          mpesa_number: '548548',
+frontend/src/features/payments/__tests__/components.test.tsx:472:  it('should display unmatched payments with suggestions', async () => {
+frontend/src/features/payments/__tests__/components.test.tsx:479:            mpesa_receipt: 'RCPT123',
+frontend/src/features/payments/__tests__/components.test.tsx:494:    const { UnmatchedPaymentsDashboard } = require('@/features/payments/components/unmatched-payments-dashboard');
+frontend/src/features/payments/__tests__/components.test.tsx:505:  it('should match payment when clicked', async () => {
+frontend/src/features/payments/__tests__/components.test.tsx:511:            id: 'payment-1',
+frontend/src/features/payments/__tests__/components.test.tsx:512:            mpesa_receipt: 'RCPT123',
+frontend/src/features/payments/__tests__/components.test.tsx:525:    const { UnmatchedPaymentsDashboard } = require('@/features/payments/components/unmatched-payments-dashboard');
+frontend/src/features/payments/__tests__/components.test.tsx:536:        expect.stringContaining('/unmatched/payment-1/match/'),
+frontend/src/features/payments/__tests__/components.test.tsx:551:            transaction_date: '2026-02-07',
+frontend/src/features/payments/__tests__/components.test.tsx:554:            transaction_type: 'credit',
+frontend/src/features/payments/__tests__/components.test.tsx:557:            description: 'Rent payment',
+frontend/src/features/payments/__tests__/components.test.tsx:564:    const { PaymentLedgerViewer } = require('@/features/payments/components/payment-ledger-viewer');
+frontend/src/features/payments/__tests__/components.test.tsx:581:    const { PaymentLedgerViewer } = require('@/features/payments/components/payment-ledger-viewer');

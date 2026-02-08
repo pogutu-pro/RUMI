@@ -29,11 +29,11 @@ export default function SubscriptionPage() {
     <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-3">
-            <Zap className="h-8 w-8 text-amber-500" />
+           <h1 className="text-3xl font-bold tracking-tight text-primary flex items-center gap-3">
+            <Zap className="h-8 w-8 text-warning" />
             Subscription
           </h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          <p className="mt-1 text-sm text-muted-foreground">
             Manage your billing plan and unlock premium features
           </p>
         </div>
@@ -46,24 +46,24 @@ export default function SubscriptionPage() {
                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                    <div>
                        <div className="flex items-center gap-2 mb-2">
-                           <p className="text-emerald-400 font-medium tracking-wider uppercase text-sm">Target Plan</p>
-                           {isTrial && <Badge className="bg-amber-500/20 text-amber-400 border-0">Trial Active</Badge>}
+                           <p className="text-success font-medium tracking-wider uppercase text-sm">Current Plan</p>
+                           {isTrial && <Badge className="bg-warning/20 text-warning border-0">Trial Active</Badge>}
                        </div>
-                       <h2 className="text-4xl font-bold mb-2">{currentPlan?.name || 'Free Plan'}</h2>
-                       <p className="text-slate-300 max-w-lg">
+                       <h2 className="text-4xl font-bold mb-2 text-primary">{currentPlan?.name || 'Free Plan'}</h2>
+                       <p className="text-muted-foreground max-w-lg">
                            {currentPlan ? 'You are enjoying premium features for managing your property portfolio efficiently.' : 'Upgrade to manage more properties and access advanced reports.'}
                        </p>
                    </div>
                    <div className="text-right">
-                       <div className="text-3xl font-bold text-white mb-1">
-                           KES {currentPlan?.price || '0'} <span className="text-lg font-normal text-slate-400">/ mo</span>
+                       <div className="text-3xl font-bold text-primary mb-1">
+                           KES {currentPlan?.price || '0'} <span className="text-lg font-normal text-muted-foreground">/ mo</span>
                        </div>
                        {mySubscription?.current_period_end && (
-                        <p className="text-sm text-slate-400">Renews {format(new Date(mySubscription.current_period_end), 'MMM dd, yyyy')}</p>
+                        <p className="text-sm text-muted-foreground">Renews {format(new Date(mySubscription.current_period_end), 'MMM dd, yyyy')}</p>
                        )}
                        <div className="mt-4 flex gap-3 justify-end">
-                           <Button variant="outline" className="text-slate-900 border-white hover:bg-slate-100">Manage Billing</Button>
-                           <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">Upgrade Plan</Button>
+                           <Button variant="outline" className="hover:bg-accent">Manage Billing</Button>
+                           <Button className="bg-success hover:bg-success/90 text-success-foreground">Upgrade Plan</Button>
                        </div>
                    </div>
                </div>
@@ -76,7 +76,7 @@ export default function SubscriptionPage() {
                Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-96 rounded-xl" />)
            ) : (
                 plans?.map((plan: any) => (
-                    <Card key={plan.id} className={cn("border-2 shadow-sm transition-all duration-200 hover:border-emerald-500/50 hover:shadow-lg", currentPlan?.id === plan.id ? 'border-emerald-500 ring-1 ring-emerald-500' : 'border-transparent')}>
+                    <Card key={plan.id} className={cn("border-2 shadow-sm transition-all duration-200 hover:border-success/50 hover:shadow-lg", currentPlan?.id === plan.id ? 'border-success ring-1 ring-success' : 'border-transparent')}>
                         <CardHeader>
                             <CardTitle>{plan.name}</CardTitle>
                             <CardDescription>{plan.description}</CardDescription>
@@ -88,7 +88,7 @@ export default function SubscriptionPage() {
                             <ul className="space-y-2 text-sm">
                                 {plan.features?.map((feature: string, idx: number) => (
                                     <li key={idx} className="flex items-center gap-2">
-                                        <Check className="h-4 w-4 text-emerald-600" />
+                                        <Check className="h-4 w-4 text-success" />
                                         <span>{feature}</span>
                                     </li>
                                 ))}
@@ -113,15 +113,15 @@ export default function SubscriptionPage() {
                     <CardContent>
                         <div className="text-3xl font-bold mb-4">Free</div>
                         <ul className="space-y-2 text-sm">
-                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600"/> 1 Property</li>
-                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600"/> 5 Units</li>
-                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600"/> Basic Reporting</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success"/> 1 Property</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success"/> 5 Units</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success"/> Basic Reporting</li>
                         </ul>
                     </CardContent>
                     <CardFooter><Button variant="outline" className="w-full">Current Plan</Button></CardFooter>
                 </Card>
-                <Card className="border shadow-sm border-emerald-500 relative">
-                     <Badge className="absolute top-0 right-0 translate-x-1/3 -translate-y-1/3 bg-emerald-600">Popular</Badge>
+                <Card className="border shadow-sm border-success relative">
+                     <Badge className="absolute top-0 right-0 translate-x-1/3 -translate-y-1/3 bg-success">Popular</Badge>
                      <CardHeader>
                         <CardTitle>Professional</CardTitle>
                         <CardDescription>For growing portfolios</CardDescription>
@@ -129,13 +129,13 @@ export default function SubscriptionPage() {
                     <CardContent>
                          <div className="text-3xl font-bold mb-4">KES 2,500 <span className="text-base font-normal text-muted-foreground">/mo</span></div>
                          <ul className="space-y-2 text-sm">
-                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600"/> Up to 5 Properties</li>
-                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600"/> Unlimited Units</li>
-                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600"/> Advanced Financial Reports</li>
-                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600"/> Priority Support</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success"/> Up to 5 Properties</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success"/> Unlimited Units</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success"/> Advanced Financial Reports</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success"/> Priority Support</li>
                         </ul>
                     </CardContent>
-                    <CardFooter><Button className="w-full bg-emerald-600 hover:bg-emerald-700">Upgrade</Button></CardFooter>
+                    <CardFooter><Button className="w-full bg-success hover:bg-success/90">Upgrade</Button></CardFooter>
                 </Card>
                 <Card className="border shadow-sm">
                     <CardHeader>
@@ -145,10 +145,10 @@ export default function SubscriptionPage() {
                     <CardContent>
                          <div className="text-3xl font-bold mb-4">KES 8,000 <span className="text-base font-normal text-muted-foreground">/mo</span></div>
                          <ul className="space-y-2 text-sm">
-                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600"/> Unlimited Properties</li>
-                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600"/> Multi-User Access</li>
-                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600"/> API Access</li>
-                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600"/> Dedicated Account Manager</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success"/> Unlimited Properties</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success"/> Multi-User Access</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success"/> API Access</li>
+                            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success"/> Dedicated Account Manager</li>
                         </ul>
                     </CardContent>
                     <CardFooter><Button variant="outline" className="w-full">Contact Sales</Button></CardFooter>

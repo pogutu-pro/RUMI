@@ -39,14 +39,14 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || 'https://rumi.co.ke',
+    process.env.NEXT_PUBLIC_APP_URL || 'https://rumia.co.ke',
   ),
   title: {
-    default: 'RUMI — Student Accommodation Made Easy',
-    template: '%s | RUMI',
+    default: 'RUMIA — Student Accommodation Made Easy',
+    template: '%s | RUMIA',
   },
   description:
-    'Find and book verified student hostels near your university. Manage bookings, payments, and roommates seamlessly with the RUMI Platform.',
+    'Find and book verified student hostels near your university. Manage bookings, payments, and roommates seamlessly with the RUMIA Platform.',
   keywords: [
     'student accommodation',
     'student housing Kenya',
@@ -58,31 +58,31 @@ export const metadata: Metadata = {
     'student apartments',
     'affordable student housing',
   ],
-  authors: [{ name: 'RUMI Platform Team', url: 'https://rumi.co.ke/about' }],
-  creator: 'RUMI Platform',
-  publisher: 'RUMI Platform',
+  authors: [{ name: 'RUMIA Platform Team', url: 'https://rumia.co.ke/about' }],
+  creator: 'RUMIA Platform',
+  publisher: 'RUMIA Platform',
   formatDetection: { email: false, address: false, telephone: false },
   openGraph: {
     type: 'website',
     locale: 'en_KE',
     url: '/',
-    title: 'RUMI — Student Accommodation Made Easy',
+    title: 'RUMIA — Student Accommodation Made Easy',
     description:
       'Find verified student hostels near your university. Real-time availability and seamless booking.',
-    siteName: 'RUMI',
+    siteName: 'RUMIA',
     images: [
       {
         url: '/images/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'RUMI Platform — Smart Student Housing',
+        alt: 'RUMIA Platform — Smart Student Housing',
         type: 'image/jpeg',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'RUMI — Student Accommodation Made Easy',
+    title: 'RUMIA — Student Accommodation Made Easy',
     description: 'Book and manage student housing conveniently.',
     images: ['/images/og-image.jpg'],
     creator: '@rumiplatform',
@@ -113,7 +113,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
   appleWebApp: {
     statusBarStyle: 'default',
-    title: 'RUMI',
+    title: 'RUMIA',
   },
   other: {
     'mobile-web-app-capable': 'yes',
@@ -129,8 +129,8 @@ export default function RootLayout({
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'RUMI',
-    url: process.env.NEXT_PUBLIC_APP_URL || 'https://rumi.co.ke',
+    name: 'RUMIA',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'https://rumia.co.ke',
     logo: `${process.env.NEXT_PUBLIC_APP_URL}/images/logo/logo.svg`,
     description:
       'Smart student housing platform connecting students with verified hostels across Kenya.',

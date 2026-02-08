@@ -153,10 +153,10 @@ export function BedManagementTable({ hostelId }: BedManagementTableProps) {
               size="sm"
               variant="outline" 
               onClick={handleAutoGenerate}
-              className="gap-2 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 transition-colors"
+              className="gap-2 border-warning/20 bg-warning/10 text-warning hover:bg-warning/20 transition-colors"
             >
               <div className="flex items-center gap-2">
-                 <span className="flex h-2 w-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></span>
+                 <span className="flex h-2 w-2 rounded-full bg-warning shadow-[0_0_8px_rgba(var(--warning),0.5)]"></span>
                 Auto-Fill {missingCount} Missing
               </div>
             </Button>
@@ -193,8 +193,8 @@ export function BedManagementTable({ hostelId }: BedManagementTableProps) {
                       <Badge 
                         variant="secondary" 
                         className={bed.is_active 
-                          ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200" 
-                          : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 border-zinc-200"}
+                          ? "bg-success/10 text-success hover:bg-success/20 border-success/20" 
+                          : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"}
                       >
                         {bed.is_active ? "Active" : "Inactive"}
                       </Badge>
@@ -213,12 +213,12 @@ export function BedManagementTable({ hostelId }: BedManagementTableProps) {
                       ) : (
                          <div className="flex items-center gap-2">
                           {bed.custom_account_number ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-sm bg-zinc-50 border border-zinc-200 text-zinc-700 font-mono text-xs font-medium">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-sm bg-muted border border-border text-primary font-mono text-xs font-medium">
                               {bed.custom_account_number}
                             </span>
                           ) : (
-                            <span className="flex items-center gap-1.5 text-amber-600 text-xs font-medium px-2 py-0.5 rounded bg-amber-50/50">
-                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                            <span className="flex items-center gap-1.5 text-warning text-xs font-medium px-2 py-0.5 rounded bg-warning/10">
+                              <span className="h-1.5 w-1.5 rounded-full bg-warning" />
                               Required
                             </span>
                           )}
@@ -239,7 +239,7 @@ export function BedManagementTable({ hostelId }: BedManagementTableProps) {
                           </Button>
                           <Button
                             size="icon"
-                            className="h-7 w-7 bg-black text-white hover:bg-zinc-800"
+                            className="h-7 w-7 bg-primary text-primary-foreground hover:bg-primary/90"
                             onClick={() => handleSave(bed.id)}
                             disabled={updateBedMutation.isPending}
                           >

@@ -59,14 +59,14 @@ function formatRelativeTime(dateString: string): string {
 function getNotificationStyle(type: string): { icon: LucideIcon; color: string; bgColor: string } {
   switch (type) {
     case 'success':
-      return { icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-500', bgColor: 'bg-emerald-500/10' };
+      return { icon: CheckCircle2, color: 'text-success', bgColor: 'bg-success/10' };
     case 'warning':
-      return { icon: AlertCircle, color: 'text-amber-600 dark:text-amber-500', bgColor: 'bg-amber-500/10' };
+      return { icon: AlertCircle, color: 'text-warning', bgColor: 'bg-warning/10' };
     case 'error':
-      return { icon: X, color: 'text-red-600 dark:text-red-500', bgColor: 'bg-red-500/10' };
+      return { icon: AlertCircle, color: 'text-destructive', bgColor: 'bg-destructive/10' };
     case 'info':
     default:
-      return { icon: Info, color: 'text-indigo-600 dark:text-indigo-500', bgColor: 'bg-indigo-500/10' };
+      return { icon: Info, color: 'text-info', bgColor: 'bg-info/10' };
   }
 }
 
@@ -148,8 +148,8 @@ export function AdminTopNav({
 
       {/* Zone 1: Branding - Logo + RUMI · Admin */}
       <div className="flex items-center gap-2 mr-4">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="relative h-8 w-8">
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="relative h-8 w-8 transition-transform group-hover:scale-110">
             <Image 
               src="/images/logo/logo.svg" 
               alt="RUMI Logo" 
@@ -159,8 +159,8 @@ export function AdminTopNav({
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-bold text-lg text-indigo-600 dark:text-indigo-400">RUMI</span>
-            <span className="text-xs font-medium tracking-[0.18em] text-indigo-600/70 dark:text-indigo-400/70">· ADMIN</span>
+            <span className="font-bold text-lg text-primary tracking-tight">RUMI</span>
+            <span className="text-xs font-medium tracking-[0.18em] text-muted-foreground">· ADMIN</span>
           </div>
         </Link>
       </div>
@@ -185,7 +185,7 @@ export function AdminTopNav({
             <DropdownMenuLabel className="font-normal">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold">Notifications {unreadCount > 0 && `(${unreadCount})`}</p>
-                <Link href="/admin/notifications" className="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
+                <Link href="/admin/notifications" className="text-xs text-primary hover:underline">
                   View all
                 </Link>
               </div>
@@ -253,7 +253,7 @@ export function AdminTopNav({
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={image} alt={displayName} />
-                <AvatarFallback className="bg-indigo-100 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 text-xs font-semibold">
+                <AvatarFallback className="bg-info/10 text-info text-xs font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -266,7 +266,7 @@ export function AdminTopNav({
                 <p className="text-xs leading-none text-muted-foreground">
                   {user?.email}
                 </p>
-                <p className="text-xs leading-none text-indigo-600 dark:text-indigo-400 font-medium pt-1">
+                <p className="text-xs leading-none text-info font-medium pt-1">
                   {roleLabel}
                 </p>
               </div>

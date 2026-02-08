@@ -1,5 +1,5 @@
 export { LoginForm } from './components/login-form';
-export { LoginForm as LoginFormNew } from './components/login-form-new';
+// export { LoginForm as LoginFormNew } from './components/login-form-new'; // Removed
 // export { RegisterForm } from './components/register-form'; // Removed
 // export { RegisterFormNew } from './components/register-form-new'; // Removed
 export * from './components/auth-card';

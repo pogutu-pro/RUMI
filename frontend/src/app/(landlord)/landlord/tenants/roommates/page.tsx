@@ -95,11 +95,11 @@ export default function RoommatesPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-3">
-            <Users className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+          <h1 className="text-3xl font-bold tracking-tight text-primary flex items-center gap-3">
+            <Users className="h-8 w-8 text-primary" />
             Room Allocations
           </h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          <p className="mt-1 text-sm text-muted-foreground">
             View room occupants and roommate groupings
           </p>
         </div>
@@ -109,7 +109,7 @@ export default function RoommatesPage() {
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search rooms or tenants..."
                 value={searchQuery}
@@ -139,10 +139,10 @@ export default function RoommatesPage() {
              ))
          ) : filteredGroups.length === 0 ? (
             <div className="col-span-full py-12 text-center">
-                 <div className="inline-flex items-center justify-center p-4 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
-                    <BedDouble className="h-8 w-8 text-slate-400" />
+                 <div className="inline-flex items-center justify-center p-4 rounded-full bg-muted mb-4">
+                    <BedDouble className="h-8 w-8 text-muted-foreground" />
                  </div>
-                 <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">No rooms found</h3>
+                 <h3 className="text-lg font-semibold text-primary">No rooms found</h3>
                  <p className="text-muted-foreground">Try adjusting your filters.</p>
             </div>
          ) : (
@@ -154,12 +154,12 @@ export default function RoommatesPage() {
                     transition={{ duration: 0.2, delay: index * 0.05 }}
                 >
                     <Card className="h-full border-none shadow-md hover:shadow-lg transition-all duration-300">
-                        <CardHeader className="bg-slate-50 dark:bg-slate-900/50 border-b pb-4">
+                        <CardHeader className="bg-muted/30 border-b pb-4">
                             <div className="flex items-start justify-between">
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">
-                                        <Building2 className="h-4 w-4 text-slate-400" />
-                                        <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{group.hostel}</span>
+                                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{group.hostel}</span>
                                     </div>
                                     <CardTitle className="text-xl flex items-center gap-2">
                                         Room {group.roomNumber}
@@ -176,18 +176,18 @@ export default function RoommatesPage() {
                                     <div key={i} className="flex items-center gap-3">
                                         <Avatar className="h-10 w-10 border-2 border-white dark:border-slate-800 shadow-sm">
                                             <AvatarImage src={occupant.avatar} />
-                                            <AvatarFallback className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-bold">
+                                            <AvatarFallback className="bg-primary/10 text-primary font-bold">
                                                 {getInitials(occupant.name)}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">{occupant.name}</p>
-                                            <p className="text-xs text-slate-500 truncate">{occupant.email}</p>
+                                            <p className="font-medium text-sm text-primary truncate">{occupant.name}</p>
+                                            <p className="text-xs text-muted-foreground truncate">{occupant.email}</p>
                                         </div>
                                     </div>
                                 ))}
                                 {group.occupants.length === 0 && (
-                                    <p className="text-sm text-slate-500 italic">No occupants currently assigned.</p>
+                                    <p className="text-sm text-muted-foreground italic">No occupants currently assigned.</p>
                                 )}
                             </div>
                         </CardContent>

@@ -47,15 +47,15 @@ export default function NotificationsPage() {
   const getIcon = (type: string) => {
     switch (type) {
       case 'payment':
-        return <CreditCard className="h-5 w-5 text-emerald-500" />;
+        return <CreditCard className="h-5 w-5 text-success" />;
       case 'booking':
-        return <Calendar className="h-5 w-5 text-blue-500" />;
+        return <Calendar className="h-5 w-5 text-info" />;
       case 'alert':
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
+        return <AlertCircle className="h-5 w-5 text-destructive" />;
       case 'user':
-        return <User className="h-5 w-5 text-orange-500" />;
+        return <User className="h-5 w-5 text-warning" />;
       default:
-        return <Info className="h-5 w-5 text-slate-500" />;
+        return <Info className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
@@ -64,11 +64,11 @@ export default function NotificationsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-3">
-            <Bell className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+          <h1 className="text-3xl font-bold tracking-tight text-primary flex items-center gap-3">
+            <Bell className="h-8 w-8 text-success" />
             Notifications
           </h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          <p className="mt-1 text-sm text-muted-foreground">
             Stay updated with important alerts and activities
           </p>
         </div>
@@ -89,7 +89,7 @@ export default function NotificationsPage() {
       </div>
 
       {/* Notifications List */}
-      <Card className="border-none shadow-md bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm min-h-[400px]">
+      <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm min-h-[400px]">
         <ScrollArea className="h-[600px] pr-4">
           <CardContent className="p-6 space-y-4">
             {isLoading ? (
@@ -104,13 +104,13 @@ export default function NotificationsPage() {
                ))
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-[400px] text-center">
-                <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
-                  <Inbox className="h-10 w-10 text-slate-400" />
+                <div className="p-4 rounded-full bg-muted mb-4">
+                  <Inbox className="h-10 w-10 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                <h3 className="text-lg font-semibold text-primary">
                   All caught up!
                 </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2">
+                <p className="text-sm text-muted-foreground max-w-xs mx-auto mt-2">
                   You have no new notifications at the moment.
                 </p>
               </div>
@@ -126,8 +126,8 @@ export default function NotificationsPage() {
                     className={cn(
                       "group relative p-4 rounded-xl border transition-all duration-200 hover:shadow-md",
                       !notification.isRead
-                        ? "bg-white dark:bg-slate-800 border-emerald-100 dark:border-emerald-900/50 shadow-sm"
-                        : "bg-slate-50/50 dark:bg-slate-900/30 border-transparent hover:bg-white dark:hover:bg-slate-800 hover:border-border"
+                        ? "bg-card border-success/20 shadow-sm"
+                        : "bg-muted/30 border-transparent hover:bg-card hover:border-border"
                     )}
                   >
                     <div className="flex items-start gap-4">
@@ -135,8 +135,8 @@ export default function NotificationsPage() {
                       <div className={cn(
                         "p-2.5 rounded-full shrink-0",
                         !notification.isRead 
-                          ? "bg-emerald-100 dark:bg-emerald-900/30" 
-                          : "bg-slate-100 dark:bg-slate-800"
+                          ? "bg-success/10" 
+                          : "bg-muted"
                       )}>
                         {getIcon(notification.type)}
                       </div>
@@ -146,17 +146,17 @@ export default function NotificationsPage() {
                         <div className="flex items-start justify-between gap-4">
                           <h4 className={cn(
                             "text-base font-medium leading-none mb-1.5",
-                            !notification.isRead ? "text-slate-900 dark:text-slate-100" : "text-slate-700 dark:text-slate-300"
+                            !notification.isRead ? "text-primary" : "text-muted-foreground"
                           )}>
                             {notification.title}
                           </h4>
-                          <span className="text-xs text-slate-500 whitespace-nowrap shrink-0">
+                          <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
                             {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                           </span>
                         </div>
                         <p className={cn(
                           "text-sm leading-relaxed",
-                          !notification.isRead ? "text-slate-600 dark:text-slate-300" : "text-slate-500 dark:text-slate-500"
+                          !notification.isRead ? "text-muted-foreground" : "text-muted-foreground"
                         )}>
                           {notification.message}
                         </p>
@@ -171,7 +171,7 @@ export default function NotificationsPage() {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                                    className="h-8 w-8 text-muted-foreground hover:text-success hover:bg-success/10"
                                     onClick={() => markAsRead.mutate(notification.id)}
                                 >
                                     <Check className="h-4 w-4" />
@@ -188,7 +188,7 @@ export default function NotificationsPage() {
                                 <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                 onClick={() => deleteNotification.mutate(notification.id)}
                                 >
                                 <Trash2 className="h-4 w-4" />
@@ -201,7 +201,7 @@ export default function NotificationsPage() {
                       </div>
                     </div>
                     {!notification.isRead && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-emerald-500 rounded-r-full" />
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-success rounded-r-full" />
                     )}
                   </motion.div>
                 ))}

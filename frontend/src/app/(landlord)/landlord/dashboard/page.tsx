@@ -74,11 +74,11 @@ function getActivityIcon(type: string): React.ElementType {
 // Helper function to get activity color
 function getActivityColor(type: string): string {
   const colorMap: Record<string, string> = {
-    booking: 'text-green-600 dark:text-green-400',
-    payment: 'text-blue-600 dark:text-blue-400',
-    alert: 'text-orange-600 dark:text-orange-400',
-    maintenance: 'text-orange-600 dark:text-orange-400',
-    cancellation: 'text-red-600 dark:text-red-400',
+    booking: 'text-success',
+    payment: 'text-info',
+    alert: 'text-warning',
+    maintenance: 'text-warning',
+    cancellation: 'text-destructive',
   };
   return colorMap[type] || 'text-muted-foreground';
 }
@@ -106,9 +106,9 @@ export default function LandlordDashboard() {
   const monthlyRevenueData = dashboardData?.monthlyRevenue || [];
   const bookingStatusData = dashboardData?.bookingStatus 
     ? [
-        { name: 'Confirmed', value: dashboardData.bookingStatus.confirmed, color: '#10b981' },
-        { name: 'Pending', value: dashboardData.bookingStatus.pending, color: '#f59e0b' },
-        { name: 'Cancelled', value: dashboardData.bookingStatus.cancelled, color: '#ef4444' },
+        { name: 'Confirmed', value: dashboardData.bookingStatus.confirmed, color: 'hsl(var(--success))' },
+        { name: 'Pending', value: dashboardData.bookingStatus.pending, color: 'hsl(var(--warning))' },
+        { name: 'Cancelled', value: dashboardData.bookingStatus.cancelled, color: 'hsl(var(--destructive))' },
       ]
     : [];
 
@@ -134,30 +134,34 @@ export default function LandlordDashboard() {
       value: loading ? '...' : `KES ${(totalRevenue / 1000).toFixed(0)}K`,
       description: "Total earnings this month",
       icon: DollarSign,
-      href: "/landlord/payments"
+      href: "/landlord/payments",
+      iconColor: "text-success"
     },
     {
       label: "Occupancy Rate",
       value: loading ? '...' : `${occupancyRate}%`,
       description: `${totalOccupied} of ${totalRooms} beds filled`,
       icon: TrendingUp,
-      href: "/landlord/hostels"
+      href: "/landlord/hostels",
+      iconColor: "text-primary"
     },
     {
       label: "Active Properties",
       value: loading ? '...' : activeHostelsCount.toString(),
       description: "Hostels managed",
       icon: Building2,
-      href: "/landlord/hostels"
+      href: "/landlord/hostels",
+      iconColor: "text-info"
     },
     {
       label: "Pending Actions",
       value: loading ? '...' : pendingActions.toString(),
       description: "Items need attention",
       icon: Clock,
-      href: "/landlord/bookings"
+      href: "/landlord/bookings",
+      iconColor: "text-warning"
     },
-  ] as const;
+  ];
 
   // Quick Actions - Core tasks landlords do frequently
   const quickActions = [
@@ -226,12 +230,12 @@ export default function LandlordDashboard() {
           const Icon = card.icon;
           return (
             <Link key={card.label} href={card.href}>
-              <Card className="hover:shadow-md transition-all active:scale-[0.98] duration-200 border shadow-sm bg-card h-full">
+              <Card className="hover:shadow-md transition-all active:scale-[0.98] duration-200 border shadow-sm bg-card h-full group">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-bold text-muted-foreground">
+                  <CardTitle className="text-sm font-bold text-muted-foreground group-hover:text-foreground transition-colors">
                     {card.label}
                   </CardTitle>
-                  <Icon className="h-5 w-5 text-muted-foreground" />
+                  <Icon className={cn("h-5 w-5 text-muted-foreground group-hover:scale-110 transition-transform", card.iconColor)} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl md:text-3xl font-bold text-foreground">
@@ -265,7 +269,7 @@ export default function LandlordDashboard() {
                 size="lg"
                 className={cn(
                   "h-auto py-4 px-4 flex flex-col items-center gap-2 text-center",
-                  action.variant === "default" && "bg-primary hover:bg-primary/90"
+                  action.variant === "default" && "bg-primary text-primary-foreground hover:bg-primary/90"
                 )}
                 asChild
               >
@@ -300,20 +304,24 @@ export default function LandlordDashboard() {
                   <AreaChart data={monthlyRevenueData}>
                     <defs>
                       <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis 
                       dataKey="month" 
                       className="text-xs"
-                      tick={{ fill: 'currentColor' }}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={{ stroke: 'hsl(var(--border))' }}
+                      tickLine={false}
                     />
                     <YAxis 
                       yAxisId="left"
                       className="text-xs"
-                      tick={{ fill: 'currentColor' }}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={{ stroke: 'hsl(var(--border))' }}
+                      tickLine={false}
                       tickFormatter={(value) => `${(value / 1000)}K`}
                     />
                     <Tooltip content={<CustomTooltip />} />
@@ -322,7 +330,7 @@ export default function LandlordDashboard() {
                       yAxisId="left"
                       type="monotone"
                       dataKey="revenue"
-                      stroke="#10b981"
+                      stroke="hsl(var(--primary))"
                       strokeWidth={2}
                       fillOpacity={1}
                       fill="url(#colorRevenue)"

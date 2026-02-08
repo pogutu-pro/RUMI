@@ -29,7 +29,7 @@ export function NetRevenueWidget() {
                 <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Net Yield</CardTitle>
                 <CardDescription className="text-xs">Revenue after platform fees</CardDescription>
             </div>
-            <StatusPill status="success" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+            <StatusPill status="success" className="bg-success/10 text-success border-success/20">
                 <TrendingUp className="w-3 h-3 mr-1" />
                 +12.5%
             </StatusPill>
@@ -46,14 +46,14 @@ export function NetRevenueWidget() {
             <div className="grid grid-cols-2 gap-4 pt-2 border-t text-sm">
                 <div>
                     <span className="text-muted-foreground block text-xs mb-1">Total Collected</span>
-                    <span className="font-semibold flex items-center text-emerald-600">
+                    <span className="font-semibold flex items-center text-success">
                         <ArrowUpRight className="w-3 h-3 mr-1" />
                         KES {totalRevenue.toLocaleString()}
                     </span>
                 </div>
                 <div>
                      <span className="text-muted-foreground block text-xs mb-1">Platform Fees</span>
-                     <span className="font-semibold flex items-center text-red-600">
+                     <span className="font-semibold flex items-center text-destructive">
                         <ArrowDownRight className="w-3 h-3 mr-1" />
                         KES {platformFees.toLocaleString()}
                     </span>

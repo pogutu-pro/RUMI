@@ -78,9 +78,9 @@ export default function CheckInsPage() {
   }
 
   const getStatusBadge = (date: Date) => {
-    if (isToday(date)) return <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-0">Today</Badge>;
-    if (isPast(date)) return <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-0">Overdue</Badge>;
-    return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-0">Upcoming</Badge>;
+    if (isToday(date)) return <Badge className="bg-success/10 text-success hover:bg-success/10 border-0">Today</Badge>;
+    if (isPast(date)) return <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10 border-0">Overdue</Badge>;
+    return <Badge className="bg-info/10 text-info hover:bg-info/10 border-0">Upcoming</Badge>;
   };
 
   return (
@@ -184,9 +184,9 @@ export default function CheckInsPage() {
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-lg font-bold text-foreground">{studentName}</h3>
                                         <Badge variant="outline" className={cn("capitalize border-0 bg-secondary",
-                                            currentStep === 'pending' ? "text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300" :
-                                            currentStep === 'inventory_review' ? "text-orange-600 bg-orange-100 dark:bg-orange-900/20 dark:text-orange-300" :
-                                            "text-blue-600 bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300"
+                                            currentStep === 'pending' ? "text-muted-foreground bg-muted" :
+                                            currentStep === 'inventory_review' ? "text-warning bg-warning/10" :
+                                            "text-info bg-info/10"
                                         )}>
                                             {currentStep === 'pending' ? 'Not Started' : currentStep.replace('_', ' ')}
                                         </Badge>
@@ -206,7 +206,7 @@ export default function CheckInsPage() {
                                      {currentStep !== 'pending' && (
                                          <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden mt-2">
                                              <div className={cn("h-full rounded-full",
-                                                 currentStep === 'inventory_review' ? "w-1/2 bg-orange-400" : "w-3/4 bg-blue-400"
+                                                 currentStep === 'inventory_review' ? "w-1/2 bg-warning" : "w-3/4 bg-info"
                                              )} />
                                          </div>
                                      )}
@@ -216,7 +216,7 @@ export default function CheckInsPage() {
                                  <div className="p-6 flex items-center justify-center border-t sm:border-t-0 sm:border-l border-border bg-card">
                                     <Link href={`/landlord/tenants/check-in/${booking.id}`} className="w-full sm:w-auto">
                                         <Button className={cn("gap-2 w-full shadow-sm",
-                                            currentStep === 'pending' ? "bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white" :
+                                            currentStep === 'pending' ? "bg-gradient-to-r from-success to-info hover:opacity-90 text-success-foreground" :
                                             "variant-outline border-input hover:bg-accent hover:text-accent-foreground"
                                         )}>
                                             {currentStep === 'pending' ? (

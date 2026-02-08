@@ -127,7 +127,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
         // Fetch related posts
         const allPosts = await getBlogPosts({ limit: 10 });
         // Handle different possible API response structures
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         const allPostsAny = allPosts as any;
         let allPostsData: ApiBlogPost[] = [];
         if (Array.isArray(allPostsAny)) {

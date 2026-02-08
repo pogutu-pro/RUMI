@@ -5,8 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { LoginFormNew } from '@/features/auth';
-import { AuthCard } from '@/features/auth';
+import { LoginForm, AuthCard } from '@/features/auth';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -36,7 +35,7 @@ export default function LoginPage() {
              />
            </Link>
         }
-        title={<span className="font-black text-3xl tracking-tight">Welcome to Rumi</span>}
+        title={<span className="font-black text-3xl tracking-tight">Welcome to Rumia</span>}
         description={<span className="text-gray-500 font-bold uppercase tracking-wider text-xs">Sign in to your account</span>}
       >
         <div className="space-y-4">
@@ -62,7 +61,7 @@ export default function LoginPage() {
           )}
         </div>
 
-        <LoginFormNew />
+        <LoginForm />
       </AuthCard>
     </div>
   );

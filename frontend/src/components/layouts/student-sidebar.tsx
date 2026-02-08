@@ -192,9 +192,9 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
         {isExpanded ? (
           <Link
             href="/"
-            className="flex items-center gap-2 font-bold text-2xl text-primary"
+            className="flex items-center gap-2 font-bold text-2xl text-primary group"
           >
-            <div className="relative h-8 w-8">
+            <div className="relative h-8 w-8 transition-transform group-hover:scale-110">
               <Image
                 src="/images/logo/logo.svg"
                 alt="RUMI Logo"
@@ -206,13 +206,13 @@ export function StudentSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
             <span>RUMI</span>
           </Link>
         ) : (
-          <Link href="/" className="relative h-8 w-8">
+          <Link href="/" className="relative h-8 w-8 group">
             <Image
               src="/images/logo/logo.svg"
               alt="RUMI Logo"
               width={32}
               height={32}
-              className="object-contain"
+              className="object-contain transition-transform group-hover:scale-110"
             />
           </Link>
         )}

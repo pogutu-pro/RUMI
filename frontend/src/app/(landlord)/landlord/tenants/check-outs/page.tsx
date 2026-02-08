@@ -79,9 +79,9 @@ export default function CheckOutsPage() {
   }).sort((a, b) => a.endDate.getTime() - b.endDate.getTime());
 
   const getStatusBadge = (date: Date) => {
-    if (isToday(date)) return <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-0">Ending Today</Badge>;
-    if (isPast(date)) return <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-0">Overdue</Badge>;
-    return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-0">{differenceInDays(date, new Date())} Days Left</Badge>;
+    if (isToday(date)) return <Badge className="bg-warning/10 text-warning hover:bg-warning/10 border-0">Ending Today</Badge>;
+    if (isPast(date)) return <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/10 border-0">Overdue</Badge>;
+    return <Badge className="bg-info/10 text-info hover:bg-info/10 border-0">{differenceInDays(date, new Date())} Days Left</Badge>;
   };
 
   const handleProcessDeposit = () => {
@@ -97,7 +97,7 @@ export default function CheckOutsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
-            <LogOut className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+            <LogOut className="h-8 w-8 text-warning" />
             Check-Outs
           </h1>
           <p className="mt-2 text-muted-foreground text-lg">
@@ -150,7 +150,7 @@ export default function CheckOutsPage() {
             <Card className="border-dashed shadow-none py-12">
                  <CardContent className="flex flex-col items-center justify-center text-center p-0">
                     <div className="p-4 rounded-full bg-muted mb-4">
-                        <LogOut className="h-8 w-8 text-orange-400" />
+                        <LogOut className="h-8 w-8 text-warning" />
                     </div>
                     <h3 className="font-semibold text-lg">No check-outs found</h3>
                     <p className="text-muted-foreground">No leases match your criteria.</p>
@@ -191,9 +191,9 @@ export default function CheckOutsPage() {
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-lg font-bold text-foreground">{studentName}</h3>
                                         <Badge variant="outline" className={cn("capitalize border-0",
-                                            checkoutStage === 'not_started' ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" :
-                                            checkoutStage === 'assessment' ? "bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300" :
-                                            "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+                                            checkoutStage === 'not_started' ? "bg-muted text-muted-foreground" :
+                                            checkoutStage === 'assessment' ? "bg-warning/10 text-warning" :
+                                            "bg-info/10 text-info"
                                         )}>
                                             {checkoutStage === 'not_started' ? 'Pending Departure' : 
                                              checkoutStage === 'assessment' ? 'Damage Assessment' : 'Refund Pending'}
@@ -212,7 +212,7 @@ export default function CheckOutsPage() {
                                     
                                     {checkoutStage === 'refund_pending' && (
                                         <div className="bg-muted/30 p-3 rounded-lg flex items-center gap-3 text-sm mt-2 border border-border">
-                                            <AlertTriangle className="h-4 w-4 text-orange-500" />
+                                            <AlertTriangle className="h-4 w-4 text-warning" />
                                             <span>
                                                 Damage assessed: <strong>KES 1,500</strong> (Paint scratch). Net Refund: <strong>KES 8,500</strong>
                                             </span>
@@ -224,20 +224,20 @@ export default function CheckOutsPage() {
                                    <div className="p-6 flex items-center justify-center border-t sm:border-t-0 sm:border-l border-border bg-card">
                                         {checkoutStage === 'not_started' ? (
                                             <Link href={`/landlord/tenants/check-out/${booking.id}`} className="w-full sm:w-auto">
-                                                <Button variant="outline" className="w-full gap-2 border-orange-200 hover:bg-orange-50 hover:text-orange-700 dark:border-orange-900 dark:hover:bg-orange-900/20">
+                                                <Button variant="outline" className="w-full gap-2 border-warning/30 hover:bg-warning/10 hover:text-warning">
                                                     Start Checkout <ArrowRight className="h-4 w-4" />
                                                 </Button>
                                             </Link>
                                         ) : checkoutStage === 'assessment' ? (
                                              <Link href={`/landlord/tenants/check-out/${booking.id}/assessment`} className="w-full sm:w-auto">
-                                                <Button className="w-full gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border-0">
+                                                <Button className="w-full gap-2 bg-gradient-to-r from-warning to-warning/80 hover:opacity-90 text-warning-foreground border-0">
                                                     <FileDiff className="h-4 w-4" /> Verify Inventory
                                                 </Button>
                                             </Link>
                                         ) : (
                                             <Dialog>
                                                 <DialogTrigger asChild>
-                                                    <Button className="w-full sm:w-auto gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
+                                                    <Button className="w-full sm:w-auto gap-2 bg-success hover:bg-success/90 text-success-foreground">
                                                         <DollarSign className="h-4 w-4" /> Refund & Close
                                                     </Button>
                                                 </DialogTrigger>
@@ -254,13 +254,13 @@ export default function CheckOutsPage() {
                                                             <span>Deposit Paid</span>
                                                             <span className="font-bold">KES 10,000</span>
                                                         </div>
-                                                        <div className="flex justify-between items-center text-red-500 bg-red-50 dark:bg-red-900/10 p-3 rounded border border-red-100 dark:border-red-900/20">
+                                                        <div className="flex justify-between items-center text-destructive bg-destructive/10 p-3 rounded border border-destructive/20">
                                                             <span>Deductions (Damages)</span>
                                                             <span className="font-bold">- KES 1,500</span>
                                                         </div>
                                                         <div className="flex justify-between items-center text-lg font-bold border-t pt-2">
                                                             <span>Refund Amount</span>
-                                                            <span className="text-emerald-600">KES 8,500</span>
+                                                            <span className="text-success">KES 8,500</span>
                                                         </div>
                                                     </div>
                                                     <DialogFooter>

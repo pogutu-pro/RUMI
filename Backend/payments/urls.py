@@ -1,11 +1,10 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import views
 from .mpesa_webhooks import StkPushWebhookView, C2BValidationWebhookView, C2BConfirmationWebhookView
 from .rent_period_views import RentPeriodViewSet, StudentPaymentTrackerViewSet, TransferLogViewSet
 from .additional_views import PaymentDetailsView, ReceiptGenerateView
 from .subscription_views import SubscriptionPlanViewSet, SubscriptionInvoiceViewSet, SubscriptionAccrualView
-from . import verification_views
+from . import views, verification_views, stubs_views
 
 # DRF Router for RentPeriod architecture endpoints
 router = DefaultRouter()
@@ -58,6 +57,17 @@ urlpatterns = [
     path('receipts/generate/', ReceiptGenerateView.as_view(), name='receipt_generate'),
     path('receipts/verify/<int:transaction_id>/', verification_views.ReceiptVerificationView.as_view(), name='receipt_verify'),
     
+    # NEW: Parity Stubs
+    path('verify/', stubs_views.PaymentVerifyView.as_view(), name='payment_verify_stub'),
+    path('verify/<str:transaction_reference>/', stubs_views.PaymentVerifyView.as_view(), name='payment_verify_ref_stub'),
+    path('paybill/', stubs_views.PaybillAllocationView.as_view(), name='paybill_allocation_stub'),
+    path('unmatched/', stubs_views.UnmatchedPaymentsListView.as_view(), name='unmatched_payment_list_stub'),
+    path('unmatched/<int:payment_id>/match/', stubs_views.UnmatchedPaymentMatchView.as_view(), name='unmatched_payment_match_stub'),
+    path('unmatched/<int:payment_id>/reject/', stubs_views.UnmatchedPaymentRejectView.as_view(), name='unmatched_payment_reject_stub'),
+    path('ledger/', stubs_views.PaymentLedgerView.as_view(), name='payment_ledger_stub'),
+    path('ledger/export/', stubs_views.PaymentLedgerExportView.as_view(), name='payment_ledger_export_stub'),
+    path('ledger/<str:search_param>/', stubs_views.PaymentLedgerView.as_view(), name='payment_ledger_search_stub'),
+
     # Payment Details (NEW - for Week 1 frontend)
     path('payment-details/<str:bed_id>/', PaymentDetailsView.as_view(), name='payment_details'),
     

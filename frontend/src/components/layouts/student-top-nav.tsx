@@ -55,14 +55,14 @@ function formatRelativeTime(dateString: string): string {
 function getNotificationStyle(type: string): { icon: LucideIcon; color: string; bgColor: string } {
   switch (type) {
     case 'success':
-      return { icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-500', bgColor: 'bg-emerald-500/10' };
+      return { icon: CheckCircle2, color: 'text-success', bgColor: 'bg-success/10' };
     case 'warning':
-      return { icon: AlertCircle, color: 'text-amber-600 dark:text-amber-500', bgColor: 'bg-amber-500/10' };
+      return { icon: AlertCircle, color: 'text-warning', bgColor: 'bg-warning/10' };
     case 'error':
-      return { icon: X, color: 'text-red-600 dark:text-red-500', bgColor: 'bg-red-500/10' };
+      return { icon: AlertCircle, color: 'text-destructive', bgColor: 'bg-destructive/10' };
     case 'info':
     default:
-      return { icon: Info, color: 'text-blue-600 dark:text-blue-500', bgColor: 'bg-blue-500/10' };
+      return { icon: Info, color: 'text-info', bgColor: 'bg-info/10' };
   }
 }
 
@@ -132,8 +132,8 @@ export function StudentTopNav({
 
       {/* Zone 1: Branding - Logo + RUMI */}
       <div className={cn("flex items-center gap-2 mr-4", !isDesktop && "ml-4")}>
-        <Link href="/" className="flex items-center gap-2">
-          <div className="relative h-8 w-8">
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="relative h-8 w-8 transition-transform group-hover:scale-110">
             <Image 
               src="/images/logo/logo.svg" 
               alt="RUMI Logo" 
@@ -142,7 +142,7 @@ export function StudentTopNav({
               className="object-contain" 
             />
           </div>
-          <span className="font-bold text-lg text-emerald-600 dark:text-emerald-400">RUMI</span>
+          <span className="font-bold text-lg text-primary tracking-tight">RUMI</span>
         </Link>
       </div>
 

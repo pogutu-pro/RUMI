@@ -123,18 +123,18 @@ export default function ReportsPage() {
       {/* Header Section */}
       <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-4">
         <div className="space-y-1">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-950 dark:text-white">Reports & Statements</h1>
-          <p className="text-slate-700 dark:text-slate-300 max-w-xl text-lg md:text-xl font-medium">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-primary">Reports & Statements</h1>
+          <p className="text-muted-foreground max-w-xl text-lg md:text-xl font-medium">
              Detailed financials and operational logs for your property.
           </p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-slate-200 dark:bg-slate-900 p-1 rounded-xl shadow-inner">
+          <div className="flex items-center gap-2 bg-muted p-1 rounded-xl shadow-inner">
              <Button 
                variant="ghost" 
                size="sm" 
-               className={cn("rounded-lg font-black text-sm h-9 px-4", selectedFormat === 'pdf' && "bg-white dark:bg-slate-800 shadow-md text-slate-950 dark:text-white")}
+               className={cn("rounded-lg font-black text-sm h-9 px-4", selectedFormat === 'pdf' && "bg-card shadow-md text-primary")}
                onClick={() => setSelectedFormat('pdf')}
              >
                PDF
@@ -142,7 +142,7 @@ export default function ReportsPage() {
              <Button 
                variant="ghost" 
                size="sm" 
-               className={cn("rounded-lg font-black text-sm h-9 px-4", selectedFormat === 'csv' && "bg-white dark:bg-slate-800 shadow-md text-slate-950 dark:text-white")}
+               className={cn("rounded-lg font-black text-sm h-9 px-4", selectedFormat === 'csv' && "bg-card shadow-md text-primary")}
                onClick={() => setSelectedFormat('csv')}
              >
                CSV
@@ -150,7 +150,7 @@ export default function ReportsPage() {
              <Button 
                variant="ghost" 
                size="sm" 
-               className={cn("rounded-lg font-black text-sm h-9 px-4", selectedFormat === 'excel' && "bg-white dark:bg-slate-800 shadow-md text-slate-950 dark:text-white")}
+               className={cn("rounded-lg font-black text-sm h-9 px-4", selectedFormat === 'excel' && "bg-card shadow-md text-primary")}
                onClick={() => setSelectedFormat('excel')}
              >
                Excel
@@ -158,9 +158,9 @@ export default function ReportsPage() {
           </div>
           
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-[180px] h-11 rounded-xl bg-card border-slate-300 dark:border-slate-800 font-black text-slate-950 dark:text-white shadow-sm">
+            <SelectTrigger className="w-[180px] h-11 rounded-xl bg-card border-border font-black text-primary shadow-sm">
               <div className="flex items-center gap-2">
-                 <CalendarDays className="h-5 w-5 text-slate-600" />
+                 <CalendarDays className="h-5 w-5 text-muted-foreground" />
                  <SelectValue />
               </div>
             </SelectTrigger>
@@ -177,24 +177,24 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {reportCategories.map((category, idx) => (
           <motion.div key={idx} variants={itemVariants}>
-            <Card className="h-full border border-slate-200 dark:border-slate-800 shadow-md bg-card hover:shadow-xl transition-all">
-              <CardHeader className="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex flex-row items-center gap-5">
-                <div className="h-14 w-14 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 shadow-sm">
-                  <category.icon className="h-7 w-7 text-slate-900 dark:text-slate-300" />
+            <Card className="h-full border border-border shadow-md bg-card hover:shadow-xl transition-all">
+              <CardHeader className="p-6 border-b border-border bg-muted/50 flex flex-row items-center gap-5">
+                <div className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center shrink-0 border border-border shadow-sm">
+                  <category.icon className="h-7 w-7 text-primary" />
                 </div>
                 <div className="space-y-1">
-                  <CardTitle className="text-xl font-black text-slate-950 dark:text-white">{category.title}</CardTitle>
-                  <CardDescription className="line-clamp-2 text-slate-700 dark:text-slate-400 font-bold text-sm">{category.description}</CardDescription>
+                  <CardTitle className="text-xl font-black text-primary">{category.title}</CardTitle>
+                  <CardDescription className="line-clamp-2 text-muted-foreground font-bold text-sm">{category.description}</CardDescription>
                 </div>
               </CardHeader>
               <CardContent className="p-6 flex-1 space-y-4">
                 {category.reports.map((report, rIdx) => (
-                  <div key={rIdx} className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-colors flex items-center justify-between group shadow-sm">
+                  <div key={rIdx} className="p-5 rounded-xl border border-border hover:bg-muted/50 transition-colors flex items-center justify-between group shadow-sm">
                     <div className="flex items-center gap-4">
-                       <FileText className="h-6 w-6 text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors" />
+                       <FileText className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
                        <div>
-                         <p className="font-black text-slate-950 dark:text-white text-base">{report.name}</p>
-                         <p className="text-[11px] text-slate-600 dark:text-slate-500 uppercase font-black tracking-widest">{report.type}</p>
+                         <p className="font-black text-primary text-base">{report.name}</p>
+                         <p className="text-[11px] text-muted-foreground uppercase font-black tracking-widest">{report.type}</p>
                        </div>
                     </div>
                     
@@ -202,7 +202,7 @@ export default function ReportsPage() {
                        <Button 
                          variant="ghost" 
                          size="icon" 
-                         className="h-10 w-10 text-slate-600 hover:text-slate-950 dark:hover:text-white hover:bg-slate-200"
+                         className="h-10 w-10 text-muted-foreground hover:text-primary hover:bg-muted"
                          onClick={() => handleEmailReport(report.name)}
                        >
                          <Mail className="h-5 w-5" />
@@ -210,7 +210,7 @@ export default function ReportsPage() {
                        <Button 
                          variant="ghost" 
                          size="icon" 
-                         className="h-10 w-10 text-slate-600 hover:text-slate-950 dark:hover:text-white hover:bg-slate-200"
+                         className="h-10 w-10 text-muted-foreground hover:text-primary hover:bg-muted"
                          onClick={() => handleDownload(report.name)}
                          disabled={isExporting}
                        >

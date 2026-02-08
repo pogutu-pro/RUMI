@@ -1,7 +1,7 @@
-# RUMI - Student Accommodation Platform
+# RUMIA - Student Accommodation Platform
 
 ## Overview
-RUMI is a comprehensive student accommodation management platform that connects students with hostel owners, streamlining the entire rental process from discovery to payment management.
+RUMIA is a comprehensive student accommodation management platform that connects students with hostel owners, streamlining the entire rental process from discovery to payment management.
 
 ## Architecture
 
@@ -276,7 +276,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Support
 
 For support and questions:
-- **Email**: support@rumi.co.ke
+- **Email**: support@rumia.co.ke
 - **Documentation**: Check the `/docs` directory for detailed documentation
 - **Issues**: Report bugs and feature requests on GitHub Issues
 

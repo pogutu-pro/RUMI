@@ -149,15 +149,20 @@ export function CaretakerSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) 
     <div className="flex flex-col h-full py-4 bg-card border-r border-border transition-colors duration-200">
       <div className={cn("flex items-center h-14 px-6 mb-2", isExpanded ? "justify-between" : "justify-center")}>
         {isExpanded ? (
-          <Link href="/" className="flex items-center gap-2 font-bold text-2xl text-primary">
-            <div className="relative h-8 w-8">
-              <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" style={{ height: 'auto' }} />
+          <Link href="/" className="flex items-center gap-2 font-bold text-2xl text-primary group">
+            <div className="relative h-8 w-8 transition-transform group-hover:scale-110">
+              <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" />
             </div>
             <span>RUMI</span>
           </Link>
         ) : (
-           <Link href="/" className="relative h-8 w-8">
-              <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" style={{ height: 'auto' }} />
+           <Link href="/" className="relative h-8 w-8 group">
+              <Image 
+                src="/images/logo/logo.svg" 
+                alt="RUMI Logo" 
+                fill 
+                className="object-contain transition-transform group-hover:scale-110" 
+              />
            </Link>
         )}
         

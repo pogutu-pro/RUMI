@@ -28,7 +28,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useAuth } from '@/features/auth';
+import { logout } from '@/features/auth';
 
 const OPS_ITEMS = [
   { icon: UserPlus, label: 'Check-In', href: '/caretaker/check-in' },
@@ -165,7 +165,8 @@ export function CaretakerBottomNav() {
   const pathname = usePathname();
   const [isVisible, setIsVisible] = React.useState(true);
   const scrollYRef = React.useRef(0);
-  const { logout } = useAuth();
+  
+  // logout is a stable action from auth.store, won't trigger rerenders
   
   // State for sheets
   const [isOpsOpen, setIsOpsOpen] = React.useState(false);

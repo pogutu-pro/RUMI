@@ -1,96 +1,115 @@
+/**
+ * RUMIA DESIGN SYSTEM - THEME TOKENS
+ * 
+ * Governance:
+ * - This file is OWNED by the Design Systems team.
+ * - Changes require DS Architect approval.
+ * - All tokens MUST meet WCAG AA contrast standards.
+ * 
+ * Usage:
+ * - Use `@theme` exported classes (e.g., text-primary) in React components.
+ * - Avoid hardcoding HSL values outside this file.
+ */
 @layer base {
   :root {
     --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-family-heading: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
     
-    /* Light Mode - Clean, crisp, high contrast */
+    /* --- Text & Content --- */
+    --foreground: 240 10% 4%;
+    --text-primary: 240 10% 4%;
+    --text-muted: 240 4% 45%;
+    --text-inverse: 0 0% 100%;
+    
+    /* --- Surfaces --- */
     --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --surface: 0 0% 98%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 240 10% 4%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover-foreground: 240 10% 4%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 45%;
     
-    /* Premium Emerald Green */
-    --primary: 150 90% 35%; /* Deep, vibrant emerald */
+    /* --- Brand & Actions --- */
+    --primary: 154 85% 30%; /* Balanced Emerald - WCAG AA compliant on white */
     --primary-foreground: 0 0% 100%;
-    
     --secondary: 240 5% 96%;
     --secondary-foreground: 240 6% 10%;
+    --accent: 39 95% 52%; 
+    --accent-foreground: 240 10% 4%;
     
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
-    
-    --accent: 39 95% 52%; /* Brand Gold #f9ab0c - Use sparingly */
-    --accent-foreground: 0 0% 10%;
-    
+    /* --- Status Colors --- */
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    
+    --destructive-foreground: 210 40% 98%;
+    --success: 154 85% 30%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 240 10% 4%;
+    --info: 214 95% 45%;
+    --info-foreground: 0 0% 100%;
+
+    /* --- UI Components --- */
     --border: 240 6% 90%;
     --input: 240 6% 90%;
-    --ring: 150 90% 35%;
+    --ring: 154 85% 30%;
     
-    --radius: 0;
-    
-    --success: 150 90% 35%;
-    --success-foreground: 0 0% 100%;
-    
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 10%;
+    --radius: 0.5rem;
 
-    /* Chart Colors - Consistent Hues */
-    --chart-1: 221 83% 53%; /* Blue */
-    --chart-2: 160 84% 39%; /* Emerald */
-    --chart-3: 262 83% 58%; /* Purple */
-    --chart-4: 35 92% 55%;  /* Amber */
-    --chart-5: 346 87% 55%; /* Rose */
+    /* --- Visualization --- */
+    --chart-1: 154 85% 30%;
+    --chart-2: 214 95% 45%;
+    --chart-3: 262 83% 58%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 84% 60%;
   }
 
   .dark {
-    /* Dark Mode - Deep slate/gray, not pitch black */
-    --background: 220 20% 10%; /* Dark slate */
-    --foreground: 220 10% 98%;
+    /* --- Text & Content --- */
+    --foreground: 213 31% 91%;
+    --text-primary: 213 31% 91%;
+    --text-muted: 215.4 16.3% 56.9%;
+    --text-inverse: 224 71% 4%;
     
-    --card: 220 20% 14%;
-    --card-foreground: 220 10% 98%;
+    /* --- Surfaces --- */
+    --background: 224 71% 4%;
+    --surface: 224 71% 6%;
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 213 31% 91%;
+    --muted: 223 47% 11%;
+    --muted-foreground: 215.4 16.3% 56.9%;
     
-    --popover: 220 20% 14%;
-    --popover-foreground: 220 10% 98%;
+    /* --- Brand & Actions --- */
+    --primary: 154 85% 45%; /* Brighter Emerald for Dark Mode contrast */
+    --primary-foreground: 224 71% 4%;
+    --secondary: 223 47% 11%;
+    --secondary-foreground: 210 40% 98%;
+    --accent: 216 34% 17%;
+    --accent-foreground: 210 40% 98%;
     
-    --primary: 150 70% 50%; /* Brighter emerald for dark mode */
-    --primary-foreground: 150 90% 10%;
-    
-    --secondary: 220 20% 20%;
-    --secondary-foreground: 220 10% 98%;
-    
-    --muted: 220 20% 20%;
-    --muted-foreground: 220 10% 65%;
-    
-    --accent: 150 30% 20%;
-    --accent-foreground: 150 70% 50%;
-    
+    /* --- Status Colors --- */
     --destructive: 0 63% 31%;
-    --destructive-foreground: 0 86% 97%;
-    
-    --border: 220 20% 20%;
-    --input: 220 20% 20%;
-    --ring: 150 70% 50%;
-    
-    --radius: 0;
-    
-    --success: 150 70% 50%;
-    --success-foreground: 150 90% 10%;
-    
-    --warning: 43 96% 56%;
-    --warning-foreground: 0 0% 10%;
-
-    /* Chart Colors - Dark Mode (Lighter for contrast) */
-    --chart-1: 221 83% 65%; /* Bright Blue */
-    --chart-2: 160 84% 50%; /* Bright Emerald */
-    --chart-3: 262 83% 68%; /* Bright Purple */
-    --chart-4: 35 92% 65%;  /* Bright Amber */
-    --chart-5: 346 87% 65%; /* Bright Rose */
+    --destructive-foreground: 210 40% 98%;
+    --success: 154 85% 45%;
+    --success-foreground: 224 71% 4%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 224 71% 4%;
+    --info: 214 95% 60%;
+    --info-foreground: 224 71% 4%;
+ 
+    /* --- UI Components --- */
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+    --ring: 154 85% 45%;
+ 
+    /* --- Visualization --- */
+    --chart-1: 154 85% 45%;
+    --chart-2: 214 95% 60%;
+    --chart-3: 262 83% 68%;
+    --chart-4: 38 92% 65%;
+    --chart-5: 0 84% 70%;
   }
 }
 
@@ -100,6 +119,10 @@
   --color-ring: hsl(var(--ring));
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
+  --color-text-primary: hsl(var(--text-primary));
+  --color-text-muted: hsl(var(--text-muted));
+  --color-text-inverse: hsl(var(--text-inverse));
+  --color-surface: hsl(var(--surface));
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
   --color-secondary: hsl(var(--secondary));
@@ -118,9 +141,13 @@
   --color-success-foreground: hsl(var(--success-foreground));
   --color-warning: hsl(var(--warning));
   --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
+  
   --font-family-sans: var(--font-sans);
   --font-family-heading: var(--font-family-heading);
   --border-radius: var(--radius);
+  
   --color-chart-1: hsl(var(--chart-1));
   --color-chart-2: hsl(var(--chart-2));
   --color-chart-3: hsl(var(--chart-3));

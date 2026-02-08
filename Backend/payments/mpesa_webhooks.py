@@ -324,49 +324,56 @@ class MpesaWebhookHandler(View):
                     return JsonResponse({'status': 'already_processed'}, status=200)
 
                 # We need to find the student to call process_confirmed_payment
+                payment_info['shortcode'] = data.get('BusinessShortCode')
+                
                 # Check if it's a custom bed account number
                 student = None
+                target_bed = None
+                
                 from hostels.bed_models import Bed, BedOccupancy
                 
-                # 1. Try to find a bed with this custom account number
+                # 1. Try to find a bed with this custom account number (BillRefNumber)
                 try:
-                    bed = Bed.objects.get(custom_account_number=reference)
+                    target_bed = Bed.objects.select_related('hostel').get(custom_account_number=reference)
+                    
+                    # Security Check: Ensure the Paybill used belongs to this hostel's landlord
+                    conf = MpesaPaymentConfig.objects.filter(landlord=target_bed.hostel.landlord, mpesa_number=payment_info['shortcode']).first()
+                    if not conf:
+                        logger.error(f"Payment for bed {reference} sent to wrong paybill {payment_info['shortcode']}")
+                        return JsonResponse({'ResultCode': '1', 'ResultDesc': 'Paybill mismatch for this account'}, status=200)
+
                     # Found a bed! Now find who is occupying it
-                    occupancy = BedOccupancy.objects.filter(bed=bed, is_active=True).select_related('student', 'booking').first()
+                    occupancy = BedOccupancy.objects.filter(bed=target_bed, is_active=True).select_related('student', 'booking').first()
                     
                     if occupancy:
                         student = occupancy.student
-                        # We also know the booking!
-                        # But process_confirmed_payment needs to be called carefully. The existing logic below
-                        # assumes we just pass student.
-                        # Let's attach the booking context to metadata if possible or passed implicitly
                         payment_info['booking_id'] = occupancy.booking.id
                     else:
                         logger.warning(f"Payment received for bed {reference} but no active occupant found.")
-                        # Could be a past student or future? For now, fail or hold.
-                        return JsonResponse({'error': 'No active tenant found for this bed account'}, status=404)
+                        return JsonResponse({'ResultCode': '1', 'ResultDesc': 'No active tenant for this bed'}, status=200)
                         
                 except Bed.DoesNotExist:
-                    # Not a custom account number, try standard format
-                    # Reference format: RUMI-INITIAL-{booking_id}-... or RUMI-RENT-{rent_period_id}-...
+                    # Not a custom account number, try standard RUMI-RENT-... format
                     parts = reference.split('-')
-                    if len(parts) < 3:
-                         return JsonResponse({'error': 'Invalid reference structure'}, status=400)
-                    
-                    target_type = parts[1]
-                    target_id = parts[2]
-                    
-                    if target_type == 'INITIAL':
-                        target = Booking.objects.select_related('student').get(id=target_id)
-                        student = target.student
-                    elif target_type == 'RENT':
-                        from .models import RentPeriod
-                        target = RentPeriod.objects.select_related('student').get(id=target_id)
-                        student = target.student
+                    if len(parts) >= 3 and parts[0] == 'RUMI':
+                        ref_type = parts[1]
+                        ref_id = parts[2]
+                        
+                        if ref_type == 'INITIAL':
+                            target = Booking.objects.select_related('student', 'room__hostel').get(id=ref_id)
+                            student = target.student
+                            payment_info['booking_id'] = target.id
+                        elif ref_type == 'RENT':
+                            from .models import RentPeriod
+                            target = RentPeriod.objects.select_related('student', 'booking', 'hostel').get(id=ref_id)
+                            student = target.student
+                            payment_info['booking_id'] = target.booking.id
+                        else:
+                            return JsonResponse({'ResultCode': '1', 'ResultDesc': 'Invalid reference type'}, status=200)
                     else:
-                        return JsonResponse({'error': 'Unknown payment target'}, status=400)
+                        return JsonResponse({'ResultCode': '1', 'ResultDesc': 'Invalid BillRefNumber'}, status=200)
 
-                # Process confirmed payment (handles Transaction creation, Lifecycle, RentPeriods)
+                # Process confirmed payment (handles Transaction creation with hostel/bed links)
                 result = process_confirmed_payment(
                     student=student,
                     amount=Decimal(str(amount)),

@@ -14,7 +14,7 @@ export default function CaretakerPaymentsPage() {
   const { data: hostelData } = useQuery({
     queryKey: ['caretaker-hostel', user?.id],
     queryFn: async () => {
-      const response = await apiClient.axios.get('/api/v1/caretaker/hostel/');
+      const response = await apiClient.axios.get('/caretaker/hostel/');
       return response.data.data;
     },
     enabled: !!user,
@@ -23,7 +23,7 @@ export default function CaretakerPaymentsPage() {
   const { data: paymentSummary } = useQuery({
     queryKey: ['payment-summary', hostelData?.id],
     queryFn: async () => {
-      const response = await apiClient.axios.get(`/api/v1/payments/summary/${hostelData?.id}/`);
+      const response = await apiClient.axios.get(`/payments/summary/${hostelData?.id}/`);
       return response.data.data;
     },
     enabled: !!hostelData?.id,

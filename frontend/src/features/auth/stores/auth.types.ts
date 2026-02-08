@@ -63,6 +63,11 @@ export interface AuthActions {
   updateUser: (updates: Partial<User>) => void;
   
   /**
+   * Re-hydrates the store with full user and profile data
+   */
+  rehydrate: (user: User, profile: UserProfile) => void;
+  
+  /**
    * Sets error state
    */
   setError: (error: string) => void;

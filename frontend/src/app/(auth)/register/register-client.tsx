@@ -65,6 +65,7 @@ export function RegisterClientPage() {
                   width={32}
                   height={32}
                   className="w-8 h-auto"
+                  style={{ width: 'auto', height: 'auto' }}
                 />
               </Link>
             }

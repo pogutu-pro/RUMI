@@ -19,7 +19,8 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, it, beforeEach, afterEach, jest } from '@jest/globals';
+
 
 // Mock API client
 jest.mock('@/lib/api/client', () => ({

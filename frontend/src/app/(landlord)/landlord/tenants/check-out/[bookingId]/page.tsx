@@ -76,7 +76,7 @@ export default function CheckOutProcessPage() {
   }
 
   if (!booking) {
-      return <div className="p-12 text-center text-slate-500">Booking not found.</div>;
+      return <div className="p-12 text-center text-muted-foreground">Booking not found.</div>;
   }
 
   const studentName = typeof booking.student === 'object' ? `${booking.student.first_name} ${booking.student.last_name}` : 'Student';
@@ -88,24 +88,24 @@ export default function CheckOutProcessPage() {
     <div className="max-w-3xl mx-auto space-y-8">
        {/* Progress Steps */}
        <div className="flex items-center justify-center">
-           <div className={`flex items-center gap-2 ${step >= 1 ? 'text-orange-600 font-medium' : 'text-slate-400'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${step >= 1 ? 'border-orange-600 bg-orange-50' : 'border-slate-300'}`}>1</div>
+           <div className={`flex items-center gap-2 ${step >= 1 ? 'text-warning font-medium' : 'text-muted-foreground'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${step >= 1 ? 'border-warning bg-warning/10' : 'border-border'}`}>1</div>
                 <span>Review</span>
            </div>
-           <div className={`w-16 h-0.5 mx-2 ${step >= 2 ? 'bg-orange-600' : 'bg-slate-200'}`} />
-           <div className={`flex items-center gap-2 ${step >= 2 ? 'text-orange-600 font-medium' : 'text-slate-400'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${step >= 2 ? 'border-orange-600 bg-orange-50' : 'border-slate-300'}`}>2</div>
+           <div className={`w-16 h-0.5 mx-2 ${step >= 2 ? 'bg-warning' : 'bg-border'}`} />
+           <div className={`flex items-center gap-2 ${step >= 2 ? 'text-warning font-medium' : 'text-muted-foreground'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${step >= 2 ? 'border-warning bg-warning/10' : 'border-border'}`}>2</div>
                 <span>Inspection</span>
            </div>
-           <div className={`w-16 h-0.5 mx-2 ${step >= 3 ? 'bg-orange-600' : 'bg-slate-200'}`} />
-           <div className={`flex items-center gap-2 ${step >= 3 ? 'text-orange-600 font-medium' : 'text-slate-400'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${step >= 3 ? 'border-orange-600 bg-orange-50' : 'border-slate-300'}`}>3</div>
+           <div className={`w-16 h-0.5 mx-2 ${step >= 3 ? 'bg-warning' : 'bg-border'}`} />
+           <div className={`flex items-center gap-2 ${step >= 3 ? 'text-warning font-medium' : 'text-muted-foreground'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${step >= 3 ? 'border-warning bg-warning/10' : 'border-border'}`}>3</div>
                 <span>Refund</span>
            </div>
        </div>
 
        <Card className="border-none shadow-xl overflow-hidden">
-           <CardHeader className="bg-slate-50 dark:bg-slate-900/50 border-b">
+           <CardHeader className="bg-muted/30 border-b">
                <CardTitle>Tenant Check-Out Process</CardTitle>
                <CardDescription>Process the departure for {studentName}</CardDescription>
            </CardHeader>
@@ -119,41 +119,41 @@ export default function CheckOutProcessPage() {
                      exit={{ opacity: 0, x: -20 }}
                      className="p-6 space-y-6"
                    >
-                       <div className="flex items-center gap-4 p-4 rounded-lg bg-slate-50 border">
+                       <div className="flex items-center gap-4 p-4 rounded-lg bg-muted border">
                            <Avatar className="h-16 w-16">
-                               <AvatarFallback className="bg-orange-100 text-orange-700 font-bold text-xl">{getInitials(studentName)}</AvatarFallback>
+                               <AvatarFallback className="bg-warning/10 text-warning font-bold text-xl">{getInitials(studentName)}</AvatarFallback>
                            </Avatar>
                            <div>
-                               <h3 className="text-xl font-bold text-slate-900">{studentName}</h3>
-                               <p className="text-slate-500">Processing Check-Out</p>
+                               <h3 className="text-xl font-bold text-primary">{studentName}</h3>
+                               <p className="text-muted-foreground">Processing Check-Out</p>
                            </div>
                        </div>
                        
                        <div className="grid grid-cols-2 gap-6">
                            <div className="space-y-1">
-                               <Label className="text-slate-500 uppercase text-xs tracking-wider">Property</Label>
+                               <Label className="text-muted-foreground uppercase text-xs tracking-wider">Property</Label>
                                <div className="flex items-center gap-2 font-medium">
-                                   <Building2 className="h-4 w-4 text-orange-600" />
+                                   <Building2 className="h-4 w-4 text-warning" />
                                    {hostelName}
                                </div>
                            </div>
                            <div className="space-y-1">
-                               <Label className="text-slate-500 uppercase text-xs tracking-wider">Room</Label>
+                               <Label className="text-muted-foreground uppercase text-xs tracking-wider">Room</Label>
                                <div className="flex items-center gap-2 font-medium">
-                                   <Building2 className="h-4 w-4 text-orange-600" />
+                                   <Building2 className="h-4 w-4 text-warning" />
                                    Room {roomNumber}
                                </div>
                            </div>
                            <div className="space-y-1">
-                               <Label className="text-slate-500 uppercase text-xs tracking-wider">Check-Out Date</Label>
+                               <Label className="text-muted-foreground uppercase text-xs tracking-wider">Check-Out Date</Label>
                                <div className="flex items-center gap-2 font-medium">
-                                   <Calendar className="h-4 w-4 text-orange-600" />
+                                   <Calendar className="h-4 w-4 text-warning" />
                                    {format(new Date(), 'MMMM dd, yyyy')}
                                </div>
                            </div>
                        </div>
 
-                       <div className="p-4 rounded-lg bg-blue-50 border border-blue-100 text-blue-800 text-sm">
+                       <div className="p-4 rounded-lg bg-info/10 border border-info/30 text-info-foreground text-sm">
                            <p className="font-semibold mb-1">Verify Key Return</p>
                            Have all sets of keys been returned by the tenant?
                            <div className="flex items-center gap-2 mt-2">
@@ -177,7 +177,7 @@ export default function CheckOutProcessPage() {
                        <div className="space-y-4">
                            <div className="flex items-center justify-between">
                                <h3 className="text-lg font-semibold flex items-center gap-2">
-                                   <ClipboardCheck className="h-5 w-5 text-orange-600" />
+                                   <ClipboardCheck className="h-5 w-5 text-warning" />
                                    Room Inspection
                                </h3>
                            </div>
@@ -200,12 +200,12 @@ export default function CheckOutProcessPage() {
                                       value={deductions}
                                       onChange={(e) => setDeductions(Number(e.target.value))}
                                    />
-                                   <p className="text-xs text-slate-500">Estimated cost for repairs/cleaning.</p>
+                                   <p className="text-xs text-muted-foreground">Estimated cost for repairs/cleaning.</p>
                                </div>
                            </div>
                            
-                           <div className="p-4 rounded-lg bg-slate-50 text-sm text-slate-600 flex items-start gap-3">
-                               <AlertTriangle className="h-5 w-5 text-orange-500 shrink-0 mt-0.5" />
+                           <div className="p-4 rounded-lg bg-muted text-sm text-muted-foreground flex items-start gap-3">
+                               <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
                                <p>By defining deductions, you agree that these charges are valid and per the lease terms. The tenant will be notified.</p>
                            </div>
                        </div>
@@ -221,27 +221,27 @@ export default function CheckOutProcessPage() {
                      className="p-6 space-y-6"
                    >
                         <div className="text-center py-4">
-                            <h3 className="text-xl font-bold text-slate-900 mb-6">Final Refund Calculation</h3>
+                            <h3 className="text-xl font-bold text-primary mb-6">Final Refund Calculation</h3>
                             
                             <Card className="max-w-sm mx-auto border-dashed">
                                 <CardContent className="p-6 space-y-4">
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">Security Deposit</span>
+                                        <span className="text-muted-foreground">Security Deposit</span>
                                         <span className="font-medium">KES {deposit.toLocaleString()}</span>
                                     </div>
-                                    <div className="flex justify-between text-sm text-red-600">
+                                    <div className="flex justify-between text-sm text-destructive">
                                         <span>Deductions</span>
                                         <span>- KES {deductions.toLocaleString()}</span>
                                     </div>
                                     <Separator />
                                     <div className="flex justify-between font-bold text-lg">
                                         <span>Net Refund</span>
-                                        <span className="text-emerald-600">KES {(deposit - deductions).toLocaleString()}</span>
+                                        <span className="text-success">KES {(deposit - deductions).toLocaleString()}</span>
                                     </div>
                                 </CardContent>
                             </Card>
                             
-                            <p className="text-slate-600 text-sm mt-8 max-w-md mx-auto">
+                            <p className="text-muted-foreground text-sm mt-8 max-w-md mx-auto">
                                 Confirming will initiate the refund process and officially close this tenancy.
                             </p>
                         </div>
@@ -256,12 +256,12 @@ export default function CheckOutProcessPage() {
                    Back
                </Button>
                {step < 3 ? (
-                   <Button onClick={handleNext} className="bg-orange-600 hover:bg-orange-700 hover:text-white">
+                   <Button onClick={handleNext} className="bg-warning hover:bg-warning/90 text-warning-foreground">
                        Next Step
                        <ChevronRight className="h-4 w-4 ml-2" />
                    </Button>
                ) : (
-                   <Button onClick={handleComplete} className="bg-emerald-600 hover:bg-emerald-700 min-w-[140px]" disabled={processCheckOut.isPending}>
+                   <Button onClick={handleComplete} className="bg-success hover:bg-success/90 text-success-foreground min-w-[140px]" disabled={processCheckOut.isPending}>
                        {processCheckOut.isPending ? 'Processing...' : 'Complete Check-Out'}
                    </Button>
                )}
