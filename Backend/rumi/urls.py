@@ -58,6 +58,7 @@ schema_view = get_schema_view(
         path('api/v1/notifications/', include('notifications.urls')),
         path('api/v1/home/', include('home.urls')),
         path('api/v1/roommates/', include('roommate_system.urls')),
+        path('api/v1/recommendations/', include('recommendations.urls')),
     ],
 )
 
@@ -88,6 +89,7 @@ urlpatterns = [
         path('home/', include('home.urls')),
         path('analytics/', include('analytics.urls')),
         path('roommates/', include('roommate_system.urls')),
+        path('recommendations/', include('recommendations.urls')),
 
         # Landlord API (new)
         path('landlord/', include('landlord_api.urls')),
