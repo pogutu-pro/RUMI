@@ -44,11 +44,11 @@ class HostelViewSet(TenantModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        
+
         # 1. Tenant Scoped (Landlord/Caretaker)
         if user.is_authenticated and user.role in ['landlord', 'caretaker']:
             return super().get_queryset()
-            
+
         # 2. Public Scope (Active Only)
         return Hostel.objects.filter(status='active').select_related('landlord__user')
 

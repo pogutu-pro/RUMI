@@ -35,11 +35,12 @@ class ReceiptVerificationView(APIView):
         
         # Attribution details
         if transaction.booking:
+            first_rp = transaction.booking.rent_periods.first() if hasattr(transaction.booking, 'rent_periods') else None
             data['attribution'] = {
                 "type": "Booking",
-                "c": transaction.booking.room.hostel.name,
+                "hostel": transaction.booking.room.hostel.name,
                 "room": transaction.booking.room.room_number,
-                "bed": transaction.booking.bed_slot_id
+                "bed": (first_rp.bed_slot_id if first_rp else None) or "N/A"
             }
         elif transaction.rent_period:
             data['attribution'] = {

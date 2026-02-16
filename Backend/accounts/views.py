@@ -1927,12 +1927,12 @@ class StudentDashboardView(APIView):
         saved_methods = SavedPaymentMethod.objects.filter(
             student=student_profile,
             is_active=True
-        ).order_by('-is_default')
+        )
 
         payment_methods = {
             'available': ['mpesa_stk_push', 'paystack_card'],
             'saved_count': saved_methods.count(),
-            'default_method': saved_methods.filter(is_default=True).first().last_four if saved_methods.filter(is_default=True).exists() else None
+            'default_method': saved_methods.first().last_four if saved_methods.exists() else None
         }
 
         return Response({

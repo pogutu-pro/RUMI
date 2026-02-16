@@ -1,0 +1,242 @@
+"""
+Tests for accounts app - authentication, profiles, and permissions.
+"""
+
+from django.test import TestCase, override_settings
+from django.contrib.auth import get_user_model
+from rest_framework.test import APIClient
+from accounts.models import StudentProfile, LandlordProfile
+
+User = get_user_model()
+
+
+@override_settings(
+    CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    ENABLE_RATE_LIMITING=False,
+)
+class AuthenticationTests(TestCase):
+    """Test registration, login, logout, and token refresh."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.register_url = '/api/v1/accounts/register/'
+        self.login_url = '/api/v1/accounts/login/'
+        self.logout_url = '/api/v1/accounts/logout/'
+
+    def test_register_student(self):
+        data = {
+            'email': 'newstudent@test.com',
+            'password': 'StrongPass123!',
+            'confirm_password': 'StrongPass123!',
+            'first_name': 'New',
+            'last_name': 'Student',
+            'role': 'student',
+            'phone_number': '+254712345678',
+            'gender': 'male',
+            'date_of_birth': '2000-01-15',
+        }
+        response = self.client.post(self.register_url, data, format='json')
+        self.assertIn(response.status_code, [200, 201])
+        self.assertTrue(User.objects.filter(email='newstudent@test.com').exists())
+
+    def test_register_landlord(self):
+        data = {
+            'email': 'newlandlord@test.com',
+            'password': 'StrongPass123!',
+            'confirm_password': 'StrongPass123!',
+            'first_name': 'New',
+            'last_name': 'Landlord',
+            'role': 'landlord',
+            'phone_number': '+254712345678',
+        }
+        response = self.client.post(self.register_url, data, format='json')
+        self.assertIn(response.status_code, [200, 201])
+        self.assertTrue(User.objects.filter(email='newlandlord@test.com').exists())
+
+    def test_register_duplicate_email(self):
+        User.objects.create_user(
+            email='existing@test.com', password='Pass123!',
+            first_name='Test', last_name='User', role='student',
+        )
+        data = {
+            'email': 'existing@test.com',
+            'password': 'StrongPass123!',
+            'confirm_password': 'StrongPass123!',
+            'first_name': 'Dup', 'last_name': 'User', 'role': 'student',
+            'phone_number': '+254712345678',
+            'gender': 'male', 'date_of_birth': '2000-01-15',
+        }
+        response = self.client.post(self.register_url, data, format='json')
+        self.assertIn(response.status_code, [400, 409])
+
+    def test_login_success(self):
+        User.objects.create_user(
+            email='login@test.com', password='Pass123!',
+            first_name='Test', last_name='User', role='student',
+            is_verified=True,
+        )
+        data = {'email': 'login@test.com', 'password': 'Pass123!'}
+        response = self.client.post(self.login_url, data, format='json')
+        self.assertEqual(response.status_code, 200)
+
+    def test_login_wrong_password(self):
+        User.objects.create_user(
+            email='login@test.com', password='Pass123!',
+            first_name='Test', last_name='User', role='student',
+            is_verified=True,
+        )
+        data = {'email': 'login@test.com', 'password': 'WrongPass!'}
+        response = self.client.post(self.login_url, data, format='json')
+        self.assertIn(response.status_code, [400, 401])
+
+    def test_login_nonexistent_user(self):
+        data = {'email': 'nobody@test.com', 'password': 'Pass123!'}
+        response = self.client.post(self.login_url, data, format='json')
+        self.assertIn(response.status_code, [400, 401, 404])
+
+    def test_logout(self):
+        user = User.objects.create_user(
+            email='logout@test.com', password='Pass123!',
+            first_name='Test', last_name='User', role='student',
+            is_verified=True,
+        )
+        self.client.force_authenticate(user=user)
+        response = self.client.post(self.logout_url, format='json')
+        self.assertIn(response.status_code, [200, 204])
+
+
+@override_settings(
+    CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    ENABLE_RATE_LIMITING=False,
+)
+class ProfileTests(TestCase):
+    """Test profile retrieval and updates."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.profile_url = '/api/v1/accounts/profile/'
+        self.completion_url = '/api/v1/accounts/profile/completion/'
+        self.student_user = User.objects.create_user(
+            email='student@test.com', password='Pass123!',
+            first_name='Test', last_name='Student', role='student',
+            is_verified=True,
+        )
+        self.student_profile = StudentProfile.objects.create(
+            user=self.student_user,
+            university='Test University',
+            course='Computer Science',
+            year_of_study=2,
+        )
+
+    def test_get_profile_authenticated(self):
+        self.client.force_authenticate(user=self.student_user)
+        response = self.client.get(self.profile_url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_profile_unauthenticated(self):
+        response = self.client.get(self.profile_url)
+        self.assertIn(response.status_code, [401, 403])
+
+    def test_update_profile(self):
+        self.client.force_authenticate(user=self.student_user)
+        data = {'first_name': 'Updated', 'last_name': 'Name'}
+        response = self.client.put(self.profile_url, data, format='json')
+        self.assertIn(response.status_code, [200, 204])
+
+    def test_profile_completion(self):
+        self.client.force_authenticate(user=self.student_user)
+        response = self.client.get(self.completion_url)
+        self.assertEqual(response.status_code, 200)
+
+
+@override_settings(
+    CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    ENABLE_RATE_LIMITING=False,
+)
+class RolePermissionTests(TestCase):
+    """Test role-based access control."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.student_user = User.objects.create_user(
+            email='student@test.com', password='Pass123!',
+            first_name='Test', last_name='Student', role='student',
+            is_verified=True,
+        )
+        StudentProfile.objects.create(
+            user=self.student_user, university='Test Uni',
+            course='CS', year_of_study=1,
+        )
+        self.landlord_user = User.objects.create_user(
+            email='landlord@test.com', password='Pass123!',
+            first_name='Test', last_name='Landlord', role='landlord',
+            is_verified=True,
+        )
+        LandlordProfile.objects.create(
+            user=self.landlord_user, company_name='Test Co',
+            national_id='12345678',
+        )
+
+    def test_student_cannot_access_landlord_dashboard(self):
+        self.client.force_authenticate(user=self.student_user)
+        response = self.client.get('/api/v1/accounts/landlord/dashboard/')
+        self.assertIn(response.status_code, [403, 404])
+
+    def test_landlord_can_access_landlord_dashboard(self):
+        self.client.force_authenticate(user=self.landlord_user)
+        response = self.client.get('/api/v1/accounts/landlord/dashboard/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_landlord_cannot_access_student_dashboard(self):
+        self.client.force_authenticate(user=self.landlord_user)
+        response = self.client.get('/api/v1/accounts/dashboard/')
+        self.assertIn(response.status_code, [403, 404])
+
+    def test_unauthenticated_cannot_access_dashboard(self):
+        response = self.client.get('/api/v1/accounts/dashboard/')
+        self.assertIn(response.status_code, [401, 403])
+
+
+@override_settings(
+    CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    ENABLE_RATE_LIMITING=False,
+)
+class PasswordResetTests(TestCase):
+    """Test password reset flow."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='reset@test.com', password='OldPass123!',
+            first_name='Test', last_name='User', role='student',
+            is_verified=True,
+        )
+
+    def test_password_reset_request(self):
+        response = self.client.post(
+            '/api/v1/accounts/password/reset/',
+            {'email': 'reset@test.com'}, format='json',
+        )
+        self.assertIn(response.status_code, [200, 201, 204])
+
+    def test_password_reset_nonexistent_email(self):
+        response = self.client.post(
+            '/api/v1/accounts/password/reset/',
+            {'email': 'nobody@test.com'}, format='json',
+        )
+        # Should still return 200 to prevent email enumeration
+        self.assertIn(response.status_code, [200, 400, 404])
+
+    def test_check_email_availability(self):
+        response = self.client.post(
+            '/api/v1/accounts/check-email/',
+            {'email': 'fresh@test.com'}, format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_check_email_taken(self):
+        response = self.client.post(
+            '/api/v1/accounts/check-email/',
+            {'email': 'reset@test.com'}, format='json',
+        )
+        self.assertEqual(response.status_code, 200)

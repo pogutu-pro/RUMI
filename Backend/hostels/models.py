@@ -4,7 +4,6 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
 import uuid
 from django.db.models import QuerySet
-from .review_models import Review, ReviewHelpful, ReviewImage
 
 
 class SoftDeleteManager(models.Manager):

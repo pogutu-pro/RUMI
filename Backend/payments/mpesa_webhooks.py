@@ -114,46 +114,29 @@ class MpesaWebhookHandler(View):
 
             # 4. Handle Success/Failure
             if result_code == 0:
-                amount_paid = Decimal(str(metadata_dict.get('Amount')))
-                mpesa_receipt_number = metadata_dict.get('MpesaReceiptNumber')
-                phone_number = metadata_dict.get('PhoneNumber')
-                
-                # Update Transaction
-                transaction_obj.status = 'success' # Changed from 'completed' to 'success' to match existing enum
-                transaction_obj.mpesa_receipt_number = mpesa_receipt_number
-                transaction_obj.mpesa_phone_number = phone_number # Added phone number update
-                transaction_obj.completed_at = timezone.now()
-                transaction_obj.metadata = payload # Update metadata with full callback
-                transaction_obj.save()
+                # Store callback metadata on the transaction for audit
+                transaction_obj.metadata = payload
+                transaction_obj.save(update_fields=['metadata'])
 
                 # *** Audit Log ***
                 from .models import PaymentAuditLog
                 from django.contrib.contenttypes.models import ContentType
-                
+
+                mpesa_receipt_number = metadata_dict.get('MpesaReceiptNumber')
                 PaymentAuditLog.objects.create(
                     action='payment_completed',
                     content_type=ContentType.objects.get_for_model(Transaction),
                     object_id=transaction_obj.id,
-                    new_state={'status': 'success', 'mpesa_receipt_number': mpesa_receipt_number},
+                    new_state={'status': 'received', 'mpesa_receipt_number': mpesa_receipt_number},
                     metadata=payload
                 )
 
-                # Trigger Receipt Generation (Phase 1)
-                # from .services import generate_receipt_pdf
-                # generate_receipt_pdf(transaction_obj) # This was commented out in original, keeping it commented
-
-                # Link to Booking/Wallet (Phase 2 Logic)
-                # The original _update_transaction_from_stk_push had this logic,
-                # we need to re-integrate it or call a service.
-                # For now, let's call the existing _update_transaction_from_stk_push's core logic
-                # but ensure it doesn't re-save the transaction status.
-                
                 # Resolve API for this specific transaction's hostel
                 mpesa_api = MpesaRoutingEngine.get_api_for_booking(transaction_obj.booking)
-                payment_info = mpesa_api.process_payment_callback(payload) # Re-process to get structured payment_info
-                
-                # Call the original logic to handle business processing and notifications
-                # This will handle the `process_confirmed_payment` and notifications
+                payment_info = mpesa_api.process_payment_callback(payload)
+
+                # Delegate to _update_transaction_from_stk_push for full lifecycle:
+                # pending -> processing -> success, booking activation, notifications
                 return self._update_transaction_from_stk_push(payment_info, transaction_obj)
 
             else:

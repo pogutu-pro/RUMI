@@ -16,32 +16,26 @@ class StudentPendingReviewsView(APIView):
         student = request.user.student_profile
         
         # Get completed bookings where student hasn't reviewed yet
-        from hostels.models import Booking, Review
-        
+        from hostels.models import Booking
+
         completed_bookings = Booking.objects.filter(
             student=student,
             status='completed',
             check_out_date__lte=timezone.now().date(),
             check_out_date__gte=timezone.now().date() - timedelta(days=90)  # Last 90 days
         ).select_related('room__hostel')
-        
-        # Filter out already reviewed hostels
-        reviewed_hostel_ids = Review.objects.filter(
-            student=student,
-            booking__in=completed_bookings
-        ).values_list('hostel_id', flat=True)
-        
+
+        # Build pending reviews list (review system pending reimplementation)
         pending_reviews = []
         for booking in completed_bookings:
-            if booking.room.hostel.id not in reviewed_hostel_ids:
-                pending_reviews.append({
-                    'hostel_id': booking.room.hostel.id,
-                    'hostel_name': booking.room.hostel.name,
-                    'hostel_image': booking.room.hostel.main_image.url if booking.room.hostel.main_image else None,
-                    'check_out_date': booking.check_out_date.isoformat(),
-                    'booking_id': booking.id
-                })
-        
+            pending_reviews.append({
+                'hostel_id': booking.room.hostel.id,
+                'hostel_name': booking.room.hostel.name,
+                'hostel_image': None,
+                'check_out_date': booking.check_out_date.isoformat(),
+                'booking_id': booking.id
+            })
+
         # Sort by most recent checkout first
         pending_reviews.sort(key=lambda x: x['check_out_date'], reverse=True)
         

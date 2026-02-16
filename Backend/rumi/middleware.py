@@ -40,29 +40,48 @@ class APIResponseCacheMiddleware(MiddlewareMixin):
             '/metrics/',
         ])
     
+    def _has_auth_credentials(self, request):
+        """Check if request carries authentication credentials.
+
+        DRF authentication runs during view dispatch (after middleware),
+        so request.user may not reflect the actual user at middleware time.
+        We check for auth headers directly to avoid serving user-specific
+        cached responses to the wrong user.
+        """
+        if request.META.get('HTTP_AUTHORIZATION'):
+            return True
+        if request.COOKIES.get('access_token') or request.COOKIES.get('sessionid'):
+            return True
+        # DRF's force_authenticate sets _force_auth_user without headers
+        if getattr(request, '_force_auth_user', None):
+            return True
+        # Also check if Django's auth middleware has already set an authenticated user
+        if hasattr(request, 'user') and hasattr(request.user, 'is_authenticated') and request.user.is_authenticated:
+            return True
+        return False
+
     def process_request(self, request):
         """Check cache before processing request"""
-        
+
         # Only cache GET requests
         if request.method not in self.cacheable_methods:
             return None
-        
+
         # Skip excluded paths
         if any(request.path.startswith(path) for path in self.exclude_paths):
             return None
-        
-        # Get user ID for user-specific caching
-        user_id = None
-        if hasattr(request, 'user') and request.user.is_authenticated:
-            user_id = str(request.user.id)
-        
-        # Try to get cached response
+
+        # Skip cache for authenticated requests - responses are user-specific
+        # and middleware can't reliably identify the user before DRF auth runs
+        if self._has_auth_credentials(request):
+            return None
+
+        # Try to get cached response (anonymous/public requests only)
         cached_response = api_cache.cache_api_response(
             endpoint=request.path,
             method=request.method,
-            user_id=user_id
         )
-        
+
         if cached_response:
             # Add cache header
             response = HttpResponse(cached_response['content'])
@@ -70,35 +89,34 @@ class APIResponseCacheMiddleware(MiddlewareMixin):
             response['X-Cache'] = 'HIT'
             response['X-Cache-TTL'] = str(cached_response.get('ttl', self.default_timeout))
             return response
-        
+
         # Add cache miss header
         request._cache_miss = True
         return None
     
     def process_response(self, request, response):
-        """Cache successful responses"""
-        
+        """Cache successful responses (anonymous/public requests only)"""
+
         # Only cache successful responses
         if response.status_code != 200:
             return response
-        
+
         # Check if this was a cache miss
         if not getattr(request, '_cache_miss', False):
             return response
-        
+
         # Only cache GET requests
         if request.method not in self.cacheable_methods:
             return response
-        
+
         # Skip excluded paths
         if any(request.path.startswith(path) for path in self.exclude_paths):
             return response
-        
-        # Get user ID for user-specific caching
-        user_id = None
-        if hasattr(request, 'user') and request.user.is_authenticated:
-            user_id = str(request.user.id)
-        
+
+        # Skip caching for authenticated requests - responses are user-specific
+        if self._has_auth_credentials(request):
+            return response
+
         # Prepare cache data
         cache_data = {
             'content': response.content.decode('utf-8') if hasattr(response, 'content') else str(response.content),
@@ -107,20 +125,19 @@ class APIResponseCacheMiddleware(MiddlewareMixin):
             'cached_at': timezone.now().isoformat(),
             'ttl': self.default_timeout,
         }
-        
-        # Cache the response
+
+        # Cache the response (anonymous/public only)
         api_cache.cache_api_response(
             endpoint=request.path,
             method=request.method,
-            user_id=user_id,
             response_data=cache_data,
             timeout=self.default_timeout
         )
-        
+
         # Add cache headers
         response['X-Cache'] = 'MISS'
         response['Cache-Control'] = f'public, max-age={self.default_timeout}'
-        
+
         return response
 
 

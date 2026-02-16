@@ -40,14 +40,16 @@ class TenancyIsolationTest(TestCase):
         """Caretaker 1 should be able to access their assigned Hostel 1"""
         self.client.force_authenticate(user=self.caretaker1.user)
         response = self.client.get(f'/api/v1/hostels/{self.hostel1.id}/')
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['id'], self.hostel1.id)
+        data = response.data if hasattr(response, 'data') else response.json()
+        self.assertEqual(data['id'], self.hostel1.id)
 
     def test_landlord_can_access_own_hostel(self):
         """Landlord 1 should be able to access their own Hostel 1"""
         self.client.force_authenticate(user=self.landlord1.user)
         response = self.client.get(f'/api/v1/hostels/{self.hostel1.id}/')
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['id'], self.hostel1.id)
+        data = response.data if hasattr(response, 'data') else response.json()
+        self.assertEqual(data['id'], self.hostel1.id)

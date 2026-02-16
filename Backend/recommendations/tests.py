@@ -9,7 +9,6 @@ from decimal import Decimal
 
 from accounts.models import StudentProfile
 from hostels.models import Hostel, Room, Booking, HostelAmenity, Amenity
-from hostels.review_models import Review
 from recommendations.engine import HostelRecommendationEngine, get_student_recommendations
 
 User = get_user_model()
@@ -125,17 +124,6 @@ class RecommendationEngineTests(TestCase):
             monthly_rent=Decimal('12000.00'),
             total_amount=Decimal('72000.00'),
             status='confirmed'
-        )
-        
-        # Create review
-        self.review = Review.objects.create(
-            reviewer=self.student_user,
-            hostel=self.hostel,
-            booking=self.booking,
-            rating=4,
-            title='Great place',
-            comment='Really enjoyed my stay here',
-            review_type='hostel'
         )
         
         self.engine = HostelRecommendationEngine()
@@ -303,18 +291,21 @@ class RecommendationAPITests(TestCase):
         """
         self.client.login(email='student@test.com', password='testpass123')
         
-        response = self.client.get('/api/recommendations/student/me/')
-        
+        response = self.client.get('/api/v1/recommendations/student/me/')
+
         self.assertEqual(response.status_code, 200)
-        
+
         data = response.json()
-        self.assertIn('student_id', data)
-        self.assertIn('recommendations', data)
-        self.assertIn('pagination', data)
-        self.assertIn('meta', data)
-        
+        # Response is wrapped in DRF pagination: {count, next, previous, results}
+        self.assertIn('results', data)
+        results = data['results']
+        self.assertIn('student_id', results)
+        self.assertIn('recommendations', results)
+        self.assertIn('pagination', results)
+        self.assertIn('meta', results)
+
         # Check meta information
-        meta = data['meta']
+        meta = results['meta']
         self.assertEqual(meta['algorithm'], 'hybrid_content_collaborative')
         self.assertEqual(meta['content_weight'], 0.7)
         self.assertEqual(meta['collaborative_weight'], 0.3)
@@ -324,18 +315,18 @@ class RecommendationAPITests(TestCase):
         Test the recommendation stats API endpoint
         """
         self.client.login(email='student@test.com', password='testpass123')
-        
-        response = self.client.get('/api/recommendations/stats/me/')
-        
+
+        response = self.client.get('/api/v1/recommendations/stats/me/')
+
         self.assertEqual(response.status_code, 200)
-        
+
         data = response.json()
         self.assertIn('student_id', data)
         self.assertIn('preferences', data)
         self.assertIn('booking_patterns', data)
         self.assertIn('review_behavior', data)
         self.assertIn('recommendation_readiness', data)
-        
+
         # Check preferences
         preferences = data['preferences']
         self.assertEqual(preferences['university'], 'Test University')
@@ -347,10 +338,10 @@ class RecommendationAPITests(TestCase):
         Test unauthorized access to recommendation endpoints
         """
         # Test without authentication
-        response = self.client.get('/api/recommendations/student/me/')
+        response = self.client.get('/api/v1/recommendations/student/me/')
         self.assertEqual(response.status_code, 401)
-        
-        response = self.client.get('/api/recommendations/stats/me/')
+
+        response = self.client.get('/api/v1/recommendations/stats/me/')
         self.assertEqual(response.status_code, 401)
     
     def test_permission_denied_other_student(self):
@@ -376,8 +367,8 @@ class RecommendationAPITests(TestCase):
         # Login as first student and try to access other's recommendations
         self.client.login(email='student@test.com', password='testpass123')
         
-        response = self.client.get(f'/api/recommendations/student/{other_profile.id}/')
+        response = self.client.get(f'/api/v1/recommendations/student/{other_profile.id}/')
         self.assertEqual(response.status_code, 403)
-        
-        response = self.client.get(f'/api/recommendations/stats/{other_profile.id}/')
+
+        response = self.client.get(f'/api/v1/recommendations/stats/{other_profile.id}/')
         self.assertEqual(response.status_code, 403)

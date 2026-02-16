@@ -138,22 +138,33 @@ def recommendation_stats(request, student_id=None):
                 {'error': 'Student profile not found for current user'},
                 status=status.HTTP_404_NOT_FOUND
             )
-    elif not student_id:
+    elif student_id:
+        try:
+            student_id_int = int(student_id)
+        except ValueError:
+            return Response(
+                {'error': 'Invalid student ID'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verify permissions - users can only see their own stats unless staff
+        if not request.user.is_staff and str(student_id_int) != str(request.user.student_profile.id):
+            return Response(
+                {'error': 'Permission denied'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+    else:
         return Response(
             {'error': 'Student ID required'},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     try:
         student = StudentProfile.objects.get(id=int(student_id))
         
         # Get student's booking history
         from hostels.models import Booking
         booking_history = Booking.objects.filter(student=student).select_related('room__hostel')
-        
-        # Get student's reviews
-        from hostels.review_models import Review
-        student_reviews = Review.objects.filter(reviewer=student.user).select_related('hostel')
         
         # Preference analysis
         preferences = {
@@ -177,18 +188,11 @@ def recommendation_stats(request, student_id=None):
             'preferred_amenities': [],  # Could be derived from booking patterns
         }
         
-        # Review behavior
+        # Review behavior (review system pending reimplementation)
         review_behavior = {
-            'total_reviews': student_reviews.count(),
-            'average_rating_given': float(student_reviews.aggregate(avg_rating=django_models.Avg('rating'))['avg_rating'] or 0),
-            'recent_reviews': [
-                {
-                    'hostel_name': review.hostel.name,
-                    'rating': review.rating,
-                    'created_at': review.created_at.isoformat()
-                }
-                for review in student_reviews.order_by('-created_at')[:3]
-            ]
+            'total_reviews': 0,
+            'average_rating_given': 0,
+            'recent_reviews': []
         }
         
         return Response({
@@ -200,7 +204,7 @@ def recommendation_stats(request, student_id=None):
                 'has_profile_data': bool(student.university and student.course),
                 'has_lifestyle_preferences': bool(student.lifestyle_preferences),
                 'has_booking_history': booking_history.exists(),
-                'has_review_history': student_reviews.exists(),
+                'has_review_history': False,
                 'ready_for_collaborative_filtering': booking_history.count() >= 1
             }
         })

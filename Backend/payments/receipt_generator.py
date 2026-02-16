@@ -107,7 +107,9 @@ class ReceiptGenerator:
         if booking:
             hostel_name = booking.room.hostel.name
             room_number = booking.room.room_number
-            bed_code = booking.bed_slot_id or "N/A"
+            # bed_slot_id lives on RentPeriod, not Booking
+            first_rent_period = booking.rent_periods.first() if hasattr(booking, 'rent_periods') else None
+            bed_code = (first_rent_period.bed_slot_id if first_rent_period else None) or "N/A"
             period_text = f"{booking.check_in_date} to {booking.check_out_date}"
         elif rent_period:
             hostel_name = rent_period.hostel.name

@@ -21,7 +21,6 @@ from datetime import timedelta
 
 from accounts.models import StudentProfile
 from hostels.models import Hostel, Room, Booking, HostelAmenity, Amenity
-from hostels.review_models import Review
 from analytics.models import AnalyticsEvent
 
 logger = logging.getLogger(__name__)

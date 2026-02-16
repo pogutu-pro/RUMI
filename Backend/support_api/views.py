@@ -239,7 +239,7 @@ class SupportTicketListView(APIView):
         Returns the complete ticket details with auto-generated ticket_id.
         """
         try:
-            serializer = SupportTicketCreateSerializer(data=request.data)
+            serializer = SupportTicketCreateSerializer(data=request.data, context={'request': request})
             if serializer.is_valid():
                 with transaction.atomic():
                     ticket = serializer.save()
@@ -1562,7 +1562,7 @@ class TechSupportTransactionView(APIView):
             student_search = request.GET.get('student_name')
 
             # Base queryset - transactions (mask sensitive data)
-            queryset = Transaction.objects.select_related('booking__student').order_by('-created_at')
+            queryset = Transaction.objects.select_related('booking__student').order_by('-initiated_at')
 
             # Apply filters
             if status_filter:
@@ -1570,9 +1570,9 @@ class TechSupportTransactionView(APIView):
             if type_filter:
                 queryset = queryset.filter(transaction_type=type_filter)
             if date_from:
-                queryset = queryset.filter(created_at__date__gte=date_from)
+                queryset = queryset.filter(initiated_at__date__gte=date_from)
             if date_to:
-                queryset = queryset.filter(created_at__date__lte=date_to)
+                queryset = queryset.filter(initiated_at__date__lte=date_to)
             if student_search:
                 queryset = queryset.filter(
                     Q(booking__student__first_name__icontains=student_search) |
@@ -1592,7 +1592,7 @@ class TechSupportTransactionView(APIView):
                     'student_name': f"{transaction.booking.student.first_name} {transaction.booking.student.last_name}" if transaction.booking and transaction.booking.student else 'N/A',
                     'amount': float(transaction.amount),
                     'status': transaction.status,
-                    'date': transaction.created_at.isoformat(),
+                    'date': transaction.initiated_at.isoformat() if transaction.initiated_at else None,
                     'type': transaction.transaction_type,
                     'booking_reference': transaction.booking.booking_reference if transaction.booking else 'N/A'
                 })
