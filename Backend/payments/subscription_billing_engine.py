@@ -15,6 +15,11 @@ from datetime import timedelta, date
 from django.db.models import Count, Q
 import logging
 
+from hostels.models import Hostel
+from hostels.bed_models import BedOccupancy
+from payments.subscription_models import OccupancySnapshot, SubscriptionPlan, SubscriptionInvoice
+from admin_api.models import SystemActivity
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,10 +36,6 @@ class SubscriptionBillingEngine:
         Args:
             target_date: Date to generate snapshot for (defaults to yesterday)
         """
-        from hostels.models import Hostel
-        from hostels.bed_models import BedOccupancy
-        from payments.subscription_models import OccupancySnapshot
-        
         if target_date is None:
             target_date = (timezone.now() - timedelta(days=1)).date()
         
@@ -108,9 +109,6 @@ class SubscriptionBillingEngine:
         Args:
             billing_month: Month to bill for (defaults to previous month)
         """
-        from hostels.models import Hostel
-        from payments.subscription_models import SubscriptionPlan, SubscriptionInvoice, OccupancySnapshot
-        
         if billing_month is None:
             # Default to previous month
             today = timezone.now().date()
@@ -189,8 +187,6 @@ class SubscriptionBillingEngine:
         Returns:
             SubscriptionInvoice instance
         """
-        from payments.subscription_models import OccupancySnapshot, SubscriptionInvoice
-        
         # Get occupancy snapshots for period
         snapshots = OccupancySnapshot.objects.filter(
             hostel=hostel,
@@ -267,8 +263,6 @@ class SubscriptionBillingEngine:
         
         Should be run daily via cron job.
         """
-        from payments.subscription_models import SubscriptionInvoice
-        
         today = timezone.now().date()
         
         # Find overdue invoices
@@ -310,11 +304,28 @@ class SubscriptionBillingEngine:
     
     @staticmethod
     def apply_enforcement(invoice):
-        """Hide hostel listing for non-payment"""
+        """Put hostel management in Read-Only mode for non-payment"""
         logger.info(f"Applying enforcement for invoice {invoice.invoice_number}")
         
         hostel = invoice.hostel
-        hostel.status = 'inactive'
+        
+        # Apply the restriction
+        hostel.is_restricted = True
         hostel.save()
         
-        logger.warning(f"Hostel {hostel.name} set to inactive due to invoice {invoice.invoice_number}")
+        # Log the enforcement action
+        SystemActivity.objects.create(
+            activity_type='enforcement',
+            title=f"Enforcement Activated: {hostel.name}",
+            description=f"Hostel {hostel.name} has been placed in read-only mode due to overdue subscription {invoice.invoice_number}.",
+            user=hostel.landlord.user,
+            user_role='landlord',
+            severity='high',
+            metadata={
+                'hostel_id': hostel.id,
+                'invoice_id': str(invoice.id),
+                'days_overdue': invoice.days_overdue
+            }
+        )
+        
+        logger.warning(f"Hostel {hostel.name} set to RESTRICTED (Read-Only) due to invoice {invoice.invoice_number}")

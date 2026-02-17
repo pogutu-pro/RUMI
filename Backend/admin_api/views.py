@@ -25,7 +25,7 @@ from .serializers import (
     HostelModerationSerializer, HostelModerationActionSerializer,
     PaymentDisputeSerializer, PaymentDisputeActionSerializer,
     AdminSubscriptionSerializer, UserSuspensionSerializer,
-    AdminStatsSerializer
+    AdminStatsSerializer, AdminHostelSerializer
 )
 from .permissions import IsTechSupportAdmin, IsSuperAdmin
 
@@ -1418,4 +1418,73 @@ class AdminDashboardStatsView(APIView):
             'system_activities_today': system_activities_today,
             'support_tickets_open': support_tickets_open,
             'uptime_percentage': uptime_percentage
+        }, status=status.HTTP_200_OK)
+
+
+class AdminHostelListView(APIView):
+    """Admin endpoint to list all hostels for platform oversight"""
+    permission_classes = [IsTechSupportAdmin]
+
+    def get(self, request):
+        status_filter = request.query_params.get('status')
+        restriction_filter = request.query_params.get('is_restricted')
+        search = request.query_params.get('search')
+        
+        queryset = Hostel.objects.select_related('landlord__user').all().order_by('-created_at')
+        
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        if restriction_filter is not None:
+            is_restricted = restriction_filter.lower() == 'true'
+            queryset = queryset.filter(is_restricted=is_restricted)
+            
+        if search:
+            queryset = queryset.filter(
+                Q(name__icontains=search) | 
+                Q(address__icontains=search) |
+                Q(landlord__user__email__icontains=search)
+            )
+            
+        serializer = AdminHostelSerializer(queryset, many=True)
+        return Response({'hostels': serializer.data}, status=status.HTTP_200_OK)
+
+
+class AdminHostelOverrideView(APIView):
+    """Admin action to manually override hostel restriction status"""
+    permission_classes = [IsSuperAdmin]
+
+    def patch(self, request, hostel_id):
+        try:
+            hostel = Hostel.objects.get(id=hostel_id)
+        except Hostel.DoesNotExist:
+            return Response({'error': 'Hostel not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+        is_restricted = request.data.get('is_restricted')
+        if is_restricted is None:
+            return Response({'error': 'is_restricted field is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        old_status = hostel.is_restricted
+        hostel.is_restricted = bool(is_restricted)
+        hostel.save()
+        
+        # Log critical admin action
+        SystemActivity.objects.create(
+            activity_type='admin_override',
+            title=f'Hostel Restriction Override: {hostel.name}',
+            description=f'Admin {request.user.get_full_name()} changed restriction from {old_status} to {hostel.is_restricted}',
+            user=hostel.landlord.user,
+            user_role='landlord',
+            severity='critical',
+            metadata={
+                'hostel_id': hostel.id,
+                'admin_id': request.user.id,
+                'previous_state': old_status,
+                'new_state': hostel.is_restricted
+            }
+        )
+        
+        return Response({
+            'message': 'Hostel restriction status updated successfully',
+            'is_restricted': hostel.is_restricted
         }, status=status.HTTP_200_OK)

@@ -98,11 +98,8 @@ const navItems: NavItem[] = [
     title: 'Earnings',
     icon: DollarSign,
     items: [
-      { title: 'Payments', href: '/landlord/payments', icon: CreditCard },
+      { title: 'All Payments', href: '/landlord/payments', icon: CreditCard },
       { title: 'Payouts', href: '/landlord/payments/payouts', icon: Wallet },
-      { title: 'M-Pesa Settings', href: '/landlord/payments/mpesa-settings', icon: Smartphone },
-      { title: 'Reports', href: '/landlord/payments/reports', icon: FileText },
-      { title: 'Analytics', href: '/landlord/analytics', icon: TrendingUp },
     ],
   },
   {
@@ -333,16 +330,16 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                  <span className="text-lg">Need Help?</span>
               </Link>
             </Button>
-            {!isMobile && (
-              <Button
-                variant="ghost"
-                className="w-full h-10 justify-start gap-4 font-semibold text-muted-foreground hover:text-foreground"
-                onClick={() => setIsOpen(false)}
-              >
-                <PanelLeft className="h-5 w-5" />
-                <span>Collapse Menu</span>
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              className="w-full h-12 justify-start gap-4 font-bold border-2 border-warning/30 hover:bg-warning/10 text-foreground transition-all duration-200"
+              asChild
+            >
+              <Link href="/landlord/payments/subscription">
+                <Smartphone className="h-6 w-6 text-warning" />
+                <span className="text-lg">Subscription</span>
+              </Link>
+            </Button>
           </>
         ) : (
           <div className="flex flex-col gap-2">
@@ -365,13 +362,15 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-12 w-12 mx-auto text-muted-foreground hover:text-foreground hover:bg-accent"
-                    onClick={() => setIsOpen(true)}
+                    className="h-12 w-12 mx-auto text-muted-foreground hover:text-foreground hover:bg-accent border-2 border-warning/20"
+                    asChild
                   >
-                    <PanelLeft className="h-6 w-6 rotate-180" />
+                    <Link href="/landlord/payments/subscription">
+                      <Smartphone className="h-6 w-6 text-warning" />
+                    </Link>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="text-lg font-bold p-3">Expand Menu</TooltipContent>
+                <TooltipContent side="right" className="text-lg font-bold p-3">Subscription</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>

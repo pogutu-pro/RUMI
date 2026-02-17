@@ -1,14 +1,21 @@
 import api from '@/lib/api/client';
 import type { ApiResponse } from '@/types/api.types';
-import type { SubscriptionPlan, UserSubscription } from '@/types/subscription.types';
+import type { 
+  SubscriptionPlan, 
+  UserSubscription, 
+  SubscriptionInvoice, 
+  SubscriptionAccrual, 
+  SubscriptionPayment, 
+  InitiatePaymentResponse 
+} from '@/features/payments/types';
 
 export const getPlans = async (): Promise<SubscriptionPlan[]> => {
-  const response = await api.axios.get<ApiResponse<SubscriptionPlan[]>>('/accounts/subscriptions/plans/');
+  const response = await api.axios.get<ApiResponse<SubscriptionPlan[]>>('/payments/subscriptions/plans/');
   return response.data.data || [];
 };
 
 export const getPlanDetails = async (planId: string): Promise<SubscriptionPlan> => {
-  const response = await api.axios.get<ApiResponse<SubscriptionPlan>>(`/accounts/subscriptions/plans/${planId}/`);
+  const response = await api.axios.get<ApiResponse<SubscriptionPlan>>(`/payments/subscriptions/plans/${planId}/`);
   if (!response.data.data) throw new Error('Plan not found');
   return response.data.data;
 };
@@ -18,19 +25,29 @@ export const getMySubscription = async (): Promise<UserSubscription | null> => {
   return response.data.data || null;
 };
 
+export const getSubscriptionAccrual = async (): Promise<SubscriptionAccrual> => {
+  const response = await api.axios.get<ApiResponse<SubscriptionAccrual>>('/payments/subscriptions/accrual/');
+  return response.data.data!;
+};
+
+export const getSubscriptionInvoices = async (): Promise<SubscriptionInvoice[]> => {
+  const response = await api.axios.get<ApiResponse<SubscriptionInvoice[]>>('/payments/subscriptions/invoices/');
+  return response.data.data || [];
+};
+
 // -- New Endpoints --
 
-export const getPaymentHistory = async () => {
-    const response = await api.axios.get<ApiResponse<any[]>>('/accounts/subscriptions/payments/history/');
+export const getPaymentHistory = async (): Promise<SubscriptionPayment[]> => {
+    const response = await api.axios.get<ApiResponse<SubscriptionPayment[]>>('/accounts/subscriptions/payments/history/');
     return response.data.data || [];
 };
 
-export const initiateSubscriptionPayment = async (planId: string, interval: string) => {
-    const response = await api.axios.post<ApiResponse<any>>('/accounts/subscriptions/payments/initiate/', {
+export const initiateSubscriptionPayment = async (planId: string, interval: string): Promise<InitiatePaymentResponse> => {
+    const response = await api.axios.post<ApiResponse<InitiatePaymentResponse>>('/accounts/subscriptions/payments/initiate/', {
         planId,
         interval
     });
-    return response.data.data;
+    return response.data.data!;
 };
 
 // -------------------

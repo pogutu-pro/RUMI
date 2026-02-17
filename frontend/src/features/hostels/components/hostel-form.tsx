@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import HostelImageUpload from './hostel-image-upload';
 import RoomForm from './room-form';
+import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { createHostel } from '@/features/hostels';
 import type { Hostel } from '@/types/entities.types';
@@ -27,6 +28,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function HostelForm({ initialData }: { initialData?: Hostel }) {
+  const router = useRouter();
   const {
     register,
     handleSubmit,
@@ -47,7 +49,10 @@ export default function HostelForm({ initialData }: { initialData?: Hostel }) {
 
   const mutation = useMutation({
     mutationFn: createHostel,
-    onSuccess: () => toast.success('Hostel created!'),
+    onSuccess: () => {
+      toast.success('Hostel created!');
+      router.push('/landlord/payments/mpesa-settings?redirectReason=new_hostel');
+    },
     onError: () => toast.error('Failed to create hostel'),
   });
 

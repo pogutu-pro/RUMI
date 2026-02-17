@@ -11,10 +11,17 @@ import { cn } from '@/lib/utils';
 
 interface MpesaSettingsListProps {
   onEdit: (config: MpesaConfig) => void;
+  hostelId?: string;
 }
 
-export function MpesaSettingsList({ onEdit }: MpesaSettingsListProps) {
-  const { data: configs, isLoading } = useMpesaConfigs();
+export function MpesaSettingsList({ onEdit, hostelId }: MpesaSettingsListProps) {
+  const { data: allConfigs, isLoading } = useMpesaConfigs();
+
+  const configs = React.useMemo(() => {
+    if (!allConfigs) return [];
+    if (!hostelId) return allConfigs;
+    return allConfigs.filter(c => c.hostel_id === hostelId);
+  }, [allConfigs, hostelId]);
 
   if (isLoading) {
     return (

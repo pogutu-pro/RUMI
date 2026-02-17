@@ -231,16 +231,18 @@ export interface MpesaConfig {
   is_default: boolean;
   status: 'active' | 'inactive' | 'pending_verification';
   verified_at: string | null;
+  hostel_id?: string;
 }
 
 export interface CreateMpesaConfigRequest {
   payment_type: 'paybill';
   mpesa_number: string;
   business_name: string;
-  consumer_key: string;
-  consumer_secret: string;
-  passkey: string;
+  consumer_key?: string;
+  consumer_secret?: string;
+  passkey?: string;
   is_default?: boolean;
+  hostel_id?: string;
 }
 
 export interface PaymentInitializeRequest {
@@ -254,3 +256,70 @@ export interface PaymentInitializeRequest {
 
 
 
+export interface SubscriptionInvoice {
+  id: string;
+  hostel: string;
+  hostel_name: string;
+  landlord: number;
+  subscription_plan: string;
+  invoice_number: string;
+  invoice_date: string;
+  due_date: string;
+  period_start: string;
+  period_end: string;
+  total_bed_days: number;
+  average_occupancy: number;
+  unit_price: number;
+  subtotal: number;
+  tax_amount: number;
+  total_amount: number;
+  status: 'issued' | 'paid' | 'overdue' | 'cancelled' | 'in_grace';
+  paid_at: string | null;
+  payment_transaction: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubscriptionAccrual {
+  period_start: string;
+  as_of: string;
+  total_occupied_bed_days: number;
+  projected_accrual: number;
+  currency: string;
+  hostel_breakdown: Array<{
+    hostel__name: string;
+    bed_days: number;
+  }>;
+}
+
+export interface SubscriptionPayment {
+  id: string;
+  subscription: string;
+  subscription_details: {
+    plan_name: string;
+    plan_type: string;
+  };
+  amount: number;
+  billing_period_start: string;
+  billing_period_end: string;
+  period_display: string;
+  rent_revenue_amount: number | null;
+  payment_method: string;
+  transaction_reference: string;
+  paystack_reference: string;
+  status: 'pending' | 'success' | 'failed' | 'refunded';
+  status_display: string;
+  initiated_at: string;
+  paid_at: string | null;
+  failed_at: string | null;
+  failure_reason: string | null;
+}
+
+export interface InitiatePaymentResponse {
+  payment_id: string;
+  transaction_reference: string;
+  amount: number;
+  payment_link: string;
+  currency: string;
+  expires_at: string;
+}

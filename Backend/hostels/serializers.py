@@ -42,7 +42,7 @@ class HostelSerializer(serializers.ModelSerializer):
             'latitude', 'longitude', 'total_rooms', 'available_rooms', 'total_floors',
             'base_price', 'deposit_amount', 'currency', 'rating', 'review_count', 'images',
             'amenities', 'amenities_list', 'gender_policy', 'distance_from_university',
-            'is_verified', 'landlord_info', 'landlord_name', 'landlord_phone',
+            'is_verified', 'is_restricted', 'landlord_info', 'landlord_name', 'landlord_phone',
             'verification_data', 'contact_preferences', 'rules',
             'caretaker_name', 'caretaker_phone', 'safety_features',
             'payment_terms', 'payment_cycle', 'grace_period_days', 'late_fee_percent',
@@ -102,11 +102,25 @@ from .bed_models import Bed
 
 class BedSerializer(serializers.ModelSerializer):
     """Serializer for beds"""
+    current_occupant = serializers.SerializerMethodField()
     
     class Meta:
         model = Bed
-        fields = ['id', 'code', 'full_code', 'bed_type', 'price_override', 'is_active', 'custom_account_number']
-        read_only_fields = ['id', 'full_code']
+        fields = [
+            'id', 'code', 'full_code', 'bed_type', 'price_override', 
+            'is_active', 'custom_account_number', 'current_occupant'
+        ]
+        read_only_fields = ['id', 'full_code', 'current_occupant']
+
+    def get_current_occupant(self, obj):
+        occupancy = obj.occupancy_timeline.filter(is_active=True).first()
+        if occupancy:
+            return {
+                'id': occupancy.student.id,
+                'name': occupancy.student.user.get_full_name(),
+                'student_id': occupancy.student.student_id
+            }
+        return None
 
 
 class RoomSerializer(serializers.ModelSerializer):

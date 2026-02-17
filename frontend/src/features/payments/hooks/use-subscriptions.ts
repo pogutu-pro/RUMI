@@ -8,6 +8,8 @@ import {
   cancelSubscription,
   reactivateSubscription,
   checkFeatureAccess,
+  getSubscriptionAccrual,
+  getSubscriptionInvoices,
 } from '@/features/payments';
 import { toast } from 'sonner';
 
@@ -83,5 +85,19 @@ export const useFeatureAccess = (featureName: string) => {
     queryKey: queryKeys.subscriptions.featureAccess(featureName),
     queryFn: () => checkFeatureAccess(featureName),
     enabled: !!featureName,
+  });
+};
+
+export const useSubscriptionAccrual = () => {
+  return useQuery({
+    queryKey: ['subscriptions', 'accrual'],
+    queryFn: getSubscriptionAccrual,
+  });
+};
+
+export const useSubscriptionInvoices = () => {
+  return useQuery({
+    queryKey: ['subscriptions', 'invoices'],
+    queryFn: getSubscriptionInvoices,
   });
 };

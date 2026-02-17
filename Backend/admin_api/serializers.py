@@ -7,8 +7,23 @@ from .models import (
     SystemActivity, HostelModeration, PaymentDispute, 
     AdminSubscription, UserSuspension
 )
+from hostels.models import Hostel
 
 User = get_user_model()
+
+
+class AdminHostelSerializer(serializers.ModelSerializer):
+    """Serializer for administrative hostel oversight"""
+    landlord_name = serializers.CharField(source='landlord.user.get_full_name', read_only=True)
+    landlord_email = serializers.CharField(source='landlord.user.email', read_only=True)
+    
+    class Meta:
+        model = Hostel
+        fields = [
+            'id', 'name', 'landlord_name', 'landlord_email', 
+            'status', 'is_restricted', 'total_rooms', 'created_at'
+        ]
+        read_only_fields = fields
 
 
 class SystemActivitySerializer(serializers.ModelSerializer):

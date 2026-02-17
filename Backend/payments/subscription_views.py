@@ -48,9 +48,13 @@ class SubscriptionAccrualView(APIView):
         
         total_occupied_bed_days = snapshots.aggregate(total=Sum('occupied_beds'))['total'] or 0
         
-        # Calculate projected cost (KES 29 is the base rate if not specific)
-        # In production, we'd pick the landlord's actual plan rate
-        rate = Decimal('29.00') 
+        # Get the default per-bed plan rate
+        try:
+            plan = SubscriptionPlan.objects.get(pricing_model='per_bed', is_default=True)
+            rate = plan.unit_price
+        except SubscriptionPlan.DoesNotExist:
+            rate = Decimal('29.00') # Fallback
+            
         projected_cost = (Decimal(str(total_occupied_bed_days)) / Decimal('30.00')) * rate
 
         return Response({

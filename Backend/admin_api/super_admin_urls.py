@@ -22,6 +22,10 @@ urlpatterns = [
     path('hostels/moderation/<int:moderation_id>/approve/', views.HostelModerationActionView.as_view(), name='super_admin_hostel_approve'),
     path('hostels/moderation/<int:moderation_id>/reject/', views.HostelModerationActionView.as_view(), name='super_admin_hostel_reject'),
     
+    # Property Management (NEW)
+    path('hostels/all/', views.AdminHostelListView.as_view(), name='super_admin_hostels_all'),
+    path('hostels/<int:hostel_id>/restrict/', views.AdminHostelOverrideView.as_view(), name='super_admin_hostel_restrict'),
+    
     # Payment Management (EXPOSED)
     path('payments/disputes/', views.AdminPaymentDisputesListView.as_view(), name='super_admin_payment_disputes'),
     path('payments/disputes/stats/', views.AdminPaymentDisputesStatsView.as_view(), name='super_admin_payment_disputes_stats'),

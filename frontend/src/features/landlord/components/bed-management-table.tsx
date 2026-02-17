@@ -21,6 +21,7 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { Loader2, Save, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import { useHostel, updateBed } from "@/features/hostels";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
@@ -170,9 +171,9 @@ export function BedManagementTable({ hostelId }: BedManagementTableProps) {
               <TableRow className="hover:bg-transparent">
                 <TableHead className="font-mono text-xs uppercase tracking-wider text-muted-foreground h-11">Bed Code</TableHead>
                 <TableHead className="font-mono text-xs uppercase tracking-wider text-muted-foreground h-11">Room</TableHead>
-                <TableHead className="font-mono text-xs uppercase tracking-wider text-muted-foreground h-11">Type</TableHead>
+                <TableHead className="font-mono text-xs uppercase tracking-wider text-muted-foreground h-11">Occupant</TableHead>
                 <TableHead className="font-mono text-xs uppercase tracking-wider text-muted-foreground h-11">Status</TableHead>
-                <TableHead className="w-[350px] font-mono text-xs uppercase tracking-wider text-muted-foreground h-11">M-Pesa Account Number</TableHead>
+                <TableHead className="w-[300px] font-mono text-xs uppercase tracking-wider text-muted-foreground h-11">M-Pesa Account Number</TableHead>
                 <TableHead className="text-right font-mono text-xs uppercase tracking-wider text-muted-foreground h-11">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -185,10 +186,22 @@ export function BedManagementTable({ hostelId }: BedManagementTableProps) {
                 </TableRow>
               ) : (
                 allBeds.map((bed) => (
-                  <TableRow key={bed.id} className="group transition-colors hover:bg-muted/30">
+                  <TableRow key={bed.id} className={cn(
+                    "group transition-colors hover:bg-muted/30",
+                    !bed.custom_account_number && bed.current_occupant && "bg-warning/5"
+                  )}>
                     <TableCell className="font-mono font-medium text-xs">{bed.full_code}</TableCell>
                     <TableCell className="text-sm">{bed.roomNumber}</TableCell>
-                    <TableCell className="capitalize text-sm text-muted-foreground">{bed.bed_type.replace('_', ' ')}</TableCell>
+                    <TableCell>
+                      {bed.current_occupant ? (
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-slate-900">{bed.current_occupant.name}</span>
+                          <span className="text-[10px] text-muted-foreground uppercase">{bed.current_occupant.student_id || 'Student'}</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">Vacant</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge 
                         variant="secondary" 

@@ -38,6 +38,7 @@ export interface Hostel {
   verification_data: Record<string, any>;
   contact_preferences: Record<string, any>;
   is_verified: boolean;
+  is_restricted: boolean;
   is_active: boolean;
   has_inventory_template: boolean;
   review_count: number;
@@ -69,7 +70,12 @@ export interface Bed {
   bed_type: 'single' | 'bunk_top' | 'bunk_bottom' | 'double';
   price_override: string | null;
   is_active: boolean;
-  custom_account_number: string | null; // Added custom account number
+  custom_account_number: string | null;
+  current_occupant?: {
+    id: string;
+    name: string;
+    student_id?: string;
+  } | null;
 }
 
 export interface Room {
