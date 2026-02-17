@@ -40,34 +40,34 @@ python manage.py seed_test_users --remove
 
 ### 🎓 Student
 - **Name**: Amani Ochieng
-- **Email**: `amani.ochieng@test.rumia.co.ke`
-- **Phone**: `+254712345001`
+- **Email**: amani.ochieng@test.rumia.co.ke
+- **Phone**: +254712345001
 - **University**: University of Nairobi
-- **Student ID**: `STU-2026-001`
+- **Student ID**: STU-2026-001
 - **Course**: Computer Science (Year 2)
 - **Status**: Verified, Profile Complete, Onboarding Done
 - **Current Booking**: Room 101, Bed A (Test Hostel Kilimani)
 
 ### 🏘️ Landlord
 - **Name**: James Mwangi
-- **Email**: `james.mwangi@test.rumia.co.ke`
-- **Phone**: `+254712345002`
+- **Email**: james.mwangi@test.rumia.co.ke
+- **Phone**: +254712345002
 - **Company**: Mwangi Properties Ltd
 - **Business Address**: 123 Kenyatta Avenue, Nairobi
 - **Holdings**: 1 Hostel, 10 Rooms
-- **Payment Config**: M-Pesa Paybill `174379` (Sandbox Mode)
+- **Payment Config**: M-Pesa Paybill 174379 (Sandbox Mode)
 
 ### 🔑 Caretaker
 - **Name**: Grace Wanjiku
 - **Email**: grace.wanjiku@test.rumia.co.ke
-- **Phone**: `+254712345003`
+- **Phone**: +254712345003
 - **Assigned Hostel**: Test Hostel Kilimani
 - **Permissions**: Check-in, Inventory, Maintenance, Visitors
 
 ### 🛠️ Tech Support
 - **Name**: Kevin Njoroge
-- **Email**: `kevin.njoroge@test.rumia.co.ke`
-- **Phone**: `+254712345004`
+- **Email**: kevin.njoroge@test.rumia.co.ke
+- **Phone**: +254712345004
 - **Role**: Staff (Monitoring Access)
 - **Capabilities**: System Monitoring, User Impersonation
 

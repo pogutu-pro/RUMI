@@ -81,8 +81,6 @@ const navItems: NavItem[] = [
     items: [
       { title: 'All Hostels', href: '/landlord/hostels', icon: Building2 },
       { title: 'Add New', href: '/landlord/hostels/new', icon: UserPlus },
-      { title: 'Inventory', href: '/landlord/hostels/inventory', icon: Package },
-      { title: 'Analytics', href: '/landlord/hostels/analytics', icon: BarChart3 },
     ],
   },
   {

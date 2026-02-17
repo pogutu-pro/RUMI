@@ -16,6 +16,7 @@ import {
   BarChart3,
   Settings,
   Check,
+  ArrowRight,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -237,143 +238,146 @@ export default function HostelsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
               >
-                <Card className="border shadow-sm bg-card hover:shadow-lg transition-all duration-300 overflow-hidden group">
-                  {/* Image */}
-                  <div className="relative h-40 md:h-48 bg-muted">
-                    {hostel.images && hostel.images.length > 0 ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img 
-                        src={hostel.images[0]} 
-                        alt={hostel.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-muted flex items-center justify-center">
-                        <Building2 className="h-16 w-16 text-muted-foreground/30" />
-                      </div>
-                    )}
-                    {/* Status Badges */}
-                    <div className="absolute top-3 right-3 flex gap-2">
-                      {hostel.is_verified && (
-                        <Badge className="bg-green-600 text-white border-0 font-bold">
-                          <Check className="h-3 w-3 mr-1" />
-                          Verified
-                        </Badge>
+                <Link href={`/landlord/hostels/${hostel.slug || hostel.id}`} className="block h-full group">
+                  <Card className="h-full border shadow-sm bg-card hover:shadow-lg transition-all duration-300 overflow-hidden">
+                    {/* Image */}
+                    <div className="relative h-40 md:h-48 bg-muted">
+                      {hostel.images && hostel.images.length > 0 ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img 
+                          src={hostel.images[0]} 
+                          alt={hostel.name}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-muted flex items-center justify-center">
+                          <Building2 className="h-16 w-16 text-muted-foreground/30" />
+                        </div>
                       )}
-                      <Badge
-                        className={cn(
-                          'border-0 font-bold',
-                          hostel.status === 'active'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-orange-600 text-white'
+                      {/* Status Badges */}
+                      <div className="absolute top-3 right-3 flex gap-2">
+                        {hostel.is_verified && (
+                          <Badge className="bg-green-600 text-white border-0 font-bold">
+                            <Check className="h-3 w-3 mr-1" />
+                            Verified
+                          </Badge>
                         )}
-                      >
-                        {hostel.status === 'active' ? 'Active' : 'Maintenance'}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-lg md:text-xl font-bold text-foreground truncate">
-                          {hostel.name}
-                        </CardTitle>
-                        <CardDescription className="flex items-center gap-1 mt-1 text-base">
-                          <MapPin className="h-4 w-4" />
-                          <span className="truncate">{hostel.address}</span>
-                        </CardDescription>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-10 w-10">
-                            <MoreVertical className="h-5 w-5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel className="font-bold">Actions</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem asChild>
-                            <Link href={`/landlord/hostels/${hostel.slug || hostel.id}`} className="text-base">
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/landlord/hostels/${hostel.slug || hostel.id}/edit`} className="text-base">
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Hostel
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/landlord/hostels/${hostel.slug || hostel.id}/analytics`} className="text-base">
-                              <BarChart3 className="h-4 w-4 mr-2" />
-                              Analytics
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/landlord/hostels/${hostel.slug || hostel.id}/rooms`} className="text-base">
-                              <Settings className="h-4 w-4 mr-2" />
-                              Manage Rooms
-                            </Link>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-                    {/* Room Stats - Large numbers */}
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <p className="text-xl md:text-2xl font-bold text-foreground">
-                          {hostel.total_rooms}
-                        </p>
-                        <p className="text-sm font-medium text-muted-foreground">Total Beds</p>
-                      </div>
-                      <div>
-                        <p className="text-xl md:text-2xl font-bold text-green-600 dark:text-green-400">
-                          {occupiedRooms}
-                        </p>
-                        <p className="text-sm font-medium text-muted-foreground">Occupied</p>
-                      </div>
-                      <div>
-                        <p className="text-xl md:text-2xl font-bold text-orange-600 dark:text-orange-400">
-                          {hostel.available_rooms}
-                        </p>
-                        <p className="text-sm font-medium text-muted-foreground">Available</p>
+                        <Badge
+                          className={cn(
+                            'border-0 font-bold',
+                            hostel.status === 'active'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-orange-600 text-white'
+                          )}
+                        >
+                          {hostel.status === 'active' ? 'Active' : 'Maintenance'}
+                        </Badge>
                       </div>
                     </div>
 
-                    {/* Occupancy Bar */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-bold text-muted-foreground">
-                          Occupancy Rate
-                        </span>
-                        <span className="text-sm font-bold text-foreground">
-                          {occupancyRate}%
-                        </span>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-lg md:text-xl font-bold text-foreground truncate">
+                            {hostel.name}
+                          </CardTitle>
+                          <CardDescription className="flex items-center gap-1 mt-1 text-base">
+                            <MapPin className="h-4 w-4" />
+                            <span className="truncate">{hostel.address}</span>
+                          </CardDescription>
+                        </div>
+                        <div onClick={(e) => e.preventDefault()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="h-10 w-10">
+                                <MoreVertical className="h-5 w-5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel className="font-bold">Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem asChild>
+                                <Link href={`/landlord/hostels/${hostel.slug || hostel.id}`} className="text-base">
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/landlord/hostels/${hostel.slug || hostel.id}/edit`} className="text-base">
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit Hostel
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/landlord/hostels/${hostel.slug || hostel.id}/analytics`} className="text-base">
+                                  <BarChart3 className="h-4 w-4 mr-2" />
+                                  Analytics
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/landlord/hostels/${hostel.slug || hostel.id}/rooms`} className="text-base">
+                                  <Settings className="h-4 w-4 mr-2" />
+                                  Manage Rooms
+                                </Link>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
-                      <Progress value={occupancyRate} className="h-3" />
-                    </div>
+                    </CardHeader>
 
-                    {/* Revenue */}
-                    <div className="flex items-center justify-between pt-3 border-t border-border">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Est. Monthly</p>
-                        <p className="text-lg font-bold text-primary">
-                          KES {(monthlyRevenue / 1000).toFixed(0)}K
-                        </p>
+                    <CardContent className="space-y-4">
+                      {/* Room Stats - Large numbers */}
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                          <p className="text-xl md:text-2xl font-bold text-foreground">
+                            {hostel.total_rooms}
+                          </p>
+                          <p className="text-sm font-medium text-muted-foreground">Total Beds</p>
+                        </div>
+                        <div>
+                          <p className="text-xl md:text-2xl font-bold text-green-600 dark:text-green-400">
+                            {occupiedRooms}
+                          </p>
+                          <p className="text-sm font-medium text-muted-foreground">Occupied</p>
+                        </div>
+                        <div>
+                          <p className="text-xl md:text-2xl font-bold text-orange-600 dark:text-orange-400">
+                            {hostel.available_rooms}
+                          </p>
+                          <p className="text-sm font-medium text-muted-foreground">Available</p>
+                        </div>
                       </div>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/landlord/hostels/${hostel.slug || hostel.id}`}>
-                          View
-                        </Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+
+                      {/* Occupancy Bar */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-bold text-muted-foreground">
+                            Occupancy Rate
+                          </span>
+                          <span className="text-sm font-bold text-foreground">
+                            {occupancyRate}%
+                          </span>
+                        </div>
+                        <Progress value={occupancyRate} className="h-3" />
+                      </div>
+
+                      {/* Revenue */}
+                      <div className="flex items-center justify-between pt-3 border-t border-border">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Est. Monthly</p>
+                          <p className="text-lg font-bold text-primary">
+                            KES {(monthlyRevenue / 1000).toFixed(0)}K
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-primary group-hover:underline">View</span>
+                          <ArrowRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               </motion.div>
             );
           })

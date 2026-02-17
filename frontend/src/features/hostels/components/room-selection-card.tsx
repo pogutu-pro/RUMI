@@ -10,14 +10,18 @@ import type { Room } from '@/types/entities.types';
 interface RoomSelectionCardProps {
   room: Room;
   isSelected: boolean;
+  selectedBedId?: string | null;
   onSelect: (roomId: string) => void;
+  onSelectBed?: (bedId: string) => void;
   pricePerMonth?: number;
 }
 
 export default function RoomSelectionCard({
   room,
   isSelected,
+  selectedBedId,
   onSelect,
+  onSelectBed,
   pricePerMonth
 }: RoomSelectionCardProps) {
   const isFull = !room.is_available;
@@ -69,16 +73,40 @@ export default function RoomSelectionCard({
       {/* Room Features / Bed Count */}
       <div className="flex items-center gap-3 mb-4">
         <div className="flex -space-x-2">
-           {/* Generate bed icons based on capacity */}
-           {Array.from({ length: room.capacity }).map((_, i) => {
-             return (
-               <div key={i} className={cn(
-                 "w-8 h-8 rounded-full flex items-center justify-center border-2 border-white bg-emerald-100 text-emerald-600"
-               )}>
+           {/* Generate bed icons or interactive buttons based on capacity */}
+           {room.beds && room.beds.length > 0 ? (
+             room.beds.map((bed, i) => {
+               const isBedSelected = String(bed.id) === selectedBedId;
+               return (
+                 <div 
+                   key={bed.id} 
+                   onClick={(e) => {
+                     if (isSelected && onSelectBed) {
+                       e.stopPropagation();
+                       onSelectBed(String(bed.id));
+                     }
+                   }}
+                   className={cn(
+                     "w-9 h-9 rounded-full flex flex-col items-center justify-center border-2 transition-all",
+                     isBedSelected 
+                        ? "bg-emerald-600 border-emerald-600 text-white z-10 scale-110 shadow-sm" 
+                        : "bg-emerald-100 border-white text-emerald-600 hover:bg-emerald-200",
+                     !isSelected && "bg-slate-100 text-slate-400 border-white"
+                   )}
+                   title={bed.custom_account_number || `Bed ${bed.code}`}
+                 >
+                   <Bed className="w-3.5 h-3.5" />
+                   {isSelected && <span className="text-[8px] font-bold leading-none mt-0.5">{bed.code}</span>}
+                 </div>
+               );
+             })
+           ) : (
+             Array.from({ length: room.capacity }).map((_, i) => (
+               <div key={i} className="w-8 h-8 rounded-full flex items-center justify-center border-2 border-white bg-slate-100 text-slate-400">
                  <Bed className="w-4 h-4" />
                </div>
-             );
-           })}
+             ))
+           )}
         </div>
         <div className="text-xs text-slate-600">
           {isFull ? (
@@ -87,9 +115,16 @@ export default function RoomSelectionCard({
               Fully Booked
             </span>
           ) : (
-            <span>
-              <span className="font-bold text-emerald-600">{room.capacity} capacity</span> • Instant Booking
-            </span>
+            <div className="flex flex-col">
+              <span>
+                <span className="font-bold text-emerald-600">{room.beds?.length || room.capacity} capacity</span> • Instant Booking
+              </span>
+              {isSelected && selectedBedId && (
+                <span className="text-[10px] text-slate-500 mt-0.5 italic">
+                  Selected Bed: {room.beds?.find(b => String(b.id) === selectedBedId)?.code}
+                </span>
+              )}
+            </div>
           )}
         </div>
       </div>

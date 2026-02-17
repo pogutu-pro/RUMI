@@ -39,6 +39,7 @@ export const getBooking = getBookingById;
 export const createBooking = async (data: {
   hostelId: string;
   roomId?: string;
+  bedId?: string;
   moveInDate: Date;
   durationMonths: number;
   isExistingResident?: boolean;
@@ -48,6 +49,7 @@ export const createBooking = async (data: {
   const response = await api.axios.post<ApiResponse<Booking>>(
     `/hostels/${data.roomId}/book/`,
     {
+      bed_id: data.bedId,
       move_in_date: data.moveInDate?.toISOString(),
       duration_months: data.durationMonths,
       is_existing_resident: data.isExistingResident,
@@ -141,6 +143,7 @@ export const checkStudentProfileExists = async (): Promise<boolean> => {
 export const createBookingWithValidation = async (data: {
   hostelId: string | number;
   roomId?: string | number;
+  bedId?: string | number;
   moveInDate: Date;
   durationMonths: number;
   isExistingResident?: boolean;
@@ -153,6 +156,7 @@ export const createBookingWithValidation = async (data: {
   return createBooking({
     hostelId: String(data.hostelId),
     roomId: String(data.roomId),
+    bedId: data.bedId ? String(data.bedId) : undefined,
     moveInDate: data.moveInDate,
     durationMonths: data.durationMonths,
     isExistingResident: data.isExistingResident,

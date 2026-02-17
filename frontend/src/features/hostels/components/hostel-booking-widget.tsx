@@ -70,6 +70,7 @@ export function HostelBookingWidget({
     currentStep,
     isMobileSheetOpen,
     selectedRoomId,
+    selectedBedId,
     moveInDate,
     durationMonths,
     paymentTimerStartedAt,
@@ -80,6 +81,7 @@ export function HostelBookingWidget({
     setStep,
     setMobileSheetOpen,
     selectRoom,
+    selectBed,
     setMoveInDate,
     setDurationMonths,
     startPaymentTimer,
@@ -122,10 +124,25 @@ export function HostelBookingWidget({
     [availableRooms, selectedRoomId],
   );
 
+  const selectedBed = useMemo(() => {
+    if (!selectedRoom || !selectedRoom.beds) return null;
+    return selectedRoom.beds.find(b => String(b.id) === selectedBedId) || null;
+  }, [selectedRoom, selectedBedId]);
+
+  // Auto-select first available bed when room is selected
+  useEffect(() => {
+    if (selectedRoom && !selectedBedId && selectedRoom.beds && selectedRoom.beds.length > 0) {
+      const firstAvailableBed = selectedRoom.beds.find(b => b.is_active);
+      if (firstAvailableBed) {
+        selectBed(String(firstAvailableBed.id));
+      }
+    }
+  }, [selectedRoom, selectedBedId, selectBed]);
+
   const totalPrice = useMemo(() => {
-    const basePrice = Number(selectedRoom?.base_price || hostel.base_price || 0);
+    const basePrice = Number(selectedBed?.price_override || selectedRoom?.base_price || hostel.base_price || 0);
     return basePrice * durationMonths;
-  }, [selectedRoom?.base_price, hostel.base_price, durationMonths]);
+  }, [selectedBed?.price_override, selectedRoom?.base_price, hostel.base_price, durationMonths]);
 
   // Timer Logic
   useEffect(() => {
@@ -192,6 +209,7 @@ export function HostelBookingWidget({
       return createBookingWithValidation({
         hostelId: hostel.id,
         roomId: selectedRoom.id,
+        bedId: selectedBedId || undefined,
         moveInDate: new Date(), // Defaulting to today as UI is removed
         durationMonths,
         isExistingResident,
@@ -345,7 +363,9 @@ export function HostelBookingWidget({
                 key={room.id}
                 room={room}
                 isSelected={selectedRoomId === String(room.id)}
+                selectedBedId={selectedBedId}
                 onSelect={(roomId) => selectRoom(roomId)}
+                onSelectBed={(bedId) => selectBed(bedId)}
                 pricePerMonth={Number(room.base_price)}
               />
             ))}
@@ -506,8 +526,17 @@ export function HostelBookingWidget({
               <div className="text-lg font-mono font-bold text-slate-900">{hostel.landlord_phone || '247247'}</div>
             </div>
             <div>
-              <Label className="text-xs text-slate-500 uppercase font-bold">Account Number</Label>
-              <div className="text-lg font-mono font-bold text-slate-900">Room {selectedRoom?.room_number || '01'}</div>
+              <div className="flex justify-between items-center mb-1">
+                <Label className="text-xs text-slate-500 uppercase font-bold">Account Number</Label>
+                {selectedBed && (
+                  <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded uppercase">
+                    Bed {selectedBed.code}
+                  </span>
+                )}
+              </div>
+              <div className="text-lg font-mono font-bold text-slate-900">
+                {selectedBed?.custom_account_number || `Room ${selectedRoom?.room_number || '01'}`}
+              </div>
             </div>
             <div>
               <Label className="text-xs text-slate-500 uppercase font-bold">Amount to Pay</Label>

@@ -13,6 +13,7 @@ interface BookingState {
   
   // Selection State
   selectedRoomId: string | null;
+  selectedBedId: string | null;
   moveInDate: Date | undefined;
   durationMonths: number;
   
@@ -27,6 +28,7 @@ interface BookingState {
   setBookingType: (type: 'solo' | 'invite') => void;
   setInviteCode: (code: string | null) => void;
   selectRoom: (roomId: string) => void;
+  selectBed: (bedId: string | null) => void;
   setMoveInDate: (date: Date | undefined) => void;
   setDurationMonths: (months: number) => void;
   startPaymentTimer: () => void;
@@ -45,6 +47,7 @@ export const useBookingStore = create<BookingState>()(
       inviteCode: null,
       
       selectedRoomId: null,
+      selectedBedId: null,
       moveInDate: undefined,
       durationMonths: 1,
       
@@ -56,7 +59,8 @@ export const useBookingStore = create<BookingState>()(
       setBookingInProgress: (isInProgress) => set({ isBookingInProgress: isInProgress }),
       setBookingType: (type) => set({ bookingType: type }),
       setInviteCode: (code) => set({ inviteCode: code }),
-      selectRoom: (roomId) => set({ selectedRoomId: roomId }),
+      selectRoom: (roomId) => set({ selectedRoomId: roomId, selectedBedId: null }),
+      selectBed: (bedId) => set({ selectedBedId: bedId }),
       setMoveInDate: (date) => set({ moveInDate: date }),
       setDurationMonths: (months) => set({ durationMonths: months }),
       
@@ -67,6 +71,7 @@ export const useBookingStore = create<BookingState>()(
       resetBooking: () => set({
         currentStep: 'selection',
         selectedRoomId: null,
+        selectedBedId: null,
         moveInDate: undefined,
         durationMonths: 1,
         paymentTimerStartedAt: null,
@@ -82,6 +87,7 @@ export const useBookingStore = create<BookingState>()(
       partialize: (state) => ({
         // Persist selection state AND progress flag
         selectedRoomId: state.selectedRoomId,
+        selectedBedId: state.selectedBedId,
         moveInDate: state.moveInDate,
         durationMonths: state.durationMonths,
         isBookingInProgress: state.isBookingInProgress,
