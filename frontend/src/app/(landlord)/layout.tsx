@@ -91,7 +91,7 @@ export default function Layout({ children }: LandlordLayoutProps) {
         <div 
           className={cn(
             "flex-1 min-h-screen transition-all duration-300",
-            !isMobile && (isSidebarOpen ? "md:pl-72" : "md:pl-20")
+            !isMobile && (isSidebarOpen ? "md:pl-80" : "md:pl-24")
           )}
         >
           <LandlordTopNav 

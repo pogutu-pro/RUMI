@@ -124,10 +124,10 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
   const { theme, setTheme } = useTheme();
   const { logout } = useAuth();
   const [openGroups, setOpenGroups] = React.useState<string[]>([]);
-  const [isHovered, setIsHovered] = React.useState(false);
 
   // Determine if the sidebar is visually expanded
-  const isExpanded = isOpen || isHovered;
+  // For senior landlords, we disable auto-hover and keep it fixed based on isOpen
+  const isExpanded = isOpen;
 
   // Automatically open groups if a child is active
   React.useEffect(() => {
@@ -151,22 +151,22 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full py-4 bg-card border-r border-border transition-colors duration-200">
-      <div className={cn("flex items-center h-14 px-6 mb-2", isExpanded ? "justify-between" : "justify-center")}>
+      <div className={cn("flex items-center h-20 px-6 mb-4", isExpanded ? "justify-between" : "justify-center")}>
         {isExpanded ? (
-          <Link href="/" className="flex items-center gap-2 font-bold text-2xl text-primary group">
-            <div className="relative h-8 w-8 transition-transform group-hover:scale-110">
+          <Link href="/" className="flex items-center gap-3 font-bold text-3xl text-primary group">
+            <div className="relative h-10 w-10 transition-transform group-hover:scale-105">
               <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" />
             </div>
-            <span>RUMI</span>
+            <span className="tracking-tight">RUMI</span>
           </Link>
         ) : (
-           <Link href="/" className="relative h-8 w-8 group">
+           <Link href="/" className="relative h-10 w-10 group">
               <Image 
                 src="/images/logo/logo.svg" 
                 alt="RUMI Logo" 
-                width={32} 
-                height={32} 
-                className="transition-transform group-hover:scale-110"
+                width={40} 
+                height={40} 
+                className="transition-transform group-hover:scale-105"
               />
            </Link>
         )}
@@ -175,10 +175,10 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
            <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 ml-auto text-foreground/80 hover:text-foreground"
+            className="h-10 w-10 ml-auto text-foreground/80 hover:text-foreground hover:bg-accent"
             onClick={() => setIsOpen(!isOpen)}
           >
-            <PanelLeft className="h-5 w-5" />
+            <PanelLeft className="h-6 w-6" />
           </Button>
         )}
       </div>
@@ -202,38 +202,38 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                     <Button
                       variant="ghost"
                       className={cn(
-                        "w-full justify-between font-medium hover:bg-accent hover:text-foreground transition-all duration-200",
-                        is_active && "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary font-semibold"
+                        "w-full h-12 justify-between font-bold hover:bg-accent hover:text-foreground transition-all duration-200",
+                        is_active && "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary border-l-4 border-primary"
                       )}
                     >
-                      <div className="flex items-center gap-3">
-                        <item.icon className="h-5 w-5" />
-                        <span className="text-base">{item.title}</span>
+                      <div className="flex items-center gap-4">
+                        <item.icon className="h-6 w-6" />
+                        <span className="text-lg">{item.title}</span>
                       </div>
                       <ChevronDown
                         className={cn(
-                          "h-4 w-4 transition-transform duration-200 opacity-50",
+                          "h-5 w-5 transition-transform duration-200 opacity-70",
                           openGroups.includes(item.title) ? "rotate-180" : ""
                         )}
                       />
                     </Button>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="pl-0 space-y-1 mt-1 bg-muted/50 py-2 rounded-b-lg border-l-2 border-primary/20 ml-4">
+                  <CollapsibleContent className="pl-0 space-y-1.5 mt-1 bg-muted/40 py-3 rounded-b-xl border-l-4 border-primary/30 ml-6">
                     {item.items.map((subItem, subIndex) => (
                       <Link
                         key={subIndex}
                         href={subItem.href}
                         className={cn(
-                          "flex items-center gap-2 px-4 py-2 text-base transition-colors duration-200 border-l-2 -ml-[2px]",
+                          "flex items-center gap-3 px-5 py-2.5 text-lg transition-colors duration-200 border-l-4 -ml-[4px]",
                           pathname === subItem.href || pathname.startsWith(subItem.href + '/')
-                            ? "border-primary text-primary font-bold bg-primary/10"
-                            : "border-transparent text-foreground/80 font-medium hover:text-foreground hover:bg-accent"
+                            ? "border-primary text-primary font-bold bg-primary/15"
+                            : "border-transparent text-foreground/80 font-semibold hover:text-foreground hover:bg-accent"
                         )}
                       >
-                        {subItem.icon && <subItem.icon className="h-3.5 w-3.5 opacity-70" />}
+                        {subItem.icon && <subItem.icon className="h-5 w-5 opacity-80" />}
                         <span className="flex-1">{subItem.title}</span>
                         {subItem.badge && (
-                          <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-semibold">
+                          <Badge variant="secondary" className="h-6 px-2 text-xs font-bold ring-1 ring-primary/20">
                             {subItem.badge}
                           </Badge>
                         )}
@@ -249,15 +249,15 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                         variant="ghost"
                         size="icon"
                         className={cn(
-                          "h-10 w-10 mx-auto mb-1 rounded-lg",
-                          is_active && "bg-primary/10 text-primary"
+                          "h-12 w-12 mx-auto mb-2 rounded-xl",
+                          is_active && "bg-primary/10 text-primary border-r-4 border-primary rounded-r-none"
                         )}
                       >
-                        <item.icon className="h-5 w-5" />
+                        <item.icon className="h-6 w-6" />
                         <span className="sr-only">{item.title}</span>
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="right" className="flex items-center gap-4">
+                    <TooltipContent side="right" className="text-lg font-bold p-3">
                       {item.title}
                     </TooltipContent>
                   </Tooltip>
@@ -271,16 +271,16 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                 asChild
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start font-medium hover:bg-accent hover:text-foreground transition-all duration-200",
-                  is_active && "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary font-semibold"
+                  "w-full h-12 justify-start font-bold hover:bg-accent hover:text-foreground transition-all duration-200 px-4",
+                  is_active && "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary border-l-4 border-primary"
                 )}
               >
                 <Link href={item.href!}>
-                  <div className="flex items-center gap-3">
-                    <item.icon className="h-5 w-5" />
-                    <span className="text-base">{item.title}</span>
+                  <div className="flex items-center gap-4">
+                    <item.icon className="h-6 w-6" />
+                    <span className="text-lg font-bold">{item.title}</span>
                     {item.badge && (
-                      <Badge variant="secondary" className="ml-auto h-5 px-1.5 text-[10px] font-semibold">
+                      <Badge variant="secondary" className="ml-auto h-6 px-2 text-xs font-bold ring-1 ring-primary/20">
                         {item.badge}
                       </Badge>
                     )}
@@ -296,16 +296,16 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                       variant="ghost"
                       size="icon"
                       className={cn(
-                        "h-10 w-10 mx-auto mb-1 rounded-lg relative",
-                        is_active && "bg-primary/10 text-primary"
+                        "h-12 w-12 mx-auto mb-2 rounded-xl relative",
+                        is_active && "bg-primary/10 text-primary border-r-4 border-primary rounded-r-none"
                       )}
                     >
                       <Link href={item.href!}>
-                        <item.icon className="h-5 w-5" />
+                        <item.icon className="h-6 w-6" />
                         {item.badge && (
                           <Badge 
                             variant="secondary" 
-                            className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[8px] font-bold"
+                            className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] font-bold ring-2 ring-background"
                           >
                             {typeof item.badge === 'number' ? item.badge : '!'}
                           </Badge>
@@ -314,7 +314,7 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
                       </Link>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="right">{item.title}</TooltipContent>
+                  <TooltipContent side="right" className="text-lg font-bold p-3">{item.title}</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             );
@@ -322,8 +322,63 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
         </div>
       </ScrollArea>
 
-      {/* Sidebar Footer - Removing as requested, items are in header */}
-      {/* <div className="mt-auto p-4 space-y-2 border-t border-border/50"> ... </div> */}
+      {/* Sidebar Footer - Added RUMI Guide for senior help */}
+      <div className="mt-auto p-4 border-t border-border/50 bg-muted/20 flex flex-col gap-2">
+        {isExpanded ? (
+          <>
+            <Button 
+              className="w-full h-12 justify-start gap-4 font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
+              asChild
+            >
+              <Link href="/landlord/support">
+                 <LifeBuoy className="h-6 w-6" />
+                 <span className="text-lg">Need Help?</span>
+              </Link>
+            </Button>
+            {!isMobile && (
+              <Button
+                variant="ghost"
+                className="w-full h-10 justify-start gap-4 font-semibold text-muted-foreground hover:text-foreground"
+                onClick={() => setIsOpen(false)}
+              >
+                <PanelLeft className="h-5 w-5" />
+                <span>Collapse Menu</span>
+              </Button>
+            )}
+          </>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="icon" className="h-12 w-12 mx-auto bg-primary shadow-lg" asChild>
+                    <Link href="/landlord/support">
+                      <LifeBuoy className="h-6 w-6" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="text-lg font-bold p-3">Get Help</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-12 w-12 mx-auto text-muted-foreground hover:text-foreground hover:bg-accent"
+                    onClick={() => setIsOpen(true)}
+                  >
+                    <PanelLeft className="h-6 w-6 rotate-180" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="text-lg font-bold p-3">Expand Menu</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -340,11 +395,9 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen transition-all duration-300 ease-in-out shadow-sm",
-        isExpanded ? "w-72" : "w-20"
+        "fixed left-0 top-0 z-40 h-screen transition-all duration-300 ease-in-out shadow-xl",
+        isExpanded ? "w-80" : "w-24"
       )}
-      onMouseEnter={() => !isOpen && setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       <SidebarContent />
     </aside>

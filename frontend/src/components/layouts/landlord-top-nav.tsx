@@ -1,6 +1,6 @@
 import * as React from 'react';
 import Link from 'next/link';
-import { Bell, User, Settings, LogOut } from 'lucide-react';
+import { Bell, User, Settings, LogOut, PanelLeft } from 'lucide-react';
 import { useAuth } from '@/features/auth';
 import { useNotifications } from '@/features/notifications';
 import { Notification } from '@/features/notifications';
@@ -97,6 +97,15 @@ export function LandlordTopNav({ onMenuClick, isSidebarOpen, isMobile }: Landlor
     <header className="sticky top-0 z-30 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 text-muted-foreground hover:text-foreground"
+            onClick={onMenuClick}
+            aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
+          >
+            <PanelLeft className="h-6 w-6" />
+          </Button>
           <div className="flex flex-col">
             <span className="text-xs font-bold uppercase tracking-[0.18em] text-foreground">
               RUMI · Landlord
