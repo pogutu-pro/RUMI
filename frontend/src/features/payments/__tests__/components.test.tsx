@@ -22,14 +22,28 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, beforeEach, afterEach, jest } from '@jest/globals';
 
 
-// Mock API client
+// Create shared mock functions so both default and named exports reference the same fns
+const mockGet = jest.fn<any>();
+const mockPost = jest.fn<any>();
+
+// Mock API client - both default and named exports
 jest.mock('@/lib/api/client', () => ({
   __esModule: true,
   default: {
     axios: {
-      get: jest.fn(),
-      post: jest.fn(),
+      get: mockGet,
+      post: mockPost,
     },
+    get: mockGet,
+    post: mockPost,
+  },
+  apiClient: {
+    axios: {
+      get: mockGet,
+      post: mockPost,
+    },
+    get: mockGet,
+    post: mockPost,
   },
 }));
 
@@ -54,12 +68,11 @@ const createWrapper = () => {
 // =============================================================================
 
 beforeEach(() => {
-  const apiClient = require('@/lib/api/client').default;
-  apiClient.axios.get.mockReset();
-  apiClient.axios.post.mockReset();
+  mockGet.mockReset();
+  mockPost.mockReset();
   // Set default successful response to prevent crashes
-  apiClient.axios.get.mockResolvedValue({ data: { data: [] } });
-  apiClient.axios.post.mockResolvedValue({ data: { data: {} } });
+  mockGet.mockResolvedValue({ data: { data: [] } });
+  mockPost.mockResolvedValue({ data: { data: {} } });
 });
 
 // =============================================================================
@@ -84,8 +97,7 @@ describe('PaymentOptionsModal', () => {
   });
 
   it('should display Paybill number when loaded', async () => {
-    const apiClient = require('@/lib/api/client').default;
-    apiClient.axios.get.mockResolvedValue({
+    mockGet.mockResolvedValue({
       data: {
         data: {
           paybill_number: '548548',
@@ -112,8 +124,7 @@ describe('PaymentOptionsModal', () => {
   });
 
   it('should initiate STK Push on button click', async () => {
-    const apiClient = require('@/lib/api/client').default;
-    apiClient.axios.post.mockResolvedValue({
+    mockPost.mockResolvedValue({
       data: {
         data: {
           reference: 'STK-123',
@@ -150,7 +161,7 @@ describe('PaymentOptionsModal', () => {
     fireEvent.click(payButton);
 
     await waitFor(() => {
-      expect(apiClient.axios.post).toHaveBeenCalledWith(
+      expect(mockPost).toHaveBeenCalledWith(
         expect.stringContaining('/mpesa/initialize/'),
         expect.any(Object)
       );
@@ -168,8 +179,7 @@ describe('PaymentStatusTracker', () => {
   });
 
   it('should poll payment status every 5 seconds', async () => {
-    const apiClient = require('@/lib/api/client').default;
-    apiClient.axios.get.mockResolvedValue({
+    mockGet.mockResolvedValue({
       data: {
         data: {
           status: 'pending',
@@ -186,7 +196,7 @@ describe('PaymentStatusTracker', () => {
 
     // Should call immediately
     await waitFor(() => {
-      expect(apiClient.axios.get).toHaveBeenCalledTimes(1);
+      expect(mockGet).toHaveBeenCalledTimes(1);
     });
 
     // Advance by 5 seconds
@@ -195,13 +205,12 @@ describe('PaymentStatusTracker', () => {
     });
 
     await waitFor(() => {
-      expect(apiClient.axios.get).toHaveBeenCalledTimes(2);
+      expect(mockGet).toHaveBeenCalledTimes(2);
     });
   });
 
   it('should stop polling when status is success', async () => {
-    const apiClient = require('@/lib/api/client').default;
-    apiClient.axios.get
+    mockGet
       .mockResolvedValueOnce({
         data: { data: { status: 'pending' } },
       })
@@ -230,20 +239,19 @@ describe('PaymentStatusTracker', () => {
     }, { timeout: 5000 });
 
     // Should stop polling
-    const initialCallCount = apiClient.axios.get.mock.calls.length;
+    const initialCallCount = mockGet.mock.calls.length;
     
     await React.act(async () => {
       jest.advanceTimersByTime(20000); 
     });
     
-    expect(apiClient.axios.get.mock.calls.length).toBe(initialCallCount);
+    expect(mockGet.mock.calls.length).toBe(initialCallCount);
   });
 });
 
 describe('PaymentHistoryTable', () => {
   it('should render transaction list', async () => {
-    const apiClient = require('@/lib/api/client').default;
-    apiClient.axios.get.mockResolvedValue({
+    mockGet.mockResolvedValue({
       data: {
         data: [
           {
@@ -268,8 +276,7 @@ describe('PaymentHistoryTable', () => {
   });
 
   it('should show empty state when no transactions', async () => {
-    const apiClient = require('@/lib/api/client').default;
-    apiClient.axios.get.mockResolvedValue({
+    mockGet.mockResolvedValue({
       data: { data: [] },
     });
 
@@ -285,8 +292,7 @@ describe('PaymentHistoryTable', () => {
 
 describe('ReceiptGenerator', () => {
   it('should generate and download PDF receipt', async () => {
-    const apiClient = require('@/lib/api/client').default;
-    apiClient.axios.post.mockResolvedValue({
+    mockPost.mockResolvedValue({
       data: {
         data: {
           receipt_number: 'RCPT-001',
@@ -320,64 +326,57 @@ describe('ReceiptGenerator', () => {
 // WEEK 2 TESTS: Landlord Subscription
 // =============================================================================
 
+jest.mock('@/features/payments/hooks/use-subscription-accrual');
+
 describe('SubscriptionOverviewCard', () => {
-  it('should display subscription tier and occupancy', async () => {
-    const apiClient = require('@/lib/api/client').default;
-    apiClient.axios.get.mockResolvedValue({
+  it('should display billing accrual data', async () => {
+    const { useSubscriptionAccrual } = require('@/features/payments/hooks/use-subscription-accrual');
+    (useSubscriptionAccrual as jest.Mock).mockReturnValue({
       data: {
-        data: {
-          plan: { tier: 'standard', price: 49, max_beds: 100 },
-          current_occupancy: 70,
-          billing_status: 'active',
-          next_invoice_amount: 3430,
-          next_invoice_date: '2026-03-01',
-        },
+        period_start: '2026-02-01',
+        as_of: '2026-02-17',
+        total_occupied_bed_days: 120,
+        projected_accrual: 15000,
+        currency: 'KES',
+        hostel_breakdown: [
+          { hostel__name: 'Test Hostel', bed_days: 120 },
+        ],
       },
+      isLoading: false,
     });
 
     const { SubscriptionOverviewCard } = require('@/features/payments/components/subscription-overview-card');
-    
+
     render(
       <SubscriptionOverviewCard hostelId="hostel-123" />,
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      expect(screen.getByText(/Standard/i)).toBeInTheDocument();
-      expect(screen.getByText(/70.*100/i)).toBeInTheDocument();
-    });
+    expect(screen.getByText('Test Hostel')).toBeInTheDocument();
+    expect(screen.getAllByText('120').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('should show warning when exceeding plan limit', async () => {
-    const apiClient = require('@/lib/api/client').default;
-    apiClient.axios.get.mockResolvedValue({
-      data: {
-        data: {
-          plan: { tier: 'basic', price: 29, max_beds: 50 },
-          current_occupancy: 55,
-          is_within_limit: false,
-          billing_status: 'active',
-        },
-      },
+  it('should show unavailable state when no data', () => {
+    const { useSubscriptionAccrual } = require('@/features/payments/hooks/use-subscription-accrual');
+    (useSubscriptionAccrual as jest.Mock).mockReturnValue({
+      data: null,
+      isLoading: false,
     });
 
     const { SubscriptionOverviewCard } = require('@/features/payments/components/subscription-overview-card');
-    
+
     render(
       <SubscriptionOverviewCard hostelId="hostel-123" />,
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      expect(screen.getByText(/exceeds plan limit/i)).toBeInTheDocument();
-    });
+    expect(screen.getByText(/Billing information unavailable/i)).toBeInTheDocument();
   });
 });
 
 describe('InvoiceHistoryList', () => {
   it('should render invoice table', async () => {
-    const apiClient = require('@/lib/api/client').default;
-    apiClient.axios.get.mockResolvedValue({
+    mockGet.mockResolvedValue({
       data: {
         data: [
           {
@@ -431,8 +430,7 @@ describe('PaybillConfigForm', () => {
   });
 
   it('should submit configuration successfully', async () => {
-    const apiClient = require('@/lib/api/client').default;
-    apiClient.axios.post.mockResolvedValue({
+    mockPost.mockResolvedValue({
       data: { success: true },
     });
 
@@ -453,7 +451,7 @@ describe('PaybillConfigForm', () => {
     fireEvent.click(getByText(/Save Configuration/i));
 
     await waitFor(() => {
-      expect(apiClient.axios.post).toHaveBeenCalledWith(
+      expect(mockPost).toHaveBeenCalledWith(
         expect.stringContaining('/payment-config/'),
         expect.objectContaining({
           mpesa_number: '548548',
@@ -470,8 +468,7 @@ describe('PaybillConfigForm', () => {
 
 describe('UnmatchedPaymentsDashboard', () => {
   it('should display unmatched payments with suggestions', async () => {
-    const apiClient = require('@/lib/api/client').default;
-    apiClient.axios.get.mockResolvedValue({
+    mockGet.mockResolvedValue({
       data: {
         data: [
           {
@@ -503,8 +500,7 @@ describe('UnmatchedPaymentsDashboard', () => {
   });
 
   it('should match payment when clicked', async () => {
-    const apiClient = require('@/lib/api/client').default;
-    apiClient.axios.get.mockResolvedValue({
+    mockGet.mockResolvedValue({
       data: {
         data: [
           {
@@ -520,7 +516,7 @@ describe('UnmatchedPaymentsDashboard', () => {
         ],
       },
     });
-    apiClient.axios.post.mockResolvedValue({ data: { success: true } });
+    mockPost.mockResolvedValue({ data: { success: true } });
 
     const { UnmatchedPaymentsDashboard } = require('@/features/payments/components/unmatched-payments-dashboard');
     
@@ -532,7 +528,7 @@ describe('UnmatchedPaymentsDashboard', () => {
     });
 
     await waitFor(() => {
-      expect(apiClient.axios.post).toHaveBeenCalledWith(
+      expect(mockPost).toHaveBeenCalledWith(
         expect.stringContaining('/unmatched/payment-1/match/'),
         expect.any(Object)
       );
@@ -542,8 +538,7 @@ describe('UnmatchedPaymentsDashboard', () => {
 
 describe('PaymentLedgerViewer', () => {
   it('should display ledger entries', async () => {
-    const apiClient = require('@/lib/api/client').default;
-    apiClient.axios.get.mockResolvedValue({
+    mockGet.mockResolvedValue({
       data: {
         data: [
           {
@@ -573,8 +568,7 @@ describe('PaymentLedgerViewer', () => {
   });
 
   it('should search ledger entries', async () => {
-    const apiClient = require('@/lib/api/client').default;
-    apiClient.axios.get.mockResolvedValue({
+    mockGet.mockResolvedValue({
       data: { data: [] },
     });
 
@@ -601,7 +595,7 @@ describe('PaymentLedgerViewer', () => {
       expect(screen.getByText(/No results found/i)).toBeInTheDocument();
     }, { timeout: 4000 });
 
-    expect(apiClient.axios.get).toHaveBeenCalledWith(
+    expect(mockGet).toHaveBeenCalledWith(
       expect.stringContaining('search=John')
     );
   });

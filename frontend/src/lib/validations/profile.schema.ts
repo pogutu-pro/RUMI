@@ -41,10 +41,10 @@ export const caretakerProfileSchema = z.object({
 });
 
 export const uploadProfileImageSchema = z.object({
-  file: z.instanceof(File, { message: 'File is required' })
-    .refine((file) => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB')
+  file: (typeof File !== 'undefined' ? z.instanceof(File, { message: 'File is required' }) : z.any())
+    .refine((file: any) => file?.size <= 5 * 1024 * 1024, 'File size must be less than 5MB')
     .refine(
-      (file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type),
+      (file: any) => ['image/jpeg', 'image/png', 'image/webp'].includes(file?.type),
       'File must be JPEG, PNG, or WebP'
     ),
 });
