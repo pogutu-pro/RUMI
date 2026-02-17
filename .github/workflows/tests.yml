@@ -33,6 +33,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r Backend/requirements.txt
+          pip install django-filter
 
       - name: 🔧 Run migrations
         env:
@@ -81,7 +82,7 @@ jobs:
       - name: 🧪 Run unit tests
         run: |
           cd frontend
-          pnpm test --coverage
+          pnpm test -- --coverage
 
   # ==========================================
   # ALL TESTS STATUS CHECK
