@@ -36,12 +36,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   6. Admin clicking "reject" on an unmatched payment updates the Transaction record status in the database (not just returns `{'status': 'rejected'}`)
   7. `PaymentLedgerView` returns paginated transaction data without raising NameError on `models.Q`
   8. The recurring Celery payment task (`charge_saved_payment_method`) calls the real Paystack API — the `random.choice()` mock is removed
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Fix Paystack `charge.success` variable shadowing crash and HMAC raw-bytes verification (PAY-01, PAY-05)
-- [ ] 01-02: Fix M-Pesa callback URLs to use BACKEND_API_URL; add select_for_update to STK push webhook; ensure always-HTTP-200 response (PAY-02, PAY-03, PAY-04)
-- [ ] 01-03: Fix UnmatchedPaymentRejectView DB write, fix PaymentLedgerView NameError, remove random.choice() mock from recurring payment task (PAY-06, PAY-07, PAY-08)
+- [ ] 01-01-PLAN.md — Fix Paystack `charge.success` variable shadowing crash and outer webhook HTTP 500 (PAY-01, PAY-05)
+- [ ] 01-02-PLAN.md — Fix M-Pesa callback URLs to use BACKEND_API_URL; add select_for_update to STK push webhook; ensure always-HTTP-200 response (PAY-02, PAY-03, PAY-04)
+- [ ] 01-03-PLAN.md — Fix UnmatchedPaymentRejectView DB write, fix PaymentLedgerView NameError, remove random.choice() mock from recurring payment task (PAY-06, PAY-07, PAY-08)
 
 ### Phase 2: Admin Layer Consolidation
 **Goal**: The admin_endpoints/ directory is fully deleted, all admin views live in admin_api/, no cross-imports remain, and the dead URL prefix is removed — with zero frontend impact
