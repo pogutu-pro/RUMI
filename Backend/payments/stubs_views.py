@@ -2,6 +2,7 @@ from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
+from django.db import models
 from .models import Transaction, BedPaymentLedger
 from hostels.models import Bed
 
@@ -65,7 +66,19 @@ class UnmatchedPaymentRejectView(APIView):
     permission_classes = [permissions.IsAdminUser]
     
     def post(self, request, payment_id):
-        # Logic to mark transaction as rejected/refund_pending
+        transaction_obj = get_object_or_404(Transaction, id=payment_id)
+        reason = request.data.get('reason', 'Rejected by admin')
+
+        # Transaction.STATUS_CHOICES does not include 'rejected' — use 'failed'.
+        # Store the rejection reason in metadata for audit trail.
+        existing_metadata = transaction_obj.metadata or {}
+        existing_metadata['rejection_reason'] = reason
+        existing_metadata['rejected_by'] = request.user.email if request.user else 'unknown'
+
+        transaction_obj.status = 'failed'
+        transaction_obj.metadata = existing_metadata
+        transaction_obj.save(update_fields=['status', 'metadata'])
+
         return Response({'status': 'rejected', 'payment_id': payment_id})
 
 class UnmatchedPaymentMatchView(APIView):
