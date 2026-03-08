@@ -1098,8 +1098,10 @@ def paystack_webhook(request):
     except json.JSONDecodeError:
         return Response({'error': 'Invalid JSON'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
-        print(f"Webhook processing error: {e}")
-        return Response({'error': 'Processing failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # Return HTTP 200 to prevent Paystack from retrying the webhook delivery.
+        # Paystack treats non-2xx responses as delivery failures and will retry indefinitely.
+        logger.error(f"Paystack webhook processing error: {e}", exc_info=True)
+        return Response({'status': 'error', 'message': 'Processing failed'}, status=status.HTTP_200_OK)
 
 
 def _handle_charge_success(data):
