@@ -9,11 +9,11 @@
 
 ### Payments — Critical Bug Fixes
 
-- [ ] **PAY-01**: Paystack `charge.success` webhook processes without crashing — variable shadowing bug fixed (`transaction` name collision in `_handle_charge_success`)
-- [ ] **PAY-02**: M-Pesa STK push callback URLs point to the Django backend API domain, not the Next.js frontend domain (`BACKEND_API_URL` env var used instead of `FRONTEND_URL`)
-- [ ] **PAY-03**: STK push webhook handles duplicate M-Pesa deliveries idempotently using `select_for_update()` before the status check
-- [ ] **PAY-04**: STK push webhook always returns HTTP 200 to Safaricom (no HTTP 500 responses that trigger infinite retries)
-- [ ] **PAY-05**: Paystack webhook signature verification uses raw `request.body` bytes (no middleware decode interference)
+- [x] **PAY-01**: Paystack `charge.success` webhook processes without crashing — variable shadowing bug fixed (`transaction` name collision in `_handle_charge_success`)
+- [x] **PAY-02**: M-Pesa STK push callback URLs point to the Django backend API domain, not the Next.js frontend domain (`BACKEND_API_URL` env var used instead of `FRONTEND_URL`)
+- [x] **PAY-03**: STK push webhook handles duplicate M-Pesa deliveries idempotently using `select_for_update()` before the status check
+- [x] **PAY-04**: STK push webhook always returns HTTP 200 to Safaricom (no HTTP 500 responses that trigger infinite retries)
+- [x] **PAY-05**: Paystack webhook signature verification uses raw `request.body` bytes (no middleware decode interference)
 - [x] **PAY-06**: `UnmatchedPaymentRejectView` updates the Transaction record status in the database (not just return `{'status': 'rejected'}`)
 - [x] **PAY-07**: `PaymentLedgerView` fixes `models.Q` NameError and returns real paginated transaction data
 - [x] **PAY-08**: Celery recurring payment task (`charge_saved_payment_method`) calls real Paystack API — `random.choice()` mock removed
@@ -128,7 +128,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PAY-01 to PAY-08 | Phase 1 | Pending |
+| PAY-01, PAY-05 | Phase 1 (01-01) | Complete |
+| PAY-02 to PAY-04, PAY-06 to PAY-08 | Phase 1 | Pending |
 | ADM-01 to ADM-05 | Phase 2 | Pending |
 | PAY-09 to PAY-14 | Phase 3 | Pending |
 | MOD-01 to MOD-04 | Phase 4 | Pending |

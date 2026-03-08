@@ -39,7 +39,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Fix Paystack `charge.success` variable shadowing crash and outer webhook HTTP 500 (PAY-01, PAY-05)
+- [x] 01-01-PLAN.md — Fix Paystack `charge.success` variable shadowing crash and outer webhook HTTP 500 (PAY-01, PAY-05) — completed 2026-03-08
 - [ ] 01-02-PLAN.md — Fix M-Pesa callback URLs to use BACKEND_API_URL; add select_for_update to STK push webhook; ensure always-HTTP-200 response (PAY-02, PAY-03, PAY-04)
 - [ ] 01-03-PLAN.md — Fix UnmatchedPaymentRejectView DB write, fix PaymentLedgerView NameError, remove random.choice() mock from recurring payment task (PAY-06, PAY-07, PAY-08)
 
