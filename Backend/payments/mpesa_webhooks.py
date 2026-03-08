@@ -168,12 +168,13 @@ class MpesaWebhookHandler(View):
                 return self._handle_failed_stk_push(payment_info={'result_desc': result_desc}, transaction_obj=transaction_obj)
 
         except Exception as e:
-            logger.error(f"Error processing STK Push webhook: {str(e)}")
+            # Always return HTTP 200 — Safaricom retries on non-2xx responses indefinitely.
+            # Log the error for manual review; do not surface internal error to Safaricom.
+            logger.error(f"Error processing STK Push webhook: {str(e)}", exc_info=True)
             # *** Observability ***
             from .middleware import PAYMENT_FAILURES
             PAYMENT_FAILURES.labels(provider='mpesa', reason='exception').inc()
-            
-            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+            return JsonResponse({"ResultCode": 0, "ResultDesc": "Accepted"}, status=200)
     
     def _handle_c2b_validation(self, data, mpesa_api):
         """
@@ -214,17 +215,22 @@ class MpesaWebhookHandler(View):
         Update transaction from successful STK push callback.
         """
         try:
-            
-            if transaction_obj.status == 'success':
-                return JsonResponse({'status': 'already_processed'}, status=200)
+            with transaction.atomic():
+                # Re-fetch with a database row lock to prevent race condition from
+                # concurrent M-Pesa retry deliveries (Safaricom retries on non-200).
+                transaction_obj = Transaction.objects.select_for_update().get(
+                    pk=transaction_obj.pk
+                )
+                if transaction_obj.status == 'success':
+                    return JsonResponse({'status': 'already_processed'}, status=200)
 
-            # 1. Update to PROCESSING status (Money confirmed, logic pending)
-            # This is saved outside the atomic block below so it persists if logic fails
-            transaction_obj.status = 'processing'
-            transaction_obj.mpesa_receipt_number = payment_info.get('receipt_number')
-            transaction_obj.mpesa_phone_number = payment_info.get('phone_number')
-            transaction_obj.metadata = payment_info
-            transaction_obj.save()
+                # 1. Update to PROCESSING status (Money confirmed, logic pending)
+                # This is saved outside the atomic block below so it persists if logic fails
+                transaction_obj.status = 'processing'
+                transaction_obj.mpesa_receipt_number = payment_info.get('receipt_number')
+                transaction_obj.mpesa_phone_number = payment_info.get('phone_number')
+                transaction_obj.metadata = payment_info
+                transaction_obj.save()
 
             from .services import process_confirmed_payment
             
@@ -260,8 +266,8 @@ class MpesaWebhookHandler(View):
                 return JsonResponse({'status': 'processing_error', 'message': 'Payment received, logic pending'}, status=200)
 
         except Exception as e:
-            logger.error(f"Error updating STK push transaction: {e}")
-            return JsonResponse({'error': str(e)}, status=500)
+            logger.error(f"Error updating STK push transaction: {e}", exc_info=True)
+            return JsonResponse({"ResultCode": 0, "ResultDesc": "Accepted"}, status=200)
     
     def _handle_failed_stk_push(self, payment_info, transaction_obj):
         """
