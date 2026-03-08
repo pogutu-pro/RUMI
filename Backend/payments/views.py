@@ -1112,53 +1112,53 @@ def _handle_charge_success(data):
         return Response({'error': 'Missing reference'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        transaction = Transaction.objects.select_related(
+        txn = Transaction.objects.select_related(
             'booking', 'student', 'landlord'
         ).get(transaction_reference=reference)
 
-        if transaction.status == 'success':
+        if txn.status == 'success':
             return Response({'status': 'already_processed'}, status=status.HTTP_200_OK)
 
         with transaction.atomic():
             # Update transaction
-            transaction.status = 'success'
-            transaction.paystack_reference = data.get('id')
-            transaction.paid_at = timezone.now()
-            transaction.gateway_fee = Decimal(str(data.get('fees', 0))) / 100  # Convert from kobo to KES
-            transaction.net_platform_revenue = transaction.gross_platform_revenue - transaction.gateway_fee
-            transaction.metadata = data
-            transaction.save()
+            txn.status = 'success'
+            txn.paystack_reference = data.get('id')
+            txn.paid_at = timezone.now()
+            txn.gateway_fee = Decimal(str(data.get('fees', 0))) / 100  # Convert from kobo to KES
+            txn.net_platform_revenue = txn.gross_platform_revenue - txn.gateway_fee
+            txn.metadata = data
+            txn.save()
 
             # Update booking status
-            booking = transaction.booking
+            booking = txn.booking
             booking.status = 'confirmed'
-            booking.amount_paid += transaction.total_charged_amount
+            booking.amount_paid += txn.total_charged_amount
             booking.save()
 
             # Create payout record for landlord
-            if transaction.transaction_type == 'initial':
+            if txn.transaction_type == 'initial':
                 Payout.objects.create(
-                    transaction=transaction,
-                    landlord=transaction.landlord,
-                    subaccount=transaction.landlord.paystack_subaccount if hasattr(transaction.landlord, 'paystack_subaccount') else None,
-                    payout_reference=f"PAYOUT-{transaction.id}-{uuid.uuid4().hex[:8]}",
-                    gross_amount=transaction.landlord_payout_amount,
+                    transaction=txn,
+                    landlord=txn.landlord,
+                    subaccount=txn.landlord.paystack_subaccount if hasattr(txn.landlord, 'paystack_subaccount') else None,
+                    payout_reference=f"PAYOUT-{txn.id}-{uuid.uuid4().hex[:8]}",
+                    gross_amount=txn.landlord_payout_amount,
                     commission_deducted=Decimal('0.00'),  # No commission in new model
-                    net_payout_amount=transaction.landlord_payout_amount,
+                    net_payout_amount=txn.landlord_payout_amount,
                     status='pending'
                 )
 
             # Create recurring payment if initial payment
-            if transaction.transaction_type == 'initial':
+            if txn.transaction_type == 'initial':
                 # Check if saved payment method exists
                 try:
                     saved_method = SavedPaymentMethod.objects.get(
-                        student=transaction.student,
+                        student=txn.student,
                         is_default=True
                     )
                     RecurringPayment.objects.create(
                         booking=booking,
-                        student=transaction.student,
+                        student=txn.student,
                         saved_payment_method=saved_method,
                         rent_amount=booking.monthly_rent,
                         next_payment_date=booking.move_in_date + timezone.timedelta(days=30) if booking.move_in_date else timezone.now().date() + timezone.timedelta(days=30)
@@ -1169,34 +1169,34 @@ def _handle_charge_success(data):
             # Send success notifications
             from notifications.tasks import send_notification
             send_notification.delay(
-                recipient_id=transaction.student.user.id,
+                recipient_id=txn.student.user.id,
                 notification_type='payment_success',
                 channel='email',
                 context={
-                    'student_name': transaction.student.user.first_name,
-                    'amount': float(transaction.total_charged_amount),
-                    'transaction_reference': transaction.transaction_reference
+                    'student_name': txn.student.user.first_name,
+                    'amount': float(txn.total_charged_amount),
+                    'transaction_reference': txn.transaction_reference
                 }
             )
 
             # Notify landlord
             send_notification.delay(
-                recipient_id=transaction.landlord.user.id,
+                recipient_id=txn.landlord.user.id,
                 notification_type='payment_received',
                 channel='email',
                 context={
-                    'landlord_name': transaction.landlord.business_name or transaction.landlord.user.first_name,
-                    'amount': float(transaction.landlord_payout_amount),
-                    'student_name': transaction.student.user.first_name
+                    'landlord_name': txn.landlord.business_name or txn.landlord.user.first_name,
+                    'amount': float(txn.landlord_payout_amount),
+                    'student_name': txn.student.user.first_name
                 }
             )
 
             # Generate and send receipt
             try:
                 from .receipt_service import ReceiptService
-                receipt_result = ReceiptService.generate_and_send_receipt(transaction)
+                receipt_result = ReceiptService.generate_and_send_receipt(txn)
                 if receipt_result['receipt']:
-                    print(f"Receipt generated and sent for transaction {transaction.transaction_reference}")
+                    print(f"Receipt generated and sent for transaction {txn.transaction_reference}")
             except Exception as e:
                 print(f"Error in receipt generation workflow: {str(e)}")
 
