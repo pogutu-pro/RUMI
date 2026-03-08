@@ -1,7 +1,11 @@
+import logging
+
 from celery import shared_task
 from decimal import Decimal
 from django.utils import timezone
 from django.db.models import Sum
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task
@@ -108,43 +112,82 @@ def process_recurring_payments():
 
 def charge_saved_payment_method(recurring_payment, amount):
     """
-    Charge saved payment method via Paystack
-    """
-    # Mock implementation - in production, call Paystack API
-    try:
-        # Simulate success/failure randomly for testing
-        import random
-        success = random.choice([True, True, True, False])  # 75% success rate
+    Charge saved payment method via Paystack charge_authorization API.
 
-        if success:
-            # Create transaction record
-            from .models import Transaction
-            transaction = Transaction.objects.create(
+    Replaces the random.choice() mock that was incorrectly left in production.
+    Uses the student's saved Paystack authorization code for recurring billing.
+    """
+    import requests
+    from django.conf import settings
+    from .models import Transaction, SavedPaymentMethod
+
+    try:
+        saved_method = recurring_payment.saved_payment_method
+        paystack_secret = settings.PAYSTACK_SECRET_KEY
+
+        if not paystack_secret:
+            logger.error("PAYSTACK_SECRET_KEY not configured — cannot charge saved payment method")
+            return {'status': 'failed', 'message': 'Payment gateway not configured'}
+
+        # Amount in kobo (1 KES = 100 kobo), consistent with views.py line 1127
+        amount_kobo = int(Decimal(str(amount)) * 100)
+
+        # Unique reference — include timestamp to prevent duplicate charge on retry
+        reference = f"RUMI-RECUR-{timezone.now().year}-{recurring_payment.id}-{int(timezone.now().timestamp())}"
+
+        payload = {
+            'authorization_code': saved_method.paystack_authorization_code,
+            'email': recurring_payment.student.user.email,
+            'amount': amount_kobo,
+            'reference': reference,
+            'metadata': {
+                'recurring_payment_id': recurring_payment.id,
+                'is_recurring': True,
+                'booking_id': recurring_payment.booking.id if recurring_payment.booking else None,
+            }
+        }
+
+        response = requests.post(
+            'https://api.paystack.co/transaction/charge_authorization',
+            headers={
+                'Authorization': f'Bearer {paystack_secret}',
+                'Content-Type': 'application/json',
+            },
+            json=payload,
+            timeout=30,
+        )
+        result = response.json()
+
+        if result.get('status') and result.get('data', {}).get('status') == 'success':
+            txn = Transaction.objects.create(
                 booking=recurring_payment.booking,
                 student=recurring_payment.student,
-                transaction_reference=f"RUMI-RECUR-{timezone.now().year}-{recurring_payment.id}",
+                transaction_reference=reference,
                 transaction_type='rent',
                 amount=amount,
                 status='success',
                 paid_at=timezone.now(),
-                metadata={
-                    'recurring_payment_id': recurring_payment.id,
-                    'is_recurring': True
-                }
+                paystack_reference=result['data'].get('reference'),
+                metadata=result.get('data'),
             )
-
+            logger.info(f"Recurring payment succeeded: transaction {txn.id} for recurring_payment {recurring_payment.id}")
             return {
                 'status': 'success',
-                'transaction_id': transaction.id,
+                'transaction_id': txn.id,
                 'amount': float(amount)
             }
         else:
+            gateway_response = result.get('data', {}).get('gateway_response', '') if result.get('data') else ''
+            message = result.get('message', 'Paystack charge failed')
+            logger.warning(f"Recurring payment failed: {message} | gateway: {gateway_response} | recurring_payment_id: {recurring_payment.id}")
             return {
                 'status': 'failed',
-                'message': 'Insufficient funds'
+                'message': message,
+                'gateway_response': gateway_response,
             }
 
     except Exception as e:
+        logger.error(f"Error charging saved payment method for recurring_payment {recurring_payment.id}: {e}", exc_info=True)
         return {
             'status': 'failed',
             'message': str(e)
