@@ -260,9 +260,12 @@ MPESA_PASSKEY = os.getenv('MPESA_PASSKEY')
 
 # Webhook URLs (must include /api/v1/ and trailing slash)
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rumia.co.ke').rstrip('/')
-MPESA_CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL', f"{FRONTEND_URL}/api/v1/payments/webhook/mpesa/stk_push/")
-MPESA_VALIDATION_URL = os.getenv('MPESA_VALIDATION_URL', f"{FRONTEND_URL}/api/v1/payments/webhook/mpesa/c2b_validation/")
-MPESA_CONFIRMATION_URL = os.getenv('MPESA_C2B_CONFIRMATION_URL', f"{FRONTEND_URL}/api/v1/payments/webhook/mpesa/c2b_confirmation/")
+# BACKEND_API_URL is used for all webhook callback URLs (M-Pesa, etc.)
+# Must point to the Django backend server — never the Next.js frontend domain.
+BACKEND_API_URL = os.getenv('BACKEND_API_URL', 'https://api.rumia.co.ke').rstrip('/')
+MPESA_CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL', f"{BACKEND_API_URL}/api/v1/payments/webhook/mpesa/stk_push/")
+MPESA_VALIDATION_URL = os.getenv('MPESA_VALIDATION_URL', f"{BACKEND_API_URL}/api/v1/payments/webhook/mpesa/c2b_validation/")
+MPESA_CONFIRMATION_URL = os.getenv('MPESA_C2B_CONFIRMATION_URL', f"{BACKEND_API_URL}/api/v1/payments/webhook/mpesa/c2b_confirmation/")
 
 MPESA_SANDBOX = os.getenv('MPESA_SANDBOX', 'True').lower() == 'true'
 
