@@ -12,7 +12,7 @@ The RUMI backend has three categories of problems: silent production failures in
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Critical Payment Flow Fixes** - Fix silent production failures in Paystack, M-Pesa, and stub payment views
+- [x] **Phase 1: Critical Payment Flow Fixes** - Fix silent production failures in Paystack, M-Pesa, and stub payment views (completed 2026-03-08)
 - [ ] **Phase 2: Admin Layer Consolidation** - Absorb admin_endpoints views into admin_api and delete the deprecated app
 - [ ] **Phase 3: Payment Stub Promotion** - Promote stubs_views.py views one-by-one into payments/views.py
 - [ ] **Phase 4: Missing Models and URL Wiring** - Create caretaker models, register 9 missing URLs, replace placeholder logic
@@ -174,7 +174,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Critical Payment Flow Fixes | 0/3 | Not started | - |
+| 1. Critical Payment Flow Fixes | 3/3 | Complete   | 2026-03-08 |
 | 2. Admin Layer Consolidation | 0/2 | Not started | - |
 | 3. Payment Stub Promotion | 0/5 | Not started | - |
 | 4. Missing Models and URL Wiring | 0/6 | Not started | - |

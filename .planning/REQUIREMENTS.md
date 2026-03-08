@@ -14,9 +14,9 @@
 - [ ] **PAY-03**: STK push webhook handles duplicate M-Pesa deliveries idempotently using `select_for_update()` before the status check
 - [ ] **PAY-04**: STK push webhook always returns HTTP 200 to Safaricom (no HTTP 500 responses that trigger infinite retries)
 - [ ] **PAY-05**: Paystack webhook signature verification uses raw `request.body` bytes (no middleware decode interference)
-- [ ] **PAY-06**: `UnmatchedPaymentRejectView` updates the Transaction record status in the database (not just return `{'status': 'rejected'}`)
-- [ ] **PAY-07**: `PaymentLedgerView` fixes `models.Q` NameError and returns real paginated transaction data
-- [ ] **PAY-08**: Celery recurring payment task (`charge_saved_payment_method`) calls real Paystack API — `random.choice()` mock removed
+- [x] **PAY-06**: `UnmatchedPaymentRejectView` updates the Transaction record status in the database (not just return `{'status': 'rejected'}`)
+- [x] **PAY-07**: `PaymentLedgerView` fixes `models.Q` NameError and returns real paginated transaction data
+- [x] **PAY-08**: Celery recurring payment task (`charge_saved_payment_method`) calls real Paystack API — `random.choice()` mock removed
 
 ### Payments — Stub Promotion
 
