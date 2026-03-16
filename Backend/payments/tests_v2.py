@@ -108,6 +108,90 @@ class lifecycleTests(TestCase):
         self.assertEqual(txn.rent_period, rent_period)
 
 
+class TestUnmatchedPaymentsListView(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.admin_user = User.objects.create_user(
+            email='admin_unmatched@test.com', password='pass', role='admin', is_staff=True
+        )
+        self.student_user = User.objects.create_user(
+            email='student_unmatched@test.com', password='pass', role='student'
+        )
+        self.student = StudentProfile.objects.create(user=self.student_user)
+        self.client.force_authenticate(user=self.admin_user)
+
+    def test_unmatched_list_empty(self):
+        url = reverse('unmatched_payment_list_stub')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['data'], [])
+
+    def test_unmatched_list_returns_pending_no_bed(self):
+        txn = Transaction.objects.create(
+            student=self.student,
+            transaction_reference='TXN-UNMATCHED-001',
+            amount=Decimal('3000.00'),
+            status='pending',
+            transaction_type='rent',
+            payment_method='mpesa',
+        )
+        url = reverse('unmatched_payment_list_stub')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['data']), 1)
+        row = response.data['data'][0]
+        for key in ('id', 'mpesa_receipt', 'phone_number', 'amount', 'timestamp', 'status', 'suggested_match'):
+            self.assertIn(key, row)
+
+    def test_unmatched_list_excludes_matched(self):
+        Transaction.objects.create(
+            student=self.student,
+            transaction_reference='TXN-SUCCESS-001',
+            amount=Decimal('3000.00'),
+            status='success',
+            transaction_type='rent',
+            payment_method='mpesa',
+        )
+        url = reverse('unmatched_payment_list_stub')
+        response = self.client.get(url)
+        self.assertEqual(len(response.data['data']), 0)
+
+
+class TestUnmatchedPaymentRejectView(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.admin_user = User.objects.create_user(
+            email='admin_reject@test.com', password='pass', role='admin', is_staff=True
+        )
+        self.student_user = User.objects.create_user(
+            email='student_reject@test.com', password='pass', role='student'
+        )
+        self.student = StudentProfile.objects.create(user=self.student_user)
+        self.client.force_authenticate(user=self.admin_user)
+        self.txn = Transaction.objects.create(
+            student=self.student,
+            transaction_reference='TXN-REJECT-001',
+            amount=Decimal('2000.00'),
+            status='pending',
+            transaction_type='rent',
+            payment_method='mpesa',
+        )
+
+    def test_reject_writes_to_db(self):
+        url = reverse('unmatched_payment_reject_stub', args=[self.txn.id])
+        self.client.post(url, {'reason': 'duplicate'}, format='json')
+        self.txn.refresh_from_db()
+        self.assertEqual(self.txn.status, 'failed')
+        self.assertEqual(self.txn.metadata['rejection_reason'], 'duplicate')
+
+    def test_reject_returns_correct_shape(self):
+        url = reverse('unmatched_payment_reject_stub', args=[self.txn.id])
+        response = self.client.post(url, {'reason': 'duplicate'}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['status'], 'rejected')
+        self.assertEqual(response.data['payment_id'], self.txn.id)
+
+
 class TestPaybillAllocationView(TestCase):
     def setUp(self):
         self.client = APIClient()
