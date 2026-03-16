@@ -38,7 +38,7 @@
 ### Missing Models — Caretaker & Student
 
 - [x] **MOD-01**: `VisitorInvitation` model created with fields matching `frontend/src/types/caretaker.types.ts` contract
-- [ ] **MOD-02**: `MaintenanceRequest` model created with fields matching frontend caretaker types contract
+- [x] **MOD-02**: `MaintenanceRequest` model created with fields matching frontend caretaker types contract
 - [ ] **MOD-03**: `LateEntry` model created with fields matching frontend types contract
 - [x] **MOD-04**: Migrations written and applied for all three new models
 
