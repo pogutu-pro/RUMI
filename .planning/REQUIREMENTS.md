@@ -58,7 +58,7 @@
 
 - [ ] **PLC-01**: `caretaker_operations/views.py` `maintenance_requests = []` replaced with real `MaintenanceRequest` ORM query
 - [ ] **PLC-02**: `caretaker_operations/additional_views.py` `booking.id % 7` simulation replaced with real `LateEntry` model query
-- [ ] **PLC-03**: Weather stub (`third_party/weather.py` + `home/views.py:WeatherView` + URL registration) removed — no frontend component calls this endpoint
+- [x] **PLC-03**: Weather stub (`third_party/weather.py` + `home/views.py:WeatherView` + URL registration) removed — no frontend component calls this endpoint
 
 ### Celery & Task Fixes
 

@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in-progress
-stopped_at: Completed 04-01 (VisitorInvitation model created) — 2026-03-16
-last_updated: "2026-03-16T20:33:00Z"
-last_activity: 2026-03-16 — Phase 4 plan 01: VisitorInvitation model created in caretaker_operations/models.py (no migration yet — deferred to 04-04)
+status: completed
+stopped_at: Completed 04-06-PLAN.md (WeatherView and weather URL deleted — PLC-03 satisfied)
+last_updated: "2026-03-16T18:21:09.434Z"
+last_activity: "2026-03-16 — Phase 4 plan 01: VisitorInvitation model created in caretaker_operations/models.py"
 progress:
   total_phases: 8
   completed_phases: 3
-  total_plans: 17
-  completed_plans: 13
-  percent: 40
+  total_plans: 16
+  completed_plans: 12
+  percent: 25
 ---
 
 # Project State
@@ -53,6 +53,7 @@ Progress: [███░░░░░░░] 25%
 *Updated after each plan completion*
 | Phase 02-admin-layer-consolidation P01 | 5 | 3 tasks | 3 files |
 | Phase 02-admin-layer-consolidation P02 | 5 | 5 tasks | 5 files |
+| Phase 04-missing-models-and-url-wiring P06 | 3 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,8 @@ Recent decisions affecting current work:
 - [04-01/MOD-01]: No migration in Wave 1 plans — 04-02 and 04-03 also write to models.py; single combined migration runs in 04-04 after all three complete
 - [04-01/MOD-04]: String FK references ('accounts.StudentProfile', 'hostels.Room', 'accounts.CaretakerProfile') in VisitorInvitation to avoid circular imports
 - [04-01/MOD-04]: approved_by, checked_in_by, checked_out_by use SET_NULL so invitation records persist if caretaker profile deleted
+- [Phase 04-missing-models-and-url-wiring]: Commented-out import preserved in views.py — documents prior weather feature attempt without causing import errors
+- [Phase 04-missing-models-and-url-wiring]: manage.py check VisitorInvitation reverse accessor clash is pre-existing from 04-01 — not caused by 04-06 weather deletion, deferred to 04-04
 
 ### Pending Todos
 
@@ -90,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-16T20:33:00Z
-Stopped at: Completed 04-01-PLAN.md (VisitorInvitation model — MOD-01 and MOD-04 model definition portion satisfied)
+Last session: 2026-03-16T18:21:09.431Z
+Stopped at: Completed 04-06-PLAN.md (WeatherView and weather URL deleted — PLC-03 satisfied)
 Resume file: None
