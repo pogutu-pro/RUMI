@@ -108,6 +108,84 @@ class lifecycleTests(TestCase):
         self.assertEqual(txn.rent_period, rent_period)
 
 
+class TestPaymentLedgerExportView(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='export_user@test.com', password='pass', role='student'
+        )
+        self.student = StudentProfile.objects.create(user=self.user)
+        self.landlord_user = User.objects.create_user(
+            email='export_landlord@test.com', password='pass', role='landlord'
+        )
+        self.landlord = LandlordProfile.objects.create(user=self.landlord_user)
+        self.hostel = Hostel.objects.create(
+            name='Export Hostel', landlord=self.landlord,
+            base_price=Decimal('5000.00'), hostel_type='single_rooms'
+        )
+        self.room = Room.objects.create(
+            hostel=self.hostel, room_number='E01',
+            room_type='single', capacity=1,
+            base_price=Decimal('5000.00'), status='available'
+        )
+        self.bed = Bed.objects.create(
+            room=self.room, hostel=self.hostel,
+            code='A', full_code='EXP-E01-A'
+        )
+        self.txn = Transaction.objects.create(
+            student=self.student,
+            transaction_reference='TXN-EXPORT-001',
+            amount=Decimal('5000.00'),
+            status='success',
+            transaction_type='rent',
+            payment_method='mpesa',
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_export_returns_csv_content_type(self):
+        url = reverse('payment_ledger_export_stub')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('text/csv', response['Content-Type'])
+
+    def test_export_has_content_disposition(self):
+        url = reverse('payment_ledger_export_stub')
+        response = self.client.get(url)
+        cd = response['Content-Disposition']
+        self.assertIn('attachment', cd)
+        self.assertIn('ledger_export', cd)
+
+    def test_export_has_header_row(self):
+        url = reverse('payment_ledger_export_stub')
+        response = self.client.get(url)
+        content = response.content.decode('utf-8-sig')
+        self.assertIn('Date', content)
+        self.assertIn('Bed Code', content)
+        self.assertIn('Amount (KES)', content)
+
+    def test_export_includes_ledger_rows(self):
+        import datetime
+        BedPaymentLedger.objects.create(
+            bed=self.bed, transaction=self.txn,
+            amount_allocated=Decimal('5000.00'),
+            allocated_to_period_start=datetime.date(2026, 3, 1),
+            allocated_to_period_end=datetime.date(2026, 3, 31),
+        )
+        url = reverse('payment_ledger_export_stub')
+        response = self.client.get(url)
+        content = response.content.decode('utf-8-sig')
+        self.assertIn('EXP-E01-A', content)
+        self.assertIn('TXN-EXPORT-001', content)
+
+    def test_export_empty_ledger(self):
+        url = reverse('payment_ledger_export_stub')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8-sig')
+        lines = [l for l in content.strip().split('\n') if l]
+        self.assertEqual(len(lines), 1)  # only header row
+
+
 class TestUnmatchedPaymentMatchView(TestCase):
     def setUp(self):
         self.client = APIClient()
