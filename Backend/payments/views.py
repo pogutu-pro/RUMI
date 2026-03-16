@@ -2562,3 +2562,58 @@ class UnmatchedPaymentRejectView(APIView):
         transaction_obj.save(update_fields=['status', 'metadata'])
 
         return Response({'status': 'rejected', 'payment_id': payment_id})
+
+
+class UnmatchedPaymentMatchView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, payment_id):
+        bed_id = request.data.get('bed_id')
+        transaction = get_object_or_404(Transaction, id=payment_id)
+        bed = get_object_or_404(Bed, id=bed_id)
+
+        transaction.bed = bed
+        transaction.hostel = bed.hostel
+        transaction.status = 'success'
+        transaction.save()
+
+        process_payment_to_rent_periods(
+            student=transaction.student,
+            amount=transaction.amount,
+            payment_method=transaction.payment_method,
+            metadata=transaction.metadata,
+            booking=transaction.booking
+        )
+
+        return Response({'status': 'matched', 'transaction_id': transaction.id})
+
+
+class PaymentLedgerView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, search_param=None):
+        ledger = BedPaymentLedger.objects.all().select_related(
+            'bed', 'transaction', 'bed__room__hostel'
+        ).order_by('-created_at')
+
+        if search_param:
+            ledger = ledger.filter(
+                Q(bed__full_code__icontains=search_param) |
+                Q(transaction__transaction_reference__icontains=search_param)
+            )
+
+        data = []
+        for entry in ledger:
+            data.append({
+                'id': entry.id,
+                'transaction_date': entry.created_at.isoformat(),
+                'bed_code': entry.bed.full_code,
+                'student_name': entry.transaction.student.user.get_full_name() if entry.transaction.student else 'N/A',
+                'transaction_type': 'credit',
+                'amount': float(entry.amount_allocated),
+                'balance': 0,
+                'description': f"Rent payment for {entry.allocated_to_period_start.strftime('%b %Y')}",
+                'reference': entry.transaction.transaction_reference
+            })
+
+        return Response({'data': data})
