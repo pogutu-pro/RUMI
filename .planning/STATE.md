@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Completed Phase 3 (03-payment-stub-promotion) — 2026-03-16 — PAY-09 through PAY-14 complete
-last_updated: "2026-03-16T20:00:00Z"
-last_activity: 2026-03-16 — Completed Phase 3 (all stubs promoted to views.py, real CSV export, stubs_views.py deleted)
+status: in-progress
+stopped_at: Completed 04-01 (VisitorInvitation model created) — 2026-03-16
+last_updated: "2026-03-16T20:33:00Z"
+last_activity: 2026-03-16 — Phase 4 plan 01: VisitorInvitation model created in caretaker_operations/models.py (no migration yet — deferred to 04-04)
 progress:
   total_phases: 8
   completed_phases: 3
-  total_plans: 12
-  completed_plans: 12
-  percent: 37
+  total_plans: 17
+  completed_plans: 13
+  percent: 40
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** Every backend API endpoint works exactly as the frontend expects — no stubs, no placeholders, no broken payment flows.
-**Current focus:** Phase 3 — Payment Stub Promotion
+**Current focus:** Phase 4 — Missing Models and URL Wiring
 
 ## Current Position
 
-Phase: 3 of 8 (Payment Stub Promotion) — COMPLETE
-Plan: All 5 plans complete
-Status: Phase 3 complete 2026-03-16 — ready for Phase 4
-Last activity: 2026-03-16 — Phase 3: 7 views promoted from stubs_views.py to views.py, real CSV export implemented, stubs_views.py deleted, 37 payments tests pass
+Phase: 4 of 8 (Missing Models and URL Wiring) — IN PROGRESS
+Plan: 1 of 4 complete (04-01 done)
+Status: 04-01 complete 2026-03-16 — ready for 04-02, 04-03 (Wave 1 parallel), then 04-04
+Last activity: 2026-03-16 — Phase 4 plan 01: VisitorInvitation model created in caretaker_operations/models.py
 
 Progress: [███░░░░░░░] 25%
 
@@ -76,6 +76,9 @@ Recent decisions affecting current work:
 - [Phase 02-admin-layer-consolidation]: Added Booking to hostels.models import in admin_api/views.py — AdminPlatformStatsView requires it
 - [Phase 02-admin-layer-consolidation]: Retained comment-only admin_endpoints reference in admin_api/views.py — documents migration history, no functional impact
 - [Phase 02-admin-layer-consolidation]: include() import kept in rumi/urls.py after admin_endpoints URL removal — still used by all remaining route registrations
+- [04-01/MOD-01]: No migration in Wave 1 plans — 04-02 and 04-03 also write to models.py; single combined migration runs in 04-04 after all three complete
+- [04-01/MOD-04]: String FK references ('accounts.StudentProfile', 'hostels.Room', 'accounts.CaretakerProfile') in VisitorInvitation to avoid circular imports
+- [04-01/MOD-04]: approved_by, checked_in_by, checked_out_by use SET_NULL so invitation records persist if caretaker profile deleted
 
 ### Pending Todos
 
@@ -83,11 +86,10 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 4: VisitorInvitation model shape unknown — must read frontend/src/types/caretaker.types.ts before designing schema
 - Phase 6: Paystack recurring charge API shape unverified — review current Paystack Charges API docs before implementing real charge call in Phase 5
 
 ## Session Continuity
 
-Last session: 2026-03-16T00:00:00Z
-Stopped at: Phase 2 complete and verified — deleted admin_endpoints app (ADM-01 through ADM-05 all satisfied)
+Last session: 2026-03-16T20:33:00Z
+Stopped at: Completed 04-01-PLAN.md (VisitorInvitation model — MOD-01 and MOD-04 model definition portion satisfied)
 Resume file: None
