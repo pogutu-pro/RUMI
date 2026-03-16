@@ -44,13 +44,13 @@
 
 ### Missing URL Registrations — Caretaker
 
-- [ ] **URL-01**: `GET/POST /api/v1/caretaker/visitor-invitations/` registered and wired to real view using `VisitorInvitation` model
-- [ ] **URL-02**: `POST /api/v1/caretaker/visitor-invitations/{id}/approve/` registered
-- [ ] **URL-03**: `POST /api/v1/caretaker/visitor-invitations/{id}/reject/` registered
-- [ ] **URL-04**: `POST /api/v1/caretaker/visitor-invitations/{id}/check-in/` registered
-- [ ] **URL-05**: `POST /api/v1/caretaker/visitor-invitations/{id}/check-out/` registered
-- [ ] **URL-06**: `POST /api/v1/caretaker/roommate-requests/{id}/approve/` registered
-- [ ] **URL-07**: `POST /api/v1/caretaker/roommate-requests/{id}/reject/` registered
+- [x] **URL-01**: `GET/POST /api/v1/caretaker/visitor-invitations/` registered and wired to real view using `VisitorInvitation` model
+- [x] **URL-02**: `POST /api/v1/caretaker/visitor-invitations/{id}/approve/` registered
+- [x] **URL-03**: `POST /api/v1/caretaker/visitor-invitations/{id}/reject/` registered
+- [x] **URL-04**: `POST /api/v1/caretaker/visitor-invitations/{id}/check-in/` registered
+- [x] **URL-05**: `POST /api/v1/caretaker/visitor-invitations/{id}/check-out/` registered
+- [x] **URL-06**: `POST /api/v1/caretaker/roommate-requests/{id}/approve/` registered
+- [x] **URL-07**: `POST /api/v1/caretaker/roommate-requests/{id}/reject/` registered
 - [ ] **URL-08**: `GET /api/v1/caretaker/maintenance/{id}/` detail endpoint registered using `MaintenanceRequest` model
 - [ ] **URL-09**: `GET /api/v1/caretaker/damage-reports/{id}/` detail endpoint registered
 

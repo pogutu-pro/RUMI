@@ -177,7 +177,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 1. Critical Payment Flow Fixes | 3/3 | Complete    | 2026-03-08 |
 | 2. Admin Layer Consolidation | 2/2 | Complete    | 2026-03-16 |
 | 3. Payment Stub Promotion | 5/5 | Complete    | 2026-03-16 |
-| 4. Missing Models and URL Wiring | 4/6 | In Progress|  |
+| 4. Missing Models and URL Wiring | 5/6 | In Progress|  |
 | 5. Celery and Notification Fixes | 0/3 | Not started | - |
 | 6. Performance and Error Standardization | 0/3 | Not started | - |
 | 7. Infrastructure | 0/3 | Not started | - |

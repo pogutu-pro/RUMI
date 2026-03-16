@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 04-03-PLAN.md (LateEntry model appended to caretaker_operations/models.py — MOD-03 satisfied)
-last_updated: "2026-03-16T18:26:25.620Z"
+stopped_at: Completed 04-04-PLAN.md (migration + 7 views + 7 URLs — URL-01 through URL-07 satisfied, Phase 4 complete)
+last_updated: "2026-03-16T18:33:39.924Z"
 last_activity: "2026-03-16 — Phase 4 plan 01: VisitorInvitation model created in caretaker_operations/models.py"
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 16
-  completed_plans: 14
+  completed_plans: 15
   percent: 25
 ---
 
@@ -56,6 +56,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 04-missing-models-and-url-wiring P06 | 3 | 2 tasks | 2 files |
 | Phase 04-missing-models-and-url-wiring P02 | 2 | 1 tasks | 1 files |
 | Phase 04-missing-models-and-url-wiring P03 | 2 | 1 tasks | 1 files |
+| Phase 04-missing-models-and-url-wiring P04 | 5 | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,9 @@ Recent decisions affecting current work:
 - [Phase 04-02]: photos_before/photos_after stored as JSONField(default=list) matching frontend string[] contract
 - [Phase 04-03]: No migration in 04-03 — 04-04 runs single combined migration after 04-01/02/03 complete
 - [Phase 04-03]: status CharField has exactly two choices: pending and acknowledged, matching frontend LateEntryLog type contract
+- [Phase 04-04]: related_name clash fix: caretaker_operations uses caretaker_visitor_invitations and caretaker_late_entries to avoid collision with hostels.VisitorInvitation and hostels.LateEntryLog
+- [Phase 04-04]: 0001_initial dependency pinned to hostels/0023 (not broken auto-generated 0024 from pre-existing hostels model drift)
+- [Phase 04-04]: CaretakerRoommateApproveView and RejectView hardcode action — do NOT read action from request.data (frontend sends empty body or reason-only)
 
 ### Pending Todos
 
@@ -99,6 +103,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-16T18:26:25.617Z
-Stopped at: Completed 04-03-PLAN.md (LateEntry model appended to caretaker_operations/models.py — MOD-03 satisfied)
+Last session: 2026-03-16T18:33:39.921Z
+Stopped at: Completed 04-04-PLAN.md (migration + 7 views + 7 URLs — URL-01 through URL-07 satisfied, Phase 4 complete)
 Resume file: None
