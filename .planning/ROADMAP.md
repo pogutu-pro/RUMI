@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Critical Payment Flow Fixes** - Fix silent production failures in Paystack, M-Pesa, and stub payment views (completed 2026-03-08)
 - [x] **Phase 2: Admin Layer Consolidation** - Absorb admin_endpoints views into admin_api and delete the deprecated app (completed 2026-03-16)
-- [ ] **Phase 3: Payment Stub Promotion** - Promote stubs_views.py views one-by-one into payments/views.py
+- [x] **Phase 3: Payment Stub Promotion** - Promote stubs_views.py views one-by-one into payments/views.py (completed 2026-03-16)
 - [ ] **Phase 4: Missing Models and URL Wiring** - Create caretaker models, register 9 missing URLs, replace placeholder logic
 - [ ] **Phase 5: Celery and Notification Fixes** - Fix beat schedule, add django-celery-beat, wire SMS/email to events
 - [ ] **Phase 6: Performance and Error Standardization** - Fix N+1 queries, add Redis caching, standardize error responses
@@ -71,11 +71,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Promote PaymentVerifyView to views.py; update both verify/ URL entries; add TestPaymentVerifyView (PAY-09)
-- [ ] 03-02-PLAN.md — Promote PaybillAllocationView to views.py; hoist MpesaRoutingEngine import; update paybill/ URL entry; add TestPaybillAllocationView (PAY-10)
-- [ ] 03-03-PLAN.md — Promote UnmatchedPaymentsListView and UnmatchedPaymentRejectView to views.py; update both URL entries; add tests (PAY-11)
-- [ ] 03-04-PLAN.md — Promote UnmatchedPaymentMatchView and PaymentLedgerView to views.py; add BedPaymentLedger/Q/process_payment_to_rent_periods imports; update three URL entries; add tests (PAY-12)
-- [ ] 03-05-PLAN.md — Implement real CSV export in PaymentLedgerExportView; promote to views.py; update ledger/export/ URL entry; delete stubs_views.py; remove stubs_views import from urls.py (PAY-13, PAY-14)
+- [x] 03-01-PLAN.md — Promote PaymentVerifyView to views.py; update both verify/ URL entries; add TestPaymentVerifyView (PAY-09) — completed 2026-03-16
+- [x] 03-02-PLAN.md — Promote PaybillAllocationView to views.py; hoist MpesaRoutingEngine import; update paybill/ URL entry; add TestPaybillAllocationView (PAY-10) — completed 2026-03-16
+- [x] 03-03-PLAN.md — Promote UnmatchedPaymentsListView and UnmatchedPaymentRejectView to views.py; update both URL entries; add tests (PAY-11) — completed 2026-03-16
+- [x] 03-04-PLAN.md — Promote UnmatchedPaymentMatchView and PaymentLedgerView to views.py; add BedPaymentLedger/Q/process_payment_to_rent_periods imports; update three URL entries; add tests (PAY-12) — completed 2026-03-16
+- [x] 03-05-PLAN.md — Implement real CSV export in PaymentLedgerExportView; promote to views.py; update ledger/export/ URL entry; delete stubs_views.py; remove stubs_views import from urls.py (PAY-13, PAY-14) — completed 2026-03-16
 
 ### Phase 4: Missing Models and URL Wiring
 **Goal**: The three missing caretaker models exist with correct fields matching frontend type contracts, all 9 missing caretaker URLs are registered and wired to real views, and placeholder list logic is replaced with real ORM queries
