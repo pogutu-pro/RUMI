@@ -53,7 +53,7 @@ Plans:
   3. The `/api/v1/admin-endpoints/` URL prefix is removed from `rumi/urls.py`
   4. `python manage.py check` runs clean with no errors or warnings after deletion
   5. All existing admin API responses accessible via `/api/v1/admin/` return the same data shapes as before consolidation
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [x] 02-01: Audit all cross-imports from admin_endpoints; copy referenced view classes into admin_api/views.py; update import paths in platform_admin_urls.py and super_admin_urls.py (ADM-01, ADM-02)
@@ -68,14 +68,14 @@ Plans:
   2. `PaymentLedgerExportView` returns a real CSV or PDF export of transaction data (not an empty response)
   3. `payments/stubs_views.py` no longer exists — the file is deleted
   4. No URL path changes — frontend continues to call the same paths with the same results
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 03-01: Promote PaymentVerifyView from stubs_views.py to payments/views.py; update URL config; verify response; delete stub class (PAY-09)
-- [ ] 03-02: Promote PaybillAllocationView from stubs_views.py to payments/views.py; update URL config; verify response; delete stub class (PAY-10)
-- [ ] 03-03: Promote UnmatchedPaymentsListView from stubs_views.py to payments/views.py; update URL config; verify response; delete stub class (PAY-11)
-- [ ] 03-04: Promote UnmatchedPaymentMatchView from stubs_views.py to payments/views.py; update URL config; verify response; delete stub class (PAY-12)
-- [ ] 03-05: Implement real export logic in PaymentLedgerExportView; promote to payments/views.py; update URL config; delete stub class; delete stubs_views.py (PAY-13, PAY-14)
+- [ ] 03-01-PLAN.md — Promote PaymentVerifyView to views.py; update both verify/ URL entries; add TestPaymentVerifyView (PAY-09)
+- [ ] 03-02-PLAN.md — Promote PaybillAllocationView to views.py; hoist MpesaRoutingEngine import; update paybill/ URL entry; add TestPaybillAllocationView (PAY-10)
+- [ ] 03-03-PLAN.md — Promote UnmatchedPaymentsListView and UnmatchedPaymentRejectView to views.py; update both URL entries; add tests (PAY-11)
+- [ ] 03-04-PLAN.md — Promote UnmatchedPaymentMatchView and PaymentLedgerView to views.py; add BedPaymentLedger/Q/process_payment_to_rent_periods imports; update three URL entries; add tests (PAY-12)
+- [ ] 03-05-PLAN.md — Implement real CSV export in PaymentLedgerExportView; promote to views.py; update ledger/export/ URL entry; delete stubs_views.py; remove stubs_views import from urls.py (PAY-13, PAY-14)
 
 ### Phase 4: Missing Models and URL Wiring
 **Goal**: The three missing caretaker models exist with correct fields matching frontend type contracts, all 9 missing caretaker URLs are registered and wired to real views, and placeholder list logic is replaced with real ORM queries
