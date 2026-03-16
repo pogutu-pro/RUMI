@@ -58,8 +58,8 @@ urlpatterns = [
     path('receipts/verify/<int:transaction_id>/', verification_views.ReceiptVerificationView.as_view(), name='receipt_verify'),
     
     # NEW: Parity Stubs
-    path('verify/', stubs_views.PaymentVerifyView.as_view(), name='payment_verify_stub'),
-    path('verify/<str:transaction_reference>/', stubs_views.PaymentVerifyView.as_view(), name='payment_verify_ref_stub'),
+    path('verify/', views.PaymentVerifyView.as_view(), name='payment_verify_stub'),
+    path('verify/<str:transaction_reference>/', views.PaymentVerifyView.as_view(), name='payment_verify_ref_stub'),
     path('paybill/', stubs_views.PaybillAllocationView.as_view(), name='paybill_allocation_stub'),
     path('unmatched/', stubs_views.UnmatchedPaymentsListView.as_view(), name='unmatched_payment_list_stub'),
     path('unmatched/<int:payment_id>/match/', stubs_views.UnmatchedPaymentMatchView.as_view(), name='unmatched_payment_match_stub'),

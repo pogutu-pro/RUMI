@@ -8,7 +8,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q
 from django.db.models.functions import TruncMonth
 from rest_framework import status, permissions, generics
 from rest_framework.decorators import api_view, permission_classes
@@ -23,11 +23,12 @@ logger = logging.getLogger(__name__)
 
 from accounts.models import StudentProfile, LandlordProfile, User
 from accounts.permissions import IsStudent, IsLandlord, IsAdminOrSuperAdmin, IsVerifiedLandlord
-from hostels.models import Booking
+from hostels.models import Booking, Hostel, Bed
 
 from .models import (
     Transaction, SavedPaymentMethod, RecurringPayment, LateFeeCharge,
-    TaxReport, PaystackSubaccount, Payout, RefundRequest, RevenueAnalytics, MpesaPaymentConfig
+    TaxReport, PaystackSubaccount, Payout, RefundRequest, RevenueAnalytics, MpesaPaymentConfig,
+    BedPaymentLedger,
 )
 from .serializers import (
     TransactionSerializer, SavedPaymentMethodSerializer, RecurringPaymentSerializer,
@@ -36,6 +37,8 @@ from .serializers import (
 )
 from .tasks import charge_saved_payment_method
 from .mpesa_api import MpesaDarajaAPI
+from .routing import MpesaRoutingEngine
+from .services import process_payment_to_rent_periods
 
 
 @swagger_auto_schema(
@@ -2470,3 +2473,19 @@ class LandlordMpesaConfigView(APIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+# ── Promoted from stubs_views.py ─────────────────────────────────────────────
+
+class PaymentVerifyView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, transaction_reference=None):
+        if not transaction_reference:
+            transaction_reference = request.query_params.get('reference')
+        transaction = get_object_or_404(Transaction, transaction_reference=transaction_reference)
+        return Response({
+            'reference': transaction.transaction_reference,
+            'status': transaction.status,
+            'amount': float(transaction.amount),
+            'verified': transaction.status == 'success'
+        })
