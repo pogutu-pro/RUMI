@@ -137,3 +137,38 @@ class MaintenanceRequest(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.status}) — Room {self.room_id}"
+
+
+class LateEntry(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('acknowledged', 'Acknowledged'),
+    ]
+
+    student = models.ForeignKey(
+        'accounts.StudentProfile',
+        on_delete=models.CASCADE,
+        related_name='late_entries',
+    )
+    room = models.ForeignKey(
+        'hostels.Room',
+        on_delete=models.CASCADE,
+        related_name='late_entries',
+    )
+    entry_time = models.DateTimeField()
+    reason = models.TextField(blank=True, null=True)
+    logged_by = models.ForeignKey(
+        'accounts.CaretakerProfile',
+        on_delete=models.CASCADE,
+        related_name='logged_late_entries',
+    )
+    notes = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-entry_time']
+        verbose_name_plural = 'Late Entries'
+
+    def __str__(self):
+        return f"LateEntry: {self.student} at {self.entry_time}"
