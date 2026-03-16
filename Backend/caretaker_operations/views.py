@@ -13,6 +13,7 @@ from hostels.models import (
     DamageReport, VisitorCheckIn, RoomInventory, RoomOccupant
 )
 from accounts.models import CaretakerProfile, StudentProfile
+from caretaker_operations.models import VisitorInvitation
 
 # Import roommate models
 try:
@@ -1528,3 +1529,196 @@ class CaretakerRoommateMatchManagementView(APIView):
             return Response({
                 'error': 'Invalid action. Must be approve, dissolve, or update'
             }, status=status.HTTP_400_BAD_REQUEST)
+
+class VisitorInvitationListView(APIView):
+    permission_classes = [IsCaretaker]
+
+    def get(self, request):
+        caretaker = request.user.caretaker_profile
+        invitations = VisitorInvitation.objects.filter(
+            room__hostel=caretaker.hostel
+        ).select_related('student__user', 'room', 'approved_by__user')
+        data = []
+        for inv in invitations:
+            data.append({
+                'id': inv.id,
+                'visitor_name': inv.visitor_name,
+                'visitor_phone': inv.visitor_phone,
+                'visitor_id_number': inv.visitor_id_number,
+                'student_id': inv.student_id,
+                'student_name': inv.student.user.get_full_name() if inv.student_id else None,
+                'room_id': inv.room_id,
+                'room_number': inv.room.room_number if inv.room_id else None,
+                'purpose': inv.purpose,
+                'expected_arrival_time': inv.expected_arrival_time.isoformat(),
+                'status': inv.status,
+                'approved_by_id': inv.approved_by_id,
+                'approved_at': inv.approved_at.isoformat() if inv.approved_at else None,
+                'rejection_reason': inv.rejection_reason,
+                'checked_in_at': inv.checked_in_at.isoformat() if inv.checked_in_at else None,
+                'checked_out_at': inv.checked_out_at.isoformat() if inv.checked_out_at else None,
+                'created_at': inv.created_at.isoformat(),
+            })
+        return Response({'invitations': data, 'total': len(data)}, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        caretaker = request.user.caretaker_profile
+        visitor_name = request.data.get('visitor_name')
+        visitor_phone = request.data.get('visitor_phone')
+        visitor_id_number = request.data.get('visitor_id_number')
+        student_id = request.data.get('student_id')
+        room_id = request.data.get('room_id')
+        purpose = request.data.get('purpose')
+        expected_arrival_time = request.data.get('expected_arrival_time')
+        if not all([visitor_name, visitor_id_number, student_id, room_id, purpose, expected_arrival_time]):
+            return Response(
+                {'error': 'visitor_name, visitor_id_number, student_id, room_id, purpose, expected_arrival_time required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            room = Room.objects.get(id=room_id, hostel=caretaker.hostel)
+            student = StudentProfile.objects.get(id=student_id)
+        except (Room.DoesNotExist, StudentProfile.DoesNotExist) as e:
+            return Response({'error': str(e)}, status=status.HTTP_404_NOT_FOUND)
+        invitation = VisitorInvitation.objects.create(
+            visitor_name=visitor_name,
+            visitor_phone=visitor_phone,
+            visitor_id_number=visitor_id_number,
+            student=student,
+            room=room,
+            purpose=purpose,
+            expected_arrival_time=expected_arrival_time,
+        )
+        return Response({'id': invitation.id, 'status': invitation.status}, status=status.HTTP_201_CREATED)
+
+
+class VisitorInvitationApproveView(APIView):
+    permission_classes = [IsCaretaker]
+
+    def post(self, request, pk):
+        caretaker = request.user.caretaker_profile
+        try:
+            invitation = VisitorInvitation.objects.get(pk=pk, room__hostel=caretaker.hostel)
+        except VisitorInvitation.DoesNotExist:
+            return Response({'error': 'Invitation not found'}, status=status.HTTP_404_NOT_FOUND)
+        if invitation.status != 'pending':
+            return Response({'error': f'Cannot approve invitation with status {invitation.status}'}, status=status.HTTP_400_BAD_REQUEST)
+        invitation.status = 'approved'
+        invitation.approved_by = caretaker
+        invitation.approved_at = timezone.now()
+        invitation.save()
+        return Response({'id': invitation.id, 'status': invitation.status}, status=status.HTTP_200_OK)
+
+
+class VisitorInvitationRejectView(APIView):
+    permission_classes = [IsCaretaker]
+
+    def post(self, request, pk):
+        caretaker = request.user.caretaker_profile
+        rejection_reason = request.data.get('reason', '')
+        try:
+            invitation = VisitorInvitation.objects.get(pk=pk, room__hostel=caretaker.hostel)
+        except VisitorInvitation.DoesNotExist:
+            return Response({'error': 'Invitation not found'}, status=status.HTTP_404_NOT_FOUND)
+        if invitation.status not in ['pending', 'approved']:
+            return Response({'error': f'Cannot reject invitation with status {invitation.status}'}, status=status.HTTP_400_BAD_REQUEST)
+        invitation.status = 'rejected'
+        invitation.rejection_reason = rejection_reason
+        invitation.save()
+        return Response({'id': invitation.id, 'status': invitation.status}, status=status.HTTP_200_OK)
+
+
+class VisitorInvitationCheckInView(APIView):
+    permission_classes = [IsCaretaker]
+
+    def post(self, request, pk):
+        caretaker = request.user.caretaker_profile
+        try:
+            invitation = VisitorInvitation.objects.get(pk=pk, room__hostel=caretaker.hostel)
+        except VisitorInvitation.DoesNotExist:
+            return Response({'error': 'Invitation not found'}, status=status.HTTP_404_NOT_FOUND)
+        if invitation.status != 'approved':
+            return Response({'error': 'Visitor must be approved before check-in'}, status=status.HTTP_400_BAD_REQUEST)
+        invitation.status = 'checked_in'
+        invitation.checked_in_at = timezone.now()
+        invitation.checked_in_by = caretaker
+        invitation.save()
+        return Response({
+            'id': invitation.id,
+            'status': invitation.status,
+            'checked_in_at': invitation.checked_in_at.isoformat(),
+        }, status=status.HTTP_200_OK)
+
+
+class VisitorInvitationCheckOutView(APIView):
+    permission_classes = [IsCaretaker]
+
+    def post(self, request, pk):
+        caretaker = request.user.caretaker_profile
+        try:
+            invitation = VisitorInvitation.objects.get(pk=pk, room__hostel=caretaker.hostel)
+        except VisitorInvitation.DoesNotExist:
+            return Response({'error': 'Invitation not found'}, status=status.HTTP_404_NOT_FOUND)
+        if invitation.status != 'checked_in':
+            return Response({'error': 'Visitor must be checked in before check-out'}, status=status.HTTP_400_BAD_REQUEST)
+        invitation.status = 'checked_out'
+        invitation.checked_out_at = timezone.now()
+        invitation.checked_out_by = caretaker
+        invitation.save()
+        return Response({
+            'id': invitation.id,
+            'status': invitation.status,
+            'checked_out_at': invitation.checked_out_at.isoformat(),
+        }, status=status.HTTP_200_OK)
+
+
+class CaretakerRoommateApproveView(APIView):
+    permission_classes = [IsCaretaker]
+
+    def post(self, request, request_id):
+        if not RoommateRequest:
+            return Response({'error': 'Roommate request system not available'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        caretaker = request.user.caretaker_profile
+        try:
+            roommate_request = RoommateRequest.objects.get(
+                id=request_id,
+                preferred_hostel=caretaker.hostel,
+                caretaker_approval_required=True,
+                caretaker_approved=False,
+                status='pending',
+            )
+        except RoommateRequest.DoesNotExist:
+            return Response({'error': 'Roommate request not found or already processed'}, status=status.HTTP_404_NOT_FOUND)
+        # Hardcode action='approve' — do NOT read from request.data
+        roommate_request.caretaker_approved = True
+        notes = request.data.get('notes', '')
+        if hasattr(roommate_request, 'caretaker_notes'):
+            roommate_request.caretaker_notes = notes
+        roommate_request.save()
+        return Response({'request_id': request_id, 'action': 'approved'}, status=status.HTTP_200_OK)
+
+
+class CaretakerRoommateRejectView(APIView):
+    permission_classes = [IsCaretaker]
+
+    def post(self, request, request_id):
+        if not RoommateRequest:
+            return Response({'error': 'Roommate request system not available'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        caretaker = request.user.caretaker_profile
+        reason = request.data.get('reason', '')
+        try:
+            roommate_request = RoommateRequest.objects.get(
+                id=request_id,
+                preferred_hostel=caretaker.hostel,
+                caretaker_approval_required=True,
+                caretaker_approved=False,
+                status='pending',
+            )
+        except RoommateRequest.DoesNotExist:
+            return Response({'error': 'Roommate request not found or already processed'}, status=status.HTTP_404_NOT_FOUND)
+        # Hardcode action='reject' — do NOT read from request.data
+        roommate_request.status = 'rejected'
+        if hasattr(roommate_request, 'caretaker_notes'):
+            roommate_request.caretaker_notes = reason
+        roommate_request.save()
+        return Response({'request_id': request_id, 'action': 'rejected', 'reason': reason}, status=status.HTTP_200_OK)
