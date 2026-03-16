@@ -108,6 +108,137 @@ class lifecycleTests(TestCase):
         self.assertEqual(txn.rent_period, rent_period)
 
 
+class TestUnmatchedPaymentMatchView(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.admin_user = User.objects.create_user(
+            email='admin_match@test.com', password='pass', role='admin', is_staff=True
+        )
+        self.student_user = User.objects.create_user(
+            email='student_match@test.com', password='pass', role='student'
+        )
+        self.student = StudentProfile.objects.create(user=self.student_user)
+        self.landlord_user = User.objects.create_user(
+            email='landlord_match@test.com', password='pass', role='landlord'
+        )
+        self.landlord = LandlordProfile.objects.create(user=self.landlord_user)
+        self.hostel = Hostel.objects.create(
+            name='Match Hostel', landlord=self.landlord,
+            base_price=Decimal('5000.00'), hostel_type='single_rooms'
+        )
+        self.room = Room.objects.create(
+            hostel=self.hostel, room_number='M01',
+            room_type='single', capacity=1,
+            base_price=Decimal('5000.00'), status='available'
+        )
+        self.bed = Bed.objects.create(
+            room=self.room, hostel=self.hostel,
+            code='A', full_code='MTH-M01-A'
+        )
+        self.txn = Transaction.objects.create(
+            student=self.student,
+            transaction_reference='TXN-MATCH-001',
+            amount=Decimal('5000.00'),
+            status='pending',
+            transaction_type='rent',
+            payment_method='mpesa',
+        )
+        self.client.force_authenticate(user=self.admin_user)
+
+    def test_match_links_bed(self):
+        from unittest.mock import patch
+        url = reverse('unmatched_payment_match_stub', args=[self.txn.id])
+        with patch('payments.views.process_payment_to_rent_periods'):
+            self.client.post(url, {'bed_id': str(self.bed.id)}, format='json')
+        self.txn.refresh_from_db()
+        self.assertEqual(self.txn.bed, self.bed)
+        self.assertEqual(self.txn.status, 'success')
+
+    def test_match_returns_shape(self):
+        from unittest.mock import patch
+        url = reverse('unmatched_payment_match_stub', args=[self.txn.id])
+        with patch('payments.views.process_payment_to_rent_periods'):
+            response = self.client.post(url, {'bed_id': str(self.bed.id)}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['status'], 'matched')
+        self.assertEqual(response.data['transaction_id'], self.txn.id)
+
+
+class TestPaymentLedgerView(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='ledger_user@test.com', password='pass', role='student'
+        )
+        self.student = StudentProfile.objects.create(user=self.user)
+        self.landlord_user = User.objects.create_user(
+            email='ledger_landlord@test.com', password='pass', role='landlord'
+        )
+        self.landlord = LandlordProfile.objects.create(user=self.landlord_user)
+        self.hostel = Hostel.objects.create(
+            name='Ledger Hostel', landlord=self.landlord,
+            base_price=Decimal('5000.00'), hostel_type='single_rooms'
+        )
+        self.room = Room.objects.create(
+            hostel=self.hostel, room_number='L01',
+            room_type='single', capacity=1,
+            base_price=Decimal('5000.00'), status='available'
+        )
+        self.bed = Bed.objects.create(
+            room=self.room, hostel=self.hostel,
+            code='A', full_code='LDG-L01-A'
+        )
+        self.txn = Transaction.objects.create(
+            student=self.student,
+            transaction_reference='TXN-LEDGER-001',
+            amount=Decimal('5000.00'),
+            status='success',
+            transaction_type='rent',
+            payment_method='mpesa',
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_ledger_list_empty(self):
+        url = reverse('payment_ledger_stub')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['data'], [])
+
+    def test_ledger_list_returns_entries(self):
+        import datetime
+        entry = BedPaymentLedger.objects.create(
+            bed=self.bed, transaction=self.txn,
+            amount_allocated=Decimal('5000.00'),
+            allocated_to_period_start=datetime.date(2026, 3, 1),
+            allocated_to_period_end=datetime.date(2026, 3, 31),
+        )
+        url = reverse('payment_ledger_stub')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['data']), 1)
+        row = response.data['data'][0]
+        for key in ('id', 'transaction_date', 'bed_code', 'student_name',
+                    'transaction_type', 'amount', 'balance', 'description', 'reference'):
+            self.assertIn(key, row)
+
+    def test_ledger_search_filters(self):
+        import datetime
+        BedPaymentLedger.objects.create(
+            bed=self.bed, transaction=self.txn,
+            amount_allocated=Decimal('5000.00'),
+            allocated_to_period_start=datetime.date(2026, 3, 1),
+            allocated_to_period_end=datetime.date(2026, 3, 31),
+        )
+        url = reverse('payment_ledger_search_stub', args=['LDG'])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['data']), 1)
+
+        url_no_match = reverse('payment_ledger_search_stub', args=['ZZZNOMATCH'])
+        response2 = self.client.get(url_no_match)
+        self.assertEqual(len(response2.data['data']), 0)
+
+
 class TestUnmatchedPaymentsListView(TestCase):
     def setUp(self):
         self.client = APIClient()
