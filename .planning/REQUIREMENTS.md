@@ -31,9 +31,9 @@
 
 - [x] **ADM-01**: All view classes referenced in `admin_api/platform_admin_urls.py` and `admin_api/super_admin_urls.py` moved into `admin_api/views.py`
 - [x] **ADM-02**: Cross-imports from `admin_endpoints` removed from `admin_api/` (zero `from admin_endpoints import` statements remain)
-- [ ] **ADM-03**: `admin_endpoints` removed from `INSTALLED_APPS` and its directory deleted
-- [ ] **ADM-04**: Dead `/api/v1/admin-endpoints/` URL prefix removed from `rumi/urls.py`
-- [ ] **ADM-05**: `python manage.py check` passes cleanly after consolidation
+- [x] **ADM-03**: `admin_endpoints` removed from `INSTALLED_APPS` and its directory deleted
+- [x] **ADM-04**: Dead `/api/v1/admin-endpoints/` URL prefix removed from `rumi/urls.py`
+- [x] **ADM-05**: `python manage.py check` passes cleanly after consolidation
 
 ### Missing Models — Caretaker & Student
 
