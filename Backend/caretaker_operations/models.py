@@ -18,12 +18,12 @@ class VisitorInvitation(models.Model):
     student = models.ForeignKey(
         'accounts.StudentProfile',
         on_delete=models.CASCADE,
-        related_name='visitor_invitations',
+        related_name='caretaker_visitor_invitations',
     )
     room = models.ForeignKey(
         'hostels.Room',
         on_delete=models.CASCADE,
-        related_name='visitor_invitations',
+        related_name='caretaker_visitor_invitations',
     )
     purpose = models.TextField()
     expected_arrival_time = models.DateTimeField()
@@ -148,12 +148,12 @@ class LateEntry(models.Model):
     student = models.ForeignKey(
         'accounts.StudentProfile',
         on_delete=models.CASCADE,
-        related_name='late_entries',
+        related_name='caretaker_late_entries',
     )
     room = models.ForeignKey(
         'hostels.Room',
         on_delete=models.CASCADE,
-        related_name='late_entries',
+        related_name='caretaker_late_entries',
     )
     entry_time = models.DateTimeField()
     reason = models.TextField(blank=True, null=True)
