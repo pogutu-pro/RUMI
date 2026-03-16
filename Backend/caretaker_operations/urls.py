@@ -52,4 +52,16 @@ urlpatterns = [
     path('messages/', views.CaretakerNotificationView.as_view(), name='caretaker_messages'),
     path('messages/threads/', views.CaretakerNotificationView.as_view(), name='caretaker_message_threads'),
     path('messages/send/', views.CaretakerNotificationView.as_view(), name='caretaker_message_send'),
+
+    # Visitor Invitations (URL-01 to URL-05)
+    path('visitor-invitations/', views.VisitorInvitationListView.as_view(), name='caretaker_visitor_invitations'),
+    path('visitor-invitations/<int:pk>/approve/', views.VisitorInvitationApproveView.as_view(), name='caretaker_visitor_invitation_approve'),
+    path('visitor-invitations/<int:pk>/reject/', views.VisitorInvitationRejectView.as_view(), name='caretaker_visitor_invitation_reject'),
+    path('visitor-invitations/<int:pk>/check-in/', views.VisitorInvitationCheckInView.as_view(), name='caretaker_visitor_invitation_checkin'),
+    path('visitor-invitations/<int:pk>/check-out/', views.VisitorInvitationCheckOutView.as_view(), name='caretaker_visitor_invitation_checkout'),
+
+    # Roommate request approve/reject (URL-06, URL-07)
+    # NOTE: separate from existing 'roommates/match-requests/<int:request_id>/' path — do NOT modify that
+    path('roommate-requests/<int:request_id>/approve/', views.CaretakerRoommateApproveView.as_view(), name='caretaker_roommate_approve'),
+    path('roommate-requests/<int:request_id>/reject/', views.CaretakerRoommateRejectView.as_view(), name='caretaker_roommate_reject'),
 ]
