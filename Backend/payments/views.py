@@ -1,3 +1,4 @@
+import csv
 import hashlib
 import hmac
 import json
@@ -5,6 +6,7 @@ import uuid
 import logging
 from decimal import Decimal
 from django.conf import settings
+from django.http import HttpResponse
 from django.utils import timezone
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -2617,3 +2619,41 @@ class PaymentLedgerView(APIView):
             })
 
         return Response({'data': data})
+
+
+class PaymentLedgerExportView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = (
+            f'attachment; filename="ledger_export_{timezone.now().strftime("%Y%m%d")}.csv"'
+        )
+        response.write('\ufeff')  # UTF-8 BOM for Excel compatibility
+        writer = csv.writer(response)
+        writer.writerow([
+            'Date', 'Bed Code', 'Student Name',
+            'Amount (KES)', 'Period Start', 'Period End',
+            'Attribution', 'Reference'
+        ])
+        queryset = (
+            BedPaymentLedger.objects
+            .select_related('bed', 'transaction__student__user')
+            .order_by('-attributed_at')
+        )
+        for entry in queryset:
+            student_name = (
+                entry.transaction.student.user.get_full_name()
+                if entry.transaction.student else 'N/A'
+            )
+            writer.writerow([
+                entry.attributed_at.strftime('%Y-%m-%d %H:%M'),
+                entry.bed.full_code,
+                student_name,
+                str(entry.amount_allocated),
+                entry.allocated_to_period_start.isoformat(),
+                entry.allocated_to_period_end.isoformat(),
+                entry.attributed_by,
+                entry.transaction.transaction_reference,
+            ])
+        return response

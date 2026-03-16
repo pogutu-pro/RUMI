@@ -4,7 +4,7 @@ from .mpesa_webhooks import StkPushWebhookView, C2BValidationWebhookView, C2BCon
 from .rent_period_views import RentPeriodViewSet, StudentPaymentTrackerViewSet, TransferLogViewSet
 from .additional_views import PaymentDetailsView, ReceiptGenerateView
 from .subscription_views import SubscriptionPlanViewSet, SubscriptionInvoiceViewSet, SubscriptionAccrualView
-from . import views, verification_views, stubs_views
+from . import views, verification_views
 
 # DRF Router for RentPeriod architecture endpoints
 router = DefaultRouter()
@@ -65,7 +65,7 @@ urlpatterns = [
     path('unmatched/<int:payment_id>/match/', views.UnmatchedPaymentMatchView.as_view(), name='unmatched_payment_match_stub'),
     path('unmatched/<int:payment_id>/reject/', views.UnmatchedPaymentRejectView.as_view(), name='unmatched_payment_reject_stub'),
     path('ledger/', views.PaymentLedgerView.as_view(), name='payment_ledger_stub'),
-    path('ledger/export/', stubs_views.PaymentLedgerExportView.as_view(), name='payment_ledger_export_stub'),
+    path('ledger/export/', views.PaymentLedgerExportView.as_view(), name='payment_ledger_export_stub'),
     path('ledger/<str:search_param>/', views.PaymentLedgerView.as_view(), name='payment_ledger_search_stub'),
 
     # Payment Details (NEW - for Week 1 frontend)
