@@ -744,9 +744,4 @@ class PrometheusMetricsProxyView(APIView):
             return Response({
                 'error': f'Unexpected error: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-class WeatherView(APIView):
-    """Stub for WeatherView (original implementation missing third_party dependency)"""
-    permission_classes = [permissions.AllowAny]
-    def get(self, request):
-        return Response({'message': 'Weather service temporarily unavailable'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
