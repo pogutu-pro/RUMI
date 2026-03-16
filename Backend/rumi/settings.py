@@ -68,7 +68,6 @@ INSTALLED_APPS = [
     'payments',
     'notifications',
     'admin_api',
-    'admin_endpoints',
     'analytics',
     'caretaker_operations',
     'roommate_system',

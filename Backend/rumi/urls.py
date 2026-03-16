@@ -47,8 +47,7 @@ schema_view = get_schema_view(
         
         # Admin APIs
         path('api/v1/admin/', include('admin_api.urls')),
-        path('api/v1/admin-endpoints/', include('admin_endpoints.urls')),
-        
+
         # Student APIs
         path('api/v1/students/', include('student_api.urls')),
         
@@ -99,7 +98,6 @@ urlpatterns = [
 
         # Admin endpoints (consolidated)
         path('admin/', include('admin_api.urls')),
-        path('admin-endpoints/', include('admin_endpoints.urls')),  # Legacy - to be deprecated
 
         # Caretaker endpoints (aligned with frontend)
         path('caretaker/', include('caretaker_operations.urls')),
