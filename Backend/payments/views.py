@@ -2489,3 +2489,33 @@ class PaymentVerifyView(APIView):
             'amount': float(transaction.amount),
             'verified': transaction.status == 'success'
         })
+
+
+class PaybillAllocationView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        bed_id = request.query_params.get('bed_id')
+        hostel_id = request.query_params.get('hostel_id')
+
+        if bed_id:
+            bed = get_object_or_404(Bed.objects.select_related('hostel'), id=bed_id)
+            config = MpesaRoutingEngine.get_config_for_hostel(bed.hostel)
+            return Response({
+                'paybill': config.mpesa_number if config else 'PENDING',
+                'account_number': bed.custom_account_number or bed.full_code,
+                'business_name': config.business_name if config else bed.hostel.name,
+                'hostel_name': bed.hostel.name,
+                'bed_code': bed.full_code
+            })
+
+        if hostel_id:
+            hostel = get_object_or_404(Hostel, id=hostel_id)
+            config = MpesaRoutingEngine.get_config_for_hostel(hostel)
+            return Response({
+                'paybill': config.mpesa_number if config else 'PENDING',
+                'business_name': config.business_name if config else hostel.name,
+                'hostel_name': hostel.name
+            })
+
+        return Response({'error': 'bed_id or hostel_id required'}, status=400)
