@@ -1,47 +1,62 @@
 from django.urls import path
-from . import views
-from admin_endpoints import views as admin_endpoints_views
+from .views import (
+    AdminDashboardStatsView,
+    SystemActivityFeedView,
+    AdminUserManagementView,
+    HostelModerationListView,
+    HostelModerationActionView,
+    AdminHostelListView,
+    AdminHostelOverrideView,
+    AdminPaymentDisputesListView,
+    AdminPaymentDisputesStatsView,
+    AdminPaymentDisputeActionView,
+    AdminSubscriptionListView,
+    AdminSubscriptionStatsView,
+    AdminPlatformStatsView,
+    AdminLandlordVerificationsView,
+    AdminSystemHealthView,
+)
 
 urlpatterns = [
     # Super Admin Dashboard
-    path('dashboard/stats/', views.AdminDashboardStatsView.as_view(), name='super_admin_dashboard_stats'),
-    
+    path('dashboard/stats/', AdminDashboardStatsView.as_view(), name='super_admin_dashboard_stats'),
+
     # System Activity Feed (EXPOSED)
-    path('activity-feed/', views.SystemActivityFeedView.as_view(), name='super_admin_activity_feed'),
-    
+    path('activity-feed/', SystemActivityFeedView.as_view(), name='super_admin_activity_feed'),
+
     # User Management (Full Access)
-    path('users/', views.AdminUserManagementView.as_view(), name='super_admin_user_management'),
-    path('users/students/', views.AdminUserManagementView.as_view(), name='super_admin_student_management'),
-    path('users/landlords/', views.AdminUserManagementView.as_view(), name='super_admin_landlord_management'),
-    path('users/caretakers/', views.AdminUserManagementView.as_view(), name='super_admin_caretaker_management'),
-    path('users/suspended/', views.AdminUserManagementView.as_view(), name='super_admin_suspended_users'),
-    
+    path('users/', AdminUserManagementView.as_view(), name='super_admin_user_management'),
+    path('users/students/', AdminUserManagementView.as_view(), name='super_admin_student_management'),
+    path('users/landlords/', AdminUserManagementView.as_view(), name='super_admin_landlord_management'),
+    path('users/caretakers/', AdminUserManagementView.as_view(), name='super_admin_caretaker_management'),
+    path('users/suspended/', AdminUserManagementView.as_view(), name='super_admin_suspended_users'),
+
     # Hostel Moderation (EXPOSED)
-    path('hostels/pending/', views.HostelModerationListView.as_view(), name='super_admin_hostels_pending'),
-    path('hostels/moderation/', views.HostelModerationListView.as_view(), name='super_admin_hostel_moderation'),
-    path('hostels/moderation/<int:moderation_id>/approve/', views.HostelModerationActionView.as_view(), name='super_admin_hostel_approve'),
-    path('hostels/moderation/<int:moderation_id>/reject/', views.HostelModerationActionView.as_view(), name='super_admin_hostel_reject'),
-    
+    path('hostels/pending/', HostelModerationListView.as_view(), name='super_admin_hostels_pending'),
+    path('hostels/moderation/', HostelModerationListView.as_view(), name='super_admin_hostel_moderation'),
+    path('hostels/moderation/<int:moderation_id>/approve/', HostelModerationActionView.as_view(), name='super_admin_hostel_approve'),
+    path('hostels/moderation/<int:moderation_id>/reject/', HostelModerationActionView.as_view(), name='super_admin_hostel_reject'),
+
     # Property Management (NEW)
-    path('hostels/all/', views.AdminHostelListView.as_view(), name='super_admin_hostels_all'),
-    path('hostels/<int:hostel_id>/restrict/', views.AdminHostelOverrideView.as_view(), name='super_admin_hostel_restrict'),
-    
+    path('hostels/all/', AdminHostelListView.as_view(), name='super_admin_hostels_all'),
+    path('hostels/<int:hostel_id>/restrict/', AdminHostelOverrideView.as_view(), name='super_admin_hostel_restrict'),
+
     # Payment Management (EXPOSED)
-    path('payments/disputes/', views.AdminPaymentDisputesListView.as_view(), name='super_admin_payment_disputes'),
-    path('payments/disputes/stats/', views.AdminPaymentDisputesStatsView.as_view(), name='super_admin_payment_disputes_stats'),
-    path('payments/disputes/<int:dispute_id>/resolve/', views.AdminPaymentDisputeActionView.as_view(), name='super_admin_payment_dispute_resolve'),
-    path('payments/disputes/<int:dispute_id>/status/', views.AdminPaymentDisputeActionView.as_view(), name='super_admin_payment_dispute_status'),
-    
+    path('payments/disputes/', AdminPaymentDisputesListView.as_view(), name='super_admin_payment_disputes'),
+    path('payments/disputes/stats/', AdminPaymentDisputesStatsView.as_view(), name='super_admin_payment_disputes_stats'),
+    path('payments/disputes/<int:dispute_id>/resolve/', AdminPaymentDisputeActionView.as_view(), name='super_admin_payment_dispute_resolve'),
+    path('payments/disputes/<int:dispute_id>/status/', AdminPaymentDisputeActionView.as_view(), name='super_admin_payment_dispute_status'),
+
     # Subscription Management (EXPOSED)
-    path('subscriptions/', views.AdminSubscriptionListView.as_view(), name='super_admin_subscriptions'),
-    path('subscriptions/stats/', views.AdminSubscriptionStatsView.as_view(), name='super_admin_subscriptions_stats'),
-    
+    path('subscriptions/', AdminSubscriptionListView.as_view(), name='super_admin_subscriptions'),
+    path('subscriptions/stats/', AdminSubscriptionStatsView.as_view(), name='super_admin_subscriptions_stats'),
+
     # Platform Statistics (EXPOSED)
-    path('platform/stats/', admin_endpoints_views.AdminPlatformStatsView.as_view(), name='super_admin_platform_stats'),
-    
+    path('platform/stats/', AdminPlatformStatsView.as_view(), name='super_admin_platform_stats'),
+
     # Landlord Verifications (EXPOSED)
-    path('landlord-verifications/', admin_endpoints_views.AdminLandlordVerificationsView.as_view(), name='super_admin_landlord_verifications'),
-    
+    path('landlord-verifications/', AdminLandlordVerificationsView.as_view(), name='super_admin_landlord_verifications'),
+
     # System Health (EXPOSED)
-    path('system/health/', admin_endpoints_views.AdminSystemHealthView.as_view(), name='super_admin_system_health'),
+    path('system/health/', AdminSystemHealthView.as_view(), name='super_admin_system_health'),
 ]
