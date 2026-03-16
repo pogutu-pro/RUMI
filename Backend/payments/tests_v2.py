@@ -108,6 +108,53 @@ class lifecycleTests(TestCase):
         self.assertEqual(txn.rent_period, rent_period)
 
 
+class TestPaybillAllocationView(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='paybill_user@test.com', password='pass', role='student'
+        )
+        self.student = StudentProfile.objects.create(user=self.user)
+        self.client.force_authenticate(user=self.user)
+        self.landlord_user = User.objects.create_user(
+            email='paybill_landlord@test.com', password='pass', role='landlord'
+        )
+        self.landlord = LandlordProfile.objects.create(user=self.landlord_user)
+        self.hostel = Hostel.objects.create(
+            name='Paybill Hostel', landlord=self.landlord,
+            base_price=Decimal('5000.00'), hostel_type='single_rooms'
+        )
+        self.room = Room.objects.create(
+            hostel=self.hostel, room_number='B01',
+            room_type='single', capacity=1,
+            base_price=Decimal('5000.00'), status='available'
+        )
+        self.bed = Bed.objects.create(
+            room=self.room, hostel=self.hostel,
+            code='A', full_code='PBH-B01-A'
+        )
+
+    def test_paybill_bed_id(self):
+        url = reverse('paybill_allocation_stub') + f'?bed_id={self.bed.id}'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        for key in ('paybill', 'account_number', 'business_name', 'hostel_name', 'bed_code'):
+            self.assertIn(key, response.data)
+
+    def test_paybill_hostel_id(self):
+        url = reverse('paybill_allocation_stub') + f'?hostel_id={self.hostel.id}'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        for key in ('paybill', 'business_name', 'hostel_name'):
+            self.assertIn(key, response.data)
+
+    def test_paybill_missing_param(self):
+        url = reverse('paybill_allocation_stub')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('error', response.data)
+
+
 class TestPaymentVerifyView(TestCase):
     def setUp(self):
         self.client = APIClient()
