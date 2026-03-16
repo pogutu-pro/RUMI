@@ -2519,3 +2519,46 @@ class PaybillAllocationView(APIView):
             })
 
         return Response({'error': 'bed_id or hostel_id required'}, status=400)
+
+
+class UnmatchedPaymentsListView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        transactions = Transaction.objects.filter(
+            status='pending',
+            bed__isnull=True,
+            transaction_type='rent'
+        ).order_by('-initiated_at')
+
+        data = []
+        for txn in transactions:
+            data.append({
+                'id': txn.id,
+                'mpesa_receipt': txn.mpesa_receipt_number or txn.transaction_reference,
+                'phone_number': txn.mpesa_phone_number or 'N/A',
+                'amount': float(txn.amount),
+                'timestamp': txn.initiated_at.isoformat(),
+                'status': 'unmatched',
+                'suggested_match': None,
+            })
+
+        return Response({'data': data})
+
+
+class UnmatchedPaymentRejectView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, payment_id):
+        transaction_obj = get_object_or_404(Transaction, id=payment_id)
+        reason = request.data.get('reason', 'Rejected by admin')
+
+        existing_metadata = transaction_obj.metadata or {}
+        existing_metadata['rejection_reason'] = reason
+        existing_metadata['rejected_by'] = request.user.email if request.user else 'unknown'
+
+        transaction_obj.status = 'failed'
+        transaction_obj.metadata = existing_metadata
+        transaction_obj.save(update_fields=['status', 'metadata'])
+
+        return Response({'status': 'rejected', 'payment_id': payment_id})
