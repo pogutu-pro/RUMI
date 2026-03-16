@@ -89,15 +89,15 @@ Plans:
   5. Late entry logic returns real LateEntry records — the `booking.id % 7` simulation is gone
   6. Weather stub endpoint (`/api/v1/home/weather/`) is removed — no 500 or placeholder response returned
   7. Migrations for all three new models are written and apply cleanly with `python manage.py migrate`
-**Plans**: TBD
+**Plans**: 6 plans
 
 Plans:
-- [ ] 04-01: Read frontend/src/types/caretaker.types.ts; create VisitorInvitation model with matching fields; write and apply migration (MOD-01, MOD-04)
-- [ ] 04-02: Create MaintenanceRequest model with fields matching frontend contract; write and apply migration (MOD-02, MOD-04)
-- [ ] 04-03: Create LateEntry model with fields matching frontend contract; write and apply migration (MOD-03, MOD-04)
-- [ ] 04-04: Register all 5 visitor invitation URLs and 2 roommate request action URLs; wire to real views using VisitorInvitation model (URL-01 to URL-07)
-- [ ] 04-05: Register maintenance detail URL and damage reports detail URL; replace maintenance_requests = [] placeholder with real ORM query; replace late entry simulation with LateEntry query (URL-08, URL-09, PLC-01, PLC-02)
-- [ ] 04-06: Delete weather stub (third_party/weather.py, WeatherView, URL registration) (PLC-03)
+- [ ] 04-01-PLAN.md — Create VisitorInvitation model in caretaker_operations/models.py; run makemigrations + migrate for all 3 models (MOD-01, MOD-04)
+- [ ] 04-02-PLAN.md — Append MaintenanceRequest model to caretaker_operations/models.py (MOD-02)
+- [ ] 04-03-PLAN.md — Append LateEntry model to caretaker_operations/models.py (MOD-03)
+- [ ] 04-04-PLAN.md — Add 5 visitor invitation views + 2 roommate thin-wrapper views; register 7 URLs (URL-01 to URL-07)
+- [ ] 04-05-PLAN.md — Add MaintenanceRequestDetailView + CaretakerDamageReportDetailView; fix PLC-01 maintenance placeholder; fix PLC-02 LateEntry simulation (URL-08, URL-09, PLC-01, PLC-02)
+- [ ] 04-06-PLAN.md — Delete WeatherView, weather/ URL entry, third_party/weather.py (PLC-03)
 
 ### Phase 5: Celery and Notification Fixes
 **Goal**: The Celery beat schedule references correct task names, django-celery-beat is installed, all task dispatches inside atomic blocks use on_commit, and SMS/email notifications fire on booking and payment events
@@ -176,7 +176,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 |-------|----------------|--------|-----------|
 | 1. Critical Payment Flow Fixes | 3/3 | Complete    | 2026-03-08 |
 | 2. Admin Layer Consolidation | 2/2 | Complete    | 2026-03-16 |
-| 3. Payment Stub Promotion | 0/5 | Not started | - |
+| 3. Payment Stub Promotion | 5/5 | Complete    | 2026-03-16 |
 | 4. Missing Models and URL Wiring | 0/6 | Not started | - |
 | 5. Celery and Notification Fixes | 0/3 | Not started | - |
 | 6. Performance and Error Standardization | 0/3 | Not started | - |
