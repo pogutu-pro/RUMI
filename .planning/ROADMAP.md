@@ -13,7 +13,7 @@ The RUMI backend has three categories of problems: silent production failures in
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Critical Payment Flow Fixes** - Fix silent production failures in Paystack, M-Pesa, and stub payment views (completed 2026-03-08)
-- [ ] **Phase 2: Admin Layer Consolidation** - Absorb admin_endpoints views into admin_api and delete the deprecated app
+- [x] **Phase 2: Admin Layer Consolidation** - Absorb admin_endpoints views into admin_api and delete the deprecated app (completed 2026-03-16)
 - [ ] **Phase 3: Payment Stub Promotion** - Promote stubs_views.py views one-by-one into payments/views.py
 - [ ] **Phase 4: Missing Models and URL Wiring** - Create caretaker models, register 9 missing URLs, replace placeholder logic
 - [ ] **Phase 5: Celery and Notification Fixes** - Fix beat schedule, add django-celery-beat, wire SMS/email to events
@@ -56,8 +56,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 02-01: Audit all cross-imports from admin_endpoints; copy referenced view classes into admin_api/views.py; update import paths in platform_admin_urls.py and super_admin_urls.py (ADM-01, ADM-02)
-- [ ] 02-02: Remove admin_endpoints from INSTALLED_APPS; delete admin_endpoints/ directory; remove dead URL prefix from rumi/urls.py; run manage.py check (ADM-03, ADM-04, ADM-05)
+- [x] 02-01: Audit all cross-imports from admin_endpoints; copy referenced view classes into admin_api/views.py; update import paths in platform_admin_urls.py and super_admin_urls.py (ADM-01, ADM-02)
+- [x] 02-02: Remove admin_endpoints from INSTALLED_APPS; delete admin_endpoints/ directory; remove dead URL prefix from rumi/urls.py; run manage.py check (ADM-03, ADM-04, ADM-05)
 
 ### Phase 3: Payment Stub Promotion
 **Goal**: Every view in payments/stubs_views.py is promoted to payments/views.py with real logic, and stubs_views.py is deleted — URL paths are unchanged throughout
@@ -175,7 +175,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Critical Payment Flow Fixes | 3/3 | Complete    | 2026-03-08 |
-| 2. Admin Layer Consolidation | 1/2 | In Progress|  |
+| 2. Admin Layer Consolidation | 2/2 | Complete    | 2026-03-16 |
 | 3. Payment Stub Promotion | 0/5 | Not started | - |
 | 4. Missing Models and URL Wiring | 0/6 | Not started | - |
 | 5. Celery and Notification Fixes | 0/3 | Not started | - |

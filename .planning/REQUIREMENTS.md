@@ -130,7 +130,7 @@
 |-------------|-------|--------|
 | PAY-01, PAY-05 | Phase 1 (01-01) | Complete |
 | PAY-02 to PAY-04, PAY-06 to PAY-08 | Phase 1 | Pending |
-| ADM-01 to ADM-05 | Phase 2 | Pending |
+| ADM-01 to ADM-05 | Phase 2 | Complete |
 | PAY-09 to PAY-14 | Phase 3 | Pending |
 | MOD-01 to MOD-04 | Phase 4 | Pending |
 | URL-01 to URL-09 | Phase 4 | Pending |
