@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 07-04-PLAN.md
-last_updated: "2026-03-17T11:40:05.990Z"
+stopped_at: Completed 08-03-PLAN.md
+last_updated: "2026-03-17T12:03:43.351Z"
 last_activity: "2026-03-16 — Phase 4 plan 01: VisitorInvitation model created in caretaker_operations/models.py"
 progress:
   total_phases: 8
   completed_phases: 7
-  total_plans: 27
-  completed_plans: 27
+  total_plans: 30
+  completed_plans: 29
   percent: 25
 ---
 
@@ -68,6 +68,8 @@ Progress: [███░░░░░░░] 25%
 | Phase 07-infrastructure P01 | 3 | 1 tasks | 1 files |
 | Phase 07-infrastructure P03 | 3 | 2 tasks | 2 files |
 | Phase 07-infrastructure P04 | 3 | 1 tasks | 2 files |
+| Phase 08-test-coverage P03 | 1 | 1 tasks | 1 files |
+| Phase 08-test-coverage P02 | 3 | 1 tasks | 0 files |
 
 ## Accumulated Context
 
@@ -130,6 +132,7 @@ Recent decisions affecting current work:
 - [Phase 07-01]: venv_new used for install verification — system Python is externally-managed (PEP 668); Backend/venv_new is the active project virtualenv
 - [Phase 07-03]: Use FieldFile.open('rb') for PDF email attachment — works on both FileSystemStorage and S3Boto3Storage; .path raises NotImplementedError on S3 (INF-03)
 - [Phase 07-04]: Removed blank line 275 with weather block to avoid double blank line in settings.py; deleted commented-out weather import in home/views.py
+- [Phase 08-03]: Direct ORM save() for booking status transitions — no action endpoints exist on URL config; terminal status is 'completed' (not 'checked_out')
 
 ### Pending Todos
 
@@ -141,6 +144,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T11:37:22.427Z
-Stopped at: Completed 07-04-PLAN.md
+Last session: 2026-03-17T12:03:30.373Z
+Stopped at: Completed 08-03-PLAN.md
 Resume file: None
