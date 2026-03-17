@@ -62,9 +62,9 @@
 
 ### Celery & Task Fixes
 
-- [ ] **CEL-01**: `django-celery-beat==2.6.0` added to `requirements.txt` and migrated
-- [ ] **CEL-02**: `BEAT_SCHEDULE` task name corrected (`payments.tasks.assess_late_fees`, not `process_late_fees`)
-- [ ] **CEL-03**: `WebhookEvent` retry task registered in `BEAT_SCHEDULE` (`crontab(minute='*/5')`)
+- [x] **CEL-01**: `django-celery-beat==2.6.0` added to `requirements.txt` and migrated
+- [x] **CEL-02**: `BEAT_SCHEDULE` task name corrected (`payments.tasks.assess_late_fees`, not `process_late_fees`)
+- [x] **CEL-03**: `WebhookEvent` retry task registered in `BEAT_SCHEDULE` (`crontab(minute='*/5')`)
 - [ ] **CEL-04**: All `.delay()` calls inside `transaction.atomic()` blocks wrapped with `transaction.on_commit(lambda: task.delay(...))`
 - [ ] **CEL-05**: Celery notification tasks (`send_payment_notification`, `send_booking_confirmation`) wired to fire on correct events (booking approved, payment received, rent due)
 - [ ] **CEL-06**: Hardcoded `recipient_id=1` in `payments/tasks.py` replaced with `User.objects.filter(is_superuser=True).first().id`

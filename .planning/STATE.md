@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 04-05-PLAN.md (detail views + PLC-01 + PLC-02 + URL-08 + URL-09 — Phase 4 fully complete)
-last_updated: "2026-03-17T06:26:50.298Z"
+stopped_at: Completed 05-01-PLAN.md (django-celery-beat install + BEAT_SCHEDULE fixes — CEL-01, CEL-02, CEL-03 satisfied)
+last_updated: "2026-03-17T06:53:31.273Z"
 last_activity: "2026-03-16 — Phase 4 plan 01: VisitorInvitation model created in caretaker_operations/models.py"
 progress:
   total_phases: 8
   completed_phases: 4
-  total_plans: 16
-  completed_plans: 16
+  total_plans: 19
+  completed_plans: 17
   percent: 25
 ---
 
@@ -58,6 +58,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 04-missing-models-and-url-wiring P03 | 2 | 1 tasks | 1 files |
 | Phase 04-missing-models-and-url-wiring P04 | 5 | 3 tasks | 5 files |
 | Phase 04-missing-models-and-url-wiring P05 | 8 | 3 tasks | 3 files |
+| Phase 05-celery-and-notification-fixes P01 | 6 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,9 @@ Recent decisions affecting current work:
 - [Phase 04-05]: MaintenanceRequestModel alias used (as MaintenanceRequestModel) to avoid shadowing the local queryset variable in CaretakerMaintenanceView.get()
 - [Phase 04-05]: CaretakerDamageReportDetailView scopes via room__hostel=caretaker.hostel because DamageReport FK is to Room not Hostel directly
 - [Phase 04-05]: _calculate_average_entries_per_week required no code change — it already delegates to _get_late_entries_for_period which now returns real LateEntry counts
+- [Phase 05-01]: Use django-celery-beat==2.8.1 instead of 2.6.0 — 2.6.0 requires Django<5.1 but venv has Django 5.2.11
+- [Phase 05-01]: Add name='payments.tasks.retry_failed_webhook_events' to @shared_task on reconcile_missed_webhooks — beat schedule string must match registered name, not function name
+- [Phase 05-01]: Replace broken 'process-late-fees' BEAT_SCHEDULE entry with 'assess-late-fees' pointing to existing assess_late_fees function
 
 ### Pending Todos
 
@@ -107,6 +111,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T06:26:50.294Z
-Stopped at: Completed 04-05-PLAN.md (detail views + PLC-01 + PLC-02 + URL-08 + URL-09 — Phase 4 fully complete)
+Last session: 2026-03-17T06:53:31.268Z
+Stopped at: Completed 05-01-PLAN.md (django-celery-beat install + BEAT_SCHEDULE fixes — CEL-01, CEL-02, CEL-03 satisfied)
 Resume file: None
