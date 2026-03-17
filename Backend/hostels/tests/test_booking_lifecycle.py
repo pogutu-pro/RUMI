@@ -58,7 +58,7 @@ class BookingLifecycleTest(TestCase):
         
         self.room.refresh_from_db()
         self.assertEqual(self.room.current_occupancy, 2)
-        # Note: Need to check if Room model has logic for available? 
+        # Note: Need to check if Room model has logic for available?
         # Usually it's a property or status update
 
     def test_invalid_date_transitions(self):
@@ -68,6 +68,37 @@ class BookingLifecycleTest(TestCase):
             'move_in_date': str(past_date),
             'payment_plan': 'monthly'
         })
-        
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('move_in_date', response.data)
+
+
+class BookingFullLifecycleTest(TestCase):
+    def setUp(self):
+        self.student = StudentProfileFactory()
+        self.room = RoomFactory(capacity=1, status='available')
+        self.booking = BookingFactory(
+            student=self.student,
+            room=self.room,
+            status='pending'
+        )
+
+    def test_pending_to_confirmed_to_checked_in_to_completed(self):
+        """Full booking lifecycle: pending → confirmed → checked_in → completed."""
+        # Step 1: pending → confirmed (landlord approves)
+        self.booking.status = 'confirmed'
+        self.booking.save()
+        self.booking.refresh_from_db()
+        self.assertEqual(self.booking.status, 'confirmed')
+
+        # Step 2: confirmed → checked_in (student moves in)
+        self.booking.status = 'checked_in'
+        self.booking.save()
+        self.booking.refresh_from_db()
+        self.assertEqual(self.booking.status, 'checked_in')
+
+        # Step 3: checked_in → completed (booking ends / student moves out)
+        self.booking.status = 'completed'
+        self.booking.save()
+        self.booking.refresh_from_db()
+        self.assertEqual(self.booking.status, 'completed')
