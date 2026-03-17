@@ -654,6 +654,80 @@ def capture_daily_occupancy_snapshots():
 
 
 @shared_task
+def send_booking_confirmation(booking_id):
+    """
+    Send booking confirmation SMS and email after payment commits.
+    Called via on_commit from _handle_charge_success.
+    """
+    from hostels.models import Booking
+    from notifications.tasks import send_notification
+    try:
+        booking = Booking.objects.select_related(
+            'student__user', 'room__hostel'
+        ).get(id=booking_id)
+        send_notification.delay(
+            recipient_id=booking.student.user.id,
+            notification_type='booking_confirmed',
+            channel='email',
+            context={
+                'student_name': booking.student.user.first_name,
+                'hostel_name': booking.room.hostel.name,
+                'room_number': booking.room.room_number,
+                'booking_reference': booking.booking_reference,
+                'check_in_date': booking.check_in_date.strftime('%B %d, %Y') if booking.check_in_date else 'TBD',
+            }
+        )
+        send_notification.delay(
+            recipient_id=booking.student.user.id,
+            notification_type='booking_confirmed',
+            channel='sms',
+            context={
+                'first_name': booking.student.user.first_name,
+                'hostel_name': booking.room.hostel.name,
+                'booking_reference': booking.booking_reference,
+            }
+        )
+    except Exception as e:
+        logger.error(f"send_booking_confirmation failed for booking {booking_id}: {e}")
+
+
+@shared_task
+def send_payment_notification(transaction_id):
+    """
+    Send payment received notification to student and landlord.
+    Called via on_commit from _handle_charge_success and M-Pesa webhook.
+    """
+    from payments.models import Transaction
+    from notifications.tasks import send_notification
+    try:
+        txn = Transaction.objects.select_related(
+            'student__user', 'landlord__user'
+        ).get(id=transaction_id)
+        send_notification.delay(
+            recipient_id=txn.student.user.id,
+            notification_type='payment_success',
+            channel='email',
+            context={
+                'student_name': txn.student.user.first_name,
+                'amount': float(txn.total_charged_amount),
+                'transaction_reference': txn.transaction_reference,
+            }
+        )
+        send_notification.delay(
+            recipient_id=txn.landlord.user.id,
+            notification_type='payment_received',
+            channel='email',
+            context={
+                'landlord_name': txn.landlord.company_name or txn.landlord.user.first_name,
+                'amount': float(txn.landlord_payout_amount),
+                'student_name': txn.student.user.first_name,
+            }
+        )
+    except Exception as e:
+        logger.error(f"send_payment_notification failed for transaction {transaction_id}: {e}")
+
+
+@shared_task
 def generate_monthly_subscription_invoices():
     """
     Run on the 1st of every month to consolidate the previous month's snapshots.

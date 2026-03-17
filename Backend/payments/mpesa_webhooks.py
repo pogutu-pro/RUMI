@@ -393,39 +393,15 @@ class MpesaWebhookHandler(View):
     
     def _send_payment_notifications(self, transaction):
         """
-        Send payment success notifications
+        Dispatch send_payment_notification via on_commit so notifications are
+        only sent after the enclosing atomic block commits (safe to call both
+        inside and outside transaction.atomic() — on_commit fires immediately
+        when called outside an atomic block).
         """
-        try:
-            from notifications.tasks import send_notification
-            
-            # Notify student
-            send_notification.delay(
-                recipient_id=transaction.student.user.id,
-                notification_type='payment_success',
-                channel='email',
-                context={
-                    'student_name': transaction.student.user.first_name,
-                    'amount': float(transaction.total_charged_amount),
-                    'transaction_reference': transaction.transaction_reference,
-                    'payment_method': 'M-Pesa'
-                }
-            )
-            
-            # Notify landlord
-            send_notification.delay(
-                recipient_id=transaction.landlord.user.id,
-                notification_type='payment_received',
-                channel='email',
-                context={
-                    'landlord_name': transaction.landlord.company_name or transaction.landlord.user.first_name,
-                    'amount': float(transaction.landlord_payout_amount),
-                    'student_name': transaction.student.user.first_name,
-                    'payment_method': 'M-Pesa'
-                }
-            )
-            
-        except Exception as e:
-            logger.error(f"Error sending payment notifications: {e}")
+        from payments.tasks import send_payment_notification
+        from django.db import transaction as db_transaction
+        _txn_id = transaction.id
+        db_transaction.on_commit(lambda: send_payment_notification.delay(_txn_id))
     
     def _send_failure_notification(self, transaction, reason):
         """

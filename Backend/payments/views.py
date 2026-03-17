@@ -1183,30 +1183,13 @@ def _handle_charge_success(data):
                 except SavedPaymentMethod.DoesNotExist:
                     pass  # No recurring payment setup
 
-            # Send success notifications
-            from notifications.tasks import send_notification
-            send_notification.delay(
-                recipient_id=txn.student.user.id,
-                notification_type='payment_success',
-                channel='email',
-                context={
-                    'student_name': txn.student.user.first_name,
-                    'amount': float(txn.total_charged_amount),
-                    'transaction_reference': txn.transaction_reference
-                }
-            )
-
-            # Notify landlord
-            send_notification.delay(
-                recipient_id=txn.landlord.user.id,
-                notification_type='payment_received',
-                channel='email',
-                context={
-                    'landlord_name': txn.landlord.business_name or txn.landlord.user.first_name,
-                    'amount': float(txn.landlord_payout_amount),
-                    'student_name': txn.student.user.first_name
-                }
-            )
+            # Dispatch payment and booking confirmation notifications via on_commit
+            # (avoids sending notifications if the atomic block rolls back)
+            from payments.tasks import send_booking_confirmation, send_payment_notification
+            _txn_id = txn.id
+            _booking_id = booking.id
+            transaction.on_commit(lambda: send_payment_notification.delay(_txn_id))
+            transaction.on_commit(lambda: send_booking_confirmation.delay(_booking_id))
 
             # Generate and send receipt
             try:

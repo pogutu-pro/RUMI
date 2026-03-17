@@ -34,19 +34,20 @@ class TestSendBookingConfirmationTask:
         mock_booking.booking_reference = "BK-001"
         mock_booking.check_in_date.strftime.return_value = "January 01, 2026"
 
-        with patch("payments.tasks.send_notification") as mock_send_notif, \
-             patch("hostels.models.Booking.objects.select_related") as mock_qs:
-            mock_qs.return_value.get.return_value = mock_booking
+        # Patch the Booking queryset inside payments.tasks (lazy import path)
+        with patch("notifications.tasks.send_notification") as mock_send_notif, \
+             patch("hostels.models.Booking.objects") as mock_manager:
+            mock_manager.select_related.return_value.get.return_value = mock_booking
 
             send_booking_confirmation(99)
 
             assert mock_send_notif.delay.call_count == 2
 
             calls = mock_send_notif.delay.call_args_list
-            channels = {c.kwargs.get("channel") or c[1].get("channel") or c[0][1] for c in calls}
+            call_str = str(calls)
             # Both channels must be represented
-            assert "email" in str(calls)
-            assert "sms" in str(calls)
+            assert "email" in call_str
+            assert "sms" in call_str
             for c in calls:
                 kwargs = c.kwargs if c.kwargs else {}
                 # notification_type must be booking_confirmed for both calls
@@ -92,9 +93,9 @@ class TestSendPaymentNotificationTask:
         mock_txn.landlord_payout_amount = 4500
         mock_txn.transaction_reference = "TXN-42"
 
-        with patch("payments.tasks.send_notification") as mock_send_notif, \
-             patch("payments.models.Transaction.objects.select_related") as mock_qs:
-            mock_qs.return_value.get.return_value = mock_txn
+        with patch("notifications.tasks.send_notification") as mock_send_notif, \
+             patch("payments.models.Transaction.objects") as mock_manager:
+            mock_manager.select_related.return_value.get.return_value = mock_txn
 
             send_payment_notification(42)
 
@@ -155,32 +156,29 @@ class TestHandleChargeSuccessOnCommitWiring:
 
         # Collect all Call nodes in the function
         direct_delay_calls = []
-        on_commit_calls = []
 
         for node in ast.walk(target_func):
             if isinstance(node, ast.Call):
-                # Check for send_notification.delay() or send_booking_confirmation.delay()
-                # called directly (not inside a lambda passed to on_commit)
+                # Check for send_notification.delay() called directly
                 if isinstance(node.func, ast.Attribute):
                     if node.func.attr == "delay":
                         func_value = node.func.value
                         if isinstance(func_value, ast.Name):
-                            if func_value.id in ("send_notification", "send_booking_confirmation", "send_payment_notification"):
+                            if func_value.id == "send_notification":
                                 direct_delay_calls.append(func_value.id)
                         elif isinstance(func_value, ast.Attribute):
-                            if func_value.attr in ("send_notification", "send_booking_confirmation", "send_payment_notification"):
+                            if func_value.attr == "send_notification":
                                 direct_delay_calls.append(func_value.attr)
 
         # There should be NO direct send_notification.delay() calls in _handle_charge_success
-        direct_send_notification = [c for c in direct_delay_calls if c == "send_notification"]
-        assert direct_send_notification == [], (
-            f"Found direct send_notification.delay() calls in _handle_charge_success: {direct_send_notification}. "
+        assert direct_delay_calls == [], (
+            f"Found direct send_notification.delay() calls in _handle_charge_success: {direct_delay_calls}. "
             "Expected on_commit wiring instead."
         )
 
-        # Check that on_commit is referenced in the function body
-        source_lines = inspect.getsource(target_func)
-        assert "on_commit" in source_lines, (
+        # Check that on_commit is referenced in the function body (via ast.unparse)
+        func_source = ast.unparse(target_func)
+        assert "on_commit" in func_source, (
             "transaction.on_commit not found in _handle_charge_success. "
             "Expected on_commit wiring for send_booking_confirmation and send_payment_notification."
         )
@@ -228,8 +226,8 @@ class TestMpesaWebhookOnCommitWiring:
             "Expected send_payment_notification via on_commit."
         )
 
-        # on_commit must be present
-        func_source = inspect.getsource(target_func)
+        # on_commit must be present (use ast.unparse to get source text from AST node)
+        func_source = ast.unparse(target_func)
         assert "on_commit" in func_source, (
             "on_commit not found in _send_payment_notifications. "
             "Expected db_transaction.on_commit(lambda: send_payment_notification.delay(...))"
