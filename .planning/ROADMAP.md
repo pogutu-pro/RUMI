@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Admin Layer Consolidation** - Absorb admin_endpoints views into admin_api and delete the deprecated app (completed 2026-03-16)
 - [x] **Phase 3: Payment Stub Promotion** - Promote stubs_views.py views one-by-one into payments/views.py (completed 2026-03-16)
 - [x] **Phase 4: Missing Models and URL Wiring** - Create caretaker models, register 9 missing URLs, replace placeholder logic (completed 2026-03-17)
-- [ ] **Phase 5: Celery and Notification Fixes** - Fix beat schedule, add django-celery-beat, wire SMS/email to events
+- [x] **Phase 5: Celery and Notification Fixes** - Fix beat schedule, add django-celery-beat, wire SMS/email to events (completed 2026-03-17)
 - [x] **Phase 6: Performance and Error Standardization** - Fix N+1 queries, add Redis caching, standardize error responses (completed 2026-03-17)
 - [x] **Phase 7: Infrastructure** - Upgrade boto3, wire S3 storage, remove weather stub dead code (completed 2026-03-17)
 - [x] **Phase 8: Test Coverage** - Payment lifecycle tests, Paystack HMAC test, assertNumQueries tests, booking tests (completed 2026-03-17)
@@ -40,8 +40,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01-PLAN.md — Fix Paystack `charge.success` variable shadowing crash and outer webhook HTTP 500 (PAY-01, PAY-05) — completed 2026-03-08
-- [ ] 01-02-PLAN.md — Fix M-Pesa callback URLs to use BACKEND_API_URL; add select_for_update to STK push webhook; ensure always-HTTP-200 response (PAY-02, PAY-03, PAY-04)
-- [ ] 01-03-PLAN.md — Fix UnmatchedPaymentRejectView DB write, fix PaymentLedgerView NameError, remove random.choice() mock from recurring payment task (PAY-06, PAY-07, PAY-08)
+- [x] 01-02-PLAN.md — Fix M-Pesa callback URLs to use BACKEND_API_URL; add select_for_update to STK push webhook; ensure always-HTTP-200 response (PAY-02, PAY-03, PAY-04)
+- [x] 01-03-PLAN.md — Fix UnmatchedPaymentRejectView DB write, fix PaymentLedgerView NameError, remove random.choice() mock from recurring payment task (PAY-06, PAY-07, PAY-08)
 
 ### Phase 2: Admin Layer Consolidation
 **Goal**: The admin_endpoints/ directory is fully deleted, all admin views live in admin_api/, no cross-imports remain, and the dead URL prefix is removed — with zero frontend impact
@@ -92,12 +92,12 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Create VisitorInvitation model in caretaker_operations/models.py; run makemigrations + migrate for all 3 models (MOD-01, MOD-04)
-- [ ] 04-02-PLAN.md — Append MaintenanceRequest model to caretaker_operations/models.py (MOD-02)
-- [ ] 04-03-PLAN.md — Append LateEntry model to caretaker_operations/models.py (MOD-03)
-- [ ] 04-04-PLAN.md — Add 5 visitor invitation views + 2 roommate thin-wrapper views; register 7 URLs (URL-01 to URL-07)
-- [ ] 04-05-PLAN.md — Add MaintenanceRequestDetailView + CaretakerDamageReportDetailView; fix PLC-01 maintenance placeholder; fix PLC-02 LateEntry simulation (URL-08, URL-09, PLC-01, PLC-02)
-- [ ] 04-06-PLAN.md — Delete WeatherView, weather/ URL entry, third_party/weather.py (PLC-03)
+- [x] 04-01-PLAN.md — Create VisitorInvitation model in caretaker_operations/models.py; run makemigrations + migrate for all 3 models (MOD-01, MOD-04)
+- [x] 04-02-PLAN.md — Append MaintenanceRequest model to caretaker_operations/models.py (MOD-02)
+- [x] 04-03-PLAN.md — Append LateEntry model to caretaker_operations/models.py (MOD-03)
+- [x] 04-04-PLAN.md — Add 5 visitor invitation views + 2 roommate thin-wrapper views; register 7 URLs (URL-01 to URL-07)
+- [x] 04-05-PLAN.md — Add MaintenanceRequestDetailView + CaretakerDamageReportDetailView; fix PLC-01 maintenance placeholder; fix PLC-02 LateEntry simulation (URL-08, URL-09, PLC-01, PLC-02)
+- [x] 04-06-PLAN.md — Delete WeatherView, weather/ URL entry, third_party/weather.py (PLC-03)
 
 ### Phase 5: Celery and Notification Fixes
 **Goal**: The Celery beat schedule references correct task names, django-celery-beat is installed, all task dispatches inside atomic blocks use on_commit, and SMS/email notifications fire on booking and payment events
@@ -113,9 +113,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Add django-celery-beat==2.6.0 to requirements.txt; register in INSTALLED_APPS; run migrations; rename reconcile_missed_webhooks to retry_failed_webhook_events; fix assess_late_fees beat entry; add retry-failed-webhook-events beat entry (CEL-01, CEL-02, CEL-03)
-- [ ] 05-02-PLAN.md — Wrap 6 confirmed .delay() violations in payments/views.py and hostels/views.py with transaction.on_commit(); replace hardcoded recipient_id=1 with dynamic superuser lookup in payments/tasks.py (CEL-04, CEL-06)
-- [ ] 05-03-PLAN.md — Create send_booking_confirmation and send_payment_notification tasks; wire both into _handle_charge_success via on_commit; wire M-Pesa _send_payment_notifications via on_commit (CEL-05)
+- [x] 05-01-PLAN.md — Add django-celery-beat==2.6.0 to requirements.txt; register in INSTALLED_APPS; run migrations; rename reconcile_missed_webhooks to retry_failed_webhook_events; fix assess_late_fees beat entry; add retry-failed-webhook-events beat entry (CEL-01, CEL-02, CEL-03)
+- [x] 05-02-PLAN.md — Wrap 6 confirmed .delay() violations in payments/views.py and hostels/views.py with transaction.on_commit(); replace hardcoded recipient_id=1 with dynamic superuser lookup in payments/tasks.py (CEL-04, CEL-06)
+- [x] 05-03-PLAN.md — Create send_booking_confirmation and send_payment_notification tasks; wire both into _handle_charge_success via on_commit; wire M-Pesa _send_payment_notifications via on_commit (CEL-05)
 
 ### Phase 6: Performance and Error Standardization
 **Goal**: Hostel listing, booking list, and bed detail endpoints issue no N+1 queries, high-read public endpoints are cached in Redis, and all API error responses share a consistent shape
@@ -133,7 +133,7 @@ Plans:
 - [x] 06-01-PLAN.md — Write all test stubs (Wave 0); fix N+1 queries in HostelViewSet, RoomViewSet, BookingViewSet (PERF-01, PERF-02, PERF-03)
 - [x] 06-02-PLAN.md — Implement Redis caching on GET /api/v1/hostels/ with 5-min TTL + post_save/post_delete signal invalidation; cache GET /api/v1/home/ with 15-min TTL (PERF-04, PERF-05)
 - [x] 06-03-PLAN.md — Create core/exceptions.py custom DRF exception handler; wire REST_FRAMEWORK['EXCEPTION_HANDLER'] in settings.py (ERR-01, ERR-02)
-- [ ] 06-04-PLAN.md — Gap closure: add EXCEPTION_HANDLER to PERFORMANCE_REST_FRAMEWORK in performance_settings.py so handler fires in live request dispatch (ERR-02)
+- [x] 06-04-PLAN.md — Gap closure: add EXCEPTION_HANDLER to PERFORMANCE_REST_FRAMEWORK in performance_settings.py so handler fires in live request dispatch (ERR-02)
 
 ### Phase 7: Infrastructure
 **Goal**: boto3 is current, S3 storage is wired behind a USE_S3 feature flag, existing local media files are documented for sync, and the weather stub dead code is fully removed
@@ -147,9 +147,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Upgrade boto3 to 1.42.69 and django-storages to 1.14.6 in requirements.txt; verify pip check + manage.py check clean (INF-01)
-- [ ] 07-02-PLAN.md — Add USE_S3 flag and STORAGES dict (both branches) to settings.py; append AWS S3 section to .env.example (INF-02, INF-04)
-- [ ] 07-03-PLAN.md — Write regression test for receipt email attachment; fix receipt_service.py line 86 to use FieldFile.open() not .path (INF-03)
+- [x] 07-01-PLAN.md — Upgrade boto3 to 1.42.69 and django-storages to 1.14.6 in requirements.txt; verify pip check + manage.py check clean (INF-01)
+- [x] 07-02-PLAN.md — Add USE_S3 flag and STORAGES dict (both branches) to settings.py; append AWS S3 section to .env.example (INF-02, INF-04)
+- [x] 07-03-PLAN.md — Write regression test for receipt email attachment; fix receipt_service.py line 86 to use FieldFile.open() not .path (INF-03)
 
 ### Phase 8: Test Coverage
 **Goal**: The highest-risk payment and booking flows have passing integration tests, N+1 fixes are verified by query count assertions, and the Paystack HMAC path is covered by an integration test
@@ -163,9 +163,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — Add MpesaStkPushLifecycleTest and PaystackWebhookTest classes to payments/tests_comprehensive.py (TEST-01, TEST-02)
-- [ ] 08-02-PLAN.md — Confirm/fix assertNumQueries expected counts in test_query_optimization.py to GREEN passing values (TEST-03)
-- [ ] 08-03-PLAN.md — Add BookingFullLifecycleTest class to test_booking_lifecycle.py with pending→confirmed→checked_in→completed transitions (TEST-04)
+- [x] 08-01-PLAN.md — Add MpesaStkPushLifecycleTest and PaystackWebhookTest classes to payments/tests_comprehensive.py (TEST-01, TEST-02)
+- [x] 08-02-PLAN.md — Confirm/fix assertNumQueries expected counts in test_query_optimization.py to GREEN passing values (TEST-03)
+- [x] 08-03-PLAN.md — Add BookingFullLifecycleTest class to test_booking_lifecycle.py with pending→confirmed→checked_in→completed transitions (TEST-04)
 
 ## Progress
 
@@ -178,7 +178,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 2. Admin Layer Consolidation | 2/2 | Complete    | 2026-03-16 |
 | 3. Payment Stub Promotion | 5/5 | Complete    | 2026-03-16 |
 | 4. Missing Models and URL Wiring | 6/6 | Complete   | 2026-03-17 |
-| 5. Celery and Notification Fixes | 2/3 | In Progress|  |
-| 6. Performance and Error Standardization | 3/4 | Complete    | 2026-03-17 |
+| 5. Celery and Notification Fixes | 3/3 | Complete    | 2026-03-17 |
+| 6. Performance and Error Standardization | 4/4 | Complete    | 2026-03-17 |
 | 7. Infrastructure | 4/4 | Complete    | 2026-03-17 |
 | 8. Test Coverage | 3/3 | Complete   | 2026-03-17 |

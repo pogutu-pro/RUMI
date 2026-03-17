@@ -20,12 +20,12 @@
 
 ### Payments — Stub Promotion
 
-- [ ] **PAY-09**: `PaymentVerifyView` promoted from `stubs_views.py` to `payments/views.py` (real ORM queries retained, URL path unchanged)
-- [ ] **PAY-10**: `PaybillAllocationView` promoted from `stubs_views.py` to `payments/views.py` (real ORM queries retained, URL path unchanged)
-- [ ] **PAY-11**: `UnmatchedPaymentsListView` promoted from `stubs_views.py` to `payments/views.py` (real ORM queries retained, URL path unchanged)
-- [ ] **PAY-12**: `UnmatchedPaymentMatchView` promoted from `stubs_views.py` to `payments/views.py` (real ORM + service call retained, URL path unchanged)
-- [ ] **PAY-13**: `PaymentLedgerExportView` implemented with real export logic (CSV/PDF), promoted to `payments/views.py`
-- [ ] **PAY-14**: `stubs_views.py` deleted after all views promoted
+- [x] **PAY-09**: `PaymentVerifyView` promoted from `stubs_views.py` to `payments/views.py` (real ORM queries retained, URL path unchanged)
+- [x] **PAY-10**: `PaybillAllocationView` promoted from `stubs_views.py` to `payments/views.py` (real ORM queries retained, URL path unchanged)
+- [x] **PAY-11**: `UnmatchedPaymentsListView` promoted from `stubs_views.py` to `payments/views.py` (real ORM queries retained, URL path unchanged)
+- [x] **PAY-12**: `UnmatchedPaymentMatchView` promoted from `stubs_views.py` to `payments/views.py` (real ORM + service call retained, URL path unchanged)
+- [x] **PAY-13**: `PaymentLedgerExportView` implemented with real export logic (CSV/PDF), promoted to `payments/views.py`
+- [x] **PAY-14**: `stubs_views.py` deleted after all views promoted
 
 ### Admin Layer Consolidation
 
@@ -66,7 +66,7 @@
 - [x] **CEL-02**: `BEAT_SCHEDULE` task name corrected (`payments.tasks.assess_late_fees`, not `process_late_fees`)
 - [x] **CEL-03**: `WebhookEvent` retry task registered in `BEAT_SCHEDULE` (`crontab(minute='*/5')`)
 - [x] **CEL-04**: All `.delay()` calls inside `transaction.atomic()` blocks wrapped with `transaction.on_commit(lambda: task.delay(...))`
-- [ ] **CEL-05**: Celery notification tasks (`send_payment_notification`, `send_booking_confirmation`) wired to fire on correct events (booking approved, payment received, rent due)
+- [x] **CEL-05**: Celery notification tasks (`send_payment_notification`, `send_booking_confirmation`) wired to fire on correct events (booking approved, payment received, rent due)
 - [x] **CEL-06**: Hardcoded `recipient_id=1` in `payments/tasks.py` replaced with `User.objects.filter(is_superuser=True).first().id`
 
 ### Performance — Query Optimization
@@ -129,17 +129,17 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | PAY-01, PAY-05 | Phase 1 (01-01) | Complete |
-| PAY-02 to PAY-04, PAY-06 to PAY-08 | Phase 1 | Pending |
+| PAY-02 to PAY-04, PAY-06 to PAY-08 | Phase 1 | Complete |
 | ADM-01 to ADM-05 | Phase 2 | Complete |
-| PAY-09 to PAY-14 | Phase 3 | Pending |
-| MOD-01 to MOD-04 | Phase 4 | Pending |
-| URL-01 to URL-09 | Phase 4 | Pending |
-| PLC-01 to PLC-03 | Phase 4 | Pending |
-| CEL-01 to CEL-06 | Phase 5 | Pending |
-| PERF-01 to PERF-05 | Phase 6 | Pending |
-| ERR-01 to ERR-02 | Phase 6 | Pending |
-| INF-01 to INF-04 | Phase 7 | Pending |
-| TEST-01 to TEST-04 | Phase 8 | Pending |
+| PAY-09 to PAY-14 | Phase 3 | Complete |
+| MOD-01 to MOD-04 | Phase 4 | Complete |
+| URL-01 to URL-09 | Phase 4 | Complete |
+| PLC-01 to PLC-03 | Phase 4 | Complete |
+| CEL-01 to CEL-06 | Phase 5 | Complete |
+| PERF-01 to PERF-05 | Phase 6 | Complete |
+| ERR-01 to ERR-02 | Phase 6 | Complete |
+| INF-01 to INF-04 | Phase 7 | Complete |
+| TEST-01 to TEST-04 | Phase 8 | Complete |
 
 **Coverage:**
 - v1 requirements: 52 total
