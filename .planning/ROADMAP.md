@@ -160,13 +160,12 @@ Plans:
   2. A Paystack webhook integration test POSTs a webhook with a known payload and HMAC signature and asserts HTTP 200 and the correct Transaction status update
   3. `assertNumQueries` tests for the hostel listing endpoint confirm the query count is reduced compared to the pre-optimization baseline
   4. A booking lifecycle test covers booking creation, approval, check-in, and check-out — all state transitions assert the correct status in the database
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 08-01: Write M-Pesa STK push payment lifecycle integration test (initiation → callback → Transaction update → receipt) (TEST-01)
-- [ ] 08-02: Write Paystack HMAC webhook integration test (POST with known payload + secret → assert HTTP 200 + Transaction update) (TEST-02)
-- [ ] 08-03: Write assertNumQueries tests for hostel listing endpoint confirming N+1 query reduction (TEST-03)
-- [ ] 08-04: Write booking lifecycle tests (created → approved → checked in → checked out with status assertions) (TEST-04)
+- [ ] 08-01-PLAN.md — Add MpesaStkPushLifecycleTest and PaystackWebhookTest classes to payments/tests_comprehensive.py (TEST-01, TEST-02)
+- [ ] 08-02-PLAN.md — Confirm/fix assertNumQueries expected counts in test_query_optimization.py to GREEN passing values (TEST-03)
+- [ ] 08-03-PLAN.md — Add BookingFullLifecycleTest class to test_booking_lifecycle.py with pending→confirmed→checked_in→completed transitions (TEST-04)
 
 ## Progress
 
@@ -182,4 +181,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 5. Celery and Notification Fixes | 2/3 | In Progress|  |
 | 6. Performance and Error Standardization | 3/4 | Complete    | 2026-03-17 |
 | 7. Infrastructure | 4/4 | Complete    | 2026-03-17 |
-| 8. Test Coverage | 0/4 | Not started | - |
+| 8. Test Coverage | 0/3 | Not started | - |
