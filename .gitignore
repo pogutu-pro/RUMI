@@ -48,3 +48,24 @@ __pycache__/
 # Virtual environments
 venv/
 Backend/venv/
+
+# Virtual environments (extended)
+venv_new/
+Backend/venv_new/
+
+# Planning and Claude files
+.planning/
+CLAUDE.md
+CLAUDE.MD
+
+# Media files
+Backend/media/
+
+# Unversioned dependencies
+Backend/third_party/
+Backend/=*
+
+# Production artifacts
+rumi_production
+Backend/rumi_production
+frontend/rumi_production
