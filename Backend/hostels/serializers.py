@@ -12,7 +12,7 @@ class AmenitySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Amenity
-        fields = ['id', 'name', 'description', 'icon', 'category']
+        fields = ['id', 'name', 'description', 'icon_url', 'category']
 
 
 class HostelAmenitySerializer(serializers.ModelSerializer):
@@ -95,7 +95,7 @@ class RoomImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RoomImage
-        fields = ['id', 'image_url', 'alt_text', 'sort_order']
+        fields = ['id', 'image_url', 'caption', 'sort_order']
 
 
 from .bed_models import Bed
@@ -118,7 +118,7 @@ class BedSerializer(serializers.ModelSerializer):
             return {
                 'id': occupancy.student.id,
                 'name': occupancy.student.user.get_full_name(),
-                'student_id': occupancy.student.student_id
+                'student_id': occupancy.student.student_id_number
             }
         return None
 
@@ -168,6 +168,7 @@ class RoomCreateSerializer(serializers.ModelSerializer):
 class BookingSerializer(serializers.ModelSerializer):
     """Serializer for bookings"""
     room_info = serializers.SerializerMethodField()
+    student_info = serializers.SerializerMethodField()
     reference = serializers.CharField(source='booking_reference', read_only=True)
 
     class Meta:
@@ -175,7 +176,7 @@ class BookingSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'booking_reference', 'reference', 'status', 'payment_status',
             'is_existing_resident', 'total_amount', 'amount_paid',
-            'balance_due', 'payment_plan', 'move_in_date', 'move_out_date',
+            'balance_due', 'payment_plan', 'move_in_date', 'check_out_date',
             'created_at', 'updated_at', 'room_info', 'student_info'
         ]
         read_only_fields = ['id', 'booking_reference', 'created_at', 'updated_at']
