@@ -1130,7 +1130,7 @@ def _handle_charge_success(data):
 
     try:
         txn = Transaction.objects.select_related(
-            'booking', 'student', 'landlord'
+            'booking', 'student'
         ).get(transaction_reference=reference)
 
         if txn.status == 'success':
@@ -1141,8 +1141,6 @@ def _handle_charge_success(data):
             txn.status = 'success'
             txn.paystack_reference = data.get('id')
             txn.paid_at = timezone.now()
-            txn.gateway_fee = Decimal(str(data.get('fees', 0))) / 100  # Convert from kobo to KES
-            txn.net_platform_revenue = txn.gross_platform_revenue - txn.gateway_fee
             txn.metadata = data
             txn.save()
 
