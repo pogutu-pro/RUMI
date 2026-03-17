@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Critical Payment Flow Fixes** - Fix silent production failures in Paystack, M-Pesa, and stub payment views (completed 2026-03-08)
 - [x] **Phase 2: Admin Layer Consolidation** - Absorb admin_endpoints views into admin_api and delete the deprecated app (completed 2026-03-16)
 - [x] **Phase 3: Payment Stub Promotion** - Promote stubs_views.py views one-by-one into payments/views.py (completed 2026-03-16)
-- [ ] **Phase 4: Missing Models and URL Wiring** - Create caretaker models, register 9 missing URLs, replace placeholder logic
+- [x] **Phase 4: Missing Models and URL Wiring** - Create caretaker models, register 9 missing URLs, replace placeholder logic (completed 2026-03-17)
 - [ ] **Phase 5: Celery and Notification Fixes** - Fix beat schedule, add django-celery-beat, wire SMS/email to events
 - [ ] **Phase 6: Performance and Error Standardization** - Fix N+1 queries, add Redis caching, standardize error responses
 - [ ] **Phase 7: Infrastructure** - Upgrade boto3, wire S3 storage, remove weather stub dead code
@@ -177,7 +177,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 1. Critical Payment Flow Fixes | 3/3 | Complete    | 2026-03-08 |
 | 2. Admin Layer Consolidation | 2/2 | Complete    | 2026-03-16 |
 | 3. Payment Stub Promotion | 5/5 | Complete    | 2026-03-16 |
-| 4. Missing Models and URL Wiring | 5/6 | In Progress|  |
+| 4. Missing Models and URL Wiring | 6/6 | Complete   | 2026-03-17 |
 | 5. Celery and Notification Fixes | 0/3 | Not started | - |
 | 6. Performance and Error Standardization | 0/3 | Not started | - |
 | 7. Infrastructure | 0/3 | Not started | - |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 04-04-PLAN.md (migration + 7 views + 7 URLs — URL-01 through URL-07 satisfied, Phase 4 complete)
-last_updated: "2026-03-16T18:33:39.924Z"
+stopped_at: Completed 04-05-PLAN.md (detail views + PLC-01 + PLC-02 + URL-08 + URL-09 — Phase 4 fully complete)
+last_updated: "2026-03-17T06:26:50.298Z"
 last_activity: "2026-03-16 — Phase 4 plan 01: VisitorInvitation model created in caretaker_operations/models.py"
 progress:
   total_phases: 8
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 16
-  completed_plans: 15
+  completed_plans: 16
   percent: 25
 ---
 
@@ -57,6 +57,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 04-missing-models-and-url-wiring P02 | 2 | 1 tasks | 1 files |
 | Phase 04-missing-models-and-url-wiring P03 | 2 | 1 tasks | 1 files |
 | Phase 04-missing-models-and-url-wiring P04 | 5 | 3 tasks | 5 files |
+| Phase 04-missing-models-and-url-wiring P05 | 8 | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,9 @@ Recent decisions affecting current work:
 - [Phase 04-04]: related_name clash fix: caretaker_operations uses caretaker_visitor_invitations and caretaker_late_entries to avoid collision with hostels.VisitorInvitation and hostels.LateEntryLog
 - [Phase 04-04]: 0001_initial dependency pinned to hostels/0023 (not broken auto-generated 0024 from pre-existing hostels model drift)
 - [Phase 04-04]: CaretakerRoommateApproveView and RejectView hardcode action — do NOT read action from request.data (frontend sends empty body or reason-only)
+- [Phase 04-05]: MaintenanceRequestModel alias used (as MaintenanceRequestModel) to avoid shadowing the local queryset variable in CaretakerMaintenanceView.get()
+- [Phase 04-05]: CaretakerDamageReportDetailView scopes via room__hostel=caretaker.hostel because DamageReport FK is to Room not Hostel directly
+- [Phase 04-05]: _calculate_average_entries_per_week required no code change — it already delegates to _get_late_entries_for_period which now returns real LateEntry counts
 
 ### Pending Todos
 
@@ -103,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-16T18:33:39.921Z
-Stopped at: Completed 04-04-PLAN.md (migration + 7 views + 7 URLs — URL-01 through URL-07 satisfied, Phase 4 complete)
+Last session: 2026-03-17T06:26:50.294Z
+Stopped at: Completed 04-05-PLAN.md (detail views + PLC-01 + PLC-02 + URL-08 + URL-09 — Phase 4 fully complete)
 Resume file: None

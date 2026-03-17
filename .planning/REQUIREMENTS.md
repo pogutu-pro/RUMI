@@ -51,13 +51,13 @@
 - [x] **URL-05**: `POST /api/v1/caretaker/visitor-invitations/{id}/check-out/` registered
 - [x] **URL-06**: `POST /api/v1/caretaker/roommate-requests/{id}/approve/` registered
 - [x] **URL-07**: `POST /api/v1/caretaker/roommate-requests/{id}/reject/` registered
-- [ ] **URL-08**: `GET /api/v1/caretaker/maintenance/{id}/` detail endpoint registered using `MaintenanceRequest` model
-- [ ] **URL-09**: `GET /api/v1/caretaker/damage-reports/{id}/` detail endpoint registered
+- [x] **URL-08**: `GET /api/v1/caretaker/maintenance/{id}/` detail endpoint registered using `MaintenanceRequest` model
+- [x] **URL-09**: `GET /api/v1/caretaker/damage-reports/{id}/` detail endpoint registered
 
 ### Placeholder Logic Replacement
 
-- [ ] **PLC-01**: `caretaker_operations/views.py` `maintenance_requests = []` replaced with real `MaintenanceRequest` ORM query
-- [ ] **PLC-02**: `caretaker_operations/additional_views.py` `booking.id % 7` simulation replaced with real `LateEntry` model query
+- [x] **PLC-01**: `caretaker_operations/views.py` `maintenance_requests = []` replaced with real `MaintenanceRequest` ORM query
+- [x] **PLC-02**: `caretaker_operations/additional_views.py` `booking.id % 7` simulation replaced with real `LateEntry` model query
 - [x] **PLC-03**: Weather stub (`third_party/weather.py` + `home/views.py:WeatherView` + URL registration) removed — no frontend component calls this endpoint
 
 ### Celery & Task Fixes
