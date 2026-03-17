@@ -170,7 +170,8 @@ REST_FRAMEWORK = performance_settings.get('REST_FRAMEWORK', {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/hour',
         'user': '1000/hour'
-    }
+    },
+    'EXCEPTION_HANDLER': 'core.exceptions.custom_exception_handler',
 })
 
 # JWT Configuration
