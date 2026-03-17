@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 05-01-PLAN.md (django-celery-beat install + BEAT_SCHEDULE fixes — CEL-01, CEL-02, CEL-03 satisfied)
-last_updated: "2026-03-17T06:53:31.273Z"
+stopped_at: Completed 05-02-PLAN.md (on_commit wrapping + CEL-04 + CEL-06 — 6 dispatch sites fixed)
+last_updated: "2026-03-17T07:00:00.325Z"
 last_activity: "2026-03-16 — Phase 4 plan 01: VisitorInvitation model created in caretaker_operations/models.py"
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 19
-  completed_plans: 17
+  completed_plans: 18
   percent: 25
 ---
 
@@ -59,6 +59,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 04-missing-models-and-url-wiring P04 | 5 | 3 tasks | 5 files |
 | Phase 04-missing-models-and-url-wiring P05 | 8 | 3 tasks | 3 files |
 | Phase 05-celery-and-notification-fixes P01 | 6 | 2 tasks | 5 files |
+| Phase 05-celery-and-notification-fixes P02 | 684 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,9 @@ Recent decisions affecting current work:
 - [Phase 05-01]: Use django-celery-beat==2.8.1 instead of 2.6.0 — 2.6.0 requires Django<5.1 but venv has Django 5.2.11
 - [Phase 05-01]: Add name='payments.tasks.retry_failed_webhook_events' to @shared_task on reconcile_missed_webhooks — beat schedule string must match registered name, not function name
 - [Phase 05-01]: Replace broken 'process-late-fees' BEAT_SCHEDULE entry with 'assess-late-fees' pointing to existing assess_late_fees function
+- [Phase 05-02]: Use local db_transaction alias in RefundRequestCreateView.post to resolve transaction variable shadow (model instance shadowed module import — pre-existing bug)
+- [Phase 05-02]: Snapshot all mutable values as _prefixed variables before on_commit lambdas to prevent closure capture bugs across all six dispatch sites
+- [Phase 05-02]: Dynamic superuser lookup in process_recurring_payments guarded with if _admin: — task must not crash in environments with no superuser (CEL-06)
 
 ### Pending Todos
 
@@ -111,6 +115,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T06:53:31.268Z
-Stopped at: Completed 05-01-PLAN.md (django-celery-beat install + BEAT_SCHEDULE fixes — CEL-01, CEL-02, CEL-03 satisfied)
+Last session: 2026-03-17T07:00:00.319Z
+Stopped at: Completed 05-02-PLAN.md (on_commit wrapping + CEL-04 + CEL-06 — 6 dispatch sites fixed)
 Resume file: None
