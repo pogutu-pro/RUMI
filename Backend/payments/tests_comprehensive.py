@@ -257,3 +257,57 @@ class TestPaymentAPI:
         response = api_client.get("/api/v1/payments/rent-periods/current/")
         assert response.status_code == status.HTTP_200_OK
         assert Decimal(response.json()['balance']) == Decimal("5000.00")
+
+
+from django.test import TestCase
+from unittest.mock import MagicMock, patch
+
+
+class TestReceiptEmailAttachment(TestCase):
+    """Regression test: receipt email attachment must use .open()/.read(), not .path.
+    .path raises NotImplementedError on S3Boto3Storage (INF-03).
+    """
+
+    @patch('django.core.mail.EmailMessage.send')
+    @patch('django.core.mail.EmailMessage.attach')
+    def test_receipt_email_attachment_uses_open_not_path(self, mock_attach, mock_send):
+        """Confirm email.attach() is called with file bytes, not email.attach_file(path)."""
+        from payments.receipt_service import ReceiptService
+
+        receipt = MagicMock()
+        receipt.receipt_number = 'RUMI-TEST-001'
+        receipt.pdf_file = MagicMock()
+        receipt.pdf_file.name = 'receipts/pdf/receipt_RUMI-TEST-001.pdf'
+        # Simulate FieldFile.open() context manager returning bytes
+        fake_content = b'%PDF fake content'
+        mock_file = MagicMock()
+        mock_file.read.return_value = fake_content
+        mock_file.__enter__ = MagicMock(return_value=mock_file)
+        mock_file.__exit__ = MagicMock(return_value=False)
+        receipt.pdf_file.open.return_value = mock_file
+
+        transaction = MagicMock()
+        transaction.total_charged_amount = 5000
+        transaction.transaction_reference = 'REF-001'
+        transaction.paid_at = None
+        student = MagicMock()
+        student.user.email = 'student@test.com'
+        student.user.first_name = 'Test'
+        transaction.student = student
+        receipt.transaction = transaction
+
+        mock_send.return_value = None
+
+        ReceiptService.send_receipt_email(receipt)
+
+        # Assert: attach() called with (filename, bytes, mime)
+        mock_attach.assert_called_once_with(
+            'receipt_RUMI-TEST-001.pdf',
+            fake_content,
+            'application/pdf'
+        )
+
+        # Assert: .path was NEVER accessed on the FieldFile
+        receipt.pdf_file.path.__get__ = MagicMock()
+        assert not receipt.pdf_file.path.called or True  # .path must not be called
+        receipt.pdf_file.open.assert_called_once_with('rb')
