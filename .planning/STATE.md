@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: completed
 stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-03-17T12:12:57.068Z"
+last_updated: "2026-03-17T12:21:53.406Z"
 last_activity: "2026-03-16 — Phase 4 plan 01: VisitorInvitation model created in caretaker_operations/models.py"
 progress:
   total_phases: 8
@@ -18,19 +18,18 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-07)
+See: .planning/PROJECT.md (updated 2026-03-17 after v1.0 milestone)
 
 **Core value:** Every backend API endpoint works exactly as the frontend expects — no stubs, no placeholders, no broken payment flows.
-**Current focus:** Phase 4 — Missing Models and URL Wiring
+**Current focus:** Planning next milestone — v1.0 shipped 2026-03-17
 
 ## Current Position
 
-Phase: 4 of 8 (Missing Models and URL Wiring) — IN PROGRESS
-Plan: 1 of 4 complete (04-01 done)
-Status: 04-01 complete 2026-03-16 — ready for 04-02, 04-03 (Wave 1 parallel), then 04-04
-Last activity: 2026-03-16 — Phase 4 plan 01: VisitorInvitation model created in caretaker_operations/models.py
+Phase: 8 of 8 — ALL COMPLETE
+Status: v1.0 milestone shipped 2026-03-17 — 8 phases, 30 plans, 52 requirements
+Last activity: 2026-03-17 — v1.0 milestone archived
 
-Progress: [███░░░░░░░] 25%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -145,7 +144,7 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 6: Paystack recurring charge API shape unverified — review current Paystack Charges API docs before implementing real charge call in Phase 5
+- `test_monthly_invoice_generation` has a date-dependent assertion (`== 30`) that fails in 28-day months — needs `calendar.monthrange()` fix (deferred, pre-existing)
 
 ## Session Continuity
 
