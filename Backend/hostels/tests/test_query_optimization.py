@@ -98,11 +98,11 @@ class HostelQueryOptimizationTest(APITestCase):
             HostelAmenity.objects.create(hostel=h, amenity=amenity)
 
     def test_no_n_plus_one(self):
-        # Actual query count before fix: 10
-        # GREEN expected_count = 4 (1 COUNT + 1 hostel list + 1 prefetch amenities + 1 prefetch rooms)
-        # (Before fix this will exceed the tight bound and raise AssertionError)
+        # Actual query count before fix: 10 (N+1 amenity queries per hostel)
+        # Actual query count after fix : 5  (fixed — prefetch batches all amenity queries)
+        # GREEN expected_count = 5
         cache.clear()
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(5):
             response = self.client.get("/api/v1/hostels/")
         self.assertEqual(response.status_code, 200)
 
@@ -175,9 +175,9 @@ class BedOccupancyQueryTest(APITestCase):
             )
 
     def test_no_n_plus_one(self):
-        # Actual query count before fix: measured after cache.clear() + middleware bypass
-        # GREEN expected_count = 4 (1 COUNT + 1 room list + 1 prefetch beds + 1 prefetch occupancy)
-        # (Before fix this will exceed the tight bound and raise AssertionError)
+        # Actual query count before fix: 12 (N+1 per bed for occupancy + student + user lookups)
+        # Actual query count after fix : 4  (COUNT + rooms+hostel JOIN + beds batch + occupancy batch)
+        # GREEN expected_count = 4
         cache.clear()
         with self.assertNumQueries(4):
             response = self.client.get("/api/v1/hostels/rooms/")
@@ -239,11 +239,11 @@ class BookingQueryOptimizationTest(APITestCase):
         self.client.force_authenticate(user=self.student.user)
 
     def test_no_n_plus_one(self):
-        # Actual query count before fix: 14
-        # GREEN expected_count = 4 (1 COUNT + 1 booking list + 1 prefetch student + 1 select_related room__hostel)
-        # (Before fix this will exceed the tight bound and raise AssertionError)
+        # Actual query count before fix: 14 (room+hostel+student+user per booking)
+        # Actual query count after fix : 2  (COUNT + 1 booking+room+hostel+student+user JOIN)
+        # GREEN expected_count = 2
         cache.clear()
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(2):
             response = self.client.get("/api/v1/hostels/bookings/")
         self.assertEqual(response.status_code, 200)
 

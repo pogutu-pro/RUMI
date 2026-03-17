@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.db import transaction, models
+from django.db.models import Prefetch
 from django.utils import timezone
 from rest_framework import status, permissions, viewsets, filters
 from rest_framework.decorators import api_view, permission_classes, action
@@ -24,6 +25,7 @@ from .models import (
     DamageReport, RoomTransfer, RoomImage, HostelAmenity,
     Favorite, Waitlist
 )
+from .bed_models import Bed, BedOccupancy
 from .serializers import (
     HostelSerializer, HostelCreateSerializer,
     RoomSerializer, RoomCreateSerializer,
@@ -50,7 +52,9 @@ class HostelViewSet(TenantModelViewSet):
             return super().get_queryset()
 
         # 2. Public Scope (Active Only)
-        return Hostel.objects.filter(status='active').select_related('landlord__user')
+        return Hostel.objects.filter(status='active').select_related(
+            'landlord__user'
+        ).prefetch_related('hostel_amenities__amenity', 'rooms')
 
     def perform_create(self, serializer):
         if self.request.user.role != 'landlord':
@@ -94,8 +98,15 @@ class RoomViewSet(TenantModelViewSet):
             return super().get_queryset()
             
         # 2. Public Scope (Available rooms in active hostels)
-        # 2. Public Scope (Available rooms in active hostels)
-        return Room.objects.filter(status='available', hostel__status='active').select_related('hostel')
+        active_occupancy = Prefetch(
+            'occupancy_timeline',
+            queryset=BedOccupancy.objects.filter(is_active=True).select_related('student__user'),
+        )
+        return Room.objects.filter(
+            status='available', hostel__status='active'
+        ).select_related('hostel').prefetch_related(
+            Prefetch('beds', queryset=Bed.objects.prefetch_related(active_occupancy))
+        )
 
     def perform_create(self, serializer):
         hostel_id = self.request.data.get('hostel_id')
@@ -121,6 +132,9 @@ class BookingViewSet(TenantModelViewSet):
     serializer_class = BookingSerializer
     permission_classes = [permissions.IsAuthenticated]
     queryset = Booking.objects.all()
+
+    def get_queryset(self):
+        return Booking.objects.all().select_related('room__hostel', 'student__user')
 
     def get_serializer_class(self):
         if self.action == 'create':

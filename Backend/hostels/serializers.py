@@ -113,7 +113,14 @@ class BedSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'full_code', 'current_occupant']
 
     def get_current_occupant(self, obj):
-        occupancy = obj.occupancy_timeline.filter(is_active=True).first()
+        # Use prefetch cache when available (avoids N+1 per bed)
+        if hasattr(obj, '_prefetched_objects_cache') and 'occupancy_timeline' in obj._prefetched_objects_cache:
+            occupancy = next(
+                (o for o in obj._prefetched_objects_cache['occupancy_timeline'] if o.is_active),
+                None,
+            )
+        else:
+            occupancy = obj.occupancy_timeline.filter(is_active=True).first()
         if occupancy:
             return {
                 'id': occupancy.student.id,
