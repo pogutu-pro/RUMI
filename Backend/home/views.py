@@ -12,7 +12,6 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from .models import Page, TeamMember, ContactInquiry, FAQ, BlogPost, Newsletter, Testimonial, Statistics
-# from third_party.weather import get_location_weather
 
 
 class LandingPageView(APIView):

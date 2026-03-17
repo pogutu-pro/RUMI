@@ -273,10 +273,6 @@ MPESA_SANDBOX = os.getenv('MPESA_SANDBOX', 'True').lower() == 'true'
 # Google Maps Configuration
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
 
-# Weather API Configuration
-OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY')
-WEATHERAPI_KEY = os.getenv('WEATHERAPI_KEY')
-
 # Platform Fee Configuration (UPDATED v2.0)
 # Student pays 2% service fee, Landlord receives full rent
 PLATFORM_SERVICE_FEE = 0.02  # 2% service fee charged to student
