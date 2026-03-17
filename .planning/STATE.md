@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 06-02-PLAN.md
-last_updated: "2026-03-17T08:21:29.726Z"
+stopped_at: Completed 06-04-PLAN.md
+last_updated: "2026-03-17T08:39:26.514Z"
 last_activity: "2026-03-16 — Phase 4 plan 01: VisitorInvitation model created in caretaker_operations/models.py"
 progress:
   total_phases: 8
   completed_phases: 6
-  total_plans: 22
-  completed_plans: 22
+  total_plans: 23
+  completed_plans: 23
   percent: 25
 ---
 
@@ -63,6 +63,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 06-performance-and-error-standardization P01 | 27 | 2 tasks | 6 files |
 | Phase 06-performance-and-error-standardization P03 | 5 | 2 tasks | 3 files |
 | Phase 06-performance-and-error-standardization P02 | 8 | 2 tasks | 6 files |
+| Phase 06-performance-and-error-standardization P04 | 3 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -117,6 +118,7 @@ Recent decisions affecting current work:
 - [Phase 06-02]: Anonymous requests only cached in HostelViewSet.list() — authenticated landlords/caretakers bypass cache to see tenant-scoped data
 - [Phase 06-02]: post_delete signal added alongside post_save on invalidate_hostels_list_cache — hostel deletion must also bust the listing cache key
 - [Phase 06-02]: home_data outer cache (900s) wraps existing landing_page_stats/testimonials inner caches — inner caches serve as DB fallbacks when outer key is cold
+- [Phase 06-04]: Add EXCEPTION_HANDLER only to PERFORMANCE_REST_FRAMEWORK — settings.py fallback dict is unreachable because performance_settings.get('REST_FRAMEWORK') always returns PERFORMANCE_REST_FRAMEWORK first
 
 ### Pending Todos
 
@@ -128,6 +130,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T08:21:29.723Z
-Stopped at: Completed 06-02-PLAN.md
+Last session: 2026-03-17T08:39:26.510Z
+Stopped at: Completed 06-04-PLAN.md
 Resume file: None
