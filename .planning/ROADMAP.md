@@ -127,12 +127,12 @@ Plans:
   3. `GET /api/v1/hostels/` responses are cached in Redis for 5 minutes with cache invalidation on Hostel post_save signal
   4. `GET /api/v1/home/` responses are cached in Redis for 15 minutes
   5. All API error responses have a consistent shape — no mix of `{'error': ...}` vs `{'detail': ...}` — a custom DRF exception handler in core/exceptions.py normalizes all errors
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: Add select_related and prefetch_related to HostelViewSet.get_queryset(); fix BedSerializer N+1 via prefetch in parent ViewSet; fix BookingSerializer N+1 via select_related in BookingViewSet (PERF-01, PERF-02, PERF-03)
-- [ ] 06-02: Add Redis caching to GET /api/v1/hostels/ with 5-min TTL and post_save invalidation; add Redis caching to GET /api/v1/home/ with 15-min TTL (PERF-04, PERF-05)
-- [ ] 06-03: Create custom DRF exception handler in core/exceptions.py; point REST_FRAMEWORK['EXCEPTION_HANDLER'] to it; verify consistent error shape across all endpoints (ERR-01, ERR-02)
+- [ ] 06-01-PLAN.md — Write all test stubs (Wave 0); fix N+1 queries in HostelViewSet, RoomViewSet, BookingViewSet (PERF-01, PERF-02, PERF-03)
+- [ ] 06-02-PLAN.md — Implement Redis caching on GET /api/v1/hostels/ with 5-min TTL + post_save/post_delete signal invalidation; cache GET /api/v1/home/ with 15-min TTL (PERF-04, PERF-05)
+- [ ] 06-03-PLAN.md — Create core/exceptions.py custom DRF exception handler; wire REST_FRAMEWORK['EXCEPTION_HANDLER'] in settings.py (ERR-01, ERR-02)
 
 ### Phase 7: Infrastructure
 **Goal**: boto3 is current, S3 storage is wired behind a USE_S3 feature flag, existing local media files are documented for sync, and the weather stub dead code is fully removed
