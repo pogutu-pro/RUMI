@@ -311,3 +311,157 @@ class TestReceiptEmailAttachment(TestCase):
         receipt.pdf_file.path.__get__ = MagicMock()
         assert not receipt.pdf_file.path.called or True  # .path must not be called
         receipt.pdf_file.open.assert_called_once_with('rb')
+
+
+# =============================================================================
+# Integration Tests: M-Pesa STK Push Lifecycle (TEST-01)
+# =============================================================================
+
+import json
+import hmac
+import hashlib
+from unittest.mock import patch, MagicMock
+from django.test import TestCase as DjangoTestCase, override_settings
+from hostels.tests.factories import BookingFactory, StudentProfileFactory, RoomFactory
+from payments.models import Receipt
+
+
+class MpesaStkPushLifecycleTest(DjangoTestCase):
+    """Integration test: M-Pesa STK push callback updates Transaction and creates Receipt."""
+
+    def setUp(self):
+        self.student = StudentProfileFactory()
+        self.room = RoomFactory(status='available')
+        self.booking = BookingFactory(student=self.student, room=self.room, status='confirmed')
+
+    def test_stk_push_full_lifecycle(self):
+        from payments.models import Transaction
+
+        CHECKOUT_REQUEST_ID = 'ws_co_test_123'
+
+        txn = Transaction.objects.create(
+            student=self.student,
+            booking=self.booking,
+            transaction_reference='TXN-TEST-MPESA-001',
+            mpesa_checkout_request_id=CHECKOUT_REQUEST_ID,
+            amount='5000.00',
+            payment_method='mpesa',
+            status='pending',
+        )
+
+        callback_payload = {
+            "Body": {
+                "stkCallback": {
+                    "MerchantRequestID": "test-merchant",
+                    "CheckoutRequestID": CHECKOUT_REQUEST_ID,
+                    "ResultCode": 0,
+                    "ResultDesc": "The service request is processed successfully.",
+                    "CallbackMetadata": {
+                        "Item": [
+                            {"Name": "Amount", "Value": 5000.00},
+                            {"Name": "MpesaReceiptNumber", "Value": "OEI2AK4NKF"},
+                            {"Name": "PhoneNumber", "Value": 254712345678},
+                            {"Name": "TransactionDate", "Value": 20260317120000},
+                        ]
+                    }
+                }
+            }
+        }
+
+        mock_api = MagicMock()
+        mock_api.process_payment_callback.return_value = {
+            'status': 'success',
+            'receipt_number': 'OEI2AK4NKF',
+            'phone_number': '254712345678',
+            'amount': 5000,
+        }
+
+        with patch('payments.routing.MpesaRoutingEngine.get_api_for_booking', return_value=mock_api), \
+             patch('payments.receipt_service.ReceiptService.generate_and_send_receipt') as mock_receipt:
+            # Simulate receipt creation side effect so Receipt record exists
+            def _create_receipt(txn_obj):
+                from django.core.files.base import ContentFile
+                receipt_obj = Receipt.objects.create(
+                    transaction=txn_obj,
+                    receipt_number='RUMI-TEST-001',
+                )
+                receipt_obj.pdf_file.save('receipt_RUMI-TEST-001.pdf', ContentFile(b'%PDF-test'), save=True)
+                return {'receipt': receipt_obj, 'email_sent': False}
+
+            mock_receipt.side_effect = _create_receipt
+
+            response = self.client.post(
+                '/api/v1/payments/webhook/mpesa/stk_push/',
+                data=json.dumps(callback_payload),
+                content_type='application/json',
+            )
+
+        self.assertEqual(response.status_code, 200)
+        txn.refresh_from_db()
+        self.assertNotEqual(txn.status, 'pending')
+        self.assertTrue(Receipt.objects.filter(transaction=txn).exists())
+        receipt = Receipt.objects.get(transaction=txn)
+        self.assertTrue(receipt.pdf_file)
+
+
+# =============================================================================
+# Integration Tests: Paystack HMAC Webhook Verification (TEST-02)
+# =============================================================================
+
+@override_settings(PAYSTACK_SECRET_KEY='test_secret_key')
+class PaystackWebhookTest(DjangoTestCase):
+    """Integration test: Paystack webhook HMAC signature verification."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        self.client = APIClient()
+        self.student = StudentProfileFactory()
+        self.room = RoomFactory()
+        self.booking = BookingFactory(student=self.student, room=self.room)
+
+    def _make_signed_request(self, payload_dict):
+        payload = json.dumps(payload_dict).encode()
+        sig = hmac.new(b'test_secret_key', payload, hashlib.sha512).hexdigest()
+        return self.client.post(
+            '/api/v1/payments/webhook/paystack/',
+            data=payload,
+            content_type='application/json',
+            HTTP_X_PAYSTACK_SIGNATURE=sig,
+        )
+
+    def test_charge_success_returns_200_and_updates_transaction(self):
+        from payments.models import Transaction
+
+        txn = Transaction.objects.create(
+            student=self.student,
+            booking=self.booking,
+            transaction_reference='TXN-PAY-001',
+            amount='5000.00',
+            payment_method='paystack',
+            status='pending',
+        )
+
+        payload = {
+            "event": "charge.success",
+            "data": {
+                "reference": txn.transaction_reference,
+                "id": "paystack_id_abc",
+                "fees": 0,
+            },
+        }
+
+        response = self._make_signed_request(payload)
+
+        self.assertEqual(response.status_code, 200)
+        txn.refresh_from_db()
+        self.assertEqual(txn.status, 'success')
+
+    def test_invalid_signature_returns_400(self):
+        payload = json.dumps({"event": "charge.success", "data": {}}).encode()
+        response = self.client.post(
+            '/api/v1/payments/webhook/paystack/',
+            data=payload,
+            content_type='application/json',
+            HTTP_X_PAYSTACK_SIGNATURE='bad_signature',
+        )
+        self.assertEqual(response.status_code, 400)
