@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Payment Stub Promotion** - Promote stubs_views.py views one-by-one into payments/views.py (completed 2026-03-16)
 - [x] **Phase 4: Missing Models and URL Wiring** - Create caretaker models, register 9 missing URLs, replace placeholder logic (completed 2026-03-17)
 - [ ] **Phase 5: Celery and Notification Fixes** - Fix beat schedule, add django-celery-beat, wire SMS/email to events
-- [x] **Phase 6: Performance and Error Standardization** - Fix N+1 queries, add Redis caching, standardize error responses (completed 2026-03-17)
+- [ ] **Phase 6: Performance and Error Standardization** - Fix N+1 queries, add Redis caching, standardize error responses
 - [ ] **Phase 7: Infrastructure** - Upgrade boto3, wire S3 storage, remove weather stub dead code
 - [ ] **Phase 8: Test Coverage** - Payment lifecycle tests, Paystack HMAC test, assertNumQueries tests, booking tests
 
@@ -127,12 +127,13 @@ Plans:
   3. `GET /api/v1/hostels/` responses are cached in Redis for 5 minutes with cache invalidation on Hostel post_save signal
   4. `GET /api/v1/home/` responses are cached in Redis for 15 minutes
   5. All API error responses have a consistent shape — no mix of `{'error': ...}` vs `{'detail': ...}` — a custom DRF exception handler in core/exceptions.py normalizes all errors
-**Plans**: 3 plans
+**Plans**: 4 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Write all test stubs (Wave 0); fix N+1 queries in HostelViewSet, RoomViewSet, BookingViewSet (PERF-01, PERF-02, PERF-03)
-- [ ] 06-02-PLAN.md — Implement Redis caching on GET /api/v1/hostels/ with 5-min TTL + post_save/post_delete signal invalidation; cache GET /api/v1/home/ with 15-min TTL (PERF-04, PERF-05)
-- [ ] 06-03-PLAN.md — Create core/exceptions.py custom DRF exception handler; wire REST_FRAMEWORK['EXCEPTION_HANDLER'] in settings.py (ERR-01, ERR-02)
+- [x] 06-01-PLAN.md — Write all test stubs (Wave 0); fix N+1 queries in HostelViewSet, RoomViewSet, BookingViewSet (PERF-01, PERF-02, PERF-03)
+- [x] 06-02-PLAN.md — Implement Redis caching on GET /api/v1/hostels/ with 5-min TTL + post_save/post_delete signal invalidation; cache GET /api/v1/home/ with 15-min TTL (PERF-04, PERF-05)
+- [x] 06-03-PLAN.md — Create core/exceptions.py custom DRF exception handler; wire REST_FRAMEWORK['EXCEPTION_HANDLER'] in settings.py (ERR-01, ERR-02)
+- [ ] 06-04-PLAN.md — Gap closure: add EXCEPTION_HANDLER to PERFORMANCE_REST_FRAMEWORK in performance_settings.py so handler fires in live request dispatch (ERR-02)
 
 ### Phase 7: Infrastructure
 **Goal**: boto3 is current, S3 storage is wired behind a USE_S3 feature flag, existing local media files are documented for sync, and the weather stub dead code is fully removed
@@ -179,6 +180,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 3. Payment Stub Promotion | 5/5 | Complete    | 2026-03-16 |
 | 4. Missing Models and URL Wiring | 6/6 | Complete   | 2026-03-17 |
 | 5. Celery and Notification Fixes | 2/3 | In Progress|  |
-| 6. Performance and Error Standardization | 3/3 | Complete   | 2026-03-17 |
+| 6. Performance and Error Standardization | 3/4 | In Progress |  |
 | 7. Infrastructure | 0/3 | Not started | - |
 | 8. Test Coverage | 0/4 | Not started | - |
