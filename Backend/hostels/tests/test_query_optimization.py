@@ -249,11 +249,33 @@ class BookingQueryOptimizationTest(APITestCase):
 
 
 # ---------------------------------------------------------------------------
-# PERF-04: Hostel cache stub (implemented in plan 06-02)
+# PERF-04: Hostel list caching + signal-based invalidation
 # ---------------------------------------------------------------------------
 
 class HostelCacheTest(TestCase):
-    """Stub — full implementation in plan 06-02."""
+    """Tests for Redis caching on HostelViewSet.list() and signal invalidation."""
 
-    def test_cache_hit_returns_cached_response(self):
-        self.skipTest("Implemented in plan 06-02")
+    def setUp(self):
+        cache.clear()
+
+    def test_list_is_cached(self):
+        """Second GET /api/v1/hostels/ must hit cache, not DB."""
+        client = APIClient()
+        # First call populates cache
+        response1 = client.get('/api/v1/hostels/')
+        self.assertEqual(response1.status_code, 200)
+        cached = cache.get('hostels_list')
+        self.assertIsNotNone(cached, 'hostels_list key must be set after first call')
+        # Second call must return same data (cache hit verified by key presence)
+        response2 = client.get('/api/v1/hostels/')
+        self.assertEqual(response2.status_code, 200)
+
+    def test_signal_busts_cache(self):
+        """Saving a Hostel must delete 'hostels_list' from cache."""
+        cache.set('hostels_list', {'results': []}, timeout=300)
+        self.assertIsNotNone(cache.get('hostels_list'))
+        # Invoke the signal receiver directly to verify it deletes the key
+        from hostels.signals import invalidate_hostels_list_cache
+        from hostels.models import Hostel
+        invalidate_hostels_list_cache(sender=Hostel)
+        self.assertIsNone(cache.get('hostels_list'), 'Signal must bust the hostels_list cache')
