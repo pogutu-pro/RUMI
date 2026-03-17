@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: completed
 stopped_at: Completed 05-02-PLAN.md (on_commit wrapping + CEL-04 + CEL-06 — 6 dispatch sites fixed)
-last_updated: "2026-03-17T07:00:00.325Z"
+last_updated: "2026-03-17T07:08:37.643Z"
 last_activity: "2026-03-16 — Phase 4 plan 01: VisitorInvitation model created in caretaker_operations/models.py"
 progress:
   total_phases: 8
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 19
-  completed_plans: 18
+  completed_plans: 19
   percent: 25
 ---
 
@@ -104,6 +104,7 @@ Recent decisions affecting current work:
 - [Phase 05-02]: Use local db_transaction alias in RefundRequestCreateView.post to resolve transaction variable shadow (model instance shadowed module import — pre-existing bug)
 - [Phase 05-02]: Snapshot all mutable values as _prefixed variables before on_commit lambdas to prevent closure capture bugs across all six dispatch sites
 - [Phase 05-02]: Dynamic superuser lookup in process_recurring_payments guarded with if _admin: — task must not crash in environments with no superuser (CEL-06)
+- [Phase 05-celery-and-notification-fixes]: send_booking_confirmation and send_payment_notification tasks use lazy imports + try/except; patch target is notifications.tasks.send_notification (lazy import path); ast.unparse used for AST wiring assertions
 
 ### Pending Todos
 
