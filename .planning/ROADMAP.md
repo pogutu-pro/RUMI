@@ -144,12 +144,12 @@ Plans:
   2. `USE_S3=true` activates `S3Boto3Storage` as the default file storage backend; `USE_S3=false` (default) keeps local disk storage — the settings block handles both cases
   3. `ReceiptGenerateView` uses storage backend URLs (via `receipt.url`) rather than hardcoded `/media/` path strings — verified by code audit before S3 is enabled
   4. Existing local receipt files in `Backend/media/` are inventoried and a sync command is documented so no existing receipt URLs break when S3 is enabled
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 07-01: Upgrade boto3 to current stable in requirements.txt; verify no dependency conflicts (INF-01)
-- [ ] 07-02: Add USE_S3 flag to settings.py with full STORAGES block for S3Boto3Storage; add AWS env var config (INF-02)
-- [ ] 07-03: Audit ReceiptGenerateView for hardcoded /media/ URL strings; update to use storage backend URLs; inventory existing media files and document aws s3 sync command (INF-03, INF-04)
+- [ ] 07-01-PLAN.md — Upgrade boto3 to 1.42.69 and django-storages to 1.14.6 in requirements.txt; verify pip check + manage.py check clean (INF-01)
+- [ ] 07-02-PLAN.md — Add USE_S3 flag and STORAGES dict (both branches) to settings.py; append AWS S3 section to .env.example (INF-02, INF-04)
+- [ ] 07-03-PLAN.md — Write regression test for receipt email attachment; fix receipt_service.py line 86 to use FieldFile.open() not .path (INF-03)
 
 ### Phase 8: Test Coverage
 **Goal**: The highest-risk payment and booking flows have passing integration tests, N+1 fixes are verified by query count assertions, and the Paystack HMAC path is covered by an integration test
