@@ -403,6 +403,48 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# =============================================================================
+# S3 / Media Storage
+#
+# Pre-production checklist (MUST follow this order):
+#   1. Run sync BEFORE setting USE_S3=true to avoid breaking existing receipt URLs:
+#      aws s3 sync Backend/media/ s3://$AWS_STORAGE_BUCKET_NAME/media/ --exclude "*.DS_Store"
+#   2. Set all AWS_* env vars in your VPS .env (see .env.example)
+#   3. THEN set USE_S3=true
+#
+# Existing media inventory (as of 2026-03-17):
+#   - 21 PDF receipts: Backend/media/receipts/pdf/receipt_RUMI-*.pdf
+#   - Profile images:  Backend/media/profiles/
+# =============================================================================
+USE_S3 = os.getenv('USE_S3', 'False').lower() == 'true'
+
+if USE_S3:
+    AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
+    AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME')
+    AWS_LOCATION = 'media'           # S3 paths mirror local: media/receipts/pdf/...
+    AWS_DEFAULT_ACL = None           # Bucket policy controls access; no per-object ACL
+    AWS_S3_FILE_OVERWRITE = False    # Preserve existing files on re-upload
+
+    STORAGES = {
+        'default': {
+            'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
+        },
+        'staticfiles': {
+            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        },
+    }
+else:
+    STORAGES = {
+        'default': {
+            'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        },
+        'staticfiles': {
+            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        },
+    }
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
