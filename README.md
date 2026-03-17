@@ -1,51 +1,98 @@
-# RUMIA - Student Accommodation Platform
+# RUMI — Student Accommodation Platform
 
-## Overview
-RUMIA is a comprehensive student accommodation management platform that connects students with hostel owners, streamlining the entire rental process from discovery to payment management.
+RUMI is a Kenyan student accommodation platform that connects students with hostel owners. It handles the full rental lifecycle: property discovery, booking, M-Pesa and Paystack payment processing, caretaker operations, real-time notifications, and analytics.
 
-## Architecture
+**Status:** v1.0 — Production-ready backend (112 tests passing)
 
-### Technology Stack
-- **Backend**: Django 4.2.11 with Django REST Framework
-- **Frontend**: Next.js 16 with React 19 and TypeScript
-- **Database**: SQLite (development) / PostgreSQL (production ready)
-- **Authentication**: JWT-based with role-based access control
-- **Real-time**: WebSocket support via Django Channels
-- **Caching**: Redis for sessions and performance optimization
-- **Async Processing**: Celery for background tasks
-- **Payment Processing**: M-Pesa and Paystack integrations
-- **Monitoring**: Prometheus metrics and comprehensive logging
+---
 
-### System Components
-- **Multi-role User Management**: Students, Landlords, Caretakers, Tech Support, Admins
-- **Property Management**: Hostel listings, room management, occupancy tracking
-- **Payment System**: Recurring rent payments, wallet management, automated processing
-- **Communication**: Real-time messaging, notifications
-- **Analytics**: Revenue tracking, occupancy metrics, tax reporting
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Django 4.2, Django REST Framework 3.14 |
+| Frontend | Next.js 16, React 19, TypeScript |
+| Database | PostgreSQL (production) / SQLite (dev) |
+| Cache | Redis (django-redis) |
+| Async tasks | Celery + django-celery-beat |
+| Real-time | Django Channels (WebSocket) |
+| Payments | M-Pesa Daraja STK Push, Paystack |
+| Storage | AWS S3 (production) / local disk (dev) |
+| Auth | JWT (SimpleJWT) with role-based access |
+| Monitoring | Prometheus + Sentry |
+| PDF | ReportLab (receipt generation) |
+| SMS | Africa's Talking |
+
+---
+
+## User Roles
+
+| Role | Description |
+|------|-------------|
+| Student | Searches hostels, books rooms, pays rent |
+| Landlord | Lists properties, manages rooms and tenants |
+| Caretaker | Handles visitor invitations, maintenance, late entries |
+| Admin | Platform oversight, user management, financial reports |
+| Tech Support | System health, logs, error monitoring |
+
+---
+
+## Project Structure
+
+```
+RUMI/
+├── Backend/
+│   ├── accounts/              # Users, authentication, roles, OTP
+│   ├── hostels/               # Hostel, room, bed, booking models
+│   ├── payments/              # M-Pesa, Paystack, transactions, receipts
+│   ├── admin_api/             # Admin and super-admin API endpoints
+│   ├── caretaker_operations/  # Visitor invitations, maintenance, late entries
+│   ├── student_api/           # Student-facing API endpoints
+│   ├── landlord_api/          # Landlord-facing API endpoints
+│   ├── support_api/           # Tech support endpoints
+│   ├── notifications/         # SMS, email, push notification tasks
+│   ├── analytics/             # Revenue, occupancy, and reporting
+│   ├── home/                  # Public homepage and landing page API
+│   ├── core/                  # Shared utilities, custom exception handler
+│   ├── roommate_system/       # Roommate compatibility matching
+│   ├── monitoring/            # Prometheus metrics and health checks
+│   └── rumi/                  # Django project settings and URL config
+└── frontend/
+    └── src/app/
+        ├── (admin)/           # Admin dashboard
+        ├── (auth)/            # Login, register, OTP
+        ├── (student)/         # Student portal
+        ├── (landlord)/        # Landlord portal
+        ├── (caretaker)/       # Caretaker portal
+        └── (public)/          # Public-facing pages
+```
+
+---
 
 ## Quick Start
 
 ### Prerequisites
-- Python 3.8+
-- Node.js 16+
-- Redis server
-- PostgreSQL (for production)
 
-### Backend Setup
+- Python 3.10+
+- Node.js 18+
+- Redis
+- PostgreSQL (production) or SQLite (dev, zero config)
+
+### Backend
+
 ```bash
-# Navigate to backend directory
 cd Backend
 
-# Create virtual environment
+# Create and activate virtualenv
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Configure environment variables
+# Configure environment
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env — minimum required: SECRET_KEY, MPESA_*, PAYSTACK_SECRET_KEY
 
 # Run migrations
 python manage.py migrate
@@ -53,71 +100,51 @@ python manage.py migrate
 # Create superuser
 python manage.py createsuperuser
 
-# Start development server
+# Start dev server
 python manage.py runserver
 ```
 
-### Frontend Setup
+### Frontend
+
 ```bash
-# Navigate to frontend directory
 cd frontend
 
-# Install dependencies
 npm install
 
-# Configure environment variables
+# Configure environment
 cp .env.example .env.local
-# Edit .env.local with your configuration
+# Edit .env.local — set NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 
-# Start development server
 npm run dev
 ```
 
-### Start Background Services
+### Background Services
+
 ```bash
-# Start Redis (if not running)
+# Redis (required for caching and Celery)
 redis-server
 
-# Start Celery worker
+# Celery worker
+cd Backend
 celery -A rumi worker --loglevel=info
 
-# Start Celery beat scheduler
-celery -A rumi beat --loglevel=info
+# Celery beat scheduler (recurring tasks: late fees, webhook retries)
+celery -A rumi beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
 ```
 
-## Project Structure
+---
 
-```
-RUMI/
-├── Backend/                 # Django backend application
-│   ├── accounts/           # User management & authentication
-│   ├── hostels/            # Property & room management
-│   ├── payments/           # Payment processing & financial management
-│   ├── notifications/     # Messaging & notifications
-│   ├── analytics/          # Reporting & analytics
-│   └── rumi/              # Django project configuration
-├── frontend/               # Next.js frontend application
-│   ├── src/
-│   │   ├── app/           # App router pages
-│   │   ├── components/    # Reusable UI components
-│   │   ├── features/      # Feature-specific components
-│   │   └── lib/           # Utilities and configurations
-│   └── public/            # Static assets
-└── README.md               # This file
-```
+## Environment Variables
 
-## Configuration
+### Backend — `.env`
 
-### Environment Variables
-
-#### Backend (.env)
 ```bash
-# Django Settings
-DEBUG=True
+# Django
 SECRET_KEY=your-secret-key
+DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 
-# Database
+# Database (omit for SQLite dev)
 DB_NAME=rumi
 DB_USER=postgres
 DB_PASSWORD=password
@@ -127,161 +154,149 @@ DB_PORT=5432
 # Redis
 REDIS_URL=redis://localhost:6379/0
 
-# Payment Gateways
-MPESA_CONSUMER_KEY=your_mpesa_consumer_key
-MPESA_CONSUMER_SECRET=your_mpesa_consumer_secret
-MPESA_PASSKEY=your_mpesa_passkey
-MPESA_SHORTCODE=your_mpesa_shortcode
+# M-Pesa (Safaricom Daraja)
+MPESA_CONSUMER_KEY=
+MPESA_CONSUMER_SECRET=
+MPESA_PASSKEY=
+MPESA_SHORTCODE=
+MPESA_CALLBACK_URL=https://your-domain.com/api/v1/payments/webhook/mpesa/
+BACKEND_API_URL=https://your-domain.com
 
-PAYSTACK_SECRET_KEY=your_paystack_secret_key
-PAYSTACK_PUBLIC_KEY=your_paystack_public_key
+# Paystack
+PAYSTACK_SECRET_KEY=
+PAYSTACK_PUBLIC_KEY=
+
+# AWS S3 (set USE_S3=true in production)
+USE_S3=false
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_STORAGE_BUCKET_NAME=
+AWS_S3_REGION_NAME=
 
 # Email
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
-EMAIL_HOST_USER=your-email@gmail.com
-EMAIL_HOST_PASSWORD=your-app-password
+EMAIL_HOST_USER=
+EMAIL_HOST_PASSWORD=
+
+# SMS (Africa's Talking)
+AT_API_KEY=
+AT_USERNAME=
+
+# Sentry (optional)
+SENTRY_DSN=
 ```
 
-#### Frontend (.env.local)
+### Frontend — `.env.local`
+
 ```bash
-# API Configuration
 NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws/
-
-# Payment Gateways
-NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=your_paystack_public_key
+NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=
 ```
+
+---
+
+## API Overview
+
+Base URL: `/api/v1/`
+
+| Prefix | Description |
+|--------|-------------|
+| `/api/v1/auth/` | Registration, login, OTP verification, JWT refresh |
+| `/api/v1/hostels/` | Hostel and room listings |
+| `/api/v1/bookings/` | Booking creation and management |
+| `/api/v1/payments/` | Initiate payments, webhook endpoints |
+| `/api/v1/admin/` | Admin platform management |
+| `/api/v1/caretaker/` | Caretaker operations |
+| `/api/v1/student/` | Student portal endpoints |
+| `/api/v1/landlord/` | Landlord portal endpoints |
+| `/api/v1/support/` | Tech support endpoints |
+| `/api/v1/home/` | Public landing page data |
+| `/api/v1/notifications/` | Notification management |
+| `/metrics` | Prometheus metrics |
+
+Interactive API docs (Swagger): `http://localhost:8000/swagger/`
+
+---
+
+## Payment Flows
+
+### M-Pesa STK Push
+1. Student initiates payment → backend calls Daraja STK Push API
+2. Safaricom prompts student on their phone
+3. Safaricom POSTs callback to `/api/v1/payments/webhook/mpesa/stk_push/`
+4. Backend updates Transaction status and generates a PDF receipt
+
+### Paystack
+1. Frontend charges card via Paystack.js
+2. Paystack POSTs `charge.success` to `/api/v1/payments/webhook/paystack/`
+3. Backend verifies HMAC-SHA512 signature, updates Transaction, triggers notification
+
+---
 
 ## Testing
 
-### Backend Tests
 ```bash
+cd Backend
+source venv/bin/activate
+
 # Run all tests
 python manage.py test
 
-# Run specific app tests
+# Run specific app
 python manage.py test payments
 python manage.py test hostels
-python manage.py test accounts
+python manage.py test caretaker_operations
 
-# Run with coverage
-pip install coverage
+# With coverage
 coverage run --source='.' manage.py test
 coverage report
 ```
 
-### Frontend Tests
-```bash
-# Run unit tests
-npm test
+**Current:** 112 tests, 0 failures
 
-# Run E2E tests
-npm run test:e2e
-
-# Run with coverage
-npm run test:coverage
-```
-
-## Key Features
-
-### For Students
-- **Property Discovery**: Search and filter hostels by location, price, amenities
-- **Room Booking**: Online booking with secure payment processing
-- **Payment Management**: Recurring rent payments, wallet credits, payment history
-- **Communication**: Direct messaging with landlords and caretakers
-- **Profile Management**: Personal information, booking history, preferences
-
-### For Landlords
-- **Property Management**: List hostels, manage rooms, track occupancy
-- **Tenant Management**: View bookings, communicate with students
-- **Financial Management**: Rent collection, payout processing, tax reporting
-- **Analytics**: Revenue tracking, occupancy metrics, performance insights
-- **Maintenance**: Track room maintenance requests and schedules
-
-### For Administrators
-- **User Management**: Manage all user accounts and permissions
-- **System Monitoring**: Track system performance, error logs
-- **Financial Oversight**: Monitor transactions, generate reports
-- **Content Management**: Manage platform content and settings
-
-## Security Features
-
-- **Authentication**: JWT-based authentication with role-based access control
-- **Payment Security**: PCI-compliant payment processing with webhook validation
-- **Data Encryption**: Sensitive data encrypted at rest and in transit
-- **Audit Logging**: Comprehensive audit trail for all user actions
-- **Input Validation**: Server-side validation for all user inputs
-- **Rate Limiting**: API rate limiting to prevent abuse
-
-## Monitoring & Maintenance
-
-### Health Checks
-```bash
-# Backend health check
-curl http://localhost:8000/api/health/
-
-# Database connectivity
-python manage.py check --database default
-
-# Redis connectivity
-python manage.py check --cache
-```
-
-### Logs
-```bash
-# Application logs
-tail -f logs/django.log
-
-# Payment processing logs
-tail -f logs/payments.log
-
-# Celery task logs
-tail -f logs/celery.log
-```
-
-### Performance Monitoring
-- **Prometheus Metrics**: Available at `/metrics` endpoint
-- **Health Checks**: Available at `/api/health/`
-- **Error Tracking**: Comprehensive error logging and alerting
-
-## Deployment
-
-### Production Deployment
-1. **Database Setup**: Configure PostgreSQL database
-2. **Environment Configuration**: Set production environment variables
-3. **Static Files**: Configure static file serving (AWS S3 recommended)
-4. **SSL/TLS**: Configure HTTPS certificates
-5. **Monitoring**: Set up monitoring and alerting
-6. **Backup**: Configure regular database backups
-
-### Docker Deployment
-```bash
-# Build and run with Docker Compose
-docker-compose up -d
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-For support and questions:
-- **Email**: support@rumia.co.ke
-- **Documentation**: Check the `/docs` directory for detailed documentation
-- **Issues**: Report bugs and feature requests on GitHub Issues
+Key coverage areas:
+- M-Pesa STK push full lifecycle (initiation → callback → receipt PDF)
+- Paystack HMAC-SHA512 webhook verification (valid + tampered signatures)
+- N+1 query regression guards (`assertNumQueries`) for hostel/room/booking list endpoints
+- Booking state machine (pending → confirmed → checked_in → completed)
 
 ---
 
-**Version**: 2.0  
-**Last Updated**: February 2026  
-**Status**: Production Ready
+## Celery Tasks
+
+| Task | Schedule | Description |
+|------|----------|-------------|
+| `assess_late_fees` | Daily | Calculates and applies late payment fees |
+| `retry_failed_webhook_events` | Every 5 min | Retries failed webhook deliveries |
+| `charge_saved_payment_method` | Configurable | Charges saved payment methods via Paystack |
+| `send_booking_confirmation` | On event | Sends SMS/email on booking approval |
+| `send_payment_notification` | On event | Sends SMS/email on payment receipt |
+
+---
+
+## Deployment Checklist
+
+- [ ] Set `DEBUG=False` and a strong random `SECRET_KEY`
+- [ ] Configure PostgreSQL (`DB_*` env vars)
+- [ ] Set `ALLOWED_HOSTS` to your domain
+- [ ] Set `USE_S3=true` and configure `AWS_*` vars
+- [ ] Set `BACKEND_API_URL` to your production domain (used in M-Pesa callback URLs)
+- [ ] Configure Celery with Redis broker
+- [ ] Run `python manage.py collectstatic`
+- [ ] Set up SSL/TLS (required for M-Pesa and Paystack webhooks)
+
+---
+
+## Monitoring
+
+- **Prometheus metrics:** `/metrics`
+- **Django admin:** `/admin/`
+- **Swagger docs:** `/swagger/`
+- **Application logs:** `Backend/logs/`
+
+---
+
+**Version:** v1.0
+**Last updated:** 2026-03-17
