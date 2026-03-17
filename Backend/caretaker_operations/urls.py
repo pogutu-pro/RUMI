@@ -64,4 +64,10 @@ urlpatterns = [
     # NOTE: separate from existing 'roommates/match-requests/<int:request_id>/' path — do NOT modify that
     path('roommate-requests/<int:request_id>/approve/', views.CaretakerRoommateApproveView.as_view(), name='caretaker_roommate_approve'),
     path('roommate-requests/<int:request_id>/reject/', views.CaretakerRoommateRejectView.as_view(), name='caretaker_roommate_reject'),
+
+    # Maintenance detail (URL-08)
+    path('maintenance/<int:pk>/', views.MaintenanceRequestDetailView.as_view(), name='caretaker_maintenance_detail'),
+
+    # Damage reports detail (URL-09)
+    path('damage-reports/<int:pk>/', views.CaretakerDamageReportDetailView.as_view(), name='caretaker_damage_report_detail'),
 ]
