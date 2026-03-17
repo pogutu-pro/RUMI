@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from accounts.permissions import IsCaretaker
 from hostels.models import Booking, Room
 from accounts.models import CaretakerProfile
+from caretaker_operations.models import LateEntry
 
 class CaretakerLateEntryStatsView(APIView):
     """Get late entry statistics for caretaker's hostel"""
@@ -39,57 +40,36 @@ class CaretakerLateEntryStatsView(APIView):
         }, status=status.HTTP_200_OK)
     
     def _get_late_entries_for_period(self, caretaker, start_date, end_date):
-        """Get late entries count for a specific period"""
-        # This would normally query a LateEntry model
-        # For now, we'll simulate based on booking patterns
-        
-        # Get all bookings in the period
-        bookings = Booking.objects.filter(
+        """Get late entries count for a specific period from the LateEntry table"""
+        return LateEntry.objects.filter(
             room__hostel=caretaker.hostel,
-            check_in_date__gte=start_date,
-            check_in_date__lte=end_date
-        )
-        
-        # Simulate late entries based on some criteria
-        # In reality, this would come from actual late entry tracking
-        late_entries = 0
-        for booking in bookings:
-            # Simulate some bookings having late entries
-            # This is just placeholder logic
-            if booking.id % 7 == 0:  # Every 7th booking has a late entry
-                late_entries += 1
-        
-        return late_entries
+            entry_time__date__gte=start_date,
+            entry_time__date__lte=end_date,
+        ).count()
     
     def _get_frequent_offenders(self, caretaker):
-        """Get students with most late entries"""
-        # This would normally query a LateEntry model grouped by student
-        # For now, we'll simulate with mock data
-        
-        # Get current occupants
-        from hostels.models import RoomOccupant
-        occupants = RoomOccupant.objects.filter(
-            room__hostel=caretaker.hostel,
-            is_active=True
-        ).select_related('student__user')
-        
-        frequent_offenders = []
-        for occupant in occupants[:5]:  # Top 5
-            # Simulate late entry count
-            late_entry_count = occupant.id % 5  # Simulate 0-4 late entries
-            
-            if late_entry_count > 0:
-                frequent_offenders.append({
-                    'student_id': occupant.student.id,
-                    'student_name': occupant.student.user.get_full_name(),
-                    'room_number': occupant.room.room_number,
-                    'count': late_entry_count
-                })
-        
-        # Sort by count descending
-        frequent_offenders.sort(key=lambda x: x['count'], reverse=True)
-        
-        return frequent_offenders
+        """Get students with most late entries from the LateEntry table"""
+        offenders = (
+            LateEntry.objects
+            .filter(room__hostel=caretaker.hostel)
+            .values(
+                'student__id',
+                'student__user__first_name',
+                'student__user__last_name',
+                'room__room_number',
+            )
+            .annotate(count=Count('id'))
+            .order_by('-count')[:5]
+        )
+        return [
+            {
+                'student_id': o['student__id'],
+                'student_name': f"{o['student__user__first_name']} {o['student__user__last_name']}".strip(),
+                'room_number': o['room__room_number'],
+                'count': o['count'],
+            }
+            for o in offenders
+        ]
     
     def _calculate_average_entries_per_week(self, caretaker):
         """Calculate average late entries per week"""
