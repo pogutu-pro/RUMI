@@ -98,14 +98,18 @@ def process_recurring_payments():
             })
             continue
 
-    # Send admin summary if there were failures
+    # Send admin summary if there were failures — dynamic superuser lookup
     if results['failed'] > 0:
-        send_notification.delay(
-            recipient_id=1,  # Admin user ID
-            notification_type='recurring_payments_summary',
-            channel='email',
-            context=results
-        )
+        from django.contrib.auth import get_user_model
+        _User = get_user_model()
+        _admin = _User.objects.filter(is_superuser=True).first()
+        if _admin:
+            send_notification.delay(
+                recipient_id=_admin.id,
+                notification_type='recurring_payments_summary',
+                channel='email',
+                context=results,
+            )
 
     return results
 

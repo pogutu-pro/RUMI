@@ -238,13 +238,16 @@ class InventoryTemplateCreateView(APIView):
                 hostel.has_inventory_template = True
                 hostel.save()
 
-                # Notify landlord
+                # Notify landlord — deferred until after commit
                 from .tasks import notify_landlord_inventory_template_created
-                notify_landlord_inventory_template_created.delay(
-                    hostel_id=hostel_id,
-                    caretaker_name=caretaker.user.get_full_name(),
-                    total_items=len(items)
-                )
+                _hostel_id = hostel_id
+                _caretaker_name = caretaker.user.get_full_name()
+                _total_items = len(items)
+                transaction.on_commit(lambda: notify_landlord_inventory_template_created.delay(
+                    hostel_id=_hostel_id,
+                    caretaker_name=_caretaker_name,
+                    total_items=_total_items,
+                ))
 
                 return Response({
                     'template_id': template.id,
@@ -448,9 +451,12 @@ class InventoryCheckInSubmitView(APIView):
                 checkin.student_submitted_at = timezone.now()
                 checkin.save()
 
-                # Notify caretaker
+                # Notify caretaker — deferred until after commit
                 from .tasks import notify_caretaker_checkin_submitted
-                notify_caretaker_checkin_submitted.delay(checkin_id=checkin.id)
+                _checkin_id = checkin.id
+                transaction.on_commit(lambda: notify_caretaker_checkin_submitted.delay(
+                    checkin_id=_checkin_id,
+                ))
 
                 return Response({
                     'checkin_id': checkin.id,
@@ -538,13 +544,16 @@ class InventoryCheckInVerifyView(APIView):
                     occupant.check_in_id = checkin.id
                     occupant.save()
 
-                # Notify student
+                # Notify student — deferred until after commit
                 from .tasks import notify_student_checkin_verified
-                notify_student_checkin_verified.delay(
-                    checkin_id=checkin.id,
-                    room_number=checkin.room.room_number,
-                    hostel_name=checkin.room.hostel.name
-                )
+                _checkin_id = checkin.id
+                _room_number = checkin.room.room_number
+                _hostel_name = checkin.room.hostel.name
+                transaction.on_commit(lambda: notify_student_checkin_verified.delay(
+                    checkin_id=_checkin_id,
+                    room_number=_room_number,
+                    hostel_name=_hostel_name,
+                ))
 
                 return Response({
                     'checkin_id': checkin.id,
@@ -929,12 +938,13 @@ class RoomReserveView(APIView):
                 room.current_occupancy += 1
                 room.save()
 
-                # Schedule cleanup
+                # Schedule cleanup — deferred until after commit
                 from .tasks import cleanup_expired_reservation
-                cleanup_expired_reservation.apply_async(
-                    args=[reservation.id],
-                    countdown=15 * 60
-                )
+                _reservation_id = reservation.id
+                transaction.on_commit(lambda: cleanup_expired_reservation.apply_async(
+                    args=[_reservation_id],
+                    countdown=15 * 60,
+                ))
 
                 return Response({
                     'reservation_id': reservation.id,

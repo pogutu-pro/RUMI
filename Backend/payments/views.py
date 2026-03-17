@@ -815,7 +815,8 @@ class RefundRequestCreateView(APIView):
         refund_amount = transaction.total_charged_amount * refund_percentage
 
         try:
-            with transaction.atomic():
+            from django.db import transaction as db_transaction
+            with db_transaction.atomic():
                 refund_request = RefundRequest.objects.create(
                     transaction=transaction,
                     booking=transaction.booking,
@@ -827,19 +828,23 @@ class RefundRequestCreateView(APIView):
                     status='pending'
                 )
 
-                # Notify admins (async)
+                # Notify admins (async) — deferred until after commit
                 from notifications.tasks import send_notification
-                send_notification.delay(
+                _student_name = request.user.get_full_name()
+                _transaction_reference = transaction.transaction_reference
+                _refund_amount = float(refund_amount)
+                _reason = reason
+                db_transaction.on_commit(lambda: send_notification.delay(
                     recipient_id=1,  # Admin notification
                     notification_type='refund_request_submitted',
                     channel='email',
                     context={
-                        'student_name': request.user.get_full_name(),
-                        'transaction_reference': transaction.transaction_reference,
-                        'refund_amount': float(refund_amount),
-                        'reason': reason
+                        'student_name': _student_name,
+                        'transaction_reference': _transaction_reference,
+                        'refund_amount': _refund_amount,
+                        'reason': _reason,
                     }
-                )
+                ))
 
                 serializer = RefundRequestSerializer(refund_request)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -1030,19 +1035,24 @@ class RefundRequestProcessView(APIView):
                     refund_request.status = 'rejected'
                     refund_request.save()
 
-                # Notify student
+                # Notify student — deferred until after commit
                 from notifications.tasks import send_notification
-                send_notification.delay(
-                    recipient_id=refund_request.student.user.id,
+                _recipient_id = refund_request.student.user.id
+                _student_name = refund_request.student.user.first_name
+                _refund_amount = float(refund_request.refund_amount)
+                _action = action
+                _admin_notes = admin_notes
+                transaction.on_commit(lambda: send_notification.delay(
+                    recipient_id=_recipient_id,
                     notification_type='refund_request_processed',
                     channel='email',
                     context={
-                        'student_name': refund_request.student.user.first_name,
-                        'refund_amount': float(refund_request.refund_amount),
-                        'action': action,
-                        'admin_notes': admin_notes
+                        'student_name': _student_name,
+                        'refund_amount': _refund_amount,
+                        'action': _action,
+                        'admin_notes': _admin_notes,
                     }
-                )
+                ))
 
                 serializer = RefundRequestSerializer(refund_request)
                 return Response(serializer.data, status=status.HTTP_200_OK)
