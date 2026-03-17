@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 08-02-PLAN.md
-last_updated: "2026-03-17T12:03:51.321Z"
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-03-17T12:08:47.212Z"
 last_activity: "2026-03-16 — Phase 4 plan 01: VisitorInvitation model created in caretaker_operations/models.py"
 progress:
   total_phases: 8
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 30
-  completed_plans: 29
+  completed_plans: 30
   percent: 25
 ---
 
@@ -70,6 +70,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 07-infrastructure P04 | 3 | 1 tasks | 2 files |
 | Phase 08-test-coverage P03 | 1 | 1 tasks | 1 files |
 | Phase 08-test-coverage P02 | 3 | 1 tasks | 0 files |
+| Phase 08-test-coverage P01 | 10 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -134,6 +135,9 @@ Recent decisions affecting current work:
 - [Phase 07-04]: Removed blank line 275 with weather block to avoid double blank line in settings.py; deleted commented-out weather import in home/views.py
 - [Phase 08-03]: Direct ORM save() for booking status transitions — no action endpoints exist on URL config; terminal status is 'completed' (not 'checked_out')
 - [Phase 08-test-coverage]: Case A: test_query_optimization.py assertNumQueries values already GREEN from Phase 6 (5/4/2 for hostel/room/booking) — no changes needed, TEST-03 satisfied
+- [Phase 08-01]: Mock ReceiptService.generate_and_send_receipt with side_effect creating real Receipt DB record — avoids PDF I/O while satisfying Receipt.exists() assertion
+- [Phase 08-01]: MpesaStkPushLifecycleTest asserts txn.status != pending (resolved to processing) — process_confirmed_payment uses greedy fallback on non-RUMI reference format
+- [Phase 08-01]: _handle_charge_success bug fixed: removed non-model field assignments (gross_platform_revenue, net_platform_revenue) and invalid 'landlord' from select_related — webhook was silently failing in production
 
 ### Pending Todos
 
@@ -145,6 +149,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T12:03:51.317Z
-Stopped at: Completed 08-02-PLAN.md
+Last session: 2026-03-17T12:08:47.208Z
+Stopped at: Completed 08-01-PLAN.md
 Resume file: None

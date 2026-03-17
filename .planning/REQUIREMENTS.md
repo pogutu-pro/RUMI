@@ -91,8 +91,8 @@
 
 ### Test Coverage
 
-- [ ] **TEST-01**: Payment lifecycle integration test — STK push initiation → callback → Transaction status → receipt generated
-- [ ] **TEST-02**: Paystack HMAC webhook integration test — posts webhook with known payload + secret, asserts HTTP 200 and Transaction update
+- [x] **TEST-01**: Payment lifecycle integration test — STK push initiation → callback → Transaction status → receipt generated
+- [x] **TEST-02**: Paystack HMAC webhook integration test — posts webhook with known payload + secret, asserts HTTP 200 and Transaction update
 - [x] **TEST-03**: `assertNumQueries` tests for hostel listing endpoint (confirm N+1 fixes actually reduce queries)
 - [x] **TEST-04**: Booking lifecycle tests — booking created → approved → checked in → checked out
 

@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 5: Celery and Notification Fixes** - Fix beat schedule, add django-celery-beat, wire SMS/email to events
 - [x] **Phase 6: Performance and Error Standardization** - Fix N+1 queries, add Redis caching, standardize error responses (completed 2026-03-17)
 - [x] **Phase 7: Infrastructure** - Upgrade boto3, wire S3 storage, remove weather stub dead code (completed 2026-03-17)
-- [ ] **Phase 8: Test Coverage** - Payment lifecycle tests, Paystack HMAC test, assertNumQueries tests, booking tests
+- [x] **Phase 8: Test Coverage** - Payment lifecycle tests, Paystack HMAC test, assertNumQueries tests, booking tests (completed 2026-03-17)
 
 ## Phase Details
 
@@ -181,4 +181,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 5. Celery and Notification Fixes | 2/3 | In Progress|  |
 | 6. Performance and Error Standardization | 3/4 | Complete    | 2026-03-17 |
 | 7. Infrastructure | 4/4 | Complete    | 2026-03-17 |
-| 8. Test Coverage | 2/3 | In Progress|  |
+| 8. Test Coverage | 3/3 | Complete   | 2026-03-17 |
