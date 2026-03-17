@@ -555,7 +555,7 @@ def send_payment_reminders():
         'reminders_sent': reminders_sent,
         'reminder_date': reminder_date.isoformat()
     }
-@shared_task
+@shared_task(name='payments.tasks.retry_failed_webhook_events')
 def reconcile_missed_webhooks():
     """
     Periodic task to process 'pending' WebhookEvent records.

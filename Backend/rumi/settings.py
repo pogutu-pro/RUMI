@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_redis',
     'celery',
+    'django_celery_beat',
     'drf_yasg',
     'debug_toolbar',
     'channels',

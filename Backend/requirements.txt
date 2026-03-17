@@ -13,6 +13,7 @@ django-redis==5.4.0
 
 # Task Queue
 celery==5.3.4
+django-celery-beat==2.8.1
 amqp==5.2.0
 
 # Authentication & Security

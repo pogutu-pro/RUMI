@@ -235,9 +235,15 @@ PERFORMANCE_CELERY = {
         },
         
         # Late Fee Processing
-        'process-late-fees': {
-            'task': 'payments.tasks.process_late_fees',
+        'assess-late-fees': {
+            'task': 'payments.tasks.assess_late_fees',
             'schedule': crontab(minute=0, hour=0),  # Daily at midnight
+        },
+
+        # Webhook Retry
+        'retry-failed-webhook-events': {
+            'task': 'payments.tasks.retry_failed_webhook_events',
+            'schedule': crontab(minute='*/5'),  # Every 5 minutes
         },
         
         # Payment Reconciliation
