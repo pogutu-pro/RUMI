@@ -81,9 +81,12 @@ class ReceiptService:
                 to=[student_email]
             )
             
-            # Attach PDF if available
+            # Attach PDF if available — use FieldFile.open() for storage-agnostic read.
+            # .path raises NotImplementedError on S3Boto3Storage (INF-03).
             if receipt.pdf_file:
-                email.attach_file(receipt.pdf_file.path)
+                filename = receipt.pdf_file.name.split('/')[-1]
+                with receipt.pdf_file.open('rb') as f:
+                    email.attach(filename, f.read(), 'application/pdf')
             
             email.content_subtype = "html"
             email.send(fail_silently=False)
