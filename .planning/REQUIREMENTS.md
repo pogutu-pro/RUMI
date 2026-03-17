@@ -85,9 +85,9 @@
 ### Infrastructure
 
 - [ ] **INF-01**: `boto3` upgraded from `1.29.7` to current stable in `requirements.txt`
-- [ ] **INF-02**: `USE_S3` environment variable flag added to settings — activates `S3Boto3Storage` in production, keeps local disk for dev/CI
+- [x] **INF-02**: `USE_S3` environment variable flag added to settings — activates `S3Boto3Storage` in production, keeps local disk for dev/CI
 - [ ] **INF-03**: `ReceiptGenerateView` audited and updated to use storage backend URLs (not hardcoded `/media/` paths) before S3 is enabled
-- [ ] **INF-04**: Existing local media files documented for sync to S3 before production S3 enablement
+- [x] **INF-04**: Existing local media files documented for sync to S3 before production S3 enablement
 
 ### Test Coverage
 
