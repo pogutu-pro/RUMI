@@ -56,6 +56,17 @@ class HostelViewSet(TenantModelViewSet):
             'landlord__user'
         ).prefetch_related('hostel_amenities__amenity', 'rooms')
 
+    def list(self, request, *args, **kwargs):
+        # Skip cache for authenticated landlords/caretakers — they see scoped data
+        if request.user.is_authenticated:
+            return super().list(request, *args, **kwargs)
+        cached = cache.get('hostels_list')
+        if cached is not None:
+            return Response(cached)
+        response = super().list(request, *args, **kwargs)
+        cache.set('hostels_list', response.data, timeout=300)
+        return response
+
     def perform_create(self, serializer):
         if self.request.user.role != 'landlord':
             raise PermissionDenied("Only landlords can create hostels")

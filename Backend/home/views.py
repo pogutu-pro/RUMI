@@ -22,6 +22,10 @@ class LandingPageView(APIView):
 
     def get(self, request):
         """Return landing page data"""
+        cached = cache.get('home_data')
+        if cached is not None:
+            return Response(cached)
+
         # Cache statistics for 1 hour to reduce database queries (optimization for high traffic)
         cache_key_stats = 'landing_page_stats'
         stats_data = cache.get(cache_key_stats)
@@ -96,7 +100,7 @@ class LandingPageView(APIView):
             }
         ]
 
-        return Response({
+        response_data = {
             'hero': {
                 'title': 'Find Your Perfect Student Accommodation',
                 'subtitle': 'Browse verified hostels near your university. Book rooms with confidence.',
@@ -109,7 +113,9 @@ class LandingPageView(APIView):
             'featured_hostels': featured_hostels,
             'testimonials': testimonials_data,
             'features': features
-        }, status=status.HTTP_200_OK)
+        }
+        cache.set('home_data', response_data, timeout=900)
+        return Response(response_data, status=status.HTTP_200_OK)
 
 
 class AboutUsView(APIView):
