@@ -110,12 +110,12 @@ Plans:
   4. A booking confirmation event triggers the `send_booking_confirmation` Celery task, which dispatches an SMS or email to the relevant user
   5. A payment received event triggers the `send_payment_notification` Celery task
   6. The hardcoded `recipient_id=1` in payments/tasks.py is replaced with a dynamic lookup of the first superuser
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: Add django-celery-beat==2.6.0 to requirements.txt; run migrations; fix BEAT_SCHEDULE task name for assess_late_fees; add webhook retry entry to BEAT_SCHEDULE (CEL-01, CEL-02, CEL-03)
-- [ ] 05-02: Audit all .delay() calls inside atomic() blocks; wrap each with transaction.on_commit(); replace hardcoded recipient_id=1 with superuser lookup (CEL-04, CEL-06)
-- [ ] 05-03: Wire send_booking_confirmation and send_payment_notification tasks to fire on booking approved and payment received events (CEL-05)
+- [ ] 05-01-PLAN.md — Add django-celery-beat==2.6.0 to requirements.txt; register in INSTALLED_APPS; run migrations; rename reconcile_missed_webhooks to retry_failed_webhook_events; fix assess_late_fees beat entry; add retry-failed-webhook-events beat entry (CEL-01, CEL-02, CEL-03)
+- [ ] 05-02-PLAN.md — Wrap 6 confirmed .delay() violations in payments/views.py and hostels/views.py with transaction.on_commit(); replace hardcoded recipient_id=1 with dynamic superuser lookup in payments/tasks.py (CEL-04, CEL-06)
+- [ ] 05-03-PLAN.md — Create send_booking_confirmation and send_payment_notification tasks; wire both into _handle_charge_success via on_commit; wire M-Pesa _send_payment_notifications via on_commit (CEL-05)
 
 ### Phase 6: Performance and Error Standardization
 **Goal**: Hostel listing, booking list, and bed detail endpoints issue no N+1 queries, high-read public endpoints are cached in Redis, and all API error responses share a consistent shape
