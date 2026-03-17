@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 06-03-PLAN.md
-last_updated: "2026-03-17T08:19:10.923Z"
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-03-17T08:21:29.726Z"
 last_activity: "2026-03-16 — Phase 4 plan 01: VisitorInvitation model created in caretaker_operations/models.py"
 progress:
   total_phases: 8
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 22
-  completed_plans: 21
+  completed_plans: 22
   percent: 25
 ---
 
@@ -62,6 +62,7 @@ Progress: [███░░░░░░░] 25%
 | Phase 05-celery-and-notification-fixes P02 | 684 | 2 tasks | 4 files |
 | Phase 06-performance-and-error-standardization P01 | 27 | 2 tasks | 6 files |
 | Phase 06-performance-and-error-standardization P03 | 5 | 2 tasks | 3 files |
+| Phase 06-performance-and-error-standardization P02 | 8 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,9 @@ Recent decisions affecting current work:
 - [Phase 06-03]: Canonical error shape is {detail, code}; field-level validation errors go in 'errors' key (not flattened)
 - [Phase 06-03]: 500 responses return {detail: 'An unexpected error occurred.', code: '500'} — no internal info leaked
 - [Phase 06-03]: Handler wraps DRF default exception_handler() rather than replacing it entirely
+- [Phase 06-02]: Anonymous requests only cached in HostelViewSet.list() — authenticated landlords/caretakers bypass cache to see tenant-scoped data
+- [Phase 06-02]: post_delete signal added alongside post_save on invalidate_hostels_list_cache — hostel deletion must also bust the listing cache key
+- [Phase 06-02]: home_data outer cache (900s) wraps existing landing_page_stats/testimonials inner caches — inner caches serve as DB fallbacks when outer key is cold
 
 ### Pending Todos
 
@@ -124,6 +128,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T08:19:10.918Z
-Stopped at: Completed 06-03-PLAN.md
+Last session: 2026-03-17T08:21:29.723Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None

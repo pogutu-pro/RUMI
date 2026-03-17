@@ -74,8 +74,8 @@
 - [x] **PERF-01**: `HostelViewSet.get_queryset()` uses `select_related('landlord__user')` and `prefetch_related('hostel_amenities__amenity', 'rooms')` — N+1 eliminated
 - [x] **PERF-02**: `BedSerializer.get_current_occupant()` N+1 fixed via `prefetch_related('occupancies')` in parent ViewSet
 - [x] **PERF-03**: `BookingSerializer.get_room_info()` N+1 fixed via `select_related('room__hostel')` in BookingViewSet
-- [ ] **PERF-04**: Redis caching applied to `GET /api/v1/hostels/` (5 min TTL) with cache invalidation on Hostel `post_save`
-- [ ] **PERF-05**: Redis caching applied to `GET /api/v1/home/` homepage endpoint (15 min TTL)
+- [x] **PERF-04**: Redis caching applied to `GET /api/v1/hostels/` (5 min TTL) with cache invalidation on Hostel `post_save`
+- [x] **PERF-05**: Redis caching applied to `GET /api/v1/home/` homepage endpoint (15 min TTL)
 
 ### Error Response Standardization
 

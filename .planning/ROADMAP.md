@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Payment Stub Promotion** - Promote stubs_views.py views one-by-one into payments/views.py (completed 2026-03-16)
 - [x] **Phase 4: Missing Models and URL Wiring** - Create caretaker models, register 9 missing URLs, replace placeholder logic (completed 2026-03-17)
 - [ ] **Phase 5: Celery and Notification Fixes** - Fix beat schedule, add django-celery-beat, wire SMS/email to events
-- [ ] **Phase 6: Performance and Error Standardization** - Fix N+1 queries, add Redis caching, standardize error responses
+- [x] **Phase 6: Performance and Error Standardization** - Fix N+1 queries, add Redis caching, standardize error responses (completed 2026-03-17)
 - [ ] **Phase 7: Infrastructure** - Upgrade boto3, wire S3 storage, remove weather stub dead code
 - [ ] **Phase 8: Test Coverage** - Payment lifecycle tests, Paystack HMAC test, assertNumQueries tests, booking tests
 
@@ -179,6 +179,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 3. Payment Stub Promotion | 5/5 | Complete    | 2026-03-16 |
 | 4. Missing Models and URL Wiring | 6/6 | Complete   | 2026-03-17 |
 | 5. Celery and Notification Fixes | 2/3 | In Progress|  |
-| 6. Performance and Error Standardization | 1/3 | In Progress|  |
+| 6. Performance and Error Standardization | 3/3 | Complete   | 2026-03-17 |
 | 7. Infrastructure | 0/3 | Not started | - |
 | 8. Test Coverage | 0/4 | Not started | - |
