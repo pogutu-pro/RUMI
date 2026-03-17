@@ -79,8 +79,8 @@
 
 ### Error Response Standardization
 
-- [ ] **ERR-01**: Custom DRF exception handler in `core/exceptions.py` normalizes all error responses to consistent shape (no more mix of `{'error': ...}` vs `{'detail': ...}`)
-- [ ] **ERR-02**: `REST_FRAMEWORK['EXCEPTION_HANDLER']` in settings points to custom handler
+- [x] **ERR-01**: Custom DRF exception handler in `core/exceptions.py` normalizes all error responses to consistent shape (no more mix of `{'error': ...}` vs `{'detail': ...}`)
+- [x] **ERR-02**: `REST_FRAMEWORK['EXCEPTION_HANDLER']` in settings points to custom handler
 
 ### Infrastructure
 
