@@ -152,6 +152,9 @@ PERFORMANCE_REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
+
+    # Exception handling
+    'EXCEPTION_HANDLER': 'core.exceptions.custom_exception_handler',
 }
 
 # =============================================================================
