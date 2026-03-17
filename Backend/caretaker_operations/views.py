@@ -13,7 +13,7 @@ from hostels.models import (
     DamageReport, VisitorCheckIn, RoomInventory, RoomOccupant
 )
 from accounts.models import CaretakerProfile, StudentProfile
-from caretaker_operations.models import VisitorInvitation
+from caretaker_operations.models import VisitorInvitation, MaintenanceRequest as MaintenanceRequestModel
 
 # Import roommate models
 try:
@@ -850,16 +850,20 @@ class CaretakerMaintenanceView(APIView):
                 status__in=['reported', 'investigating', 'repairing']
             )
             
-            # Get active maintenance requests (you might have a separate MaintenanceRequest model)
-            maintenance_requests = []  # Placeholder - would come from actual model
-            
+            # Get active maintenance requests from MaintenanceRequest model
+            room_maintenance = MaintenanceRequestModel.objects.filter(
+                hostel=caretaker.hostel,
+                room=room,
+                status__in=['received', 'in_progress'],
+            ).select_related('room', 'reported_by')
+
             maintenance_data.append({
                 'room_id': room.id,
                 'room_number': room.room_number,
                 'room_type': room.room_type,
                 'current_status': room.status,
                 'damage_reports_count': damage_reports.count(),
-                'active_maintenance_requests': len(maintenance_requests),
+                'active_maintenance_requests': room_maintenance.count(),
                 'needs_maintenance': room.status == 'maintenance' or damage_reports.exists(),
                 'last_maintenance_date': None,  # Would come from maintenance records
                 'next_maintenance_due': None    # Would be calculated based on schedule
@@ -1722,3 +1726,69 @@ class CaretakerRoommateRejectView(APIView):
             roommate_request.caretaker_notes = reason
         roommate_request.save()
         return Response({'request_id': request_id, 'action': 'rejected', 'reason': reason}, status=status.HTTP_200_OK)
+
+
+class MaintenanceRequestDetailView(APIView):
+    """Return a single MaintenanceRequest record"""
+    permission_classes = [IsCaretaker]
+
+    def get(self, request, pk):
+        caretaker = request.user.caretaker_profile
+        try:
+            req = MaintenanceRequestModel.objects.select_related(
+                'room', 'reported_by', 'assigned_to', 'hostel'
+            ).get(pk=pk, hostel=caretaker.hostel)
+        except MaintenanceRequestModel.DoesNotExist:
+            return Response({'error': 'Maintenance request not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({
+            'id': req.id,
+            'hostel_id': req.hostel_id,
+            'room_id': req.room_id,
+            'room_number': req.room.room_number,
+            'reported_by_id': req.reported_by_id,
+            'reported_by_name': req.reported_by.get_full_name(),
+            'reporter_type': req.reporter_type,
+            'category': req.category,
+            'title': req.title,
+            'description': req.description,
+            'priority': req.priority,
+            'status': req.status,
+            'photos_before': req.photos_before,
+            'photos_after': req.photos_after,
+            'assigned_to_id': req.assigned_to_id,
+            'estimated_cost': float(req.estimated_cost) if req.estimated_cost else None,
+            'landlord_notified': req.landlord_notified,
+            'landlord_notified_at': req.landlord_notified_at.isoformat() if req.landlord_notified_at else None,
+            'created_at': req.created_at.isoformat(),
+            'updated_at': req.updated_at.isoformat(),
+            'resolved_at': req.resolved_at.isoformat() if req.resolved_at else None,
+        }, status=status.HTTP_200_OK)
+
+
+class CaretakerDamageReportDetailView(APIView):
+    """Return a single DamageReport record"""
+    permission_classes = [IsCaretaker]
+
+    def get(self, request, pk):
+        caretaker = request.user.caretaker_profile
+        try:
+            report = DamageReport.objects.select_related(
+                'room', 'reported_by', 'booking'
+            ).get(pk=pk, room__hostel=caretaker.hostel)
+        except DamageReport.DoesNotExist:
+            return Response({'error': 'Damage report not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({
+            'report_id': report.id,
+            'title': report.title,
+            'description': report.description,
+            'severity': report.severity,
+            'status': report.status,
+            'room_id': report.room_id,
+            'room_number': report.room.room_number,
+            'reported_by': report.reported_by.get_full_name(),
+            'estimated_cost': float(report.estimated_cost) if report.estimated_cost else None,
+            'repair_cost': float(report.repair_cost) if report.repair_cost else None,
+            'reported_at': report.reported_at.isoformat(),
+            'resolved_at': report.resolved_at.isoformat() if report.resolved_at else None,
+            'images': report.images or [],
+        }, status=status.HTTP_200_OK)
