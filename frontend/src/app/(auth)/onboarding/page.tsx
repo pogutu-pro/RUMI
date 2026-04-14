@@ -12,14 +12,6 @@ export default function OnboardingPage() {
   const { user, profile } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    // If user is already complete, redirect to dashboard
-    if (user?.is_profile_complete || profile?.is_profile_complete) {
-        if (user?.role === 'student') router.push('/student/dashboard');
-        else if (user?.role === 'landlord') router.push('/landlord/dashboard');
-    }
-  }, [user, profile, router]);
-
   if (!user) return null;
 
   return (

@@ -2,7 +2,7 @@
 
 import type { UserRole } from '@/types/auth.types';
 import { cn } from '@/lib/utils/cn';
-import { GraduationCap, Building, CheckCircle2 } from 'lucide-react';
+import { GraduationCap, Building, CheckCircle2, UserCog } from 'lucide-react';
 
 type AuthRole = Extract<UserRole, 'student' | 'landlord'>;
 

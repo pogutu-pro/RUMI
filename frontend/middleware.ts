@@ -80,6 +80,12 @@ export function middleware(request: NextRequest) {
     | UserRole
     | undefined;
   const isAuthenticated = !!token;
+  
+  if (pathname === '/dashboard') {
+    return NextResponse.redirect(
+      new URL(getDashboardUrl(userRole), request.url),
+    );
+  }
 
   const isPublic = isPublicPath(pathname);
   const isAuth = isAuthPath(pathname);
@@ -109,8 +115,12 @@ export function middleware(request: NextRequest) {
   // Onboarding Guard
   if (isAuthenticated && !pathname.startsWith('/onboarding') && !isPublic) {
     const onboardingStage = request.cookies.get(ONBOARDING_COOKIE)?.value;
-    if (onboardingStage && onboardingStage !== 'COMPLETED') {
-        return NextResponse.redirect(new URL('/onboarding', request.url));
+    
+    // Force onboarding if stage is explicitly missing or not completed
+    // Exceptions for specific admin roles might be needed, but for now we follow the cookie truth
+    if (onboardingStage !== 'COMPLETED') {
+        const onboardingUrl = new URL('/onboarding', request.url);
+        return NextResponse.redirect(onboardingUrl);
     }
   }
 

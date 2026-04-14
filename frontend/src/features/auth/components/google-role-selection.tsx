@@ -12,6 +12,8 @@ import { googleCompleteSchema, type GoogleCompleteFormData } from '@/lib/validat
 import { FormField } from '@/components/ui/form-fields';
 import { useQuery } from '@tanstack/react-query';
 import { hostelsApi } from '@/features/hostels/api/hostels';
+import { DynamicDatePicker } from '@/components/ui/dynamic-date-picker';
+import { Controller } from 'react-hook-form';
 
 interface GoogleRoleSelectionProps {
   userInfo: {
@@ -20,11 +22,12 @@ interface GoogleRoleSelectionProps {
     picture: string;
   };
   accessToken: string;
+  initialRole?: 'student' | 'landlord' | null;
   onBack: () => void;
 }
 
-export function GoogleRoleSelection({ userInfo, accessToken, onBack }: GoogleRoleSelectionProps) {
-  const [selectedRole, setSelectedRole] = useState<'student' | 'landlord' | null>(null);
+export function GoogleRoleSelection({ userInfo, accessToken, initialRole, onBack }: GoogleRoleSelectionProps) {
+  const [selectedRole, setSelectedRole] = useState<'student' | 'landlord' | null>(initialRole || null);
   const { mutate: completeGoogleLogin, isPending } = useCompleteGoogleLogin();
 
   const { data: hostelsData } = useQuery({
@@ -38,7 +41,7 @@ export function GoogleRoleSelection({ userInfo, accessToken, onBack }: GoogleRol
     // @ts-ignore - Resolver type mismatch with preferred_hostel_id inference
     resolver: zodResolver(googleCompleteSchema),
     defaultValues: {
-      role: 'student',
+      role: initialRole || 'student',
       gender: 'male' as const,
       date_of_birth: '',
       phone_number: '',
@@ -158,19 +161,24 @@ export function GoogleRoleSelection({ userInfo, accessToken, onBack }: GoogleRol
                     <label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground px-1">Gender</label>
                     <select
                       {...form.register('gender')}
-                      className="flex h-11 w-full rounded-none border-2 border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors font-bold"
+                      className="flex h-14 w-full rounded-none border-2 border-input bg-background px-4 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-all font-black"
                     >
                       <option value="male">Male</option>
                       <option value="female">Female</option>
                       <option value="other">Other</option>
                     </select>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground px-1">Date of Birth</label>
-                    <input
-                      type="date"
-                      {...form.register('date_of_birth')}
-                      className="flex h-11 w-full rounded-none border-2 border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors font-bold"
+                  <div className="space-y-2 uppercase">
+                    <label className="text-[10px] font-black tracking-widest text-muted-foreground px-1">Date of Birth</label>
+                    <Controller
+                      control={form.control}
+                      name="date_of_birth"
+                      render={({ field }) => (
+                        <DynamicDatePicker
+                          value={field.value ? new Date(field.value) : undefined}
+                          onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')}
+                        />
+                      )}
                     />
                     {form.formState.errors.date_of_birth && (
                       <p className="text-[10px] text-destructive font-bold uppercase">{form.formState.errors.date_of_birth.message}</p>
@@ -190,27 +198,17 @@ export function GoogleRoleSelection({ userInfo, accessToken, onBack }: GoogleRol
                   )}
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground px-1">Preferred Hostel</label>
-                    <select
-                      {...form.register('preferred_hostel_id')}
-                      className="flex h-11 w-full rounded-none border-2 border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors font-bold"
-                    >
-                      <option value="">I haven't picked one</option>
-                      {hostels.map((h) => (
-                        <option key={h.id} value={h.id}>{h.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground px-1">Room Number</label>
-                    <input
-                      placeholder="A12"
-                      {...form.register('room_number')}
-                      className="flex h-11 w-full rounded-none border-2 border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors font-bold"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase font-black tracking-widest text-muted-foreground px-1">Preferred Hostel</label>
+                  <select
+                    {...form.register('preferred_hostel_id')}
+                    className="flex h-14 w-full rounded-none border-2 border-input bg-background px-4 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-all font-black"
+                  >
+                    <option value="">I haven't picked one</option>
+                    {hostels.map((h) => (
+                      <option key={h.id} value={h.id}>{h.name}</option>
+                    ))}
+                  </select>
                 </div>
               </>
             ) : (

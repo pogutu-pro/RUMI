@@ -4,13 +4,16 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
-import { AuthCard } from '@/features/auth';
-import { RoleSelector } from '@/features/auth';
-import { StudentRegisterForm } from '@/features/auth';
-import { LandlordRegisterForm } from '@/features/auth';
-import { GoogleAuthButton } from '@/features/auth';
-import { GoogleRoleSelection } from '@/features/auth';
-import { OAuthDivider } from '@/features/auth';
+import { 
+  AuthCard, 
+  RoleSelector, 
+  StudentRegisterForm, 
+  LandlordRegisterForm, 
+  CaretakerRegistrationForm,
+  GoogleAuthButton,
+  GoogleRoleSelection,
+  OAuthDivider
+} from '@/features/auth';
 import type { UserRole } from '@/types/auth.types';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 import Image from 'next/image';
@@ -40,6 +43,7 @@ export function RegisterClientPage() {
             <GoogleRoleSelection 
               userInfo={googleData.userInfo} 
               accessToken={googleData.accessToken}
+              initialRole={selectedRole}
               onBack={() => setGoogleData(null)} 
             />
           </motion.div>
@@ -73,7 +77,6 @@ export function RegisterClientPage() {
             description={<span className="text-gray-500 font-bold uppercase tracking-wider text-xs">Choose your role to get started</span>}
           >
             <div className="space-y-8">
-
                 <RoleSelector
                   value={selectedRole}
                   onValueChange={setSelectedRole}

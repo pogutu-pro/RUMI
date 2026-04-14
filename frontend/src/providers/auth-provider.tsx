@@ -79,41 +79,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const profileQuery = useProfile();
 
-  // Wait for hydration and profile fetch if needed
-  const ready =
-    isInitialized &&
-    (!shouldFetchProfile || (isAuthenticated && !!user) || profileQuery.isFetched);
-
-  useEffect(() => {
-    if (!ready) return;
-
-    if (
-      isAuthenticated &&
-      pathname &&
-      AUTH_ROUTES.some((r) => pathname.startsWith(r))
-    ) {
-      const redirect = user?.role
-        ? (ROLE_REDIRECTS[user.role] ?? '/dashboard')
-        : '/dashboard';
-      router.replace(redirect as Route);
-      return;
-    }
-
-    if (!isAuthenticated && pathname && !isPublicPath(pathname)) {
-      const next = encodeURIComponent(pathname);
-      router.replace(`/login?next=${next}` as Route);
-    }
-  }, [ready, isAuthenticated, pathname, router, user?.role]);
-
   const isPublic = isPublicPath(pathname);
 
-  if (!ready) {
-    return null;
-  }
-
-  if (!isAuthenticated && !isPublic) {
-    return null;
-  }
+  // PASSIVE Guard: AuthProvider now only hydrates state.
+  // Navigation authority is delegated to middleware.ts
+  // This prevents hydration flicker and navigation conflict.
 
   return <>{children}</>;
 }

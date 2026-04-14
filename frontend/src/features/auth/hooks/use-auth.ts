@@ -35,43 +35,6 @@ const AUTH_REDIRECTS: Record<string, string> = {
 
 const DEFAULT_REDIRECT = '/student/dashboard';
 
-// -- Helper Hook --
-
-function useAuthRedirect() {
-  const router = useRouter();
-  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-
-  const redirectUser = React.useCallback(
-    (role: string | undefined, isProfileComplete: boolean = true) => {
-      // 1. Check for forced onboarding
-      if (!isProfileComplete && (role === 'student' || role === 'landlord')) {
-        router.push('/onboarding');
-        return;
-      }
-
-      // 2. Check for redirect URL first
-      const redirectTo = searchParams?.get('redirect') || localStorage.getItem('redirectAfterLogin');
-      
-      if (redirectTo) {
-        localStorage.removeItem('redirectAfterLogin');
-        router.push(redirectTo);
-        return;
-      }
-      
-      // 3. Default role-based redirect
-      if (!role) {
-        router.push(DEFAULT_REDIRECT);
-        return;
-      }
-      const path = AUTH_REDIRECTS[role] || DEFAULT_REDIRECT;
-      router.push(path);
-    },
-    [router, searchParams]
-  );
-
-  return { redirectUser };
-}
-
 // -- Main Facade Hook --
 
 export function useAuth() {
@@ -149,12 +112,11 @@ export function useAuth() {
  */
 function useAuthSuccess() {
   const { login } = useAuth();
-  const { redirectUser } = useAuthRedirect();
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   return (response: any, successMessage: string) => {
     // 1. Update Store
-    // Support both 'access'/'refresh' and 'access_token'/'refresh_token' formats
     const accessToken = response.access || response.access_token;
     const refreshToken = response.refresh || response.refresh_token;
 
@@ -174,9 +136,10 @@ function useAuthSuccess() {
     queryClient.invalidateQueries({ queryKey: ['user'] });
     queryClient.invalidateQueries({ queryKey: ['profile'] });
 
-    // 4. Redirect
-    const isProfileComplete = response.is_profile_complete ?? response.user?.is_profile_complete ?? true;
-    redirectUser(response.user?.role, isProfileComplete);
+    // 4. Final Delegation: Push to dashboard and let Middleware decide if /onboarding is needed
+    // This eliminates the conflicting logic in the frontend hooks.
+    const redirectUrl = AUTH_REDIRECTS[response.user?.role] || DEFAULT_REDIRECT;
+    router.push(redirectUrl as any);
 
     // 5. Toast
     toast.success(successMessage);

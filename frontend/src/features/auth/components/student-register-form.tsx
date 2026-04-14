@@ -13,6 +13,8 @@ import { FormField, PasswordField } from '@/components/ui/form-fields';
 import { useRegistrationForm } from '../hooks/use-registration-form';
 import { useQuery } from '@tanstack/react-query';
 import { hostelsApi } from '@/features/hostels/api/hostels';
+import { DynamicDatePicker } from '@/components/ui/dynamic-date-picker';
+import { Controller } from 'react-hook-form';
 import {
   registerStudentSchema,
   type RegisterStudentFormData,
@@ -28,6 +30,7 @@ export function StudentRegisterForm({ onGoogleSuccess }: StudentRegisterFormProp
   const {
     form: {
       register,
+      control,
       formState: { errors },
       setFocus,
     },
@@ -125,12 +128,12 @@ export function StudentRegisterForm({ onGoogleSuccess }: StudentRegisterFormProp
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground flex items-center gap-1">
+            <label className="text-[10px] font-black tracking-widest text-muted-foreground px-1 uppercase">
               Gender <span className="text-destructive">*</span>
             </label>
             <select
               {...register('gender')}
-              className="flex h-11 w-full rounded-none border border-gray-300 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+              className="flex h-12 w-full rounded-none border-2 border-input bg-background px-4 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-all font-black"
             >
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -141,13 +144,23 @@ export function StudentRegisterForm({ onGoogleSuccess }: StudentRegisterFormProp
             )}
           </div>
 
-          <FormField
-            label="Date of Birth"
-            type="date"
-            error={errors.date_of_birth?.message}
-            required
-            {...register('date_of_birth')}
-          />
+          <div className="space-y-2 uppercase">
+             <label className="text-[10px] font-black tracking-widest text-muted-foreground px-1">Date of Birth <span className="text-destructive">*</span></label>
+             <Controller
+               control={control}
+               name="date_of_birth"
+               render={({ field }) => (
+                 <DynamicDatePicker
+                   value={field.value ? new Date(field.value) : undefined}
+                   onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')}
+                   className="h-12"
+                 />
+               )}
+             />
+             {errors.date_of_birth && (
+               <p className="text-[10px] text-destructive font-bold uppercase">{errors.date_of_birth.message}</p>
+             )}
+          </div>
         </div>
 
         <FormField
@@ -158,7 +171,6 @@ export function StudentRegisterForm({ onGoogleSuccess }: StudentRegisterFormProp
           {...register('university')}
         />
 
-        <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
               Hostel (Optional)
@@ -173,14 +185,6 @@ export function StudentRegisterForm({ onGoogleSuccess }: StudentRegisterFormProp
               ))}
             </select>
           </div>
-
-          <FormField
-            label="Room Number (Optional)"
-            placeholder="A12"
-            error={errors.room_number?.message}
-            {...register('room_number')}
-          />
-        </div>
 
         <PasswordField
           label="Password"
