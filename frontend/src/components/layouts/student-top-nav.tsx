@@ -130,20 +130,20 @@ export function StudentTopNav({
         </Button>
       </div>
 
-      {/* Zone 1: Branding - Logo + RUMI */}
+      {/* Zone 1: Branding - Logo + Rumia */}
       <div className={cn("flex items-center gap-2 mr-4", !isDesktop && "ml-4")}>
-        <Link href="/" className="flex items-center gap-2 group">
+        <Link href="/student/dashboard" className="flex items-center gap-2 group">
           <div className="relative h-8 w-8 transition-transform group-hover:scale-110">
             <Image 
               src="/images/logo/logo.svg" 
-              alt="RUMI Logo" 
+              alt="Rumia Logo" 
               width={32} 
               height={32} 
               className="object-contain"
               style={{ width: 'auto', height: 'auto' }}
             />
           </div>
-          <span className="font-bold text-lg text-primary tracking-tight">RUMI</span>
+          <span className="font-bold text-lg text-primary tracking-tight">Rumia</span>
         </Link>
       </div>
 
