@@ -6,7 +6,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {  DollarSign, Loader2, AlertCircle } from 'lucide-react';
+import {  DollarSign, Loader2, AlertCircle, Wallet, FileText } from 'lucide-react';
+import Link from 'next/link';
 import { PaymentOptionsModal } from '@/features/payments/components/payment-options-modal';
 import { PaymentStatusTracker } from '@/features/payments/components/payment-status-tracker';
 import { PaymentHistoryTable } from '@/features/payments/components/payment-history-table';
@@ -37,12 +38,36 @@ export default function StudentPaymentsPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-16 px-4 sm:px-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-border/50 pb-8">
         <div>
-          <h1 className="text-2xl font-bold">Payments</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-3xl font-bold tracking-tight">Payments</h1>
+          <p className="text-sm text-muted-foreground mt-1 font-medium">
             Manage your rent payments and view transaction history
           </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            className="rounded-xl h-10 px-4 font-bold border-border/50 bg-muted/20"
+          >
+            <Link href="/student/payments/methods">
+              <Wallet className="h-4 w-4 mr-2 text-primary" />
+              Payment Methods
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            className="rounded-xl h-10 px-4 font-bold border-border/50 bg-muted/20"
+          >
+            <Link href="/student/payments/receipts">
+              <FileText className="h-4 w-4 mr-2 text-primary" />
+              View Receipts
+            </Link>
+          </Button>
         </div>
       </div>
 

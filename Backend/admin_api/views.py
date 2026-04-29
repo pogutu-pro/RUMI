@@ -1895,3 +1895,127 @@ class AdminSystemHealthView(APIView):
             'recommendations': [],
             'last_updated': timezone.now().isoformat()
         }, status=status.HTTP_200_OK)
+
+
+class AdminRevenueView(APIView):
+    """
+    Admin Revenue Analytics API
+    
+    GET: Retrieve platform revenue analytics
+    
+    Authentication Required: JWT Token
+    Permissions: Tech Support or Super Admin only
+    
+    Query Parameters:
+    - start_date (optional): Start date for revenue range (YYYY-MM-DD)
+    - end_date (optional): End date for revenue range (YYYY-MM-DD)
+    - period (optional): 'day', 'week', 'month', 'year'
+    
+    Returns comprehensive revenue metrics and analytics for the platform.
+    """
+    permission_classes = [IsTechSupportAdmin]
+
+    def get(self, request):
+        """Get revenue analytics"""
+        from django.db.models import TruncDate
+        
+        # Get date range from query params or default to current month
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        period = request.query_params.get('period', 'month')
+        
+        if not start_date or not end_date:
+            today = timezone.now().date()
+            if period == 'day':
+                start_date = today
+                end_date = today
+            elif period == 'week':
+                start_date = today - timedelta(days=7)
+                end_date = today
+            elif period == 'year':
+                start_date = today - timedelta(days=365)
+                end_date = today
+            else:  # month (default)
+                start_date = today.replace(day=1)
+                end_date = today
+        
+        # Convert string dates to date objects if needed
+        if isinstance(start_date, str):
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        if isinstance(end_date, str):
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        
+        # Get all transactions in date range
+        transactions = Transaction.objects.filter(
+            created_at__date__range=[start_date, end_date],
+            status='success'
+        )
+        
+        # Calculate aggregate revenue data
+        revenue_data = transactions.aggregate(
+            total_revenue=Sum('amount'),
+            total_platform_revenue=Sum('gross_platform_revenue'),
+            total_gateway_fees=Sum('gateway_fee'),
+            total_transactions=Count('id'),
+            avg_transaction_value=Sum('amount') / Count('id') if Count('id') > 0 else 0
+        )
+        
+        # Calculate net revenue (platform revenue minus gateway fees)
+        net_revenue = (revenue_data['total_platform_revenue'] or 0) - (revenue_data['total_gateway_fees'] or 0)
+        
+        # Daily breakdown
+        daily_breakdown = transactions.annotate(
+            date=TruncDate('created_at')
+        ).values('date').annotate(
+            daily_revenue=Sum('amount'),
+            daily_platform_revenue=Sum('gross_platform_revenue'),
+            daily_transactions=Count('id'),
+            daily_gateway_fees=Sum('gateway_fee')
+        ).order_by('date')
+        
+        # Payment method breakdown
+        payment_method_breakdown = transactions.values('payment_method').annotate(
+            method_revenue=Sum('amount'),
+            method_count=Count('id')
+        ).order_by('-method_revenue')
+        
+        # Format daily breakdown
+        formatted_daily = [
+            {
+                'date': str(day['date']),
+                'revenue': float(day['daily_revenue'] or 0),
+                'platform_revenue': float(day['daily_platform_revenue'] or 0),
+                'gateway_fees': float(day['daily_gateway_fees'] or 0),
+                'net_revenue': float((day['daily_platform_revenue'] or 0) - (day['daily_gateway_fees'] or 0)),
+                'transactions': day['daily_transactions']
+            }
+            for day in daily_breakdown
+        ]
+        
+        # Format payment method breakdown
+        formatted_methods = [
+            {
+                'payment_method': method['payment_method'] or 'Unknown',
+                'revenue': float(method['method_revenue'] or 0),
+                'count': method['method_count']
+            }
+            for method in payment_method_breakdown
+        ]
+        
+        return Response({
+            'period': {
+                'start_date': str(start_date),
+                'end_date': str(end_date),
+                'period_type': period
+            },
+            'summary': {
+                'total_revenue': float(revenue_data['total_revenue'] or 0),
+                'total_platform_revenue': float(revenue_data['total_platform_revenue'] or 0),
+                'total_gateway_fees': float(revenue_data['total_gateway_fees'] or 0),
+                'net_revenue': float(net_revenue),
+                'total_transactions': revenue_data['total_transactions'] or 0,
+                'average_transaction_value': float(revenue_data['avg_transaction_value'] or 0)
+            },
+            'daily_breakdown': formatted_daily,
+            'payment_method_breakdown': formatted_methods
+        }, status=status.HTTP_200_OK)

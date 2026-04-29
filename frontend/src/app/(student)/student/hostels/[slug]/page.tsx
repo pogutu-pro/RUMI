@@ -166,7 +166,7 @@ export default function HostelDetailPage() {
       </Button>
 
       {/* Image Gallery */}
-      <ImageGallery images={hostel.images} />
+      <ImageGallery images={hostel.images?.length ? hostel.images : ['/images/cards/card-01.jpg']} />
 
       {/* Main Content Grid */}
       <div className="grid md:grid-cols-3 gap-8">
@@ -220,18 +220,24 @@ export default function HostelDetailPage() {
                 </Badge>
               )}
               
-              <Badge variant="secondary">
-                {hostel.hostel_type.replace('_', ' ').toUpperCase()}
-              </Badge>
+              {hostel.hostel_type && (
+                <Badge variant="secondary">
+                  {hostel.hostel_type.replace('_', ' ').toUpperCase()}
+                </Badge>
+              )}
               
-              <Badge variant={hostel.gender_policy === 'mixed' ? 'secondary' : 'outline'}>
-                {hostel.gender_policy === 'male_only' ? 'Male Students Only' : 
-                 hostel.gender_policy === 'female_only' ? 'Female Students Only' : 'Mixed Gender'}
-              </Badge>
+              {hostel.gender_policy && (
+                <Badge variant={hostel.gender_policy === 'mixed' ? 'secondary' : 'outline'}>
+                  {hostel.gender_policy === 'male_only' ? 'Male Students Only' : 
+                   hostel.gender_policy === 'female_only' ? 'Female Students Only' : 'Mixed Gender'}
+                </Badge>
+              )}
               
-              <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50">
-                {hostel.tenant_type === 'students_only' ? 'Students Only' : 'Open to Anyone'}
-              </Badge>
+              {hostel.tenant_type && (
+                <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50">
+                  {hostel.tenant_type === 'students_only' ? 'Students Only' : 'Open to Anyone'}
+                </Badge>
+              )}
             </div>
           </div>
 

@@ -71,7 +71,7 @@ export function HostelCard({
       <div className="relative aspect-[4/3] bg-muted overflow-hidden group">
         <Link 
             href={`${basePath}/${hostel.slug ?? hostel.id}`}
-            className="block w-full h-full"
+            className="relative block w-full h-full"
         >
             <Image
                 src={images[currentImageIndex]}

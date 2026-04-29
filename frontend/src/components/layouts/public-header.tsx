@@ -57,12 +57,12 @@ export const PublicHeader = React.memo(function PublicHeader({
     <>
       <header
         className={cn(
-          'fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out',
+          'fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out',
           isScrolled
-            ? 'bg-white shadow-sm py-2 xs:py-3'
+            ? 'bg-white/80 backdrop-blur-md shadow-lg py-2 xs:py-3'
             : isHome
-            ? 'bg-transparent py-3 xs:py-5'
-            : 'bg-white py-3 xs:py-4'
+            ? 'bg-transparent py-4 xs:py-6'
+            : 'bg-white/90 backdrop-blur-sm py-3 xs:py-5'
         )}
       >
         <div className="container mx-auto px-4 lg:px-8">

@@ -27,10 +27,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Bell, Moon, Sun, Globe, Smartphone, Mail, Shield, Key, Lock, Monitor, User } from 'lucide-react';
+import { Bell, Moon, Sun, Globe, Smartphone, Mail, Shield, Key, Lock, Monitor, User, ChevronRight, Edit, Phone, School, FileText, CreditCard, UserCheck, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { PasswordSetupModal } from '@/features/auth/components/password-setup-modal';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -68,10 +72,79 @@ export default function SettingsPage() {
 
       <Tabs defaultValue="general" className="space-y-8">
         <TabsList className="h-11 p-1 bg-muted/50 border border-border/50">
-          <TabsTrigger value="general" className="font-bold text-xs uppercase tracking-wider px-8">General</TabsTrigger>
-          <TabsTrigger value="notifications" className="font-bold text-xs uppercase tracking-wider px-8">Alerts</TabsTrigger>
-          <TabsTrigger value="privacy" className="font-bold text-xs uppercase tracking-wider px-8">Security</TabsTrigger>
+          <TabsTrigger value="profile" className="font-bold text-xs uppercase tracking-wider px-6">Profile</TabsTrigger>
+          <TabsTrigger value="general" className="font-bold text-xs uppercase tracking-wider px-6">General</TabsTrigger>
+          <TabsTrigger value="notifications" className="font-bold text-xs uppercase tracking-wider px-6">Alerts</TabsTrigger>
+          <TabsTrigger value="privacy" className="font-bold text-xs uppercase tracking-wider px-6">Security</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="profile" className="space-y-8">
+          {/* Profile Summary Card */}
+          <Card className="border border-border/50 shadow-sm overflow-hidden">
+            <CardContent className="p-8">
+              <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
+                <Avatar className="h-24 w-24 border-4 border-background shadow-lg rounded-2xl">
+                  <AvatarImage src={user?.profile_picture || user?.avatar} className="object-cover" />
+                  <AvatarFallback className="bg-muted text-muted-foreground text-3xl font-bold rounded-2xl">
+                    {user?.first_name?.[0]}{user?.last_name?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 text-center sm:text-left space-y-2">
+                  <div>
+                    <h2 className="text-2xl font-black tracking-tight">{user?.first_name} {user?.last_name}</h2>
+                    <p className="text-sm text-muted-foreground font-medium">{user?.email}</p>
+                    {user?.phone_number && (
+                      <p className="text-sm text-muted-foreground font-medium flex items-center gap-1.5 justify-center sm:justify-start mt-1">
+                        <Phone className="h-3.5 w-3.5" /> {user.phone_number}
+                      </p>
+                    )}
+                  </div>
+                  <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest">
+                    Student Account
+                  </Badge>
+                </div>
+                <Button asChild className="font-bold h-10 px-6 rounded-xl shrink-0">
+                  <Link href="/student/profile">
+                    <Edit className="w-4 h-4 mr-2" />
+                    View Full Profile
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Profile Links */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Link href="/student/profile/edit">
+              <Card className="h-full border border-border/50 shadow-sm hover:shadow-md transition-all group cursor-pointer">
+                <CardContent className="p-5 flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                    <User className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold group-hover:text-primary transition-colors">Edit Personal Info</p>
+                    <p className="text-xs text-muted-foreground">Update name, email, and phone</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/student/roommates/preferences">
+              <Card className="h-full border border-border/50 shadow-sm hover:shadow-md transition-all group cursor-pointer">
+                <CardContent className="p-5 flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold group-hover:text-primary transition-colors">Roommate Preferences</p>
+                    <p className="text-xs text-muted-foreground">Configure matching preferences</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </TabsContent>
 
         <TabsContent value="general" className="space-y-8">
           <Card className="border border-border/50 shadow-sm">

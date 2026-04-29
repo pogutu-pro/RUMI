@@ -15,6 +15,7 @@ from .views import (
     AdminPlatformStatsView,
     AdminLandlordVerificationsView,
     AdminSystemHealthView,
+    AdminRevenueView,
 )
 
 urlpatterns = [
@@ -53,6 +54,9 @@ urlpatterns = [
 
     # Platform Statistics (EXPOSED)
     path('platform/stats/', AdminPlatformStatsView.as_view(), name='super_admin_platform_stats'),
+
+    # Revenue Analytics (EXPOSED)
+    path('revenue/', AdminRevenueView.as_view(), name='super_admin_revenue'),
 
     # Landlord Verifications (EXPOSED)
     path('landlord-verifications/', AdminLandlordVerificationsView.as_view(), name='super_admin_landlord_verifications'),

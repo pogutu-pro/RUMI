@@ -81,77 +81,29 @@ const navItems: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
-    title: 'My Stay',
-    icon: Building2,
-    items: [
-      {
-        title: 'Current Room',
-        href: '/student/bookings/active',
-        icon: Home,
-      },
-      { title: 'Roommates', href: '/student/roommates', icon: Users },
-      { title: 'Transfers', href: '/student/transfers', icon: ArrowRightLeft },
-      { title: 'Move In/Out', href: '/student/check-in', icon: CalendarCheck },
-      { title: 'History', href: '/student/bookings', icon: History },
-      { title: 'Reviews', href: '/student/reviews', icon: Star },
-    ],
-  },
-  {
-    title: 'Find Accommodation',
+    title: 'Explore Hostels',
+    href: '/student/hostels',
     icon: Search,
-    items: [
-      { title: 'Browse', href: '/student/hostels', icon: Search },
-      { title: 'Favorites', href: '/student/hostels/favorites', icon: Star },
-      {
-        title: 'Compare',
-        href: '/student/hostels/compare',
-        icon: ArrowRightLeft,
-      },
-    ],
   },
   {
-    title: 'Finance',
+    title: 'Current Stay',
+    href: '/student/bookings/active',
+    icon: Building2,
+  },
+  {
+    title: 'Payments & Finance',
+    href: '/student/payments',
     icon: CreditCard,
-    items: [
-      { title: 'Payments', href: '/student/payments', icon: CreditCard },
-      { title: 'History', href: '/student/payments/receipts', icon: FileText },
-      {
-        title: 'Methods',
-        href: '/student/payments/methods',
-        icon: Wallet,
-      },
-    ],
   },
   {
     title: 'Security',
+    href: '/student/security',
     icon: Shield,
-    items: [
-      {
-        title: 'Visitors',
-        href: '/student/security/visitor-invitations',
-        icon: UserPlus,
-      },
-      {
-        title: 'Late Entries',
-        href: '/student/security?tab=late-entries',
-        icon: Clock,
-      },
-      { title: 'Overview', href: '/student/security', icon: Shield },
-    ],
   },
   {
-    title: 'Support',
-    href: '/student/support',
-    icon: LifeBuoy,
-  },
-  {
-    title: 'Account',
-    icon: User,
-    items: [
-      { title: 'Profile', href: '/student/profile', icon: UserCheck },
-      { title: 'Notifications', href: '/student/notifications', icon: Bell },
-      { title: 'Settings', href: '/student/settings', icon: Settings },
-    ],
+    title: 'Settings',
+    href: '/student/settings',
+    icon: Settings,
   },
 ];
 

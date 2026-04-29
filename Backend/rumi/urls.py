@@ -99,6 +99,9 @@ urlpatterns = [
         # Admin endpoints (consolidated)
         path('admin/', include('admin_api.urls')),
 
+        # Admin endpoints (alternate path for compatibility)
+        path('users/admin/', include('admin_api.urls')),
+
         # Caretaker endpoints (aligned with frontend)
         path('caretaker/', include('caretaker_operations.urls')),
 

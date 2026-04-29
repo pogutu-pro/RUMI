@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Pagination } from '@/components/ui/pagination';
-import { Search, SlidersHorizontal, Building2 } from 'lucide-react';
+import Link from 'next/link';
+import { Search, SlidersHorizontal, Building2, Star, ArrowRightLeft } from 'lucide-react';
 import { useHostels } from '@/features/hostels';
 import {
   HostelCard,
@@ -69,48 +70,76 @@ export default function StudentHostelsPage() {
             </p>
           </div>
           
-          {/* Search Bar */}
-          <div className="flex flex-col sm:flex-row gap-3 max-w-3xl pt-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, university, or region..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-11 h-11 bg-muted/20 border-border/50 text-foreground font-medium rounded-xl"
-              />
-            </div>
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="h-11 px-5 rounded-xl font-bold border-border/50"
-                >
-                  <SlidersHorizontal className="h-4 w-4 mr-2" />
-                  Filter Options
-                  {hasActiveFilters && (
-                    <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-black">
-                      {
-                        Object.values(filters).filter(
-                          (v) => v !== undefined && v !== '',
-                        ).length
-                      }
-                    </Badge>
-                  )}
-                </Button>
-              </SheetTrigger>
-              <SheetContent
-                side="right"
-                className="w-full sm:max-w-md overflow-y-auto"
-              >
-                <HostelFiltersPanel
-                  filters={filters}
-                  onFiltersChange={handleFiltersChange}
-                  onClearFilters={handleClearFilters}
-                  className="mt-6"
+          {/* Search Bar & Actions */}
+          <div className="space-y-4 pt-2">
+            <div className="flex flex-col sm:flex-row gap-3 max-w-3xl">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, university, or region..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-11 h-11 bg-muted/20 border-border/50 text-foreground font-medium rounded-xl"
                 />
-              </SheetContent>
-            </Sheet>
+              </div>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-11 px-5 rounded-xl font-bold border-border/50"
+                  >
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Filter Options
+                    {hasActiveFilters && (
+                      <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-black">
+                        {
+                          Object.values(filters).filter(
+                            (v) => v !== undefined && v !== '',
+                          ).length
+                        }
+                      </Badge>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent
+                  side="right"
+                  className="w-full sm:max-w-md overflow-y-auto"
+                >
+                  <HostelFiltersPanel
+                    filters={filters}
+                    onFiltersChange={handleFiltersChange}
+                    onClearFilters={handleClearFilters}
+                    className="mt-6"
+                  />
+                </SheetContent>
+              </Sheet>
+            </div>
+
+            {/* Quick Access Actions */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                asChild
+                className="rounded-full h-9 px-4 font-bold text-xs bg-primary/5 hover:bg-primary/10 text-primary border border-primary/10"
+              >
+                <Link href="/student/hostels/favorites">
+                  <Star className="h-3.5 w-3.5 mr-2 fill-current" />
+                  My Favorites
+                </Link>
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                asChild
+                className="rounded-full h-9 px-4 font-bold text-xs bg-muted/50 hover:bg-muted text-muted-foreground border border-border/50"
+              >
+                <Link href="/student/hostels/compare">
+                  <ArrowRightLeft className="h-3.5 w-3.5 mr-2" />
+                  Compare Hostels
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
       </div>

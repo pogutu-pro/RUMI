@@ -139,7 +139,8 @@ export function StudentTopNav({
               alt="RUMI Logo" 
               width={32} 
               height={32} 
-              className="object-contain" 
+              className="object-contain"
+              style={{ width: 'auto', height: 'auto' }}
             />
           </div>
           <span className="font-bold text-lg text-primary tracking-tight">RUMI</span>

@@ -24,7 +24,8 @@ import {
   Files, 
   Search,
   Inbox,
-  History
+  History,
+  UserPlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -33,40 +34,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-const MY_STAY_ITEMS = [
-  { icon: Home, label: 'Current Room', href: '/student/bookings/active' },
-  { icon: Users, label: 'Roommates', href: '/student/roommates' },
-  { icon: CalendarCheck, label: 'Move In/Out', href: '/student/check-in' },
-  { icon: ArrowRightLeft, label: 'Transfers', href: '/student/transfers' },
-  { icon: History, label: 'History', href: '/student/bookings' },
-  { icon: Star, label: 'Reviews', href: '/student/reviews' },
-  // Security Items
-  { icon: UserCheck, label: 'Visitors', href: '/student/security/visitor-invitations' },
-  { icon: Clock, label: 'Late Entries', href: '/student/security?tab=late-entries' },
-  { icon: Shield, label: 'Security', href: '/student/security' },
-];
-
-const FIND_HOSTEL_ITEMS = [
-  { icon: Search, label: 'Browse', href: '/student/hostels' },
-  { icon: Star, label: 'Favorites', href: '/student/hostels/favorites' },
-  { icon: ArrowRightLeft, label: 'Compare', href: '/student/hostels/compare' },
-];
-
-const FINANCE_ITEMS = [
+const MENU_ITEMS = [
   { icon: CreditCard, label: 'Payments', href: '/student/payments' },
-  { icon: Files, label: 'History', href: '/student/payments/receipts' },
-  { icon: Wallet, label: 'Methods', href: '/student/payments/methods' },
-];
-
-const ACCOUNT_ITEMS = [
-  // Find Hostel Items
-  { icon: Search, label: 'Browse', href: '/student/hostels' },
-  { icon: Star, label: 'Favorites', href: '/student/hostels/favorites' },
-  { icon: ArrowRightLeft, label: 'Compare', href: '/student/hostels/compare' },
-  
-  // App & Profile
-  { icon: User, label: 'Profile', href: '/student/profile' },
-  { icon: Bell, label: 'Notifications', href: '/student/notifications' },
+  { icon: Shield, label: 'Security', href: '/student/security' },
   { icon: LifeBuoy, label: 'Support', href: '/student/support' },
   { icon: Settings, label: 'Settings', href: '/student/settings' },
 ];
@@ -125,7 +95,7 @@ const NavLink = ({ item, active }: { item: any, active: boolean }) => (
 
   const MenuSheet = ({ title, items, isOpen, onOpenChange, pathname }: { title: string, items: any[], isOpen: boolean, onOpenChange: (open: boolean) => void, pathname: string | null }) => (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[80vh] rounded-t-3xl p-0 ring-0 focus:ring-0 outline-none">
+      <SheetContent side="bottom" className="h-[60vh] rounded-t-3xl p-0 ring-0 focus:ring-0 outline-none">
         <SheetHeader className="sr-only">
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>Navigation options</SheetDescription>
@@ -135,7 +105,7 @@ const NavLink = ({ item, active }: { item: any, active: boolean }) => (
           <div className="w-12 h-1.5 bg-muted-foreground/20 rounded-full" />
         </div>
 
-        <ScrollArea className="h-full pb-8">
+        <ScrollArea className="h-full pb-12">
           <div className="p-4 grid grid-cols-3 gap-3">
             {items.map((item) => (
               <Link
@@ -167,10 +137,8 @@ export function StudentBottomNav() {
   const [isVisible, setIsVisible] = React.useState(true);
   const scrollYRef = React.useRef(0);
   
-  // State for sheets
-  const [isMyStayOpen, setIsMyStayOpen] = React.useState(false);
-  const [isFinanceOpen, setIsFinanceOpen] = React.useState(false);
-  const [isAccountOpen, setIsAccountOpen] = React.useState(false);
+  // State for menu sheet
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   // Auto-hide on scroll down, show on scroll up
   React.useEffect(() => {
@@ -178,18 +146,15 @@ export function StudentBottomNav() {
       const currentScrollY = window.scrollY;
       const lastScrollY = scrollYRef.current;
       
-      // Always show if near top
       if (currentScrollY < 50) {
         setIsVisible(true);
         scrollYRef.current = currentScrollY;
         return;
       }
       
-      // Determine direction
       const isScrollingDown = currentScrollY > lastScrollY;
       const scrollDiff = Math.abs(currentScrollY - lastScrollY);
 
-      // Only toggle visibility if we've scrolled enough to matter
       if (scrollDiff > 10) {
         if (isScrollingDown && currentScrollY > 100) {
            setIsVisible(false);
@@ -232,53 +197,31 @@ export function StudentBottomNav() {
             active={is_active('/student/dashboard')} 
           />
 
-          {/* 2. My Stay */}
-          <div>
-            <MenuButton 
-              icon={Building2} 
-              label="My Stay" 
-              isOpen={isMyStayOpen} 
-              onClick={() => setIsMyStayOpen(true)} 
-            />
-            <MenuSheet 
-              title="My Stay" 
-              items={MY_STAY_ITEMS} 
-              isOpen={isMyStayOpen} 
-              onOpenChange={setIsMyStayOpen} 
-              pathname={pathname}
-            />
-          </div>
+          {/* 2. Explore */}
+          <NavLink 
+            item={{ label: 'Explore', href: '/student/hostels', icon: Search }} 
+            active={is_active('/student/hostels')} 
+          />
 
-          {/* 3. Finance */}
-          <div>
-            <MenuButton 
-              icon={CreditCard} 
-              label="Finance" 
-              isOpen={isFinanceOpen} 
-              onClick={() => setIsFinanceOpen(true)} 
-            />
-            <MenuSheet 
-              title="Finance" 
-              items={FINANCE_ITEMS} 
-              isOpen={isFinanceOpen} 
-              onOpenChange={setIsFinanceOpen} 
-              pathname={pathname}
-            />
-          </div>
+          {/* 3. Stay */}
+          <NavLink 
+            item={{ label: 'Stay', href: '/student/bookings/active', icon: Building2 }} 
+            active={is_active('/student/bookings/active')} 
+          />
 
           {/* 4. Menu */}
           <div>
             <MenuButton 
               icon={Menu} 
-              label="More" 
-              isOpen={isAccountOpen} 
-              onClick={() => setIsAccountOpen(true)} 
+              label="Menu" 
+              isOpen={isMenuOpen} 
+              onClick={() => setIsMenuOpen(true)} 
             />
             <MenuSheet 
               title="Menu" 
-              items={ACCOUNT_ITEMS} 
-              isOpen={isAccountOpen} 
-              onOpenChange={setIsAccountOpen} 
+              items={MENU_ITEMS} 
+              isOpen={isMenuOpen} 
+              onOpenChange={setIsMenuOpen} 
               pathname={pathname}
             />
           </div>
@@ -287,4 +230,6 @@ export function StudentBottomNav() {
     </>
   );
 }
+
+
 
