@@ -29,6 +29,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BedManagementTable } from "@/features/landlord/components/bed-management-table";
 import { MpesaSettingsList } from "@/features/payments/components/mpesa-settings-list";
 import { MpesaSettingsForm } from "@/features/payments/components/mpesa-settings-form";
+import { HostelTenantList } from "@/features/hostels/components/hostel-tenant-list";
+import { HostelCaretakerManager } from "@/features/hostels/components/hostel-caretaker-manager";
+import { BookingsList } from "@/features/landlord/components/bookings/bookings-list";
 
 export default function HostelDetailPage() {
   const params = useParams<{ id: string }>();
@@ -149,12 +152,15 @@ export default function HostelDetailPage() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="bg-muted p-1 rounded-xl h-14 w-full justify-start gap-2 border shadow-sm sticky top-0 z-10">
+        <TabsList className="bg-muted p-1 rounded-xl h-14 w-full flex-wrap md:flex-nowrap justify-start gap-2 border shadow-sm sticky top-0 z-10 overflow-x-auto">
           <TabsTrigger value="overview" className="rounded-lg px-6 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
             <Building2 className="h-4 w-4" /> Overview
           </TabsTrigger>
           <TabsTrigger value="inventory" className="rounded-lg px-6 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
             <BedDouble className="h-4 w-4" /> Rooms & Beds
+          </TabsTrigger>
+          <TabsTrigger value="people" className="rounded-lg px-6 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
+            <Users className="h-4 w-4" /> People & Activity
           </TabsTrigger>
           <TabsTrigger value="finance" className="rounded-lg px-6 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
             <DollarSign className="h-4 w-4" /> Finance & Payments
@@ -176,30 +182,30 @@ export default function HostelDetailPage() {
             <Card className="border shadow-sm bg-card transition-all hover:shadow-md">
               <CardContent className="p-4 md:p-6 flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-black text-muted-foreground uppercase tracking-widest text-emerald-600">Occupied</p>
-                  <p className="text-3xl font-black text-emerald-600">{occupiedRooms}</p>
+                  <p className="text-xs font-black text-muted-foreground uppercase tracking-widest text-success">Occupied</p>
+                  <p className="text-3xl font-black text-success">{occupiedRooms}</p>
                 </div>
-                <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600"><Users className="h-6 w-6" /></div>
+                <div className="p-3 rounded-2xl bg-success/10 text-success"><Users className="h-6 w-6" /></div>
               </CardContent>
             </Card>
 
             <Card className="border shadow-sm bg-card transition-all hover:shadow-md">
               <CardContent className="p-4 md:p-6 flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-black text-muted-foreground uppercase tracking-widest text-orange-600">Available</p>
-                  <p className="text-3xl font-black text-orange-600">{hostel.available_rooms}</p>
+                  <p className="text-xs font-black text-muted-foreground uppercase tracking-widest text-warning">Available</p>
+                  <p className="text-3xl font-black text-warning">{hostel.available_rooms}</p>
                 </div>
-                <div className="p-3 rounded-2xl bg-orange-50 text-orange-600"><Zap className="h-6 w-6" /></div>
+                <div className="p-3 rounded-2xl bg-warning/10 text-warning"><Zap className="h-6 w-6" /></div>
               </CardContent>
             </Card>
 
             <Card className="border shadow-sm bg-card transition-all hover:shadow-md">
               <CardContent className="p-4 md:p-6 flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-black text-muted-foreground uppercase tracking-widest text-blue-600">Est. Revenue</p>
-                  <p className="text-3xl font-black text-blue-600">KES {(estimatedRevenue / 1000).toFixed(0)}K</p>
+                  <p className="text-xs font-black text-muted-foreground uppercase tracking-widest text-info">Est. Revenue</p>
+                  <p className="text-3xl font-black text-info">KES {(estimatedRevenue / 1000).toFixed(0)}K</p>
                 </div>
-                <div className="p-3 rounded-2xl bg-blue-50 text-blue-600"><DollarSign className="h-6 w-6" /></div>
+                <div className="p-3 rounded-2xl bg-info/10 text-info"><DollarSign className="h-6 w-6" /></div>
               </CardContent>
             </Card>
           </div>
@@ -248,7 +254,7 @@ export default function HostelDetailPage() {
         </TabsContent>
 
         <TabsContent value="inventory" className="space-y-6 outline-none">
-          <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-6 rounded-3xl border shadow-sm">
+          <div className="flex justify-between items-center bg-card p-6 rounded-3xl border shadow-sm">
              <div className="space-y-1">
                <h3 className="text-2xl font-black">Bed & Account Management</h3>
                <p className="text-muted-foreground font-medium">Assign unique M-Pesa account numbers to each bed for automated tracking.</p>
@@ -261,15 +267,49 @@ export default function HostelDetailPage() {
           <BedManagementTable hostelId={hostelId} />
         </TabsContent>
 
+        <TabsContent value="people" className="space-y-8 outline-none">
+           <div>
+              <h2 className="text-2xl font-bold tracking-tight">People & Activity</h2>
+              <p className="text-muted-foreground mt-1">Manage tenants, caretakers, and bookings for this specific property.</p>
+           </div>
+           
+           <div className="grid gap-8 grid-cols-1 xl:grid-cols-3">
+              <div className="xl:col-span-2 space-y-8">
+                 <div className="rounded-xl border bg-card p-6 shadow-sm">
+                    <h3 className="text-xl font-bold mb-4">Active Tenants</h3>
+                    <HostelTenantList hostelId={hostelId} />
+                 </div>
+                 
+                 <div className="rounded-xl border bg-card p-6 shadow-sm">
+                    <h3 className="text-xl font-bold mb-4">Recent Bookings</h3>
+                    <BookingsList status="all" hostelId={hostelId} />
+                 </div>
+              </div>
+              
+              <div className="space-y-8">
+                 <div className="rounded-xl border bg-card p-6 shadow-sm">
+                    <HostelCaretakerManager hostelId={hostelId} />
+                 </div>
+              </div>
+           </div>
+        </TabsContent>
+
         <TabsContent value="finance" className="space-y-6 outline-none">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-6">
-               <Card className="border shadow-none bg-emerald-50/50 dark:bg-emerald-950/10 border-emerald-100 dark:border-emerald-900/50 overflow-hidden">
-                 <CardHeader className="pb-2">
-                    <CardTitle className="text-xl font-black text-emerald-800 dark:text-emerald-400">Payment Collection</CardTitle>
-                    <CardDescription className="text-emerald-700/70 dark:text-emerald-500/70 font-medium">
-                      Configure your M-Pesa details so students can pay you directly.
-                    </CardDescription>
+               <Card className="border shadow-lg bg-card overflow-hidden hover:shadow-xl transition-all duration-300">
+                 <CardHeader className="pb-4 bg-linear-to-r from-success/5 to-transparent">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-success/10">
+                        <Smartphone className="h-6 w-6 text-success" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl font-black text-foreground">Payment Collection</CardTitle>
+                        <CardDescription className="text-muted-foreground font-medium mt-1">
+                          Configure your M-Pesa details so students can pay you directly.
+                        </CardDescription>
+                      </div>
+                    </div>
                  </CardHeader>
                  <CardContent>
                     {mpesaView === 'list' ? (
@@ -277,7 +317,7 @@ export default function HostelDetailPage() {
                         <MpesaSettingsList onEdit={() => {}} hostelId={hostelId} />
                         <Button 
                           onClick={() => setMpesaView('create')} 
-                          className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-lg shadow-xl shadow-emerald-500/20"
+                          className="w-full h-14 rounded-2xl bg-success hover:bg-success/90 text-success-foreground font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                         >
                           <Smartphone className="mr-2 h-6 w-6" /> Set M-Pesa Details
                         </Button>
@@ -303,10 +343,10 @@ export default function HostelDetailPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                     <div className="p-10 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center text-center opacity-60">
-                        <DollarSign className="h-12 w-12 text-muted-foreground mb-4" />
-                        <h4 className="text-lg font-bold">Revenue Tracking</h4>
-                        <p className="text-sm text-muted-foreground max-w-xs mt-2">
+                     <div className="p-10 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center text-center opacity-80">
+                        <DollarSign className="h-12 w-12 text-foreground/60 mb-4" />
+                        <h4 className="text-xl font-black text-foreground">Revenue Tracking</h4>
+                        <p className="text-base font-medium text-foreground/80 max-w-xs mt-3 leading-relaxed">
                           Detailed revenue charts and payment reports for {hostel.name} will appear here as you collect payments.
                         </p>
                      </div>

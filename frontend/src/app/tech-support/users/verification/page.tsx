@@ -1,5 +1,5 @@
-import UsersPage from '../page';
+import UserManagementClient from '../client';
 
-export default function UserVerificationPage({ searchParams }: { searchParams: Promise<any> }) {
-  return <UsersPage defaultTab="verification" searchParams={searchParams} />;
+export default function UserVerificationPage() {
+  return <UserManagementClient initialTab="verification" />;
 }

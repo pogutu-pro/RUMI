@@ -182,7 +182,7 @@ export default function CaretakersPage() {
               <CardContent className="p-6">
                   <div className="flex flex-col gap-1">
                       <span className="text-sm font-medium text-muted-foreground">Active Now</span>
-                      <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{activeCaretakers}</span>
+                      <span className="text-3xl font-bold text-success">{activeCaretakers}</span>
                   </div>
               </CardContent>
           </Card>
@@ -190,7 +190,7 @@ export default function CaretakersPage() {
               <CardContent className="p-6">
                   <div className="flex flex-col gap-1">
                       <span className="text-sm font-medium text-muted-foreground">Avg Rating</span>
-                      <span className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{avgRating}</span>
+                      <span className="text-3xl font-bold text-warning">{avgRating}</span>
                   </div>
               </CardContent>
           </Card>
@@ -198,7 +198,7 @@ export default function CaretakersPage() {
               <CardContent className="p-6">
                   <div className="flex flex-col gap-1">
                       <span className="text-sm font-medium text-muted-foreground">Hostels Managed</span>
-                      <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">{caretakers.length}</span>
+                      <span className="text-3xl font-bold text-info">{caretakers.length}</span>
                   </div>
               </CardContent>
           </Card>
@@ -291,8 +291,8 @@ export default function CaretakersPage() {
                                         className={cn(
                                           'font-medium border-0 px-2 py-0.5',
                                           caretaker.isActive
-                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                            ? 'bg-success/10 text-success'
+                                            : 'bg-destructive/10 text-destructive'
                                         )}
                                       >
                                         {caretaker.isActive ? 'Active' : 'Inactive'}
@@ -320,14 +320,14 @@ export default function CaretakersPage() {
                              <div className="border-t lg:border-t-0 lg:border-l border-border bg-muted/5 p-6 min-w-[300px] flex flex-col justify-center gap-4">
                                   <div className="flex justify-between items-center">
                                       <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                          <Award className="h-4 w-4 text-yellow-500" />
+                                          <Award className="h-4 w-4 text-warning" />
                                           Rating
                                       </span>
                                       <span className="text-base font-bold text-foreground">{caretaker.rating?.toFixed(1) || 'N/A'}</span>
                                   </div>
                                   <div className="flex justify-between items-center">
                                       <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                          <CheckCircle2 className="h-4 w-4 text-success" />
                                           Check-ins
                                       </span>
                                       <span className="text-base font-bold text-foreground">{caretaker.tasksCompleted || 0}</span>

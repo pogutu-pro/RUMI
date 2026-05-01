@@ -43,17 +43,17 @@ export default function SubscriptionPage() {
       </div>
 
        {/* Current Accrual Card */}
-       <Card className="bg-slate-900 text-white border-none shadow-xl overflow-hidden relative">
+       <Card className="bg-card text-card-foreground border shadow-xl overflow-hidden relative">
            <div className="absolute top-0 right-0 p-32 bg-warning/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
            <CardContent className="p-8 relative z-10">
                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                    <div>
                        <div className="flex items-center gap-2 mb-2">
                            <p className="text-warning font-medium tracking-wider uppercase text-sm">Monthly Accrual</p>
-                           <Badge variant="outline" className="bg-green-100 text-green-700 border-0 font-bold">Live Tracking</Badge>
+                           <Badge variant="outline" className="bg-success/10 text-success border-0 font-bold">Live Tracking</Badge>
                        </div>
                        <h2 className="text-4xl font-bold mb-2 text-primary">
-                           {accrualLoading ? <Skeleton className="h-10 w-32 bg-slate-800" /> : `KES ${accrual?.projected_accrual?.toLocaleString() || '0'}`}
+                           {accrualLoading ? <Skeleton className="h-10 w-32 bg-muted" /> : `KES ${accrual?.projected_accrual?.toLocaleString() || '0'}`}
                        </h2>
                        <p className="text-muted-foreground max-w-lg">
                            Based on <strong>{accrual?.total_occupied_bed_days || 0} occupied bed-days</strong> recorded so far this month. 
@@ -105,7 +105,7 @@ export default function SubscriptionPage() {
                                             <td className="px-4 py-3">{format(new Date(inv.invoice_date), 'MMM dd, yyyy')}</td>
                                             <td className="px-4 py-3">KES {inv.total_amount}</td>
                                             <td className="px-4 py-3">
-                                                <Badge variant="outline" className={cn("capitalize font-bold border-0", inv.status === 'paid' ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700")}>
+                                                <Badge variant="outline" className={cn("capitalize font-bold border-0", inv.status === 'paid' ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
                                                     {inv.status}
                                                 </Badge>
                                             </td>
@@ -142,7 +142,7 @@ export default function SubscriptionPage() {
                         <p>
                             If an invoice remains unpaid after <strong>14 days</strong>, your account will enter <strong>Read-Only mode</strong>.
                         </p>
-                        <div className="p-3 bg-white/50 dark:bg-black/20 rounded border border-warning/20">
+                        <div className="p-3 bg-card/50 rounded border border-warning/20">
                             <strong>Read-Only Mode:</strong> You can view all data and receive student payments, but cannot add new rooms, hostels, or edit existing records.
                         </div>
                     </CardContent>

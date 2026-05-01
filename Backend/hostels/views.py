@@ -78,6 +78,21 @@ class HostelViewSet(TenantModelViewSet):
                 
             hostel = serializer.save(landlord=landlord_profile)
             
+            # Auto-generate Room stubs based on total_rooms
+            total_rooms = serializer.validated_data.get('total_rooms', 0)
+            if total_rooms > 0:
+                rooms_to_create = []
+                for i in range(total_rooms):
+                    rooms_to_create.append(Room(
+                        hostel=hostel,
+                        room_number=f"Room {i+1}",
+                        capacity=1,
+                        base_price=serializer.validated_data.get('base_price', 0),
+                        room_type='single',
+                        floor=1
+                    ))
+                Room.objects.bulk_create(rooms_to_create)
+            
             # Update landlord stats
             landlord_profile.total_hostels += 1
             landlord_profile.save()
@@ -145,7 +160,11 @@ class BookingViewSet(TenantModelViewSet):
     queryset = Booking.objects.all()
 
     def get_queryset(self):
-        return Booking.objects.all().select_related('room__hostel', 'student__user')
+        queryset = super().get_queryset().select_related('room__hostel', 'student__user')
+        hostel_id = self.request.query_params.get('hostel_id')
+        if hostel_id:
+            queryset = queryset.filter(room__hostel_id=hostel_id)
+        return queryset
 
     def get_serializer_class(self):
         if self.action == 'create':

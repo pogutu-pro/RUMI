@@ -13,7 +13,7 @@ import HostelImageUpload from './hostel-image-upload';
 import RoomForm from './room-form';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
-import { createHostel } from '@/features/hostels';
+import { hostelsApi } from '@/features/hostels';
 import type { Hostel } from '@/types/entities.types';
 
 const schema = z.object({
@@ -23,6 +23,10 @@ const schema = z.object({
   base_price: z.number().positive(),
   amenities: z.array(z.string()),
   images: z.array(z.string()),
+  caretaker_name: z.string().optional(),
+  caretaker_phone: z.string().optional(),
+  total_rooms: z.number().min(1).optional(),
+  rules: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -44,16 +48,23 @@ export default function HostelForm({ initialData }: { initialData?: Hostel }) {
         base_price: Number(initialData?.base_price) || 0,
         amenities: initialData?.amenities_list || [],
         images: initialData?.images || [],
+        caretaker_name: initialData?.caretaker_name || '',
+        caretaker_phone: initialData?.caretaker_phone || '',
+        total_rooms: initialData?.total_rooms || 1,
+        rules: initialData?.rules || '',
     },
   });
 
   const mutation = useMutation({
-    mutationFn: createHostel,
+    mutationFn: (data: FormData) => 
+      initialData?.id 
+        ? hostelsApi.updateHostel(initialData.id, data) 
+        : hostelsApi.createHostel(data),
     onSuccess: () => {
-      toast.success('Hostel created!');
-      router.push('/landlord/payments/mpesa-settings?redirectReason=new_hostel');
+      toast.success(initialData?.id ? 'Hostel updated!' : 'Hostel created!');
+      router.push('/landlord/hostels');
     },
-    onError: () => toast.error('Failed to create hostel'),
+    onError: () => toast.error(initialData?.id ? 'Failed to update hostel' : 'Failed to create hostel'),
   });
 
   const onSubmit: SubmitHandler<FormData> = (data) => mutation.mutate(data);
@@ -81,16 +92,47 @@ export default function HostelForm({ initialData }: { initialData?: Hostel }) {
           <p className="text-red-500 text-sm">{errors.description.message}</p>
         )}
       </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div>
+          <Label htmlFor="caretaker_name">Caretaker Name</Label>
+          <Input id="caretaker_name" {...register('caretaker_name')} />
+        </div>
+        <div>
+          <Label htmlFor="caretaker_phone">Caretaker Phone</Label>
+          <Input id="caretaker_phone" {...register('caretaker_phone')} />
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div>
+          <Label htmlFor="base_price">Price per Month (KSh)</Label>
+          <Input
+            id="base_price"
+            type="number"
+            {...register('base_price', { valueAsNumber: true })}
+          />
+          {errors.base_price && (
+            <p className="text-red-500 text-sm">{errors.base_price.message}</p>
+          )}
+        </div>
+        <div>
+          <Label htmlFor="total_rooms">Total Rooms</Label>
+          <Input
+            id="total_rooms"
+            type="number"
+            {...register('total_rooms', { valueAsNumber: true })}
+          />
+          {errors.total_rooms && (
+            <p className="text-red-500 text-sm">{errors.total_rooms.message}</p>
+          )}
+          <p className="text-xs text-muted-foreground mt-1">Number of beds is managed in the rooms section.</p>
+        </div>
+      </div>
+
       <div>
-        <Label htmlFor="base_price">Price per Month (KSh)</Label>
-        <Input
-          id="base_price"
-          type="number"
-          {...register('base_price', { valueAsNumber: true })}
-        />
-        {errors.base_price && (
-          <p className="text-red-500 text-sm">{errors.base_price.message}</p>
-        )}
+        <Label htmlFor="rules">Hostel Rules</Label>
+        <Textarea id="rules" {...register('rules')} placeholder="e.g. No loud music after 10 PM" className="min-h-[100px]" />
       </div>
       <div>
         <Label>Amenities</Label>

@@ -45,8 +45,24 @@ export const useLandlordHostels = () => {
   return useQuery<HostelsResponse, Error>({
     queryKey: queryKeys.hostels.landlordHostels(),
     queryFn: async () => {
-      const res = await apiClient.get<HostelsResponse>('/landlord/hostels/');
-      return res.data;
+      const res = await apiClient.get<any>('/landlord/hostels/');
+      const data = res.data;
+      
+      // Normalize response structure
+      if (data?.results) {
+        return data as HostelsResponse;
+      }
+      if (data?.data?.results) {
+        return data.data as HostelsResponse;
+      }
+      if (Array.isArray(data)) {
+        return { count: data.length, next: null, previous: null, results: data } as HostelsResponse;
+      }
+      if (Array.isArray(data?.data)) {
+        return { count: data.data.length, next: null, previous: null, results: data.data } as HostelsResponse;
+      }
+      
+      return { count: 0, next: null, previous: null, results: [] } as HostelsResponse;
     },
     staleTime: 5 * 60 * 1000,
     retry: 1,

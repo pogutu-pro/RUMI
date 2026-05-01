@@ -126,8 +126,8 @@ export default function HostelsPage() {
                   <p className="text-2xl md:text-3xl font-bold text-foreground">{totalRooms}</p>
                 )}
               </div>
-              <div className="p-3 rounded-lg bg-blue-500/10">
-                <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div className="p-3 rounded-lg bg-info/10">
+                <Users className="h-6 w-6 text-info" />
               </div>
             </div>
           </CardContent>
@@ -160,8 +160,8 @@ export default function HostelsPage() {
                   </p>
                 )}
               </div>
-              <div className="p-3 rounded-lg bg-orange-500/10">
-                <BarChart3 className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              <div className="p-3 rounded-lg bg-warning/10">
+                <BarChart3 className="h-6 w-6 text-warning" />
               </div>
             </div>
           </CardContent>
@@ -257,7 +257,7 @@ export default function HostelsPage() {
                       {/* Status Badges */}
                       <div className="absolute top-3 right-3 flex gap-2">
                         {hostel.is_verified && (
-                          <Badge className="bg-green-600 text-white border-0 font-bold">
+                          <Badge className="bg-success text-success-foreground border-0 font-bold">
                             <Check className="h-3 w-3 mr-1" />
                             Verified
                           </Badge>
@@ -266,8 +266,8 @@ export default function HostelsPage() {
                           className={cn(
                             'border-0 font-bold',
                             hostel.status === 'active'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-orange-600 text-white'
+                              ? 'bg-info text-info-foreground'
+                              : 'bg-warning text-warning-foreground'
                           )}
                         >
                           {hostel.status === 'active' ? 'Active' : 'Maintenance'}
@@ -336,13 +336,13 @@ export default function HostelsPage() {
                           <p className="text-sm font-medium text-muted-foreground">Total Beds</p>
                         </div>
                         <div>
-                          <p className="text-xl md:text-2xl font-bold text-green-600 dark:text-green-400">
+                          <p className="text-xl md:text-2xl font-bold text-success">
                             {occupiedRooms}
                           </p>
                           <p className="text-sm font-medium text-muted-foreground">Occupied</p>
                         </div>
                         <div>
-                          <p className="text-xl md:text-2xl font-bold text-orange-600 dark:text-orange-400">
+                          <p className="text-xl md:text-2xl font-bold text-warning">
                             {hostel.available_rooms}
                           </p>
                           <p className="text-sm font-medium text-muted-foreground">Available</p>

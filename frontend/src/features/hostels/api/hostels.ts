@@ -46,6 +46,21 @@ export const hostelsApi = {
     return res.data.data;
   },
 
+  // Update Hostel
+  // PATCH /hostels/{hostel_id}/
+  updateHostel: async (id: string | number, data: any) => {
+    const formattedData = {
+      ...data,
+      base_price: data.base_price ? String(data.base_price) : undefined
+    };
+    
+    const res = await apiClient.patch<ApiResponse<Hostel>>(
+      `/hostels/${id}/`,
+      formattedData
+    );
+    return res.data.data;
+  },
+
   // Get Hostel By ID
   // GET /hostels/{hostel_id}/
   getHostelById: async (id: string | number): Promise<Hostel> => {
@@ -159,6 +174,7 @@ export const getHostelBySlug = async (slug: string): Promise<Hostel> => {
 };
 export const getHostel = getHostelBySlug; 
 export const createHostel = hostelsApi.createHostel;
+export const updateHostel = hostelsApi.updateHostel;
 export const updateBed = hostelsApi.updateBed;
 export const searchRooms = hostelsApi.searchRooms;
 

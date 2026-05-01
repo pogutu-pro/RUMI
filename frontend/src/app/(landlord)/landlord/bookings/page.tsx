@@ -121,15 +121,15 @@ export default function BookingsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800';
+        return 'bg-success/10 text-success border-success/20';
       case 'pending':
-        return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800';
+        return 'bg-warning/10 text-warning border-warning/20';
       case 'cancelled':
-        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800';
+        return 'bg-destructive/10 text-destructive border-destructive/20';
       case 'completed':
-        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800';
+        return 'bg-info/10 text-info border-info/20';
       default:
-        return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700';
+        return 'bg-muted text-muted-foreground border-border';
     }
   };
 
@@ -200,7 +200,7 @@ export default function BookingsPage() {
               <CardContent className="p-6">
                   <div className="flex flex-col gap-1">
                       <span className="text-sm font-medium text-muted-foreground">Pending Approval</span>
-                      <span className="text-3xl font-bold text-orange-600 dark:text-orange-400">{stats.pending}</span>
+                      <span className="text-3xl font-bold text-warning">{stats.pending}</span>
                   </div>
               </CardContent>
           </Card>
@@ -208,7 +208,7 @@ export default function BookingsPage() {
               <CardContent className="p-6">
                   <div className="flex flex-col gap-1">
                       <span className="text-sm font-medium text-muted-foreground">Confirmed</span>
-                      <span className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.confirmed}</span>
+                      <span className="text-3xl font-bold text-success">{stats.confirmed}</span>
                   </div>
               </CardContent>
           </Card>
@@ -216,7 +216,7 @@ export default function BookingsPage() {
               <CardContent className="p-6">
                   <div className="flex flex-col gap-1">
                       <span className="text-sm font-medium text-muted-foreground">Completed</span>
-                      <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">{stats.completed}</span>
+                      <span className="text-3xl font-bold text-info">{stats.completed}</span>
                   </div>
               </CardContent>
           </Card>
@@ -282,9 +282,9 @@ export default function BookingsPage() {
                              {/* Left: Main Details */}
                              <div className="flex-1 p-6 flex items-start gap-4">
                                 <div className={cn("p-3 rounded-xl shrink-0", 
-                                    booking.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400' :
-                                    booking.status === 'pending' ? 'bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400' :
-                                    'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400'
+                                    booking.status === 'confirmed' ? 'bg-success/10 text-success' :
+                                    booking.status === 'pending' ? 'bg-warning/10 text-warning' :
+                                    'bg-muted text-muted-foreground'
                                 )}>
                                     <StatusIcon className="h-6 w-6" />
                                 </div>
@@ -325,13 +325,13 @@ export default function BookingsPage() {
                                     
                                      {/* Deposit Status Alert */}
                                      {booking.deposit_status === 'paid' && booking.status === 'pending' && (
-                                         <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-50 dark:bg-emerald-900/10 px-3 py-2 rounded-md border border-emerald-100 dark:border-emerald-900/20">
+                                         <div className="flex items-center gap-2 text-sm text-success bg-success/10 px-3 py-2 rounded-md border border-success/20">
                                             <CheckCircle2 className="h-4 w-4" />
                                             <span>Deposit Paid (KES {booking.deposit_amount}) - Ready for review</span>
                                          </div>
                                      )}
                                      {booking.deposit_status !== 'paid' && booking.status === 'pending' && (
-                                         <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 dark:bg-orange-900/10 px-3 py-2 rounded-md border border-orange-100 dark:border-orange-900/20">
+                                         <div className="flex items-center gap-2 text-sm text-warning bg-warning/10 px-3 py-2 rounded-md border border-warning/20">
                                             <AlertCircle className="h-4 w-4" />
                                             <span>Deposit Pending</span>
                                          </div>
@@ -356,7 +356,7 @@ export default function BookingsPage() {
                                 {booking.status === 'pending' ? (
                                     <>
                                         <div className="flex w-full gap-2">
-                                            <Button size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleApprove(booking.id)}>
+                                            <Button size="sm" className="flex-1 bg-success hover:bg-success/90 text-success-foreground" onClick={() => handleApprove(booking.id)}>
                                                 Approve
                                             </Button>
                                             <Button size="sm" variant="destructive" className="flex-1" onClick={() => handleReject(booking.id)}>

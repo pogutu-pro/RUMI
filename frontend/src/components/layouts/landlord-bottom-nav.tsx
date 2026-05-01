@@ -29,32 +29,17 @@ import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { logout } from '@/features/auth';
+import { useLandlordHostels } from '@/features/hostels/hooks/use-hostels';
 
-const PROPERTIES_ITEMS = [
-  { icon: Building2, label: 'All Hostels', href: '/landlord/hostels' },
-  { icon: UserPlus, label: 'Add New', href: '/landlord/hostels/new' },
-  { icon: Package, label: 'Inventory', href: '/landlord/hostels/inventory' },
-  { icon: BarChart3, label: 'Analytics', href: '/landlord/hostels/analytics' },
-];
-
-const TENANTS_ITEMS = [
-  { icon: Users, label: 'All Tenants', href: '/landlord/tenants' },
-  { icon: CalendarCheck, label: 'Bookings', href: '/landlord/bookings' },
-  { icon: Shield, label: 'Caretakers', href: '/landlord/caretakers' },
-  { icon: CalendarCheck, label: 'Check-Ins', href: '/landlord/tenants/check-ins' },
-  { icon: Clock, label: 'Check-Outs', href: '/landlord/tenants/check-outs' },
-];
+// Properties and Tenants are now direct links
 
 const FINANCE_ITEMS = [
-  { icon: CreditCard, label: 'Payments', href: '/landlord/payments' },
+  { icon: CreditCard, label: 'All Payments', href: '/landlord/payments' },
   { icon: Wallet, label: 'Payouts', href: '/landlord/payments/payouts' },
-  { icon: FileText, label: 'Reports', href: '/landlord/payments/reports' },
-  { icon: TrendingUp, label: 'Analytics', href: '/landlord/analytics' },
 ];
 
 const MENU_ITEMS = [
-  { icon: User, label: 'Profile', href: '/landlord/profile' },
-  { icon: MessageSquare, label: 'Messages', href: '/landlord/messages' },
+  { icon: User, label: 'My Profile', href: '/landlord/profile' },
   { icon: Bell, label: 'Notifications', href: '/landlord/notifications' },
   { icon: Settings, label: 'Settings', href: '/landlord/settings' },
   { icon: LifeBuoy, label: 'Support', href: '/landlord/support' },
@@ -171,10 +156,15 @@ export function LandlordBottomNav() {
   // logout is a stable action from auth.store, won't trigger rerenders
   
   // State for sheets
-  const [isPropertiesOpen, setIsPropertiesOpen] = React.useState(false);
-  const [isTenantsOpen, setIsTenantsOpen] = React.useState(false);
   const [isFinanceOpen, setIsFinanceOpen] = React.useState(false);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+
+  const { data: hostelsData } = useLandlordHostels();
+  const hostelCount = React.useMemo(() => {
+    return hostelsData?.results?.length || 0;
+  }, [hostelsData]);
+
+  const showTenants = hostelCount > 1;
 
   // Auto-hide on scroll down, show on scroll up
   React.useEffect(() => {
@@ -236,46 +226,26 @@ export function LandlordBottomNav() {
           paddingBottom: 'max(env(safe-area-inset-bottom), 0.5rem)',
         }}
       >
-        <div className="grid grid-cols-5 h-[68px] items-center px-1">
+        <div className={cn("grid h-[68px] items-center px-1", showTenants ? "grid-cols-5" : "grid-cols-4")}>
           {/* 1. Home */}
           <NavLink 
             item={{ label: 'Home', href: '/landlord/dashboard', icon: LayoutDashboard }} 
             active={is_active('/landlord/dashboard')} 
           />
 
-          {/* 2. Properties */}
-          <div>
-            <MenuButton 
-              icon={Building2} 
-              label="Properties" 
-              isOpen={isPropertiesOpen} 
-              onClick={() => setIsPropertiesOpen(true)} 
-            />
-            <MenuSheet 
-              title="Properties" 
-              items={PROPERTIES_ITEMS} 
-              isOpen={isPropertiesOpen} 
-              onOpenChange={setIsPropertiesOpen} 
-              pathname={pathname}
-            />
-          </div>
+          {/* 2. Properties (Direct Link) */}
+          <NavLink 
+            item={{ label: 'Properties', href: '/landlord/hostels', icon: Building2 }} 
+            active={is_active('/landlord/hostels')} 
+          />
 
-          {/* 3. Tenants */}
-          <div>
-            <MenuButton 
-              icon={Users} 
-              label="Tenants" 
-              isOpen={isTenantsOpen} 
-              onClick={() => setIsTenantsOpen(true)} 
+          {/* 3. Tenants - Only show if managing >1 hostel (Direct Link) */}
+          {showTenants && (
+            <NavLink 
+              item={{ label: 'Tenants', href: '/landlord/tenants', icon: Users }} 
+              active={is_active('/landlord/tenants')} 
             />
-            <MenuSheet 
-              title="Tenants & Bookings" 
-              items={TENANTS_ITEMS} 
-              isOpen={isTenantsOpen} 
-              onOpenChange={setIsTenantsOpen} 
-              pathname={pathname}
-            />
-          </div>
+          )}
 
           {/* 4. Finance */}
           <div>

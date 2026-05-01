@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { useQuery } from '@tanstack/react-query';
+import { useLandlordHostels } from '@/features/hostels/hooks/use-hostels';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -21,19 +22,13 @@ export default function LandlordPaymentsPage() {
   const { user } = useAuth();
   const [selectedHostel, setSelectedHostel] = useState<string>('');
 
-  const { data: hostels } = useQuery({
-    queryKey: ['landlord-hostels', user?.id],
-    queryFn: async () => {
-      const response = await apiClient.axios.get('/api/v1/hostels/landlord/my-hostels/');
-      return response.data.data || [];
-    },
-    enabled: !!user,
-  });
+  const { data: hostelsData } = useLandlordHostels();
+  const hostels = hostelsData?.results || [];
 
   // Auto-select first hostel
   React.useEffect(() => {
     if (hostels && hostels.length > 0 && !selectedHostel) {
-      setSelectedHostel(hostels[0].id);
+      setSelectedHostel(String(hostels[0].id));
     }
   }, [hostels, selectedHostel]);
 
@@ -58,7 +53,7 @@ export default function LandlordPaymentsPage() {
             </SelectTrigger>
             <SelectContent>
               {hostels.map((hostel: any) => (
-                <SelectItem key={hostel.id} value={hostel.id}>
+                <SelectItem key={hostel.id} value={String(hostel.id)}>
                   {hostel.name}
                 </SelectItem>
               ))}

@@ -165,7 +165,7 @@ export default function RoommatesPage() {
                                         Room {group.roomNumber}
                                     </CardTitle>
                                 </div>
-                                <Badge variant="outline" className="bg-white dark:bg-slate-800">
+                                <Badge variant="outline" className="bg-card">
                                     {group.occupants.length} Occupants
                                 </Badge>
                             </div>

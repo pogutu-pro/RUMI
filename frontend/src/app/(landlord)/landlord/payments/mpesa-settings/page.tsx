@@ -35,18 +35,18 @@ export default function MpesaSettingsPage() {
         {isNewHostel && (
             <motion.div 
                 variants={itemVariants}
-                className="bg-gradient-to-r from-emerald-500 to-teal-600 p-6 rounded-3xl shadow-xl shadow-emerald-200/50 text-white relative overflow-hidden group"
+                className="bg-linear-to-r from-success to-success/80 p-6 rounded-3xl shadow-xl shadow-success/20 text-success-foreground relative overflow-hidden group"
             >
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
                     <Sparkles className="h-24 w-24" />
                 </div>
                 <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-                    <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0">
+                    <div className="h-16 w-16 bg-card/50 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0">
                         <BadgeCheck className="h-10 w-10" />
                     </div>
                     <div className="text-center md:text-left">
                         <h2 className="text-2xl font-black mb-2">Hostel Saved Successfully!</h2>
-                        <p className="text-emerald-50 font-medium max-w-xl leading-relaxed">
+                        <p className="text-success-foreground font-medium max-w-xl leading-relaxed">
                             One last step: add your M-Pesa Till or Paybill number below. This will allow students 
                             to see exactly where to pay when they book your room.
                         </p>
@@ -54,7 +54,7 @@ export default function MpesaSettingsPage() {
                     <Button 
                         variant="secondary" 
                         size="lg"
-                        className="md:ml-auto h-12 px-6 rounded-xl font-bold bg-white text-emerald-600 hover:bg-emerald-50 border-none shadow-lg"
+                        className="md:ml-auto h-12 px-6 rounded-xl font-bold bg-card text-success hover:bg-success/10 border-none shadow-lg"
                         onClick={() => setView('create')}
                     >
                         Start Setup Now

@@ -1,5 +1,5 @@
-import PaymentsPage from '../page';
+import TechSupportPaymentsClient from '../client';
 
 export default function DisputesPage() {
-  return <PaymentsPage defaultTab="disputes" />;
+  return <TechSupportPaymentsClient defaultTab="disputes" />;
 }

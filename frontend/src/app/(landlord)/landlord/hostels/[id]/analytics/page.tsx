@@ -195,8 +195,8 @@ export default function HostelAnalyticsPage() {
           <CardContent className="p-4 md:p-6">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-bold text-muted-foreground">Active Tenants</p>
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-2 rounded-lg bg-info/10">
+                <Users className="h-5 w-5 text-info" />
               </div>
             </div>
             <p className="text-2xl md:text-3xl font-bold text-foreground">{occupiedRooms}</p>
@@ -208,8 +208,8 @@ export default function HostelAnalyticsPage() {
           <CardContent className="p-4 md:p-6">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-bold text-muted-foreground">Available Beds</p>
-              <div className="p-2 rounded-lg bg-orange-500/10">
-                <BedDouble className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              <div className="p-2 rounded-lg bg-warning/10">
+                <BedDouble className="h-5 w-5 text-warning" />
               </div>
             </div>
             <p className="text-2xl md:text-3xl font-bold text-foreground">
@@ -268,7 +268,7 @@ export default function HostelAnalyticsPage() {
         <Card className="border shadow-sm bg-card">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-              <BedDouble className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <BedDouble className="h-5 w-5 text-info" />
               Room Status
             </CardTitle>
             <CardDescription className="text-muted-foreground">
@@ -354,7 +354,7 @@ export default function HostelAnalyticsPage() {
         <Card className="border shadow-sm bg-card">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              <Calendar className="h-5 w-5 text-warning" />
               Booking Activity
             </CardTitle>
             <CardDescription className="text-muted-foreground">

@@ -261,14 +261,14 @@ export default function InventoryPage() {
       </div>
 
       {/* Info Banner */}
-      <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30">
+      <Card className="border-info/20 bg-info/5">
         <CardContent className="p-4 flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="h-5 w-5 text-info flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-bold text-blue-900 dark:text-blue-100">
+            <p className="text-sm font-bold text-foreground">
               How this works
             </p>
-            <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               This inventory template will be used when students check in. The caretaker will verify each item's condition and take photos. You can add or remove items anytime.
             </p>
           </div>
@@ -293,8 +293,8 @@ export default function InventoryPage() {
         <Card className="border shadow-sm bg-card">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <BedDouble className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-2 rounded-lg bg-info/10">
+                <BedDouble className="h-5 w-5 text-info" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{itemsByCategory.bed.length}</p>
@@ -306,8 +306,8 @@ export default function InventoryPage() {
         <Card className="border shadow-sm bg-card">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-orange-500/10">
-                <Sofa className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              <div className="p-2 rounded-lg bg-warning/10">
+                <Sofa className="h-5 w-5 text-warning" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{itemsByCategory.furniture.length}</p>
@@ -338,14 +338,12 @@ export default function InventoryPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-500/10">
-                  <BedDouble className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <div className="p-2 rounded-lg bg-info/10">
+                  <BedDouble className="h-5 w-5 text-info" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg font-bold text-foreground">Bed Items</CardTitle>
-                  <CardDescription className="text-muted-foreground">
-                    Items provided per bed/student
-                  </CardDescription>
+                  <h3 className="text-lg font-bold text-foreground">Bed Items</h3>
+                  <p className="text-sm text-muted-foreground">{itemsByCategory.bed.length} items</p>
                 </div>
               </div>
               <Badge variant="secondary" className="font-bold">
@@ -373,13 +371,13 @@ export default function InventoryPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-orange-500/10">
-                  <Sofa className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                <div className="p-2 rounded-lg bg-warning/10">
+                  <Sofa className="h-5 w-5 text-warning" />
                 </div>
                 <div>
                   <CardTitle className="text-lg font-bold text-foreground">Furniture</CardTitle>
                   <CardDescription className="text-muted-foreground">
-                    Tables, chairs, and storage
+                    {itemsByCategory.furniture.length} items
                   </CardDescription>
                 </div>
               </div>
@@ -618,7 +616,7 @@ function InventoryItemRow({
             variant="outline"
             className={cn(
               "text-xs cursor-pointer transition-colors",
-              item.perBed && "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300"
+              item.perBed && "bg-info/10 border-info/20 text-info"
             )}
             onClick={onPerBedToggle}
           >

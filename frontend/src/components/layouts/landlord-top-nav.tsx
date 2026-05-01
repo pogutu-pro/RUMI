@@ -108,7 +108,7 @@ export function LandlordTopNav({ onMenuClick, isSidebarOpen, isMobile }: Landlor
           </Button>
           <div className="flex flex-col">
             <span className="text-xs font-bold uppercase tracking-[0.18em] text-foreground">
-              RUMI · Landlord
+              Rumia · Landlord
             </span>
             <span className="text-sm font-medium text-muted-foreground hidden sm:block">
               Manage your properties and tenants

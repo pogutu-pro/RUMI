@@ -250,7 +250,7 @@ export default function CheckOutProcessPage() {
              </AnimatePresence>
            </div>
            
-           <CardFooter className="flex justify-between border-t bg-slate-50/50 p-6">
+           <CardFooter className="flex justify-between border-t bg-muted/30 p-6">
                <Button variant="ghost" onClick={handlePrev} disabled={step === 1}>
                    <ArrowLeft className="h-4 w-4 mr-2" />
                    Back

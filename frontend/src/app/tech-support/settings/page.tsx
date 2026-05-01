@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
@@ -198,23 +199,23 @@ export default function TechSupportSettingsPage() {
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <FormLabel>First Name</FormLabel>
+                  <Label>First Name</Label>
                   <Input defaultValue={user?.first_name} className="bg-background/50" />
                 </div>
                 <div className="space-y-2">
-                  <FormLabel>Last Name</FormLabel>
+                  <Label>Last Name</Label>
                   <Input defaultValue={user?.last_name} className="bg-background/50" />
                 </div>
               </div>
               <div className="space-y-2">
-                <FormLabel>Email Address</FormLabel>
+                <Label>Email Address</Label>
                 <Input defaultValue={user?.email} disabled className="bg-muted/30" />
                 <p className="text-xs text-muted-foreground">
                   Contact support to change your email address
                 </p>
               </div>
               <div className="space-y-2">
-                <FormLabel>Role</FormLabel>
+                <Label>Role</Label>
                 <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
                   <LifeBuoy className="h-4 w-4 text-indigo-500" />
                   <span className="text-sm font-medium">Tech Support Agent</span>

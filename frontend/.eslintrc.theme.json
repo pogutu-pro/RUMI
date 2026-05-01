@@ -1,0 +1,32 @@
+{
+  "extends": ["./.eslintrc.json"],
+  "rules": {
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "Literal[value=/bg-(white|black|gray|slate|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\\d+/]",
+        "message": "Use semantic color tokens instead of hardcoded background colors. Replace with bg-card, bg-surface, bg-success, bg-warning, bg-destructive, or bg-info."
+      },
+      {
+        "selector": "Literal[value=/text-(white|black|gray|slate|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\\d+/]",
+        "message": "Use semantic color tokens instead of hardcoded text colors. Replace with text-text-primary, text-text-muted, text-success, text-warning, text-destructive, or text-info."
+      },
+      {
+        "selector": "Literal[value=/border-(white|black|gray|slate|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\\d+/]",
+        "message": "Use semantic color tokens instead of hardcoded border colors. Replace with border-border, border-success, border-warning, border-destructive, or border-info."
+      },
+      {
+        "selector": "Literal[value=/dark:bg-(white|black|gray|slate|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\\d+/]",
+        "message": "Use semantic color tokens instead of hardcoded dark mode backgrounds. Replace with bg-card, bg-surface, or other semantic tokens."
+      },
+      {
+        "selector": "Literal[value=/dark:text-(white|black|gray|slate|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\\d+/]",
+        "message": "Use semantic color tokens instead of hardcoded dark mode text colors. Replace with text-text-primary, text-text-muted, or other semantic tokens."
+      },
+      {
+        "selector": "Literal[value=/dark:border-(white|black|gray|slate|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\\d+/]",
+        "message": "Use semantic color tokens instead of hardcoded dark mode borders. Replace with border-border or other semantic tokens."
+      }
+    ]
+  }
+}

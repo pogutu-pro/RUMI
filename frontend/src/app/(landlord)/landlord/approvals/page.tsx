@@ -75,7 +75,7 @@ export default function LandlordApprovalsPage() {
                     {report.type === 'check_in' ? 'Check-In' : 'Check-Out'}
                   </Badge>
                   {report.status === 'verified' && (
-                     <Badge variant="secondary" className="bg-blue-100 text-blue-700">Verified</Badge>
+                     <Badge variant="secondary" className="bg-info/10 text-info">Verified</Badge>
                   )}
                 </div>
                 <CardTitle className="text-xl">Room {report.roomNumber}</CardTitle>

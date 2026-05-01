@@ -317,7 +317,7 @@ export default function NewHostelWizardPage() {
         caretaker_name: formData.caretakerName,
         caretaker_phone: formData.caretakerPhone,
         safety_features: formData.safetyFeatures,
-        house_rules: formData.houseRules,
+        rules: formData.houseRules,
         minimum_stay: formData.minimumStay,
         mid_term_joins_allowed: formData.midTermJoins,
         payment_cycle: formData.paymentCycle,
@@ -326,17 +326,55 @@ export default function NewHostelWizardPage() {
         images: formData.images, // Image URLs/previews
       };
 
-      await createHostel.mutateAsync(apiData as any);
+      const newHostel = await createHostel.mutateAsync(apiData as any);
+      
+      // Auto-generate rooms
+      if (newHostel?.id && formData.totalRooms > 0) {
+        toast.loading(`Creating hostel and generating ${formData.totalRooms} rooms...`, { id: 'create-hostel' });
+        
+        const roomType = formData.roomTypes[0] || initialFormData.roomTypes[0];
+        let roomTypeEnum = 'mixed';
+        if (roomType.bedsPerRoom === 1) roomTypeEnum = 'single_rooms';
+        else if (roomType.bedsPerRoom > 1) roomTypeEnum = 'shared_rooms';
+
+        // Cap auto-generation at 30 to prevent abuse/timeouts
+        const roomsToGenerate = Math.min(formData.totalRooms, 30);
+        
+        try {
+          const { hostelsApi } = await import('@/features/hostels');
+          const roomPromises = [];
+          for (let i = 1; i <= roomsToGenerate; i++) {
+            roomPromises.push(
+               hostelsApi.createRoom(String(newHostel.id), {
+                 room_number: `Room ${i}`,
+                 capacity: roomType.bedsPerRoom || 1,
+                 base_price: String(roomType.monthlyRent || 5000),
+                 room_type: roomTypeEnum as any
+               })
+            );
+          }
+          await Promise.all(roomPromises);
+          
+          if (formData.totalRooms > 30) {
+            toast.success(`Hostel created! First 30 rooms auto-generated. Please add the rest manually.`, { id: 'create-hostel' });
+          } else {
+            toast.success('Hostel and all rooms created successfully!', { id: 'create-hostel' });
+          }
+        } catch (err) {
+          console.error('Failed to auto-generate some rooms:', err);
+          toast.error('Hostel created, but failed to auto-generate rooms. You can add them manually.', { id: 'create-hostel' });
+        }
+      } else {
+        toast.success('Hostel created successfully!', { id: 'create-hostel' });
+      }
       
       // Clear draft on success
       localStorage.removeItem('hostel_draft');
-      
-      toast.success('Hostel created successfully!');
       router.push('/landlord/hostels');
     } catch (error: any) {
       // Show specific error messages
       const errorMessage = error.response?.data?.message || error.message || 'Failed to create hostel';
-      toast.error(errorMessage);
+      toast.error(errorMessage, { id: 'create-hostel' });
       console.error('Hostel creation error:', error);
     }
   }, [formData, validateStep, createHostel, router]);

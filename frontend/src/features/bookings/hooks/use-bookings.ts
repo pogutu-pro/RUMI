@@ -16,17 +16,25 @@ export interface UseBookingOptions {
 
 interface UseBookingsParams {
   status?: Booking['status'] | 'all';
+  hostel_id?: string;
 }
 
 export const useBookings = (params?: UseBookingsParams) => {
-  const backendParams =
-    params && params.status && params.status !== 'all'
-      ? { status: params.status }
-      : undefined;
+  const backendParams: Record<string, any> = {};
+  
+  if (params?.status && params.status !== 'all') {
+      backendParams.status = params.status;
+  }
+  
+  if (params?.hostel_id) {
+      backendParams.hostel_id = params.hostel_id;
+  }
+
+  const finalParams = Object.keys(backendParams).length > 0 ? backendParams : undefined;
 
   return useQuery<Booking[], Error>({
-    queryKey: queryKeys.bookings.list(backendParams as Record<string, unknown> | undefined),
-    queryFn: () => getBookings(backendParams),
+    queryKey: queryKeys.bookings.list(finalParams as Record<string, unknown> | undefined),
+    queryFn: () => getBookings(finalParams),
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });

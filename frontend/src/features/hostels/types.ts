@@ -81,6 +81,7 @@ export interface Bed {
 export interface Room {
   id: string;
   room_number: string;
+  room_type?: 'single_rooms' | 'shared_rooms' | 'mixed';
   base_price: string; // Unified as string for Decimal precision
   capacity: number;
   images: string[];

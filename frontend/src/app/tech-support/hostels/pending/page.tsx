@@ -1,5 +1,5 @@
-import HostelsPage from '../page';
+import HostelSupportClient from '../client';
 
 export default function PendingHostelsPage() {
-  return <HostelsPage defaultStatus="pending" />;
+  return <HostelSupportClient defaultStatus="pending" />;
 }

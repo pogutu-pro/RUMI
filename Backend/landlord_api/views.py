@@ -804,7 +804,13 @@ class LandlordStudentManagementView(APIView):
         occupants = RoomOccupant.objects.filter(
             room__hostel__landlord=landlord_profile,
             is_active=True
-        ).select_related(
+        )
+        
+        hostel_id = request.query_params.get('hostel_id')
+        if hostel_id:
+            occupants = occupants.filter(room__hostel_id=hostel_id)
+            
+        occupants = occupants.select_related(
             'student__user', 
             'room', 
             'room__hostel',

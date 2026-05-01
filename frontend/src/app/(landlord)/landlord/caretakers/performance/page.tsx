@@ -83,11 +83,11 @@ export default function CaretakerPerformancePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-3">
-            <TrendingUp className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+            <TrendingUp className="h-8 w-8 text-success" />
             Caretaker Performance
           </h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          <p className="mt-1 text-sm text-muted-foreground">
             Track and analyze the performance of your property managers
           </p>
         </div>
@@ -115,26 +115,26 @@ export default function CaretakerPerformancePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
             >
-                <Card className="border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800 overflow-hidden relative">
+                <Card className="border-none shadow-md bg-gradient-to-br from-card to-surface overflow-hidden relative">
                 <div className="absolute top-0 right-0 p-3 opacity-10">
-                    <Star className="h-24 w-24 text-yellow-500" />
+                    <Star className="h-24 w-24 text-warning" />
                 </div>
                 <CardContent className="p-6 flex items-center gap-4 relative z-10">
-                    <Avatar className="h-16 w-16 border-2 border-emerald-100 dark:border-emerald-900">
-                    <AvatarFallback className="bg-emerald-100 text-emerald-700 font-bold text-xl">
+                    <Avatar className="h-16 w-16 border-2 border-success/20">
+                    <AvatarFallback className="bg-success/10 text-success font-bold text-xl">
                         {getInitials(caretaker.firstName, caretaker.lastName)}
                     </AvatarFallback>
                     </Avatar>
                     <div>
                     <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">
+                        <h3 className="font-bold text-lg text-foreground">
                         {caretaker.firstName} {caretaker.lastName}
                         </h3>
                         {index === 0 && (
-                        <Badge className="bg-yellow-100 text-yellow-700 border-0 text-xs">Top Rated</Badge>
+                        <Badge className="bg-warning/10 text-warning border-0 text-xs">Top Rated</Badge>
                         )}
                     </div>
-                    <div className="flex items-center gap-1 text-yellow-500 text-sm font-medium mt-1">
+                    <div className="flex items-center gap-1 text-warning text-sm font-medium mt-1">
                         <Star className="h-4 w-4 fill-current" />
                         <span>{caretaker.rating?.toFixed(1) || 'N/A'} Rating</span>
                     </div>
@@ -151,7 +151,7 @@ export default function CaretakerPerformancePage() {
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search caretakers..."
                 value={searchQuery}
@@ -183,8 +183,8 @@ export default function CaretakerPerformancePage() {
         ) : sortedCaretakers.length === 0 ? (
             <Card className="border-none shadow-md">
                 <CardContent className="p-12 text-center">
-                    <Users className="h-12 w-12 mx-auto text-slate-400 mb-4" />
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">No caretakers found</h3>
+                    <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No caretakers found</h3>
                     <p className="text-muted-foreground">Try adjusting your filters</p>
                 </CardContent>
             </Card>
@@ -201,37 +201,37 @@ export default function CaretakerPerformancePage() {
                     <div className="flex flex-col lg:flex-row lg:items-center gap-6">
                     <div className="flex items-center gap-4 min-w-[200px]">
                         <Avatar className="h-12 w-12">
-                        <AvatarFallback className="bg-slate-100 dark:bg-slate-800">
+                        <AvatarFallback className="bg-muted text-muted-foreground">
                             {getInitials(caretaker.firstName, caretaker.lastName)}
                         </AvatarFallback>
                         </Avatar>
                         <div>
-                        <h4 className="font-semibold text-slate-900 dark:text-slate-100">
+                        <h4 className="font-semibold text-foreground">
                             {caretaker.firstName} {caretaker.lastName}
                         </h4>
-                        <p className="text-sm text-slate-500">{caretaker.email}</p>
+                        <p className="text-sm text-muted-foreground">{caretaker.email}</p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
                         <div className="space-y-1">
-                        <p className="text-xs text-slate-500">Performance Rating</p>
+                        <p className="text-xs text-muted-foreground">Performance Rating</p>
                         <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900 dark:text-slate-100">{caretaker.rating?.toFixed(1) || '-'}</span>
+                            <span className="font-bold text-foreground">{caretaker.rating?.toFixed(1) || '-'}</span>
                             <Progress value={(caretaker.rating || 0) * 20} className="h-2 w-20" />
                         </div>
                         </div>
                         <div className="space-y-1">
-                        <p className="text-xs text-slate-500">Tasks Completed</p>
-                        <p className="font-bold text-slate-900 dark:text-slate-100">{caretaker.tasksCompleted || 0}</p>
+                        <p className="text-xs text-muted-foreground">Tasks Completed</p>
+                        <p className="font-bold text-foreground">{caretaker.tasksCompleted || 0}</p>
                         </div>
                         <div className="space-y-1">
-                        <p className="text-xs text-slate-500">Avg Response Time</p>
-                        <p className="font-bold text-slate-900 dark:text-slate-100">{caretaker.responseTime ? `${caretaker.responseTime} mins` : '-'}</p>
+                        <p className="text-xs text-muted-foreground">Avg Response Time</p>
+                        <p className="font-bold text-foreground">{caretaker.responseTime ? `${caretaker.responseTime} mins` : '-'}</p>
                         </div>
                         <div className="space-y-1">
-                        <p className="text-xs text-slate-500">Occupancy Rate</p>
-                        <p className="font-bold text-emerald-600">{caretaker.occupancyRate ? `${caretaker.occupancyRate}%` : '-'}</p>
+                        <p className="text-xs text-muted-foreground">Occupancy Rate</p>
+                        <p className="font-bold text-success">{caretaker.occupancyRate ? `${caretaker.occupancyRate}%` : '-'}</p>
                         </div>
                     </div>
 

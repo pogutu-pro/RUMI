@@ -42,11 +42,15 @@ import { toast } from 'sonner';
 
 interface BookingsListProps {
   status?: 'all' | 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  hostelId?: string;
 }
 
-export function BookingsList({ status = 'all' }: BookingsListProps) {
+export function BookingsList({ status = 'all', hostelId }: BookingsListProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const { data: bookingsData, isLoading } = useBookings({ status: status === 'all' ? undefined : status });
+  const { data: bookingsData, isLoading } = useBookings({ 
+      status: status === 'all' ? undefined : status,
+      hostel_id: hostelId 
+  });
   const updateStatus = useUpdateBookingStatus();
   
   const bookings = bookingsData || [];

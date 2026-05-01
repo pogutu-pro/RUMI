@@ -69,64 +69,78 @@ interface NavItem {
   }[];
 }
 
-const navItems: NavItem[] = [
-  {
-    title: 'Home',
-    href: '/landlord/dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    title: 'My Hostels',
-    icon: Building2,
-    items: [
-      { title: 'All Hostels', href: '/landlord/hostels', icon: Building2 },
-      { title: 'Add New', href: '/landlord/hostels/new', icon: UserPlus },
-    ],
-  },
-  {
-    title: 'People',
-    icon: Users,
-    items: [
-      { title: 'Tenants', href: '/landlord/tenants', icon: Users },
-      { title: 'Bookings', href: '/landlord/bookings', icon: CalendarCheck },
-      { title: 'Caretakers', href: '/landlord/caretakers', icon: Shield },
-      { title: 'Check-Ins', href: '/landlord/tenants/check-ins', icon: CalendarCheck },
-      { title: 'Check-Outs', href: '/landlord/tenants/check-outs', icon: Clock },
-    ],
-  },
-  {
-    title: 'Earnings',
-    icon: DollarSign,
-    items: [
-      { title: 'All Payments', href: '/landlord/payments', icon: CreditCard },
-      { title: 'Payouts', href: '/landlord/payments/payouts', icon: Wallet },
-    ],
-  },
-  {
-    title: 'Account',
-    icon: Settings,
-    items: [
-      { title: 'My Profile', href: '/landlord/profile', icon: UserCheck },
-      { title: 'Notifications', href: '/landlord/notifications', icon: Bell },
-      { title: 'Settings', href: '/landlord/settings', icon: Settings },
-      { title: 'Support', href: '/landlord/support', icon: LifeBuoy },
-    ],
-  },
-];
+
+
+import { useLandlordHostels } from '@/features/hostels/hooks/use-hostels';
 
 export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const { logout } = useAuth();
   const [openGroups, setOpenGroups] = React.useState<string[]>([]);
+  
+  const { data: hostelsData } = useLandlordHostels();
+  const hostelCount = React.useMemo(() => {
+    return hostelsData?.results?.length || 0;
+  }, [hostelsData]);
+
+  const dynamicNavItems = React.useMemo(() => {
+    const items: NavItem[] = [
+      {
+        title: 'Home',
+        href: '/landlord/dashboard',
+        icon: LayoutDashboard,
+      },
+      {
+        title: 'My Hostels',
+        href: '/landlord/hostels',
+        icon: Building2,
+      },
+    ];
+
+    if (hostelCount > 1) {
+      items.push({
+        title: 'People',
+        icon: Users,
+        items: [
+          { title: 'Tenants', href: '/landlord/tenants', icon: Users },
+          { title: 'Bookings', href: '/landlord/bookings', icon: CalendarCheck },
+          { title: 'Caretakers', href: '/landlord/caretakers', icon: Shield },
+          { title: 'Check-Ins', href: '/landlord/tenants/check-ins', icon: CalendarCheck },
+          { title: 'Check-Outs', href: '/landlord/tenants/check-outs', icon: Clock },
+        ],
+      });
+    }
+
+    items.push({
+      title: 'Earnings',
+      icon: DollarSign,
+      items: [
+        { title: 'All Payments', href: '/landlord/payments', icon: CreditCard },
+        { title: 'Payouts', href: '/landlord/payments/payouts', icon: Wallet },
+      ],
+    });
+
+    items.push({
+      title: 'Account',
+      icon: Settings,
+      items: [
+        { title: 'My Profile', href: '/landlord/profile', icon: UserCheck },
+        { title: 'Notifications', href: '/landlord/notifications', icon: Bell },
+        { title: 'Settings', href: '/landlord/settings', icon: Settings },
+        { title: 'Support', href: '/landlord/support', icon: LifeBuoy },
+      ],
+    });
+
+    return items;
+  }, [hostelCount]);
 
   // Determine if the sidebar is visually expanded
-  // For senior landlords, we disable auto-hover and keep it fixed based on isOpen
   const isExpanded = isOpen;
 
   // Automatically open groups if a child is active
   React.useEffect(() => {
-    const activeGroup = navItems.find(
+    const activeGroup = dynamicNavItems.find(
       (item) =>
         item.items &&
         item.items.some((subItem) => pathname.startsWith(subItem.href))
@@ -134,7 +148,7 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
     if (activeGroup && !openGroups.includes(activeGroup.title)) {
       setOpenGroups((prev) => [...prev, activeGroup.title]);
     }
-  }, [pathname]);
+  }, [pathname, dynamicNavItems]);
 
   const toggleGroup = (title: string) => {
     setOpenGroups((prev) =>
@@ -148,17 +162,17 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
     <div className="flex flex-col h-full py-4 bg-card border-r border-border transition-colors duration-200">
       <div className={cn("flex items-center h-20 px-6 mb-4", isExpanded ? "justify-between" : "justify-center")}>
         {isExpanded ? (
-          <Link href="/" className="flex items-center gap-3 font-bold text-3xl text-primary group">
+          <Link href="/landlord/dashboard" className="flex items-center gap-3 font-bold text-3xl text-primary group">
             <div className="relative h-10 w-10 transition-transform group-hover:scale-105">
-              <Image src="/images/logo/logo.svg" alt="RUMI Logo" fill className="object-contain" />
+              <Image src="/images/logo/logo.svg" alt="Rumia Logo" fill className="object-contain" />
             </div>
-            <span className="tracking-tight">RUMI</span>
+            <span className="tracking-tight">Rumia</span>
           </Link>
         ) : (
-           <Link href="/" className="relative h-10 w-10 group">
+           <Link href="/landlord/dashboard" className="relative h-10 w-10 group">
               <Image 
                 src="/images/logo/logo.svg" 
-                alt="RUMI Logo" 
+                alt="Rumia Logo" 
                 width={40} 
                 height={40} 
                 className="transition-transform group-hover:scale-105"
@@ -180,7 +194,7 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
 
       <ScrollArea className="flex-1 px-4">
         <div className="space-y-1.5 pb-4">
-          {navItems.map((item, index) => {
+          {dynamicNavItems.map((item, index) => {
             const is_active = item.href
               ? pathname === item.href || pathname.startsWith(item.href + '/')
               : item.items?.some((subItem) => pathname.startsWith(subItem.href));
@@ -317,7 +331,7 @@ export function LandlordSidebar({ isOpen, setIsOpen, isMobile }: SidebarProps) {
         </div>
       </ScrollArea>
 
-      {/* Sidebar Footer - Added RUMI Guide for senior help */}
+      {/* Sidebar Footer - Added Rumia Guide for senior help */}
       <div className="mt-auto p-4 border-t border-border/50 bg-muted/20 flex flex-col gap-2">
         {isExpanded ? (
           <>
