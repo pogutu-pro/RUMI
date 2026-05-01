@@ -43,9 +43,6 @@ def generate_rent_periods_for_booking(booking):
         period_start = current_date + relativedelta(months=month_offset)
         period_end = period_start + relativedelta(months=1) - relativedelta(days=1)
         
-        # Generate unique student account reference for paybill matching
-        student_account_ref = f"STU{booking.student.id:06d}M{month_offset+1:02d}"
-        
         rent_period = RentPeriod.objects.create(
             student=booking.student,
             hostel=booking.room.hostel,
@@ -58,8 +55,6 @@ def generate_rent_periods_for_booking(booking):
             amount_due=booking.monthly_rent,
             amount_paid=Decimal('0.00'),
             status='due',
-            student_account_ref=student_account_ref,
-            # assigned_paybill will be set by landlord later
         )
         rent_periods.append(rent_period)
     
@@ -99,7 +94,7 @@ def process_payment_to_rent_periods(student, amount, payment_method, metadata=No
     Args:
         student: StudentProfile instance
         amount: Decimal amount paid
-        payment_method: 'mpesa' or 'paystack'
+        payment_method: 'paystack'
         metadata: dict of payment gateway metadata
         booking: Optional Booking instance to scope payments to a specific booking
     

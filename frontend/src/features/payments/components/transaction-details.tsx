@@ -30,7 +30,7 @@ export function TransactionDetails({
     type: 'payment',
     status: 'completed',
     date: new Date(),
-    method: 'M-Pesa',
+    method: 'Paystack',
     reference: 'REF123456',
     description: 'Hostel booking payment',
     recipient: {

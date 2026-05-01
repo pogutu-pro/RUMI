@@ -31,7 +31,7 @@ import {
 import { toast } from 'sonner';
 
 const paymentMethodSchema = z.object({
-  type: z.enum(['mpesa', 'card', 'bank']),
+  type: z.enum(['card', 'bank']),
   name: z.string().min(1, 'Name is required'),
   accountNumber: z.string().optional(),
   bankName: z.string().optional(),
@@ -56,7 +56,7 @@ export function AddPaymentMethodDialog({
   const form = useForm<PaymentMethodFormValues>({
     resolver: zodResolver(paymentMethodSchema),
     defaultValues: {
-      type: 'mpesa',
+      type: 'card',
       name: '',
     },
   });
@@ -105,7 +105,6 @@ export function AddPaymentMethodDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="mpesa">M-Pesa</SelectItem>
                       <SelectItem value="card">Credit/Debit Card</SelectItem>
                       <SelectItem value="bank">Bank Account</SelectItem>
                     </SelectContent>
@@ -122,28 +121,12 @@ export function AddPaymentMethodDialog({
                 <FormItem>
                   <FormLabel>Display Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="My M-Pesa" {...field} />
+                    <Input placeholder="My Card" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
-            {paymentType === 'mpesa' && (
-              <FormField
-                control={form.control}
-                name="accountNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="+254700000000" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
 
             {paymentType === 'bank' && (
               <>

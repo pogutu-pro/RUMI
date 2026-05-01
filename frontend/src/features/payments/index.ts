@@ -16,8 +16,6 @@ export * from './components/payment-receipt';
 export * from './components/recurring-payment-settings';
 export * from './components/transaction-list';
 export * from './components/pay-rent-modal';
-export * from './components/mpesa-settings-form';
-export * from './components/mpesa-settings-list';
 export * from './api/payments';
 export * from './api/subscriptions';
 export * from './hooks/use-payment-methods';

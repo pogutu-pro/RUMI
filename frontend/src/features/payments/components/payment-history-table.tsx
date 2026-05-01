@@ -25,7 +25,6 @@ const STATUS_VARIANTS = {
   success: 'default',
   completed: 'default',
   pending: 'secondary',
-  pending_stk_push: 'secondary',
   processing: 'secondary',
   failed: 'destructive',
   cancelled: 'outline',

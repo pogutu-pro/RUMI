@@ -62,59 +62,6 @@ class IdempotencyKey(models.Model):
         return str(self.idempotency_key)
 
 
-class MpesaPaymentConfig(models.Model):
-    """Store landlord-specific M-Pesa payment configurations"""
-    
-    # RESTRICTED: Only Paybill is supported for automated tracking
-    PAYMENT_TYPE_CHOICES = [
-        ('paybill', 'Paybill Number'),
-    ]
-    
-    STATUS_CHOICES = [
-        ('active', 'Active'),
-        ('inactive', 'Inactive'),
-        ('pending_verification', 'Pending Verification'),
-    ]
-    
-    landlord = models.ForeignKey(
-        'accounts.LandlordProfile',
-        on_delete=models.CASCADE,
-        related_name='mpesa_payment_configs'
-    )
-    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES, default='paybill')
-    mpesa_number = models.CharField(max_length=20, help_text="Paybill Number")
-    business_name = models.CharField(max_length=255, help_text="Business name for display")
-    
-    # API Credentials for Multi-Tenant Routing
-    consumer_key = models.CharField(max_length=255, blank=True, null=True, help_text="Daraja App Consumer Key")
-    consumer_secret = models.CharField(max_length=255, blank=True, null=True, help_text="Daraja App Consumer Secret")
-    passkey = models.CharField(max_length=255, blank=True, null=True, help_text="Lipa Na M-Pesa Online Passkey")
-    
-    is_default = models.BooleanField(default=False, help_text="Default payment method for this landlord")
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_verification')
-    verification_code = models.CharField(max_length=10, blank=True, null=True, help_text="SMS verification code")
-    verified_at = models.DateTimeField(blank=True, null=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(default=timezone.now)
-    
-    class Meta:
-        db_table = 'payments_mpesapaymentconfig'
-        indexes = [
-            models.Index(fields=['landlord'], name='idx_mpesa_config_landlord'),
-            models.Index(fields=['payment_type'], name='idx_mpesa_config_type'),
-        ]
-    
-    def __str__(self):
-        return f"{self.get_payment_type_display()} - {self.mpesa_number} ({self.landlord.user.get_full_name()})"
-    
-    def save(self, *args, **kwargs):
-        if self.is_default:
-            MpesaPaymentConfig.objects.filter(
-                landlord=self.landlord
-            ).exclude(pk=self.pk).update(is_default=False)
-        self.updated_at = timezone.now()
-        super().save(*args, **kwargs)
-
 
 class StudentPaymentTracker(models.Model):
     """Tracks student overpayments and credits for future use"""
@@ -185,10 +132,6 @@ class RentPeriod(models.Model):
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='due')
     
-    # Payment Resolution Fields
-    assigned_paybill = models.CharField(max_length=20, blank=True, null=True)
-    student_account_ref = models.CharField(max_length=50, help_text="Unique ref for Paybill matching")
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -196,7 +139,6 @@ class RentPeriod(models.Model):
         ordering = ['-start_date']
         indexes = [
             models.Index(fields=['student', 'status']),
-            models.Index(fields=['assigned_paybill', 'student_account_ref']),
         ]
 
     def __str__(self):
@@ -225,7 +167,6 @@ class Transaction(models.Model):
     ]
 
     PAYMENT_METHOD_CHOICES = [
-        ('mpesa', 'M-Pesa (Paybill)'),
         ('paystack', 'Card/Bank (Paystack)'),
     ]
 
@@ -278,12 +219,6 @@ class Transaction(models.Model):
     
     metadata = models.JSONField(blank=True, null=True) # Full payload from gateway
     
-    # M-Pesa Specifics
-    mpesa_checkout_request_id = models.CharField(max_length=100, blank=True, null=True)
-    mpesa_merchant_request_id = models.CharField(max_length=100, blank=True, null=True)
-    mpesa_receipt_number = models.CharField(max_length=50, blank=True, null=True)
-    mpesa_phone_number = models.CharField(max_length=15, blank=True, null=True)
-
     initiated_at = models.DateTimeField(default=timezone.now)
     paid_at = models.DateTimeField(blank=True, null=True)
 
@@ -334,7 +269,7 @@ class SavedPaymentMethod(models.Model):
     """Store tokenized payment methods for recurring payments"""
     student = models.ForeignKey('accounts.StudentProfile', on_delete=models.CASCADE)
     paystack_authorization_code = models.CharField(max_length=100)
-    payment_type = models.CharField(max_length=20) # card, mpesa
+    payment_type = models.CharField(max_length=20) # card, bank
     last_four = models.CharField(max_length=4)
     is_active = models.BooleanField(default=True)
     
@@ -526,4 +461,3 @@ from .bed_payment_ledger import BedPaymentLedger
 
 # Import subscription models
 from .subscription_models import SubscriptionPlan, OccupancySnapshot, SubscriptionInvoice
-from .hostel_payment_config import HostelPaymentConfig

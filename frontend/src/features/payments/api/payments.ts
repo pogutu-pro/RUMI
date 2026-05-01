@@ -1,12 +1,7 @@
 import apiClient from '@/lib/api/client';
 import type { Payment } from '@/types/entities.types';
-import type { 
-  PaymentStats, 
-  MpesaInitializeRequest, 
-  MpesaInitializeResponse,
-  MpesaPaymentStatusResponse,
-  MpesaConfig,
-  CreateMpesaConfigRequest,
+import type {
+  PaymentStats,
   Payout,
   Refund,
   RefundRequest,
@@ -116,91 +111,6 @@ export const initiatePayment = async (
   
   return response.data.data || { success: false, transactionId: '' };
 };
-
-/**
- * Initialize M-Pesa Payment (STK Push)
- * Endpoint: /api/v1/payments/mpesa/initialize/
- */
-export const initializeMpesaPayment = async (
-  data: MpesaInitializeRequest
-): Promise<MpesaInitializeResponse> => {
-  // Ensure booking_id is a number if it's a string, as per Swagger spec
-  const payload = {
-    ...data,
-    booking_id: typeof data.booking_id === 'string' ? parseInt(data.booking_id, 10) : data.booking_id
-  };
-  
-  const response = await apiClient.axios.post<ApiResponse<MpesaInitializeResponse>>(
-    '/payments/mpesa/initialize/', 
-    payload
-  );
-  return response.data.data || { 
-    transaction_id: 0, 
-    transaction_reference: '', 
-    amount: 0, 
-    payment_method: '', 
-    mpesa_payment_type: '', 
-    phone_number: '', 
-    checkout_request_id: '', 
-    merchant_request_id: '', 
-    status: 'failed', 
-    message: 'Failed to initialize', 
-    c2b_alternative: { note: '', business_number: '', amount: '', reference: '' } 
-  };
-};
-
-/**
- * Check M-Pesa Payment Status
- * Endpoint: /api/v1/payments/mpesa/status/
- */
-export const getMpesaPaymentStatus = async (params: {
-  transaction_id?: string | number;
-  checkout_request_id?: string;
-}): Promise<MpesaPaymentStatusResponse> => {
-  const response = await apiClient.axios.get<ApiResponse<MpesaPaymentStatusResponse>>(
-    '/payments/mpesa/status/',
-    { params }
-  );
-  return response.data.data || { 
-    status: 'failed', 
-    last_updated: new Date().toISOString(),
-    transaction: { id: 0, date: '', amount: 0, type: 'rent', status: 'failed', method: 'mpesa', reference: '' }
-  };
-};
-
-/**
- * Get Landlord M-Pesa Configurations
- * Endpoint: /api/v1/payments/mpesa/config/
- */
-export const getMpesaConfigs = async (): Promise<MpesaConfig[]> => {
-  const response = await apiClient.axios.get<ApiResponse<{ configs: MpesaConfig[] }>>(
-    '/payments/mpesa/config/'
-  );
-  return response.data.data?.configs || [];
-};
-
-/**
- * Create/Add Landlord M-Pesa Configuration
- * Endpoint: /api/v1/payments/mpesa/config/
- */
-export const createMpesaConfig = async (
-  data: CreateMpesaConfigRequest
-): Promise<MpesaConfig> => {
-  const response = await apiClient.axios.post<ApiResponse<MpesaConfig>>(
-    '/payments/mpesa/config/',
-    data
-  );
-  return response.data.data || { 
-    id: 0, 
-    payment_type: 'paybill' as const, 
-    mpesa_number: '', 
-    business_name: '', 
-    is_default: false, 
-    status: 'inactive', 
-    verified_at: null 
-  };
-};
-
 
 /**
  * Verify a payment
@@ -337,17 +247,6 @@ export const getRentPeriods = async (filters?: any): Promise<RentPeriod[]> => {
   return Array.isArray(data) ? data : data?.results || [];
 };
 
-export const getPaybillDetails = async (
-  params: { bedId?: string; hostelId?: string }
-): Promise<ApiResponse<any>> => {
-  const queryParams = new URLSearchParams();
-  if (params.bedId) queryParams.append('bed_id', params.bedId);
-  if (params.hostelId) queryParams.append('hostel_id', params.hostelId);
-  
-  const response = await apiClient.axios.get(`/api/v1/payments/paybill/?${queryParams.toString()}`);
-  return response.data;
-};
-
 /**
  * Get the current active rent period
  */
@@ -408,10 +307,6 @@ export const paymentsApi = {
   getAdminPayments,
   getPaymentStats,
   initiatePayment,
-  initializeMpesaPayment,
-  getMpesaPaymentStatus,
-  getMpesaConfigs,
-  createMpesaConfig,
   verifyPayment,
   enableRecurringPayment,
   pauseRecurringPayment,

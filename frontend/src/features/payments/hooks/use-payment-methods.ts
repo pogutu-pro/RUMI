@@ -6,7 +6,7 @@ import type { PaymentMethod } from '../types';
 
 
 export interface AddPaymentMethodRequest {
-  type: 'mpesa' | 'card' | 'bank';
+  type: 'card' | 'bank';
   name: string;
   details: Record<string, string>;
 }

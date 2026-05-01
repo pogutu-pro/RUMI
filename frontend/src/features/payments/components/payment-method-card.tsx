@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Smartphone, Building2 } from 'lucide-react';
+import { CreditCard, Building2 } from 'lucide-react';
 
 import { PaymentMethod } from '../types';
 
@@ -12,7 +12,6 @@ interface PaymentMethodCardProps {
 }
 
 const methodIcons = {
-  mpesa: Smartphone,
   card: CreditCard,
   bank: Building2,
 };
@@ -37,7 +36,6 @@ export function PaymentMethodCard({ method, onSelect }: PaymentMethodCardProps) 
           <div>
             <p className="text-sm font-black text-foreground capitalize">{method.type}</p>
             <p className="text-xs text-muted-foreground font-black">
-              {method.type === 'mpesa' && method.details.phoneNumber}
               {method.type === 'bank' && method.details.accountNumber}
               {method.type === 'card' && `**** ${method.details.last4}`}
             </p>

@@ -13,21 +13,12 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useInitiatePayment } from '@/features/payments';
 
 const paymentSchema = z.object({
   bookingId: z.string().min(1, 'Booking ID is required'),
-  method: z.enum(['mpesa', 'bank']),
-  phoneNumber: z.string().optional(),
   amount: z.number().min(1, 'Amount must be greater than 0'),
 });
 
@@ -46,14 +37,8 @@ export function PaymentForm({ bookingId, amount, onSuccess }: PaymentFormProps) 
     resolver: zodResolver(paymentSchema),
     defaultValues: {
       bookingId: bookingId || '',
-      method: 'mpesa',
       amount: amount || 0,
     },
-  });
-
-  const selectedMethod = useWatch({
-    control: form.control,
-    name: 'method',
   });
 
   const watchedAmount = useWatch({
@@ -61,12 +46,11 @@ export function PaymentForm({ bookingId, amount, onSuccess }: PaymentFormProps) 
     name: 'amount',
   });
 
-
   async function onSubmit(data: PaymentFormValues) {
     initiatePayment.mutate(
-      { 
-        bookingId: data.bookingId, 
-        method: data.method === 'bank' ? 'paystack' : 'mpesa' 
+      {
+        bookingId: data.bookingId,
+        method: 'paystack',
       },
       {
         onSuccess: () => {
@@ -103,44 +87,6 @@ export function PaymentForm({ bookingId, amount, onSuccess }: PaymentFormProps) 
                 </FormItem>
               )}
             />
-
-            <FormField
-              control={form.control}
-              name="method"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Payment Method</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="mpesa">M-Pesa</SelectItem>
-                      <SelectItem value="bank">Bank Transfer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {selectedMethod === 'mpesa' && (
-              <FormField
-                control={form.control}
-                name="phoneNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>M-Pesa Phone Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="+254700000000" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
 
             <Button
               type="submit"

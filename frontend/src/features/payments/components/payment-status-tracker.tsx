@@ -1,14 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { getMpesaPaymentStatus } from '../api/payments';
 import { Circle, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PaymentStatusTrackerProps {
   transactionRef: string;
-  checkoutRequestId?: string;
+  status?: 'pending' | 'processing' | 'success' | 'failed';
+  lastUpdated?: string;
 }
 
 interface TimelineEvent {
@@ -32,7 +31,7 @@ const STATUS_CONFIG = {
   },
   success: {
     color: 'green',
- bgColor: 'bg-green-600',
+    bgColor: 'bg-green-600',
     icon: CheckCircle2,
     label: 'Payment confirmed'
   },
@@ -44,24 +43,11 @@ const STATUS_CONFIG = {
   }
 } as const;
 
-export function PaymentStatusTracker({ 
+export function PaymentStatusTracker({
   transactionRef,
-  checkoutRequestId 
+  status = 'pending',
+  lastUpdated,
 }: PaymentStatusTrackerProps) {
-  const { data, isLoading } = useQuery({
-    queryKey: ['payment-status', transactionRef],
-    queryFn: () => getMpesaPaymentStatus({ 
-      transaction_id: transactionRef,
-      checkout_request_id: checkoutRequestId 
-    }),
-    refetchInterval: (query) => {
-      // Stop polling if payment succeeded or failed
-      const status = query.state.data?.status;
-      return (status === 'success' || status === 'failed') ? false : 5000;
-    },
-    enabled: !!transactionRef,
-  });
-
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('en-US', {
@@ -71,36 +57,23 @@ export function PaymentStatusTracker({
     });
   };
 
-  // Build timeline from transaction data
   const timeline: TimelineEvent[] = React.useMemo(() => {
-    if (!data) return [];
-
     const events: TimelineEvent[] = [];
-    
-    // Always add initial pending state
+
     events.push({
       status: 'pending',
-      timestamp: data.transaction?.date || new Date().toISOString(),
+      timestamp: new Date().toISOString(),
     });
 
-    // Add current status if different from pending
-    if (data.status !== 'pending') {
+    if (status !== 'pending') {
       events.push({
-        status: data.status as any,
-        timestamp: data.last_updated,
+        status,
+        timestamp: lastUpdated || new Date().toISOString(),
       });
     }
 
     return events;
-  }, [data]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  }, [status, lastUpdated]);
 
   return (
     <div className="space-y-4">
@@ -111,7 +84,6 @@ export function PaymentStatusTracker({
 
         return (
           <div key={index} className="flex gap-3">
-            {/* Status Dot/Icon */}
             <div className="relative">
               <div className={cn(
                 "w-8 h-8 rounded-full flex items-center justify-center",
@@ -124,7 +96,6 @@ export function PaymentStatusTracker({
               )}
             </div>
 
-            {/* Status Label */}
             <div className="flex-1 pt-1">
               <p className="text-sm font-semibold">
                 {config.label}
@@ -132,7 +103,7 @@ export function PaymentStatusTracker({
               <p className="text-xs text-muted-foreground">
                 {formatTimestamp(event.timestamp)}
               </p>
-              {event.status === 'failed' && data?.transaction.id && (
+              {event.status === 'failed' && (
                 <p className="text-xs text-red-600 mt-1">
                   Transaction failed. Please try again or contact support.
                 </p>
@@ -142,11 +113,10 @@ export function PaymentStatusTracker({
         );
       })}
 
-      {/* Show M-Pesa receipt if available */}
-      {data?.transaction && data.status === 'success' && (
+      {status === 'success' && transactionRef && (
         <div className="mt-4 p-3 bg-muted/30 rounded-lg border border-border/50">
-          <p className="text-xs text-muted-foreground">M-Pesa Receipt</p>
-          <p className="text-sm font-mono font-semibold">{data.transaction.reference}</p>
+          <p className="text-xs text-muted-foreground">Transaction Reference</p>
+          <p className="text-sm font-mono font-semibold">{transactionRef}</p>
         </div>
       )}
     </div>

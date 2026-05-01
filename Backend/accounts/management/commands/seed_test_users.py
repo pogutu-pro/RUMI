@@ -25,7 +25,6 @@ from django.utils import timezone
 from accounts.models import StudentProfile, LandlordProfile, CaretakerProfile
 from hostels.models import Hostel, Room, Booking
 from hostels.bed_models import Bed, BedOccupancy
-from payments.models import MpesaPaymentConfig
 
 User = get_user_model()
 
@@ -438,32 +437,8 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f"  ✓ BedOccupancy: {bed.full_code}"))
 
     def _create_payment_config(self):
-        """Create mocked M-Pesa payment config for landlord"""
-        self.stdout.write("\n📋 Creating payment config (mocked/test mode)...")
-        
-        if self.dry_run:
-            self.stdout.write("  [DRY] Would create MpesaPaymentConfig: 174379 (test paybill)")
-            return
-        
-        if not hasattr(self, "landlord_profile"):
-            self.stdout.write(self.style.WARNING("  ⚠ Skipping payment config - no landlord profile"))
-            return
-        
-        config, _ = MpesaPaymentConfig.objects.update_or_create(
-            landlord=self.landlord_profile,
-            mpesa_number="174379",  # Safaricom sandbox paybill
-            defaults={
-                "payment_type": "paybill",
-                "business_name": "Mwangi Properties (TEST)",
-                "consumer_key": "TEST_CONSUMER_KEY_DO_NOT_USE",
-                "consumer_secret": "TEST_CONSUMER_SECRET_DO_NOT_USE",
-                "passkey": "TEST_PASSKEY_DO_NOT_USE",
-                "is_default": True,
-                "status": "active",
-            }
-        )
-        self.created_objects["payment_configs"].append(config.mpesa_number)
-        self.stdout.write(self.style.SUCCESS(f"  ✓ MpesaPaymentConfig: {config.mpesa_number} (TEST MODE)"))
+        """Paystack is configured via environment variables — no DB seed needed."""
+        self.stdout.write("\n📋 Payment gateway: Paystack (configured via env vars, no DB seed required)")
 
     def _generate_summary(self):
         """Generate fixtures/test_users_summary.json"""
@@ -518,13 +493,7 @@ class Command(BaseCommand):
         removed["hostels"] = hostels_deleted
         self.stdout.write(f"  ✓ Deleted {hostels_deleted} test hostels (cascades rooms, beds, bookings)")
         
-        # Remove test payment configs
-        configs_deleted, _ = MpesaPaymentConfig.objects.filter(
-            mpesa_number="174379",
-            business_name__icontains="TEST"
-        ).delete()
-        removed["payment_configs"] = configs_deleted
-        self.stdout.write(f"  ✓ Deleted {configs_deleted} test payment configs")
+        removed["payment_configs"] = 0  # Paystack: no DB payment config to remove
         
         # Remove summary file
         summary_path = Path(settings.BASE_DIR) / "fixtures" / "test_users_summary.json"

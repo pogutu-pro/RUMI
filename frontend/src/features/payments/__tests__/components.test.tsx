@@ -1,17 +1,15 @@
 /**
  * Comprehensive Frontend Component Tests
- * 
- * Tests Week 1-3 payment components:
+ *
+ * Tests payment components:
  * - PaymentOptionsModal
  * - PaymentStatusTracker
  * - PaymentHistoryTable
  * - ReceiptGenerator
  * - SubscriptionOverviewCard
  * - InvoiceHistoryList
- * - PaybillConfigForm
- * - UnmatchedPaymentsDashboard
  * - PaymentLedgerViewer
- * 
+ *
  * Run: pnpm test
  */
 
@@ -80,92 +78,22 @@ beforeEach(() => {
 // =============================================================================
 
 describe('PaymentOptionsModal', () => {
-  it('should render modal with offline/online tabs', () => {
+  it('should render modal with payment option', () => {
     const { PaymentOptionsModal } = require('@/features/payments/components/payment-options-modal');
-    
+
     render(
-      <PaymentOptionsModal 
-        isOpen={true} 
-        onClose={() => {}} 
-        bedId="bed-123" 
-      />,
-      { wrapper: createWrapper() }
-    );
-
-    expect(screen.getByText(/Offline Payment/i)).toBeInTheDocument();
-    expect(screen.getByText(/STK Push/i)).toBeInTheDocument();
-  });
-
-  it('should display Paybill number when loaded', async () => {
-    mockGet.mockResolvedValue({
-      data: {
-        data: {
-          paybill_number: '548548',
-          account_number: 'TB-101A-12',
-          business_name: 'Test Hostel',
-        },
-      },
-    });
-
-    const { PaymentOptionsModal } = require('@/features/payments/components/payment-options-modal');
-    
-    render(
-      <PaymentOptionsModal 
-        isOpen={true} 
-        onClose={() => {}} 
-        bedId="bed-123" 
-      />,
-      { wrapper: createWrapper() }
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText('548548')).toBeInTheDocument();
-    });
-  });
-
-  it('should initiate STK Push on button click', async () => {
-    mockPost.mockResolvedValue({
-      data: {
-        data: {
-          reference: 'STK-123',
-          status: 'pending',
-        },
-      },
-    });
-
-    const { PaymentOptionsModal } = require('@/features/payments/components/payment-options-modal');
-    
-    render(
-      <PaymentOptionsModal 
-        isOpen={true} 
-        onClose={() => {}} 
-        bedId="bed-123" 
+      <PaymentOptionsModal
+        isOpen={true}
+        onClose={() => {}}
+        bedId="bed-123"
         amount={5000}
         bookingId="booking-123"
       />,
       { wrapper: createWrapper() }
     );
 
-    const tabTrigger = screen.getByText(/Pay Now \(STK Push\)/i);
-    fireEvent.click(tabTrigger);
-    fireEvent.mouseDown(tabTrigger);
-    fireEvent.mouseUp(tabTrigger);
-    
-    // Explicitly wait for tab switching and content to appear
-    await waitFor(() => {
-      const payButton = screen.queryByText(/Pay.*5,000/i);
-      expect(payButton).toBeInTheDocument();
-    }, { timeout: 5000 });
-
-    const payButton = screen.getByText(/Pay.*5,000/i);
-    fireEvent.click(payButton);
-
-    await waitFor(() => {
-      expect(mockPost).toHaveBeenCalledWith(
-        expect.stringContaining('/mpesa/initialize/'),
-        expect.any(Object)
-      );
-    });
+    expect(screen.getByText(/Make Payment/i)).toBeInTheDocument();
+    expect(screen.getByText(/Paystack/i)).toBeInTheDocument();
   });
 });
 
@@ -215,7 +143,7 @@ describe('PaymentStatusTracker', () => {
         data: { data: { status: 'pending' } },
       })
       .mockResolvedValueOnce({
-        data: { data: { status: 'success', mpesa_receipt: 'RCPT123' } },
+        data: { data: { status: 'success', reference: 'RCPT123' } },
       });
 
     const { PaymentStatusTracker } = require('@/features/payments/components/payment-status-tracker');
@@ -407,134 +335,9 @@ describe('InvoiceHistoryList', () => {
   });
 });
 
-describe('PaybillConfigForm', () => {
-  it('should validate M-Pesa number format', async () => {
-    const { PaybillConfigForm } = require('@/features/payments/components/paybill-config-form');
-    
-    const { getByLabelText, getByText } = render(
-      <PaybillConfigForm hostelId="hostel-123" />,
-      { wrapper: createWrapper() }
-    );
-
-    const input = getByLabelText(/Paybill Number/i);
-    fireEvent.change(input, { target: { value: '123' } });
-    
-    // Trigger validation via blur and submit
-    fireEvent.blur(input);
-    const submitButton = screen.getByText(/Save Configuration/i);
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Must be 5-7 digits/i)).toBeInTheDocument();
-    }, { timeout: 3000 });
-  });
-
-  it('should submit configuration successfully', async () => {
-    mockPost.mockResolvedValue({
-      data: { success: true },
-    });
-
-    const { PaybillConfigForm } = require('@/features/payments/components/paybill-config-form');
-    
-    const { getByLabelText, getByText } = render(
-      <PaybillConfigForm hostelId="hostel-123" />,
-      { wrapper: createWrapper() }
-    );
-
-    fireEvent.change(getByLabelText(/Paybill Number/i), {
-      target: { value: '548548' },
-    });
-    fireEvent.change(getByLabelText(/Business Name/i), {
-      target: { value: 'Test Business' },
-    });
-
-    fireEvent.click(getByText(/Save Configuration/i));
-
-    await waitFor(() => {
-      expect(mockPost).toHaveBeenCalledWith(
-        expect.stringContaining('/payment-config/'),
-        expect.objectContaining({
-          mpesa_number: '548548',
-          business_name: 'Test Business',
-        })
-      );
-    });
-  });
-});
-
 // =============================================================================
 // WEEK 3 TESTS: Admin Tools
 // =============================================================================
-
-describe('UnmatchedPaymentsDashboard', () => {
-  it('should display unmatched payments with suggestions', async () => {
-    mockGet.mockResolvedValue({
-      data: {
-        data: [
-          {
-            id: '1',
-            mpesa_receipt: 'RCPT123',
-            phone_number: '+254712345678',
-            amount: 5000,
-            timestamp: '2026-02-07T10:00:00Z',
-            suggested_match: {
-              bed_code: 'TB-101A',
-              student_name: 'John Doe',
-              confidence: 0.95,
-            },
-            status: 'unmatched',
-          },
-        ],
-      },
-    });
-
-    const { UnmatchedPaymentsDashboard } = require('@/features/payments/components/unmatched-payments-dashboard');
-    
-    render(<UnmatchedPaymentsDashboard />, { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(screen.getByText('RCPT123')).toBeInTheDocument();
-      expect(screen.getByText('John Doe')).toBeInTheDocument();
-      expect(screen.getByText(/High/i)).toBeInTheDocument();  // Confidence badge
-    });
-  });
-
-  it('should match payment when clicked', async () => {
-    mockGet.mockResolvedValue({
-      data: {
-        data: [
-          {
-            id: 'payment-1',
-            mpesa_receipt: 'RCPT123',
-            suggested_match: {
-              bed_code: 'TB-101A',
-              student_name: 'John Doe',
-              confidence: 0.95,
-            },
-            status: 'unmatched',
-          },
-        ],
-      },
-    });
-    mockPost.mockResolvedValue({ data: { success: true } });
-
-    const { UnmatchedPaymentsDashboard } = require('@/features/payments/components/unmatched-payments-dashboard');
-    
-    render(<UnmatchedPaymentsDashboard />, { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      const matchButtons = screen.getAllByRole('button', { name: /Match/i });
-      fireEvent.click(matchButtons[0]);
-    });
-
-    await waitFor(() => {
-      expect(mockPost).toHaveBeenCalledWith(
-        expect.stringContaining('/unmatched/payment-1/match/'),
-        expect.any(Object)
-      );
-    });
-  });
-});
 
 describe('PaymentLedgerViewer', () => {
   it('should display ledger entries', async () => {

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     Transaction, SavedPaymentMethod, RecurringPayment, LateFeeCharge,
-    TaxReport, PaystackSubaccount, Payout, RefundRequest, RevenueAnalytics, Receipt, MpesaPaymentConfig,
+    TaxReport, PaystackSubaccount, Payout, RefundRequest, RevenueAnalytics, Receipt,
     RentPeriod, StudentPaymentTracker, TransferLog
 )
 from hostels.models import Booking
@@ -189,25 +189,6 @@ class ReceiptSerializer(serializers.ModelSerializer):
         }
 
 
-class MpesaPaymentConfigSerializer(serializers.ModelSerializer):
-    landlord_details = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = MpesaPaymentConfig
-        fields = '__all__'
-        read_only_fields = ['created_at', 'updated_at', 'verified_at']
-        extra_kwargs = {
-            'consumer_secret': {'write_only': True},
-            'passkey': {'write_only': True}
-        }
-    
-    def get_landlord_details(self, obj):
-        return {
-            'id': obj.landlord.id,
-            'company_name': obj.landlord.company_name,
-            'user': obj.landlord.user.get_full_name(),
-        }
-
 class TaxReportSerializer(serializers.ModelSerializer):
     """
     Serializer for the TaxReport model.
@@ -246,8 +227,7 @@ class RentPeriodSerializer(serializers.ModelSerializer):
             'id', 'student', 'student_details', 'hostel', 'hostel_details',
             'room', 'room_details', 'bed', 'bed_details', 'booking', 'bed_slot_id',
             'start_date', 'end_date', 'amount_due', 'amount_paid', 'balance',
-            'status', 'assigned_paybill', 'student_account_ref',
-            'transactions', 'created_at', 'updated_at'
+            'status', 'transactions', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at', 'balance']
     

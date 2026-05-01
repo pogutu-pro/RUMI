@@ -22,7 +22,7 @@ export interface UserSubscription {
 export interface Payment {
   id: string;
   amount: number;
-  status: 'completed' | 'pending' | 'failed' | 'success' | 'pending_stk_push' | 'cancelled' | 'processing';
+  status: 'completed' | 'pending' | 'failed' | 'success' | 'cancelled' | 'processing';
   date: string;
   user: {
     name: string;
@@ -63,7 +63,7 @@ export interface Transaction {
 
 export interface PaymentMethod {
   id: string;
-  type: 'mpesa' | 'bank' | 'card';
+  type: 'bank' | 'card';
   label: string;
   name?: string;
   details: any;
@@ -107,8 +107,6 @@ export interface RentPeriod {
   amount_paid: number;
   balance: number;
   status: 'due' | 'partially_paid' | 'paid' | 'overdue' | 'transferred';
-  assigned_paybill?: string;
-  student_account_ref: string;
   transactions: Array<{
     id: number;
     reference: string;
@@ -185,70 +183,10 @@ export interface Refund {
   createdAt: string;
 }
 
-// M-Pesa Specific Types
-export interface MpesaInitializeRequest {
-  booking_id: string | number;
-  payment_type: 'initial' | 'rent' | 'late_fee';
-  payment_method: 'stk_push' | 'paybill';
-  phone_number: string;
-  rent_period_id?: number;
-  amount?: number;
-}
-
-export interface MpesaInitializeResponse {
-  transaction_id: number;
-  transaction_reference: string;
-  amount: number;
-  payment_method: string;
-  mpesa_payment_type: string;
-  phone_number: string;
-  checkout_request_id: string;
-  merchant_request_id: string;
-  status: string;
-  message: string;
-  c2b_alternative: {
-    note: string;
-    business_number: string;
-    amount: string;
-    reference: string;
-  };
-}
-
-export interface MpesaPaymentStatusResponse {
-  transaction: Transaction;
-  status: 'pending' | 'success' | 'failed' | 'cancelled';
-  last_updated: string;
-}
-
-export interface MpesaConfig {
-  id: number;
-  payment_type: 'paybill';
-  mpesa_number: string;
-  business_name: string;
-  consumer_key?: string;
-  consumer_secret?: string;
-  passkey?: string;
-  is_default: boolean;
-  status: 'active' | 'inactive' | 'pending_verification';
-  verified_at: string | null;
-  hostel_id?: string;
-}
-
-export interface CreateMpesaConfigRequest {
-  payment_type: 'paybill';
-  mpesa_number: string;
-  business_name: string;
-  consumer_key?: string;
-  consumer_secret?: string;
-  passkey?: string;
-  is_default?: boolean;
-  hostel_id?: string;
-}
-
 export interface PaymentInitializeRequest {
   bookingId: string | number;
   rentPeriodId?: string | number;
-  method: 'mpesa' | 'paystack';
+  method: 'paystack';
   phoneNumber?: string;
   amount?: number;
 }

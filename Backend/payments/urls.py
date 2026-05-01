@@ -1,8 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .mpesa_webhooks import StkPushWebhookView, C2BValidationWebhookView, C2BConfirmationWebhookView
 from .rent_period_views import RentPeriodViewSet, StudentPaymentTrackerViewSet, TransferLogViewSet
-from .additional_views import PaymentDetailsView, ReceiptGenerateView
+from .additional_views import ReceiptGenerateView
 from .subscription_views import SubscriptionPlanViewSet, SubscriptionInvoiceViewSet, SubscriptionAccrualView
 from . import views, verification_views
 
@@ -23,16 +22,6 @@ urlpatterns = [
     
     # Payment initialization
     path('initialize/', views.PaymentInitializeView.as_view(), name='payment_initialize'),
-    
-    # M-Pesa payments
-    path('mpesa/initialize/', views.MpesaPaymentInitializeView.as_view(), name='mpesa_payment_initialize'),
-    path('mpesa/status/', views.MpesaPaymentStatusView.as_view(), name='mpesa_payment_status'),
-    path('mpesa/config/', views.LandlordMpesaConfigView.as_view(), name='landlord_mpesa_config'),
-    
-    # M-Pesa webhooks (class-based for Swagger documentation)
-    path('webhook/mpesa/stk_push/', StkPushWebhookView.as_view(), name='mpesa_stk_push_webhook'),
-    path('webhook/mpesa/c2b_validation/', C2BValidationWebhookView.as_view(), name='mpesa_c2b_validation_webhook'),
-    path('webhook/mpesa/c2b_confirmation/', C2BConfirmationWebhookView.as_view(), name='mpesa_c2b_confirmation_webhook'),
 
     # Recurring payments
     path('recurring/enable/', views.RecurringPaymentEnableView.as_view(), name='recurring_payment_enable'),
@@ -57,20 +46,13 @@ urlpatterns = [
     path('receipts/generate/', ReceiptGenerateView.as_view(), name='receipt_generate'),
     path('receipts/verify/<int:transaction_id>/', verification_views.ReceiptVerificationView.as_view(), name='receipt_verify'),
     
-    # NEW: Parity Stubs
+    # Transaction verification and ledger
     path('verify/', views.PaymentVerifyView.as_view(), name='payment_verify_stub'),
     path('verify/<str:transaction_reference>/', views.PaymentVerifyView.as_view(), name='payment_verify_ref_stub'),
-    path('paybill/', views.PaybillAllocationView.as_view(), name='paybill_allocation_stub'),
-    path('unmatched/', views.UnmatchedPaymentsListView.as_view(), name='unmatched_payment_list_stub'),
-    path('unmatched/<int:payment_id>/match/', views.UnmatchedPaymentMatchView.as_view(), name='unmatched_payment_match_stub'),
-    path('unmatched/<int:payment_id>/reject/', views.UnmatchedPaymentRejectView.as_view(), name='unmatched_payment_reject_stub'),
     path('ledger/', views.PaymentLedgerView.as_view(), name='payment_ledger_stub'),
     path('ledger/export/', views.PaymentLedgerExportView.as_view(), name='payment_ledger_export_stub'),
     path('ledger/<str:search_param>/', views.PaymentLedgerView.as_view(), name='payment_ledger_search_stub'),
 
-    # Payment Details (NEW - for Week 1 frontend)
-    path('payment-details/<str:bed_id>/', PaymentDetailsView.as_view(), name='payment_details'),
-    
     # Tax reports (Landlord)
     path('tax-reports/', views.TaxReportsView.as_view(), name='tax_reports'),
     path('tax-reports/<int:report_id>/download/', views.TaxReportDownloadView.as_view(), name='tax_report_download'),

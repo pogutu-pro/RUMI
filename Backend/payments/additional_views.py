@@ -1,4 +1,3 @@
-from django.http import HttpResponse, FileResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
@@ -7,105 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from .receipt_service import ReceiptService
-from .hostel_payment_config import HostelPaymentConfig
 from .models import Transaction
-from hostels.models import Bed
-from hostels.bed_models import BedOccupancy
-
-
-class PaymentDetailsView(APIView):
-    """
-    Payment Details API - Get paybill/till and account number for a bed
-    
-    GET: Fetch payment configuration for a specific bed
-    
-    Returns payment details needed by student for offline payment
-    """
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get(self, request, bed_id):
-        """
-        Get payment details for a bed
-        
-        Returns:
-        - paybill_number or till_number
-        - account_number (for Paybill only)
-        - amount (current rent period balance)
-        - hostel_name
-        - bed_code
-        - student_phone
-       - ussd_code (optional quick dial)
-        """
-        try:
-            # Get bed and check occupancy
-            bed = Bed.objects.select_related('hostel').get(id=bed_id)
-            
-            # Check if user has access (student must be occupant or admin)
-            if request.user.role == 'student':
-                try:
-                    occupancy = BedOccupancy.objects.get(
-                        bed=bed,
-                        student=request.user.student_profile,
-                        is_active=True
-                    )
-                except BedOccupancy.DoesNotExist:
-                    return Response({
-                        'error': 'You do not have access to this bed'
-                    }, status=status.HTTP_403_FORBIDDEN)
-            
-            # Get hostel payment config
-            try:
-                config = bed.hostel.payment_config
-            except HostelPaymentConfig.DoesNotExist:
-                return Response({
-                    'error': 'Payment configuration not set up for this hostel'
-                }, status=status.HTTP_404_NOT_FOUND)
-            
-            # Generate account number for this bed
-            account_number = config.generate_account_number(bed)
-            
-            # Get current rent period to fetch balance
-            from .models import RentPeriod
-            current_period = RentPeriod.objects.filter(
-                bed_slot_id=str(bed.id),
-                student=request.user.student_profile,
-                status__in=['due', 'partially_paid', 'overdue']
-            ).first()
-            
-            amount = current_period.balance if current_period else 0
-            
-            # Build response
-            response_data = {
-                'hostel_name': bed.hostel.name,
-                'bed_code': f"Room {bed.room.room_number}, Bed {bed.code}",
-                'amount': float(amount),
-                'account_number': account_number,
-                'student_phone': request.user.phone_number if hasattr(request.user, 'phone_number') else ''
-            }
-            
-            # Add paybill or till based on config
-            if config.payment_type == 'till':
-                response_data['till_number'] = config.mpesa_number
-                response_data['paybill_number'] = None
-            else:  # paybill
-                response_data['paybill_number'] = config.mpesa_number
-                response_data['till_number'] = None
-            
-            # Optional: Generate USSD code for paybill
-            if config.payment_type == 'paybill':
-                response_data['ussd_code'] = f"*234*{config.mpesa_number}*{account_number}*{int(amount)}#"
-            
-            return Response({'data': response_data}, status=status.HTTP_200_OK)
-            
-        except Bed.DoesNotExist:
-            return Response({
-                'error': 'Bed not found'
-            }, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            logger.error(f"Error fetching payment details: {str(e)}")
-            return Response({
-                'error': 'Failed to fetch payment details'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ReceiptGenerateView(APIView):

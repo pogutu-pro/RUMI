@@ -575,24 +575,12 @@ def reconcile_missed_webhooks():
     for event in pending_events:
         try:
             payload = event.payload
-            
-            # C2B reconciliation
-            if event.provider == 'mpesa' and event.event_type == 'c2b_confirmation':
-                reference = payload.get('BillRefNumber')
-                amount = Decimal(str(payload.get('TransAmount')))
-                
-                process_confirmed_payment(
-                    student=None, # Resolved via reference
-                    amount=amount,
-                    reference=reference,
-                    payment_method='mpesa',
-                    metadata=payload
-                )
-                
-                event.processing_status = 'processed'
-                event.processed_at = timezone.now()
+
+            # Only Paystack events are reconciled now
+            if event.provider != 'paystack':
+                event.processing_status = 'duplicate'
                 event.save()
-                results['processed'] += 1
+                continue
 
         except Exception as e:
             event.processing_status = 'failed'
