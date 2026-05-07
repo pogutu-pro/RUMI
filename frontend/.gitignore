@@ -8,6 +8,10 @@ out/
 build/
 dist/
 
+# Serwist — generated at build time, never commit
+public/sw.js
+public/sw.js.map
+
 # Production
 .vercel
 

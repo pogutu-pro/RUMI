@@ -17,7 +17,7 @@ declare global {
 declare const self: WorkerGlobalScope & SerwistGlobalConfig;
 
 // ─── Cache names ────────────────────────────────────────────────────────────
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHES = {
   pages: `rumia-pages-${CACHE_VERSION}`,
   api: `rumia-api-${CACHE_VERSION}`,
