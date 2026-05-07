@@ -12,7 +12,7 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-ARG NEXT_PUBLIC_API_URL=https://rumia.co.ke
+ARG NEXT_PUBLIC_API_URL=https://rumia.co.ke/api/v1
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 RUN pnpm build
