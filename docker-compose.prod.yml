@@ -50,22 +50,6 @@ services:
         condition: service_healthy
     volumes:
       - rumi-media:/app/media
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             python manage.py collectstatic --noinput &&
-             gunicorn rumi.wsgi:application
-             --bind 0.0.0.0:8000
-             --workers 4
-             --worker-class gthread
-             --threads 2
-             --worker-tmp-dir /dev/shm
-             --timeout 60
-             --keep-alive 5
-             --max-requests 1000
-             --max-requests-jitter 50
-             --access-logfile -
-             --error-logfile -
-             --log-level info"
 
   celery_worker:
     build: ./Backend
