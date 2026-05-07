@@ -15,8 +15,6 @@ import {
 } from '@/components/ui/select';
 import { SubscriptionOverviewCard } from '@/features/payments/components/subscription-overview-card';
 import { InvoiceHistoryList } from '@/features/payments/components/invoice-history-list';
-import { PaybillConfigForm } from '@/features/payments/components/paybill-config-form';
-import apiClient from '@/lib/api/client';
 
 export default function LandlordPaymentsPage() {
   const { user } = useAuth();
@@ -66,16 +64,6 @@ export default function LandlordPaymentsPage() {
         <>
           {/* Subscription Overview */}
           <SubscriptionOverviewCard hostelId={selectedHostel} />
-
-          {/* Payment Configuration */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Payment Configuration</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <PaybillConfigForm hostelId={selectedHostel} />
-            </CardContent>
-          </Card>
 
           {/* Invoice History */}
           <Card>

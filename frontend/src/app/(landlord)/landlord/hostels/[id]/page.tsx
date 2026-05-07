@@ -15,7 +15,6 @@ import {
   Building2,
   AlertCircle,
   Zap,
-  Smartphone,
 } from "lucide-react";
 
 import { useHostel } from "@/features/hostels";
@@ -27,8 +26,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BedManagementTable } from "@/features/landlord/components/bed-management-table";
-import { MpesaSettingsList } from "@/features/payments/components/mpesa-settings-list";
-import { MpesaSettingsForm } from "@/features/payments/components/mpesa-settings-form";
 import { HostelTenantList } from "@/features/hostels/components/hostel-tenant-list";
 import { HostelCaretakerManager } from "@/features/hostels/components/hostel-caretaker-manager";
 import { BookingsList } from "@/features/landlord/components/bookings/bookings-list";
@@ -36,8 +33,6 @@ import { BookingsList } from "@/features/landlord/components/bookings/bookings-l
 export default function HostelDetailPage() {
   const params = useParams<{ id: string }>();
   const hostelId = params?.id ?? "";
-  const [mpesaView, setMpesaView] = React.useState<'list' | 'create'>('list');
-
   const { data: hostel, isLoading, error, refetch } = useHostel(hostelId);
 
   const handleRefresh = () => {
@@ -298,38 +293,30 @@ export default function HostelDetailPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-6">
                <Card className="border shadow-lg bg-card overflow-hidden hover:shadow-xl transition-all duration-300">
-                 <CardHeader className="pb-4 bg-linear-to-r from-success/5 to-transparent">
+                 <CardHeader className="pb-4">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-xl bg-success/10">
-                        <Smartphone className="h-6 w-6 text-success" />
+                        <DollarSign className="h-6 w-6 text-success" />
                       </div>
                       <div>
                         <CardTitle className="text-xl font-black text-foreground">Payment Collection</CardTitle>
                         <CardDescription className="text-muted-foreground font-medium mt-1">
-                          Configure your M-Pesa details so students can pay you directly.
+                          Payments are processed securely via Paystack.
                         </CardDescription>
                       </div>
                     </div>
                  </CardHeader>
                  <CardContent>
-                    {mpesaView === 'list' ? (
-                      <div className="space-y-6">
-                        <MpesaSettingsList onEdit={() => {}} hostelId={hostelId} />
-                        <Button 
-                          onClick={() => setMpesaView('create')} 
-                          className="w-full h-14 rounded-2xl bg-success hover:bg-success/90 text-success-foreground font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                        >
-                          <Smartphone className="mr-2 h-6 w-6" /> Set M-Pesa Details
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                        <MpesaSettingsForm 
-                          onSuccess={() => { setMpesaView('list'); refetch(); }} 
-                          onCancel={() => setMpesaView('list')} 
-                        />
-                      </div>
-                    )}
+                    <div className="p-8 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-center">
+                      <DollarSign className="h-10 w-10 text-foreground/40 mb-3" />
+                      <p className="font-bold text-foreground">Paystack Payments Active</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Students pay via Paystack. Visit the Payments page to configure your account.
+                      </p>
+                      <Button variant="outline" className="mt-4" asChild>
+                        <Link href="/landlord/payments">Go to Payments</Link>
+                      </Button>
+                    </div>
                  </CardContent>
                </Card>
             </div>

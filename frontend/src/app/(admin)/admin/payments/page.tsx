@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { Card, CardContent, CardHeader,CardTitle } from '@/components/ui/card';
-import { UnmatchedPaymentsDashboard } from '@/features/payments/components/unmatched-payments-dashboard';
 import { PaymentLedgerViewer } from '@/features/payments/components/payment-ledger-viewer';
 
 export default function AdminPaymentsPage() {
@@ -17,9 +16,6 @@ export default function AdminPaymentsPage() {
           </p>
         </div>
       </div>
-
-      {/* Unmatched Payments */}
-      <UnmatchedPaymentsDashboard />
 
       {/* Payment Ledger */}
       <PaymentLedgerViewer />
