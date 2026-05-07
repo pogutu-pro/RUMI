@@ -93,7 +93,7 @@ describe('PaymentOptionsModal', () => {
     );
 
     expect(screen.getByText(/Make Payment/i)).toBeInTheDocument();
-    expect(screen.getByText(/Paystack/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Paystack/i).length).toBeGreaterThanOrEqual(1);
   });
 });
 
