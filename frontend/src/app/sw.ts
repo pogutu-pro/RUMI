@@ -14,7 +14,7 @@ declare global {
   }
 }
 
-declare const self: WorkerGlobalScope & SerwistGlobalConfig;
+declare const self: ServiceWorkerGlobalScope & SerwistGlobalConfig;
 
 // ─── Cache names ────────────────────────────────────────────────────────────
 const CACHE_VERSION = 'v2';
