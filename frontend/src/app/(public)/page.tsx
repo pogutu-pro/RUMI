@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -263,22 +264,51 @@ export default function HomePage() {
               </div>
 
               {/* Student Screenshots */}
-              <div className="grid grid-cols-2 gap-4 relative">
-                <div className="space-y-4 pt-12">
-                  <div className="border-4 border-white bg-white rounded-3xl shadow-xl overflow-hidden transform -rotate-3">
-                    <img src="/images/carousel/carousel-01.jpeg" alt="Student dashboard" className="w-full" />
+              <div className="grid grid-cols-2 gap-5 relative min-h-[480px] lg:min-h-[560px]">
+                {/* Left column — two stacked cards */}
+                <div className="flex flex-col gap-5 pt-10">
+                  <div className="border-4 border-white bg-white rounded-2xl shadow-xl overflow-hidden transform -rotate-2 hover:rotate-0 transition-transform duration-300">
+                    <div className="relative w-full aspect-[2/1]">
+                      <Image
+                        src="/images/carousel/carousel-01.jpeg"
+                        alt="Student dashboard showing hostel listings"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 45vw, (max-width: 1200px) 25vw, 300px"
+                        quality={85}
+                      />
+                    </div>
                   </div>
-                  <div className="border-4 border-white bg-white rounded-3xl shadow-xl overflow-hidden transform rotate-2">
-                    <img src="/images/carousel/carousel-02.jpeg" alt="Rent payment interface" className="w-full" />
+                  <div className="border-4 border-white bg-white rounded-2xl shadow-xl overflow-hidden transform rotate-1 hover:rotate-0 transition-transform duration-300">
+                    <div className="relative w-full aspect-[2/1]">
+                      <Image
+                        src="/images/carousel/carousel-02.jpeg"
+                        alt="M-PESA rent payment interface"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 45vw, (max-width: 1200px) 25vw, 300px"
+                        quality={85}
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="pt-0">
-                  <div className="border-4 border-white bg-white rounded-3xl shadow-xl overflow-hidden transform rotate-3 h-full flex items-center">
-                    <img src="/images/carousel/carousel-03.jpeg" alt="Room booking" className="w-full h-full object-cover" />
+                {/* Right column — single tall card */}
+                <div className="flex flex-col">
+                  <div className="border-4 border-white bg-white rounded-2xl shadow-xl overflow-hidden transform rotate-2 hover:rotate-0 transition-transform duration-300 flex-1">
+                    <div className="relative w-full h-full min-h-[280px] lg:min-h-[360px]">
+                      <Image
+                        src="/images/carousel/carousel-03.jpeg"
+                        alt="Room booking confirmation screen"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 45vw, (max-width: 1200px) 25vw, 300px"
+                        quality={85}
+                      />
+                    </div>
                   </div>
                 </div>
                 {/* Background blob */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/10 rounded-full blur-3xl -z-10" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-primary/10 rounded-full blur-3xl -z-10" />
               </div>
             </div>
           </div>
@@ -293,19 +323,39 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-6xl">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <div className="order-2 lg:order-1 grid grid-cols-2 gap-4 relative">
-                <div className="space-y-4">
-                  <div className="border-4 border-white bg-gray-50 rounded-3xl shadow-xl overflow-hidden transform -rotate-2">
-                    <img src="/images/carousel/carousel-04.jpeg" alt="Landlord dashboard" className="w-full" />
+              <div className="order-2 lg:order-1 grid grid-cols-2 gap-5 relative min-h-[400px] lg:min-h-[480px]">
+                {/* Left column — single tall card */}
+                <div className="flex flex-col">
+                  <div className="border-4 border-white bg-gray-50 rounded-2xl shadow-xl overflow-hidden transform -rotate-2 hover:rotate-0 transition-transform duration-300 flex-1">
+                    <div className="relative w-full h-full min-h-[260px] lg:min-h-[340px]">
+                      <Image
+                        src="/images/carousel/carousel-04.jpeg"
+                        alt="Landlord dashboard showing occupancy and payments"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 45vw, (max-width: 1200px) 25vw, 300px"
+                        quality={85}
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="pt-12">
-                  <div className="border-4 border-white bg-gray-50 rounded-3xl shadow-xl overflow-hidden transform rotate-3">
-                    <img src="/images/carousel/carousel-05.jpeg" alt="Property management" className="w-full" />
+                {/* Right column — offset card */}
+                <div className="flex flex-col pt-12">
+                  <div className="border-4 border-white bg-gray-50 rounded-2xl shadow-xl overflow-hidden transform rotate-2 hover:rotate-0 transition-transform duration-300 flex-1">
+                    <div className="relative w-full h-full min-h-[200px] lg:min-h-[260px]">
+                      <Image
+                        src="/images/carousel/carousel-05.jpeg"
+                        alt="Property management and maintenance tracking"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 45vw, (max-width: 1200px) 25vw, 300px"
+                        quality={85}
+                      />
+                    </div>
                   </div>
                 </div>
                 {/* Background blob */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-primary/5 rounded-full blur-3xl -z-10" />
               </div>
 
               <div className="order-1 lg:order-2">

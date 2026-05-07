@@ -7,6 +7,7 @@ import '@/styles/globals.css';
 import PWAInstallPrompt from '@/components/pwa/PWAInstallPrompt';
 import NetworkStatus from '@/components/pwa/NetworkStatus';
 import DevServiceWorkerCleaner from '@/components/pwa/DevServiceWorkerCleaner';
+import ServiceWorkerUpdater from '@/components/pwa/ServiceWorkerUpdater';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 const inter = Inter({
@@ -104,16 +105,18 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/favicon-v2.png', sizes: 'any' },
+      { url: '/images/icons/icon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/images/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
       { url: '/images/icons/icon.svg', type: 'image/svg+xml' },
     ],
-    apple: [{ url: '/favicon-v2.png', sizes: '180x180', type: 'image/png' }],
+    apple: [{ url: '/images/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    shortcut: '/images/icons/icon-192x192.png',
   },
 
   alternates: { canonical: '/' },
   appleWebApp: {
     statusBarStyle: 'default',
-    title: 'RUMIA',
+    title: 'Rumia',
   },
   other: {
     'mobile-web-app-capable': 'yes',
@@ -204,6 +207,7 @@ export default function RootLayout({
             {children}
             <PWAInstallPrompt />
             <NetworkStatus />
+            <ServiceWorkerUpdater />
             <DevServiceWorkerCleaner />
           </Providers>
         </ErrorBoundary>

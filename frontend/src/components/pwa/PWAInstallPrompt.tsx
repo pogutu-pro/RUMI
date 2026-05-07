@@ -81,14 +81,14 @@ export default function PWAInstallPrompt() {
               </div>
               <div>
                 <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
-                  {isIOS ? 'Install RUMI on iOS' : isMobile ? 'Install App' : 'Install Desktop App'}
+                  {isIOS ? 'Install Rumia on iOS' : isMobile ? 'Install App' : 'Install Desktop App'}
                 </h3>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
                   {isIOS 
                     ? 'Tap the Share button and select "Add to Home Screen"' 
                     : isMobile 
-                      ? 'Install RUMI for a better mobile experience.' 
-                      : 'Install RUMI on your desktop for quick access.'}
+                      ? 'Install Rumia for a better mobile experience.' 
+                      : 'Install Rumia on your desktop for quick access.'}
                 </p>
               </div>
             </div>
