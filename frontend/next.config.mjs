@@ -12,6 +12,7 @@ const withSerwist = withSerwistInit({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   reactStrictMode: true,
   typescript: {
     // Enable TypeScript errors to ensure build integrity
@@ -55,7 +56,7 @@ const nextConfig = {
     return [
       {
         source: '/media/:path*',
-        destination: 'http://localhost:8000/media/:path*',
+        destination: `${process.env.BACKEND_INTERNAL_URL || 'http://localhost:8000'}/media/:path*`,
       },
     ];
   },

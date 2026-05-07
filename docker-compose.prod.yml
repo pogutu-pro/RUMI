@@ -1,0 +1,126 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: rumi-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-rumi_db}
+      POSTGRES_USER: ${DB_USER:-rumi_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - rumi-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-rumi_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: rumi-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - rumi-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build: ./Backend
+    image: rumi-backend:latest
+    container_name: rumi-backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - DB_HOST=db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - rumi-media:/app/media
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn rumi.wsgi:application
+             --bind 0.0.0.0:8000
+             --workers 4
+             --worker-class gthread
+             --threads 2
+             --worker-tmp-dir /dev/shm
+             --timeout 60
+             --keep-alive 5
+             --max-requests 1000
+             --max-requests-jitter 50
+             --access-logfile -
+             --error-logfile -
+             --log-level info"
+
+  celery_worker:
+    build: ./Backend
+    image: rumi-backend:latest
+    container_name: rumi-celery-worker
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - DB_HOST=db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A rumi worker --loglevel=info --concurrency=2
+
+  celery_beat:
+    build: ./Backend
+    image: rumi-backend:latest
+    container_name: rumi-celery-beat
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - DB_HOST=db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A rumi beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: https://rumia.co.ke
+    image: rumi-frontend:latest
+    container_name: rumi-frontend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=https://rumia.co.ke
+      - BACKEND_INTERNAL_URL=http://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  rumi-postgres-data:
+  rumi-redis-data:
+  rumi-media:
