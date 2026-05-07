@@ -1,3 +1,6 @@
+# Build tools (setuptools>=79 removed pkg_resources; pin below that)
+setuptools<79
+
 # Core Django
 Django==4.2.7
 djangorestframework==3.14.0
