@@ -69,10 +69,9 @@ export default function NewPaymentPage() {
 
     initiatePayment(
       {
-        booking_id: selectedPeriod.booking,
-        rent_period_id: selectedPeriod.id,
-        payment_type: 'rent',
-        payment_method: 'paystack',
+        bookingId: selectedPeriod.booking,
+        rentPeriodId: selectedPeriod.id,
+        method: 'paystack',
         amount: finalAmount
       },
       {
