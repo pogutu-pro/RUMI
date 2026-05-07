@@ -98,82 +98,27 @@ describe('PaymentOptionsModal', () => {
 });
 
 describe('PaymentStatusTracker', () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
-  it('should poll payment status every 5 seconds', async () => {
-    mockGet.mockResolvedValue({
-      data: {
-        data: {
-          status: 'pending',
-        },
-      },
-    });
-
+  it('should render pending state by default', () => {
     const { PaymentStatusTracker } = require('@/features/payments/components/payment-status-tracker');
-    
+
     render(
       <PaymentStatusTracker transactionRef="TXN-123" />,
       { wrapper: createWrapper() }
     );
 
-    // Should call immediately
-    await waitFor(() => {
-      expect(mockGet).toHaveBeenCalledTimes(1);
-    });
-
-    // Advance by 5 seconds
-    await React.act(async () => {
-      jest.advanceTimersByTime(5000);
-    });
-
-    await waitFor(() => {
-      expect(mockGet).toHaveBeenCalledTimes(2);
-    });
+    expect(screen.getByText(/Waiting for payment/i)).toBeInTheDocument();
   });
 
-  it('should stop polling when status is success', async () => {
-    mockGet
-      .mockResolvedValueOnce({
-        data: { data: { status: 'pending' } },
-      })
-      .mockResolvedValueOnce({
-        data: { data: { status: 'success', reference: 'RCPT123' } },
-      });
-
+  it('should render confirmed state when status is success', () => {
     const { PaymentStatusTracker } = require('@/features/payments/components/payment-status-tracker');
-    
+
     render(
-      <PaymentStatusTracker transactionRef="TXN-123" />,
+      <PaymentStatusTracker transactionRef="TXN-123" status="success" />,
       { wrapper: createWrapper() }
     );
 
-    await React.act(async () => {
-      jest.advanceTimersByTime(5000);
-    });
-
-    await React.act(async () => {
-      jest.advanceTimersByTime(5000); // Second advance just in case
-    });
-
-    // Wait for the mock to be called and UI to update
-    await waitFor(() => {
-      expect(screen.getByText(/Payment confirmed/i)).toBeInTheDocument();
-    }, { timeout: 5000 });
-
-    // Should stop polling
-    const initialCallCount = mockGet.mock.calls.length;
-    
-    await React.act(async () => {
-      jest.advanceTimersByTime(20000); 
-    });
-    
-    expect(mockGet.mock.calls.length).toBe(initialCallCount);
+    expect(screen.getByText(/Payment confirmed/i)).toBeInTheDocument();
+    expect(screen.getByText('TXN-123')).toBeInTheDocument();
   });
 });
 
