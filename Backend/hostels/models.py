@@ -1519,3 +1519,8 @@ class Waitlist(models.Model):
 
 # Import bed-related models from separate file
 from .bed_models import Bed, BedOccupancy
+
+# Ensure legacy review models are registered with Django's app registry
+# These classes live in review_models.py but must be imported so Django
+# includes them in model discovery and does not propose destructive migrations.
+from . import review_models  # noqa: F401
