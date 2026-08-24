@@ -4,6 +4,7 @@ Multi-layer caching strategy with Redis for vertical scaling
 """
 
 from django.core.cache import cache, caches
+from django.core.cache.backends.base import InvalidCacheBackendError
 from django.conf import settings
 from django.utils import timezone
 from django.db.models import Model
@@ -22,7 +23,18 @@ class CacheManager:
     """Advanced cache manager with multiple strategies"""
     
     def __init__(self, cache_alias='default'):
-        self.cache = caches[cache_alias]
+        self.cache_alias = cache_alias
+        try:
+            self.cache = caches[cache_alias]
+        except InvalidCacheBackendError:
+            if cache_alias != 'default' and 'default' in getattr(settings, 'CACHES', {}):
+                logger.warning(
+                    "Cache alias '%s' is not configured; falling back to 'default'.",
+                    cache_alias,
+                )
+                self.cache = caches['default']
+            else:
+                raise
         self.default_timeout = getattr(settings, 'CACHE_DEFAULT_TIMEOUT', 300)
     
     def get_cache_key(self, prefix: str, identifier: str, *args) -> str:

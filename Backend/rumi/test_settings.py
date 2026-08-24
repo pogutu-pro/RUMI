@@ -1,6 +1,10 @@
 from .settings import *
 
 # Backend Verification settings (Migrated to Pytest-Django)
+DEBUG = True
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 
 # Override problematic middleware for stable testing
 MIDDLEWARE = [
