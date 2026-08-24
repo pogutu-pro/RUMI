@@ -89,6 +89,9 @@ urlpatterns = [
         path('analytics/', include('analytics.urls')),
         path('roommates/', include('roommate_system.urls')),
         path('recommendations/', include('recommendations.urls')),
+        
+        # RUMIA rental API
+        path('rent/', include('rent.urls')),
 
         # Landlord API (new)
         path('landlord/', include('landlord_api.urls')),

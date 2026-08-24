@@ -42,10 +42,15 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     ROLE_CHOICES = [
         ('student', 'Student'),
+        ('TENANT', 'Tenant'),
         ('landlord', 'Landlord'),
+        ('LANDLORD', 'Landlord'),
         ('caretaker', 'Caretaker'),
+        ('CARETAKER', 'Caretaker'),
         ('tech_support', 'Tech Support Admin'),
+        ('TECH_SUPPORT', 'Tech Support Admin'),
         ('super_admin', 'Super Admin'),
+        ('SUPERADMIN', 'Super Admin'),
     ]
 
     ONBOARDING_STAGE_CHOICES = [
@@ -119,6 +124,24 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name', 'role']
+
+    @staticmethod
+    def normalize_role(role):
+        if role is None:
+            return 'tenant'
+        mapping = {
+            'SUPERADMIN': 'super_admin',
+            'LANDLORD': 'landlord',
+            'CARETAKER': 'caretaker',
+            'TENANT': 'tenant',
+            'TECH_SUPPORT': 'tech_support',
+            'STUDENT': 'student',
+        }
+        return mapping.get(str(role).upper(), str(role).lower())
+
+    def save(self, *args, **kwargs):
+        self.role = self.normalize_role(self.role)
+        super().save(*args, **kwargs)
 
     class Meta:
         db_table = 'accounts_user'
