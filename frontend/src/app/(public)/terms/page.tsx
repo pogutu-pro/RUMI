@@ -33,6 +33,9 @@ export default function TermsPage() {
                   the terms and provision of this agreement. If you do not agree to
                   abide by the above, please do not use this service.
                 </p>
+                <p className="mt-4 leading-relaxed">
+                  Rumia is owned and operated by Stratnovo.
+                </p>
               </section>
 
               <section>

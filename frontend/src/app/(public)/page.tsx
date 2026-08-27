@@ -1,34 +1,35 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import { ArrowRight, Search, CheckCircle2 } from 'lucide-react';
+  ArrowRight,
+  CheckCircle2,
+  Home,
+  Users,
+  Receipt,
+  Wallet,
+  ShieldCheck,
+  Zap,
+  LayoutGrid,
+} from 'lucide-react';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
-import RumiVideo from '@/components/ui/RumiVideo/rumivideo';
-import { RumiaLogoLabel3D } from '@/components/ui/rumia-logo-label';
 import { WordSwitcher } from '@/components/animations/word-switcher';
 
 export const metadata: Metadata = {
-  title: 'Rumia - The Complete Platform for Student Housing in Kenya',
+  title: 'Rumia - Rental Management for Kenyan Landlords',
   description:
-    'Rumia connects listing, booking, and payments in one app. The complete student housing system for landlords and students in Kenya.',
+    'Rumia helps Kenyan landlords and agents manage properties, track tenants, and collect rent. Simple enough to start using today.',
   openGraph: {
-    title: 'Rumia - The Complete Platform for Student Housing',
+    title: 'Rumia - Rental Management for Kenyan Landlords',
     description:
-      'Manage student hostels with ease. Automated rent collection, bed-level bookings, and full operational control in one verified component.',
+      'Properties, units, tenants, rent, and payments in one simple place. Know who owes you, get paid via Paystack or cash, and see what needs attention.',
     url: 'https://rumia.co.ke',
     siteName: 'Rumia',
     images: [
       {
         url: '/og-image.png',
-        alt: 'Rumia - Student Housing Platform',
+        alt: 'Rumia - Rental Management Platform',
         width: 1200,
         height: 630,
       },
@@ -37,13 +38,12 @@ export const metadata: Metadata = {
     type: 'website',
   },
   keywords: [
-    'student housing platform',
-    'hostel management system Kenya',
-    'student accommodation software',
-    'hostel booking app',
-    'university housing Kenya',
-    'automated rent collection',
-    'M-PESA rent payment',
+    'rental management Kenya',
+    'landlord software Kenya',
+    'property management system Kenya',
+    'rent collection app',
+    'Paystack rent payment',
+    'tenant management software',
   ],
   robots: {
     index: true,
@@ -51,436 +51,249 @@ export const metadata: Metadata = {
   },
 };
 
+const DASHBOARD_STATS = [
+  { label: 'Properties', value: '4', icon: Home },
+  { label: 'Occupied units', value: '19 / 22', icon: Users },
+  { label: 'Outstanding rent', value: 'KES 84,000', icon: Receipt },
+  { label: 'Collected this month', value: 'KES 412,000', icon: Wallet },
+];
+
+const PILLARS = [
+  {
+    icon: ShieldCheck,
+    title: 'Always know who owes you',
+    desc: 'Every tenant, every charge, current balance. Updated the moment a payment lands.',
+  },
+  {
+    icon: Zap,
+    title: 'Get paid without chasing',
+    desc: 'Tenants pay via Paystack, or you record cash and bank payments in a tap.',
+  },
+  {
+    icon: LayoutGrid,
+    title: 'One login, every property',
+    desc: 'As many properties and units as you manage, all in a single account.',
+  },
+];
+
+const STEPS = [
+  { title: 'Add a property', desc: 'Name, address, and its units. Done in minutes.' },
+  { title: 'Attach a tenant', desc: 'A tenant, a unit, a rent amount, a start date.' },
+  { title: 'Track and collect', desc: 'Rent charges appear on schedule. Payments update balances instantly.' },
+];
+
 export default function HomePage() {
   return (
     <main className="flex flex-col bg-white text-gray-900 font-sans">
-      {/* Hero Section */}
-      <section
-        className="relative min-h-[65vh] lg:min-h-[80vh] flex items-center overflow-hidden bg-white pt-20 pb-16 lg:pt-28 lg:pb-24"
-        aria-label="Hero introduction"
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex flex-col items-center text-center max-w-5xl mx-auto">
-            
-            {/* Subtle Brand Indicator (Antigravity Style) */}
-            <div className="mb-10 flex items-center gap-2 animate-fade-in">
-              <RumiaLogoLabel3D className="h-8 w-auto" />
-            </div>
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-white pt-24 pb-20 lg:pt-32 lg:pb-28">
+        <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-4xl text-center">
+            <Badge
+              variant="outline"
+              className="mb-8 inline-flex rounded-full border-primary/20 bg-primary/5 px-4 py-1.5 font-semibold tracking-wide text-primary"
+            >
+              Built for Kenyan landlords and agents
+            </Badge>
 
-            {/* Headline */}
-            <h1 className="mb-10 text-5xl font-bold tracking-tight text-gray-900 sm:text-7xl lg:text-8xl xl:text-9xl leading-[1.1] animate-slide-up">
-              <span className="block mb-2">The Complete Platform for</span>
-              <span className="text-primary block">
-                <WordSwitcher 
-                  words={['Student Housing', 'Hostel Booking', 'Smart Living']} 
+            <h1 className="mb-8 text-5xl font-bold leading-[1.1] tracking-tight text-gray-900 sm:text-6xl lg:text-7xl">
+              Rental management,
+              <span className="mt-2 block text-primary">
+                <WordSwitcher
+                  words={['without the spreadsheet', 'without the chaos', 'without the guesswork']}
                   className="min-w-[1em]"
                 />
               </span>
             </h1>
 
-            {/* Subtext */}
-            <p className="mb-12 text-lg lg:text-xl text-gray-500 leading-relaxed max-w-2xl mx-auto animate-slide-up [animation-delay:150ms]">
-              Everything you need to list, book, and manage student hostels in Kenya. 
-              One app for students, landlords, and caretakers.
+            <p className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-gray-500 lg:text-xl">
+              Properties, units, tenants, rent, and payments, all in one simple place.
+              Know who owes you, get paid, and move on with your day.
             </p>
 
-            {/* CTA Group */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up [animation-delay:300ms] w-full sm:w-auto">
-              <Link href="/hostels" prefetch className="w-full sm:w-auto">
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link href={`${AUTH_ROUTES.REGISTER}?role=landlord`} prefetch>
                 <Button
                   size="lg"
-                  className="w-full sm:w-auto bg-gray-900 hover:bg-gray-800 text-white rounded-full h-14 px-8 text-lg font-medium shadow-sm transition-all hover:scale-[1.02] active:scale-95"
+                  className="h-14 rounded-full bg-gray-900 px-8 text-lg font-medium text-white shadow-sm transition-transform hover:scale-[1.02] hover:bg-gray-800 active:scale-95"
                 >
-                  Find a Hostel
+                  Start managing your properties
                 </Button>
               </Link>
-              <Link
-                href={`${AUTH_ROUTES.REGISTER}?role=landlord`}
-                prefetch
-                className="w-full sm:w-auto"
-              >
+              <Link href="/how-it-works" prefetch>
                 <Button
                   size="lg"
                   variant="outline"
-                  className="w-full sm:w-auto border border-gray-200 bg-gray-50/50 text-gray-600 hover:bg-gray-100 rounded-full h-14 px-8 text-lg font-medium transition-all hover:scale-[1.02] active:scale-95"
+                  className="h-14 rounded-full border-gray-200 bg-gray-50/50 px-8 text-lg font-medium text-gray-600 transition-transform hover:scale-[1.02] hover:bg-gray-100 active:scale-95"
                 >
-                    List Your Property
+                  See how it works
                 </Button>
               </Link>
             </div>
           </div>
         </div>
-        
-        {/* Refined Background Texture */}
-        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-full opacity-[0.015] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:32px_32px]" />
-          <div className="hidden lg:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-primary/[0.03] rounded-full blur-[120px] -z-10" />
+
+        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+          <div className="absolute left-1/2 top-1/3 h-[700px] w-[700px] -translate-x-1/2 rounded-full bg-primary/[0.04] blur-[140px]" />
         </div>
       </section>
 
-      {/* Platform Overview */}
-      <section
-        className="py-20 lg:py-32 bg-gray-50/50"
-        aria-label="See Rumia in action"
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-5xl text-center mb-16">
-            <h2 className="mb-6 text-3xl lg:text-5xl font-bold text-primary">
-              See How Rumia Works
-            </h2>
-            <p className="text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto">
-              A quick walkthrough of how we're revolutionizing student housing in Kenya.
-            </p>
+      {/* Dashboard preview, shown right away */}
+      <section className="px-4 pb-24 sm:px-6 lg:px-8" aria-label="What your dashboard looks like">
+        <div className="mx-auto max-w-4xl overflow-hidden rounded-[2rem] border border-gray-100 bg-white shadow-2xl shadow-gray-200/60">
+          <div className="flex items-center gap-2 bg-gray-900 px-8 py-4">
+            <span className="h-3 w-3 rounded-full bg-red-400" />
+            <span className="h-3 w-3 rounded-full bg-yellow-400" />
+            <span className="h-3 w-3 rounded-full bg-green-400" />
+            <span className="ml-4 text-sm font-medium text-gray-400">Dashboard</span>
           </div>
-          <div className="mx-auto max-w-5xl">
-            <div className="relative border-8 border-white bg-white overflow-hidden rounded-[2rem] shadow-2xl">
-                <RumiVideo
-                url="https://www.youtube.com/watch?v=sBY5a0QZKUk"
-                title="Rumia Hostel Management Demo"
-                autoplay={false}
-                muted
-                loop={false}
-                className="aspect-video"
-                />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section
-        className="py-20 lg:py-32 bg-white"
-        aria-label="How Rumia works"
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-5xl">
-            <div className="text-center mb-16">
-              <h2 className="mb-6 text-3xl lg:text-5xl font-bold text-gray-900">
-                Simple for Everyone
-              </h2>
-              <p className="text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto">
-                Our platform is designed to be intuitive and powerful for all users.
-              </p>
-            </div>
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                {
-                  number: '1',
-                  title: 'Verified Listings',
-                  description:
-                    'Browse hostels that have been checked and verified.',
-                },
-                {
-                  number: '2',
-                  title: 'M-PESA Payment',
-                  description: 'Pay rent instantly and get a digital receipt.',
-                },
-                {
-                  number: '3',
-                  title: 'Manage Your Stay',
-                  description: 'Track payments and request room repairs anytime.',
-                },
-                {
-                  number: '4',
-                  title: 'Total Control',
-                  description: 'For landlords: see payments, vacancies, and issues.',
-                },
-              ].map(({ number, title, description }) => (
-                <div
-                  key={number}
-                  className="flex flex-col items-center text-center p-8 bg-gray-50 rounded-3xl transition-all hover:bg-white hover:shadow-xl hover:-translate-y-1 duration-300"
-                >
-                  <span className="mb-6 flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-2xl font-black text-primary">
-                    {number}
-                  </span>
-                  <h3 className="mb-3 text-xl font-bold text-gray-900">
-                    {title}
-                  </h3>
-                  <p className="text-gray-600 leading-relaxed">{description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* For Students */}
-      <section
-        className="py-20 lg:py-32 bg-gray-50/50"
-        aria-label="For students"
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-6xl">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <div>
-                <Badge
-                    className="mb-6 inline-flex px-4 py-1.5 border-primary/20 text-primary bg-primary/5 hover:bg-primary/10 rounded-full font-bold tracking-wider"
-                    variant="outline"
-                >
-                    STUDENTS
-                </Badge>
-                <h2 className="mb-6 text-4xl lg:text-5xl font-bold text-primary leading-tight">
-                    Campus Life Made Easy
-                </h2>
-                <p className="mb-10 text-lg lg:text-xl text-gray-600 leading-relaxed">
-                  Focus on your studies while we take care of your housing needs. Find, book, and manage your stay with a few taps.
-                </p>
-                {/* Features in compact grid */}
-                <div className="space-y-6 mb-10">
-                  {[
-                    {
-                      title: 'Book Safely',
-                      desc: 'Every hostel on Rumia is verified. No scams, no fake listings.',
-                    },
-                    {
-                      title: 'Pay Easily',
-                      desc: 'Pay rent directly via M-PESA. No need to visit the bank.',
-                    },
-                    {
-                      title: 'Live Better',
-                      desc: 'Report maintenance issues and manage your room from your phone.',
-                    },
-                  ].map(({ title, desc }) => (
-                    <div key={title} className="flex gap-4 items-start p-4 bg-white rounded-2xl shadow-sm">
-                      <div className="mt-1 flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-600 shrink-0">
-                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-gray-900 text-lg">
-                          {title}
-                        </h3>
-                        <p className="text-gray-600">{desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <Link href="/hostels" prefetch>
-                      <Button size="lg" className="rounded-xl h-14 px-8 text-lg font-bold">
-                        Find a Hostel
-                      </Button>
-                  </Link>
-                </div>
+          <div className="grid grid-cols-2 gap-4 p-8 sm:grid-cols-4">
+            {DASHBOARD_STATS.map(({ label, value, icon: Icon }) => (
+              <div key={label} className="rounded-2xl bg-gray-50 p-5 text-left">
+                <Icon className="mb-3 h-5 w-5 text-primary" aria-hidden="true" />
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</p>
+                <p className="mt-1 text-xl font-bold text-gray-900">{value}</p>
               </div>
-
-              {/* Student Screenshots */}
-              <div className="grid grid-cols-2 gap-5 relative min-h-[480px] lg:min-h-[560px]">
-                {/* Left column — two stacked cards */}
-                <div className="flex flex-col gap-5 pt-10">
-                  <div className="border-4 border-white bg-white rounded-2xl shadow-xl overflow-hidden transform -rotate-2 hover:rotate-0 transition-transform duration-300">
-                    <div className="relative w-full aspect-[2/1]">
-                      <Image
-                        src="/images/carousel/carousel-01.jpeg"
-                        alt="Student dashboard showing hostel listings"
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 45vw, (max-width: 1200px) 25vw, 300px"
-                        quality={85}
-                      />
-                    </div>
-                  </div>
-                  <div className="border-4 border-white bg-white rounded-2xl shadow-xl overflow-hidden transform rotate-1 hover:rotate-0 transition-transform duration-300">
-                    <div className="relative w-full aspect-[2/1]">
-                      <Image
-                        src="/images/carousel/carousel-02.jpeg"
-                        alt="M-PESA rent payment interface"
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 45vw, (max-width: 1200px) 25vw, 300px"
-                        quality={85}
-                      />
-                    </div>
-                  </div>
-                </div>
-                {/* Right column — single tall card */}
-                <div className="flex flex-col">
-                  <div className="border-4 border-white bg-white rounded-2xl shadow-xl overflow-hidden transform rotate-2 hover:rotate-0 transition-transform duration-300 flex-1">
-                    <div className="relative w-full h-full min-h-[280px] lg:min-h-[360px]">
-                      <Image
-                        src="/images/carousel/carousel-03.jpeg"
-                        alt="Room booking confirmation screen"
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 45vw, (max-width: 1200px) 25vw, 300px"
-                        quality={85}
-                      />
-                    </div>
-                  </div>
-                </div>
-                {/* Background blob */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-primary/10 rounded-full blur-3xl -z-10" />
-              </div>
+            ))}
+          </div>
+          <div className="border-t border-gray-100 p-8 pt-6">
+            <p className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">Needs attention</p>
+            <div className="flex items-center justify-between rounded-2xl bg-red-50 px-5 py-4">
+              <span className="text-sm font-medium text-gray-900">Unit B204: rent overdue since Aug 5</span>
+              <Badge variant="destructive" className="rounded-full">KES 22,000</Badge>
             </div>
           </div>
         </div>
       </section>
 
-      {/* For Landlords */}
-      <section
-        className="py-20 lg:py-32 bg-white"
-        aria-label="For landlords"
-      >
+      {/* Outcome pillars */}
+      <section className="bg-gray-50/60 py-20 lg:py-28">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-6xl">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <div className="order-2 lg:order-1 grid grid-cols-2 gap-5 relative min-h-[400px] lg:min-h-[480px]">
-                {/* Left column — single tall card */}
-                <div className="flex flex-col">
-                  <div className="border-4 border-white bg-gray-50 rounded-2xl shadow-xl overflow-hidden transform -rotate-2 hover:rotate-0 transition-transform duration-300 flex-1">
-                    <div className="relative w-full h-full min-h-[260px] lg:min-h-[340px]">
-                      <Image
-                        src="/images/carousel/carousel-04.jpeg"
-                        alt="Landlord dashboard showing occupancy and payments"
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 45vw, (max-width: 1200px) 25vw, 300px"
-                        quality={85}
-                      />
-                    </div>
-                  </div>
+          <div className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-3">
+            {PILLARS.map(({ icon: Icon, title, desc }) => (
+              <div
+                key={title}
+                className="rounded-3xl bg-white p-8 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+              >
+                <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+                  <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
                 </div>
-                {/* Right column — offset card */}
-                <div className="flex flex-col pt-12">
-                  <div className="border-4 border-white bg-gray-50 rounded-2xl shadow-xl overflow-hidden transform rotate-2 hover:rotate-0 transition-transform duration-300 flex-1">
-                    <div className="relative w-full h-full min-h-[200px] lg:min-h-[260px]">
-                      <Image
-                        src="/images/carousel/carousel-05.jpeg"
-                        alt="Property management and maintenance tracking"
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 45vw, (max-width: 1200px) 25vw, 300px"
-                        quality={85}
-                      />
-                    </div>
-                  </div>
-                </div>
-                {/* Background blob */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-primary/5 rounded-full blur-3xl -z-10" />
+                <h3 className="mb-2 text-lg font-bold text-gray-900">{title}</h3>
+                <p className="text-sm leading-relaxed text-gray-600">{desc}</p>
               </div>
-
-              <div className="order-1 lg:order-2">
-                 <Badge
-                    className="mb-6 inline-flex px-4 py-1.5 border-primary/20 text-primary bg-primary/10 rounded-full font-bold tracking-wider"
-                    variant="outline"
-                >
-                    LANDLORDS
-                </Badge>
-                <h2 className="mb-6 text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
-                  Peace of Mind for Property Owners
-                </h2>
-                <p className="mb-10 text-lg lg:text-xl text-gray-600 leading-relaxed">
-                  Automate your operations and maximize your occupancy. Rumia gives you the tools to manage your properties from anywhere.
-                </p>
-                {/* Features in compact grid */}
-                <div className="space-y-6 mb-10">
-                  {[
-                    {
-                      title: 'Get Paid on Time',
-                      desc: 'Automated rent tracking and reminders. Know who owes what.',
-                    },
-                    {
-                      title: 'Fill Your Rooms',
-                      desc: 'Get seen by thousands of verified students looking for housing.',
-                    },
-                    {
-                      title: 'Control Everything',
-                      desc: 'Manage occupancy, caretakers, and property issues in one place.',
-                    },
-                  ].map(({ title, desc }) => (
-                    <div key={title} className="flex gap-4 items-start p-4 bg-gray-50 rounded-2xl">
-                      <div className="mt-1 flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary shrink-0">
-                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-gray-900 text-lg">
-                          {title}
-                        </h3>
-                        <p className="text-gray-600">{desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <Link href={`${AUTH_ROUTES.REGISTER}?role=landlord`} prefetch>
-                      <Button size="lg" variant="outline" className="rounded-xl h-14 px-8 text-lg font-bold border-2 border-primary text-primary hover:bg-primary/5">
-                          List Your Property
-                      </Button>
-                  </Link>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section
-        className="py-20 lg:py-32 bg-gray-50/30"
-        aria-label="Frequently asked questions"
-      >
+      {/* Landlords + Tenants, side by side */}
+      <section className="py-20 lg:py-28">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-4xl">
-            <div className="text-center mb-16">
-              <h2 className="mb-6 text-3xl lg:text-5xl font-bold text-primary">
-                Questions & Answers
-              </h2>
-              <p className="text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto">
-                Everything you need to know about using Rumia.
-              </p>
+          <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-2">
+            <div className="rounded-3xl border border-gray-100 bg-white p-10 shadow-sm">
+              <Badge variant="outline" className="mb-5 rounded-full border-primary/20 bg-primary/5 font-semibold tracking-wide text-primary">
+                LANDLORDS & AGENTS
+              </Badge>
+              <h2 className="mb-4 text-2xl font-bold text-gray-900">Everything, at a glance</h2>
+              <ul className="mb-8 space-y-4">
+                {[
+                  'See which units are occupied and which are vacant',
+                  'Know exactly who owes rent and how much',
+                  'Accept Paystack payments or record cash yourself',
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                    <span className="text-gray-600">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link href={`${AUTH_ROUTES.REGISTER}?role=landlord`} prefetch>
+                <Button className="rounded-full px-6 font-semibold">
+                  Start managing
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
             </div>
-            <Accordion
-              type="single"
-              collapsible
-              className="w-full space-y-4"
-            >
-              {[
-                {
-                  value: 'booking',
-                  q: 'How do I book a hostel?',
-                  a: 'Select a hostel, choose room type, and pay via M-PESA. You receive instant confirmation.'
-                },
-                {
-                  value: 'verification',
-                  q: 'Are the listings verified?',
-                  a: 'Yes. We physically inspect properties and verify ownership documents before they are listed.'
-                },
-                {
-                  value: 'payments',
-                  q: 'How does payment work?',
-                  a: 'We use M-PESA for secure, instant payments. You get a digital receipt immediately.'
-                },
-                {
-                  value: 'cancellation',
-                  q: 'What if I need to cancel?',
-                  a: 'Policies are set by individual landlords. Check the specific hostel page for details.'
-                }
-              ].map((item) => (
-                <AccordionItem
-                  key={item.value}
-                  value={item.value}
-                  className="border border-gray-200 bg-white rounded-2xl px-6 py-2 shadow-sm data-[state=open]:shadow-md transition-all"
-                >
-                  <AccordionTrigger className="text-left font-bold text-lg text-gray-900 no-underline hover:no-underline py-4">
-                    {item.q}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-gray-600 text-lg pb-4 leading-relaxed">
-                    {item.a}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-             <div className="mt-12 text-center">
-              <Link href="/faq" prefetch>
-                <Button
-                  variant="link"
-                  className="text-primary font-bold text-lg hover:underline decoration-2 underline-offset-4"
-                >
-                  View All FAQs
-                  <ArrowRight className="ml-2 h-5 w-5" />
+
+            <div className="rounded-3xl border border-gray-100 bg-gray-50/60 p-10 shadow-sm">
+              <Badge variant="outline" className="mb-5 rounded-full border-primary/20 bg-primary/10 font-semibold tracking-wide text-primary">
+                TENANTS
+              </Badge>
+              <h2 className="mb-4 text-2xl font-bold text-gray-900">Your rent, in one place</h2>
+              <ul className="mb-8 space-y-4">
+                {[
+                  'See your unit, your rent, and your balance',
+                  'Pay securely via Paystack in seconds',
+                  'Every payment recorded and ready as a receipt',
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" aria-hidden="true" />
+                    <span className="text-gray-600">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link href="/how-it-works" prefetch>
+                <Button variant="outline" className="rounded-full px-6 font-semibold">
+                  See how it works
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Three steps */}
+      <section className="bg-gray-50/60 py-20 lg:py-28">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="mb-4 text-3xl font-bold text-gray-900 lg:text-4xl">Live in minutes</h2>
+            <p className="mb-14 text-lg text-gray-600">No onboarding call. No setup wizard.</p>
+          </div>
+          <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-3">
+            {STEPS.map((step, i) => (
+              <div key={step.title} className="text-center">
+                <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-gray-900 text-sm font-bold text-white">
+                  {i + 1}
+                </div>
+                <h3 className="mb-2 text-lg font-bold text-gray-900">{step.title}</h3>
+                <p className="text-sm leading-relaxed text-gray-600">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing teaser */}
+      <section className="py-20 lg:py-28">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-8 rounded-3xl bg-gray-50/60 p-10 text-center shadow-sm sm:flex-row sm:text-left">
+            <div>
+              <p className="mb-1 text-sm font-semibold uppercase tracking-wider text-primary">Pricing</p>
+              <h3 className="text-2xl font-bold text-gray-900">From KES 50 per unit, per month</h3>
+              <p className="mt-1 text-gray-600">30-day free trial. No credit card required.</p>
+            </div>
+            <Link href="/pricing" prefetch>
+              <Button size="lg" variant="outline" className="rounded-full px-8 font-semibold">
+                See full pricing
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="bg-gray-900 py-20 text-white lg:py-28">
+        <div className="container mx-auto px-4 text-center sm:px-6 lg:px-8">
+          <h2 className="mb-4 text-3xl font-bold lg:text-4xl">Ready to stop guessing who paid?</h2>
+          <p className="mx-auto mb-10 max-w-xl text-lg text-gray-300">
+            Set up your first property today and see the difference by the end of the month.
+          </p>
+          <Link href={`${AUTH_ROUTES.REGISTER}?role=landlord`} prefetch>
+            <Button size="lg" className="h-14 rounded-full bg-white px-8 text-lg font-medium text-gray-900 hover:bg-gray-100">
+              Get started for free
+            </Button>
+          </Link>
         </div>
       </section>
     </main>

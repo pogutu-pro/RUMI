@@ -81,11 +81,6 @@ const navItems: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
-    title: 'Explore Hostels',
-    href: '/student/hostels',
-    icon: Search,
-  },
-  {
     title: 'Current Stay',
     href: '/student/bookings/active',
     icon: Building2,

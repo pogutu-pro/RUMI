@@ -47,6 +47,10 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.PROCESS_PAYMENT,
     Permission.VIEW_REVIEWS,
   ],
+  tenant: [
+    Permission.VIEW_PAYMENTS,
+    Permission.PROCESS_PAYMENT,
+  ],
 
   landlord: [
     Permission.VIEW_HOSTELS,

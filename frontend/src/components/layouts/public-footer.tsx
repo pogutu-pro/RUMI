@@ -8,10 +8,9 @@ const FOOTER_LINKS = [
   {
     title: 'Product',
     links: [
-      { href: '/hostels', label: 'Find Hostels' },
       { href: '/features', label: 'Features' },
-      { href: '/pricing', label: 'Pricing' },
       { href: '/how-it-works', label: 'How It Works' },
+      { href: '/pricing', label: 'Pricing' },
     ],
   },
   {
@@ -72,7 +71,7 @@ export const Footer = React.memo(function Footer() {
                 <span className="font-extrabold text-4xl text-white tracking-tight">RUMIA</span>
               </Link>
               <p className="text-lg text-gray-400 max-w-lg leading-relaxed">
-                The Living Campus Standard: Safe, modern, and smart student accommodation booking platform.
+                Rental management for Kenyan landlords and agents. Properties, tenants, rent, and payments in one place.
               </p>
               
               {/* Social Media */}

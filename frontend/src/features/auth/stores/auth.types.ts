@@ -9,6 +9,9 @@ export enum UserRole {
   LANDLORD = 'landlord',
   CARETAKER = 'caretaker',
   STUDENT = 'student',
+  // Canonical RUMIA rental role — legacy 'student' accounts map to this
+  // server-side via User.get_canonical_role(). New tenant registrations use this directly.
+  TENANT = 'tenant',
 }
 
 export type AuthStatus = 

@@ -6,7 +6,7 @@ import { AUTH_ROUTES } from '@/lib/constants/routes';
 export const metadata: Metadata = {
   title: 'Auth | Rumia',
   description:
-    'Authenticate to access Rumia — student accommodation and hostel management.',
+    'Authenticate to access Rumia, the rental management platform for Kenyan landlords and agents.',
 };
 
 export default async function AuthIndexPage({

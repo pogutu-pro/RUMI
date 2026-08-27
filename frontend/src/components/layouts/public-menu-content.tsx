@@ -33,29 +33,29 @@ interface PublicMenuContentProps {
 }
 
 const PUBLIC_NAV_ITEMS = [
-  { 
-    href: '/hostels', 
-    label: 'Find a Hostel', 
-    desc: 'Browse verified hostels near your campus.',
-    icon: <Building2 className="h-5 w-5" /> 
+  {
+    href: '/features',
+    label: 'Features',
+    desc: 'Properties, tenants, rent, and payments in one place.',
+    icon: <Building2 className="h-5 w-5" />
   },
-  { 
-    href: '/host', 
-    label: 'List your Hostel', 
-    desc: 'Register and manage your property.',
-    icon: <Building2 className="h-5 w-5" /> 
+  {
+    href: '/how-it-works',
+    label: 'How It Works',
+    desc: 'From adding a property to getting paid.',
+    icon: <Building2 className="h-5 w-5" />
   },
-  { 
-    href: '/about', 
-    label: 'About Us', 
-    desc: 'Learn about our mission and standards.',
-    icon: <Info className="h-5 w-5" /> 
+  {
+    href: '/pricing',
+    label: 'Pricing',
+    desc: 'Simple, per-unit pricing.',
+    icon: <CreditCard className="h-5 w-5" />
   },
-  { 
-    href: '/pricing', 
-    label: 'Pricing', 
-    desc: 'Affordable rates for every property.',
-    icon: <CreditCard className="h-5 w-5" /> 
+  {
+    href: '/about',
+    label: 'About',
+    desc: 'Why we built RUMIA.',
+    icon: <Info className="h-5 w-5" />
   },
 ];
 

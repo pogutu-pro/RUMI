@@ -28,12 +28,13 @@ const AUTH_REDIRECTS: Record<string, string> = {
   [UserRole.SUPER_ADMIN]: '/admin/dashboard',
   [UserRole.TECH_SUPPORT_ADMIN]: '/tech-support/dashboard',
   [UserRole.TECH_SUPPORT]: '/tech-support/dashboard',
-  [UserRole.LANDLORD]: '/landlord/dashboard',
+  [UserRole.LANDLORD]: '/landlord/rental',
   [UserRole.CARETAKER]: '/caretaker/dashboard',
-  [UserRole.STUDENT]: '/student/dashboard',
+  [UserRole.STUDENT]: '/tenant/rental',
+  [UserRole.TENANT]: '/tenant/rental',
 };
 
-const DEFAULT_REDIRECT = '/student/dashboard';
+const DEFAULT_REDIRECT = '/tenant/rental';
 
 // -- Main Facade Hook --
 

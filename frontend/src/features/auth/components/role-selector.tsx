@@ -2,7 +2,7 @@
 
 import type { UserRole } from '@/types/auth.types';
 import { cn } from '@/lib/utils/cn';
-import { GraduationCap, Building, CheckCircle2, UserCog } from 'lucide-react';
+import { Home, Building2, CheckCircle2 } from 'lucide-react';
 
 type AuthRole = Extract<UserRole, 'student' | 'landlord'>;
 
@@ -14,15 +14,15 @@ const ROLE_OPTIONS: Array<{
 }> = [
   {
     value: 'student',
-    title: 'Student / Tenant',
-    description: 'Find verified hostels, pay rent via M-Pesa, and find roommates.',
-    icon: GraduationCap,
+    title: 'Tenant',
+    description: 'See your unit and rent, track your balance, and pay via Paystack.',
+    icon: Home,
   },
   {
     value: 'landlord',
-    title: 'Landlord / Manager',
-    description: 'List your property, track payments, and manage your tenants.',
-    icon: Building,
+    title: 'Landlord / Agent',
+    description: 'Manage your properties, track tenants, and collect rent.',
+    icon: Building2,
   },
 ];
 
@@ -53,45 +53,40 @@ export function RoleSelector({
             onClick={() => onValueChange(option.value)}
             disabled={disabled}
             className={cn(
-              'relative rounded-none border-2 p-6 text-left transition-all group overflow-hidden',
+              'relative rounded-3xl border p-6 text-left transition-all group overflow-hidden',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
               'disabled:cursor-not-allowed disabled:opacity-60',
               isActive
                 ? 'border-primary bg-primary/5 shadow-md'
-                : 'border-gray-100 hover:border-primary/30 hover:bg-gray-50',
+                : 'border-gray-100 shadow-sm hover:shadow-md hover:border-primary/30 hover:bg-gray-50',
             )}
           >
             {isActive && (
-              <div className="absolute top-0 right-0 p-2 text-primary">
+              <div className="absolute top-0 right-0 p-3 text-primary">
                 <CheckCircle2 className="h-5 w-5" />
               </div>
             )}
-            
+
             <div className={cn(
-              "mb-6 p-3 w-fit border-2 transition-colors",
-              isActive ? "border-primary bg-primary text-white" : "border-gray-100 bg-gray-50 text-gray-500 group-hover:border-primary/30 group-hover:text-primary"
+              "mb-6 flex h-12 w-12 items-center justify-center rounded-2xl transition-colors",
+              isActive ? "bg-primary text-white" : "bg-gray-50 text-gray-500 group-hover:text-primary"
             )}>
               <Icon className="h-6 w-6" />
             </div>
 
             <h3 className={cn(
-              "font-black text-xl mb-2 tracking-tight transition-colors",
+              "font-bold text-xl mb-2 tracking-tight transition-colors",
               isActive ? "text-primary" : "text-gray-900"
             )}>
               {option.title}
             </h3>
-            
+
             <p className={cn(
               "text-sm font-medium leading-relaxed transition-colors",
               isActive ? "text-gray-900" : "text-gray-500"
             )}>
               {option.description}
             </p>
-
-            <div className={cn(
-               "mt-4 h-1 w-0 bg-primary transition-all duration-300",
-               isActive ? "w-full" : "group-hover:w-12"
-            )} />
           </button>
         );
       })}

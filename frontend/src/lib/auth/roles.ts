@@ -2,6 +2,7 @@ import { UserRole } from '@/features/auth';
 
 const ROLE_HIERARCHY: Record<UserRole, number> = {
   [UserRole.STUDENT]: 1,
+  [UserRole.TENANT]: 1,
   [UserRole.CARETAKER]: 2,
   [UserRole.LANDLORD]: 3,
   [UserRole.TECH_SUPPORT]: 3, // Assuming same level as Landlord/Caretaker or lower than admin?
@@ -14,6 +15,7 @@ const ROLE_HIERARCHY: Record<UserRole, number> = {
 export function getRoleDisplayName(role: UserRole): string {
   const DISPLAY_NAMES: Record<UserRole, string> = {
     [UserRole.STUDENT]: 'Student',
+    [UserRole.TENANT]: 'Tenant',
     [UserRole.LANDLORD]: 'Landlord',
     [UserRole.CARETAKER]: 'Caretaker',
     [UserRole.TECH_SUPPORT]: 'Tech Support',
@@ -26,6 +28,7 @@ export function getRoleDisplayName(role: UserRole): string {
 export function getRoleDescription(role: UserRole): string {
   const DESCRIPTIONS: Record<UserRole, string> = {
     [UserRole.STUDENT]: 'Students looking for accommodation',
+    [UserRole.TENANT]: 'Renting a property managed on RUMIA',
     [UserRole.LANDLORD]: 'Property owners listing hostels',
     [UserRole.CARETAKER]: 'On-site property managers',
     [UserRole.TECH_SUPPORT]: 'Platform support staff',
@@ -56,8 +59,9 @@ export function canManageRole(
 
 export function getRoleDefaultPath(role: UserRole): string {
   const DEFAULT_PATHS: Record<UserRole, string> = {
-    [UserRole.STUDENT]: '/student/dashboard',
-    [UserRole.LANDLORD]: '/landlord/dashboard',
+    [UserRole.STUDENT]: '/tenant/rental',
+    [UserRole.TENANT]: '/tenant/rental',
+    [UserRole.LANDLORD]: '/landlord/rental',
     [UserRole.CARETAKER]: '/caretaker/dashboard',
     [UserRole.TECH_SUPPORT]: '/tech-support/dashboard',
     [UserRole.TECH_SUPPORT_ADMIN]: '/admin/dashboard',

@@ -92,10 +92,10 @@ export const PublicHeader = React.memo(function PublicHeader({
                 aria-label="Main navigation"
               >
                 {[
-                    { href: '/hostels', label: 'Find a Hostel' },
-                    { href: '/host', label: 'List your Hostel' },
-                    { href: '/about', label: 'About Us' },
+                    { href: '/features', label: 'Features' },
+                    { href: '/how-it-works', label: 'How It Works' },
                     { href: '/pricing', label: 'Pricing' },
+                    { href: '/about', label: 'About' },
                 ].map((item) => (
                   <Link
                     key={item.href}

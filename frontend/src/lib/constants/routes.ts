@@ -303,11 +303,13 @@ export function getDashboardRoute(
 ) {
   switch (role) {
     case UserRole.STUDENT:
+    case UserRole.TENANT:
     case 'student':
-      return STUDENT_ROUTES.DASHBOARD;
+    case 'tenant':
+      return '/tenant/rental';
     case UserRole.LANDLORD:
     case 'landlord':
-      return LANDLORD_ROUTES.DASHBOARD;
+      return '/landlord/rental';
     case UserRole.CARETAKER:
     case 'caretaker':
       return CARETAKER_ROUTES.DASHBOARD;

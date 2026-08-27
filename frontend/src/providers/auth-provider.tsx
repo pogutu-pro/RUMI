@@ -34,8 +34,9 @@ const PUBLIC_ROUTES = [
 ];
 
 const ROLE_REDIRECTS: Record<string, string> = {
-  [UserRole.STUDENT]: '/student/dashboard',
-  [UserRole.LANDLORD]: '/landlord/dashboard',
+  [UserRole.STUDENT]: '/tenant/rental',
+  [UserRole.TENANT]: '/tenant/rental',
+  [UserRole.LANDLORD]: '/landlord/rental',
   [UserRole.CARETAKER]: '/caretaker/dashboard',
   [UserRole.SUPER_ADMIN]: '/admin/dashboard',
   [UserRole.TECH_SUPPORT_ADMIN]: '/tech-support/dashboard',

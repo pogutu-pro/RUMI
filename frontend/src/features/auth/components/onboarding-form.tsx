@@ -130,7 +130,7 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
         variant: "default",
       });
       
-      router.push(role === 'student' ? '/student/dashboard' : '/landlord/dashboard');
+      router.push(role === 'student' ? '/tenant/rental' : '/landlord/rental');
     } catch (error: any) {
       toast({
         title: "Finalization Failed",

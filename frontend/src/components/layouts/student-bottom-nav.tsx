@@ -21,8 +21,7 @@ import {
   Shield, 
   Clock, 
   Wallet, 
-  Files, 
-  Search,
+  Files,
   Inbox,
   History,
   UserPlus
@@ -197,10 +196,10 @@ export function StudentBottomNav() {
             active={is_active('/student/dashboard')} 
           />
 
-          {/* 2. Explore */}
-          <NavLink 
-            item={{ label: 'Explore', href: '/student/hostels', icon: Search }} 
-            active={is_active('/student/hostels')} 
+          {/* 2. Payments */}
+          <NavLink
+            item={{ label: 'Payments', href: '/student/payments', icon: CreditCard }}
+            active={is_active('/student/payments')}
           />
 
           {/* 3. Stay */}
