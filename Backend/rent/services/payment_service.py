@@ -1,0 +1,247 @@
+"""Payment provider registry and service facade."""
+
+from __future__ import annotations
+
+from decimal import Decimal
+from typing import Optional
+
+from django.db import models, transaction
+from django.db.models import Sum
+from django.utils import timezone
+
+from rent.models import Payment, PaymentAllocation, RentCharge
+from rent.providers.base import (
+    InitiatePaymentRequest,
+    PaymentProviderError,
+    ProviderConfigStatus,
+    VerifyPaymentRequest,
+)
+from rent.providers.paystack import PaystackProvider
+
+
+class PaymentService:
+    """
+    Provider-independent payment orchestration.
+
+    Rental business logic must use this service, not provider classes directly.
+    RUMIA uses Paystack only — see PAYMENT PROVIDER AUDIT for the M-Pesa removal decision.
+    """
+
+    _providers = {
+        'paystack': PaystackProvider(),
+    }
+
+    @classmethod
+    def get_provider(cls, provider_id: str):
+        provider = cls._providers.get(provider_id)
+        if not provider:
+            raise PaymentProviderError(
+                f'Unknown payment provider: {provider_id}', provider_id
+            )
+        return provider
+
+    @classmethod
+    def list_providers(cls) -> list[ProviderConfigStatus]:
+        return [p.get_config_status() for p in cls._providers.values()]
+
+    @classmethod
+    def initiate(cls, payment: Payment, callback_url: str) -> dict:
+        """
+        Initiate payment with the configured provider.
+
+        Payment remains in 'pending' until verified via callback.
+        """
+        provider = cls.get_provider(payment.provider)
+        config = provider.get_config_status()
+
+        if not provider.is_available():
+            payment.status = 'failed'
+            payment.notes = config.message
+            payment.save(update_fields=['status', 'notes', 'updated_at'])
+            return {
+                'success': False,
+                'error': config.message,
+                'required_env_vars': config.required_env_vars,
+            }
+
+        result = provider.initiate_payment(
+            InitiatePaymentRequest(
+                amount=payment.amount,
+                currency=payment.currency,
+                tenant_email=payment.tenant.email or '',
+                tenant_phone=payment.tenant.phone,
+                internal_reference=payment.internal_reference,
+                callback_url=callback_url,
+                metadata={'payment_id': str(payment.id)},
+            )
+        )
+
+        if not result.success:
+            payment.status = 'failed'
+            payment.notes = result.error_message
+            payment.save(update_fields=['status', 'notes', 'updated_at'])
+            return {'success': False, 'error': result.error_message}
+
+        payment.status = 'processing'
+        payment.provider_reference = result.provider_reference
+        payment.metadata = {**payment.metadata, 'initiate_response': result.raw_response}
+        payment.save(update_fields=[
+            'status', 'provider_reference', 'metadata', 'updated_at',
+        ])
+
+        return {
+            'success': True,
+            'status': 'processing',
+            'provider_reference': result.provider_reference,
+            'authorization_url': result.authorization_url,
+        }
+
+    @classmethod
+    @transaction.atomic
+    def verify_and_allocate(
+        cls,
+        payment: Payment,
+        raw_callback: dict,
+        allocations: Optional[list[dict]] = None,
+    ) -> Payment:
+        """Verify payment with provider and allocate to rent charges."""
+        # Re-fetch under a row lock inside this atomic block so two concurrent
+        # webhook deliveries for the same payment can't both pass the guard below.
+        payment = Payment.objects.select_for_update().get(pk=payment.pk)
+
+        if payment.status == 'success':
+            # Idempotency guard: a replayed webhook must not re-verify or
+            # re-allocate an already-settled payment.
+            return payment
+
+        provider = cls.get_provider(payment.provider)
+
+        result = provider.verify_payment(
+            VerifyPaymentRequest(
+                provider_reference=payment.provider_reference,
+                internal_reference=payment.internal_reference,
+                raw_callback=raw_callback,
+            )
+        )
+
+        payment.metadata = {
+            **payment.metadata,
+            'verify_response': result.raw_response,
+        }
+
+        if result.status == 'pending':
+            payment.status = 'processing'
+            payment.save(update_fields=['status', 'metadata', 'updated_at'])
+            return payment
+
+        if not result.success:
+            payment.status = 'failed'
+            payment.save(update_fields=['status', 'metadata', 'updated_at'])
+            return payment
+
+        payment.status = 'success'
+        payment.provider_reference = result.provider_reference or payment.provider_reference
+        payment.paid_at = timezone.now()
+        payment.save(update_fields=[
+            'status', 'provider_reference', 'paid_at', 'metadata', 'updated_at',
+        ])
+
+        if allocations:
+            for alloc in allocations:
+                cls._create_allocation(
+                    payment,
+                    alloc['rent_charge_id'],
+                    Decimal(str(alloc['amount'])),
+                )
+        elif payment.tenancy_id:
+            cls._auto_allocate(payment)
+
+        return payment
+
+    @classmethod
+    @transaction.atomic
+    def record_manual_payment(
+        cls,
+        payment: Payment,
+        allocations: Optional[list[dict]] = None,
+        verified_by=None,
+    ) -> Payment:
+        """Record a cash/bank payment without external provider verification."""
+        payment.status = 'success'
+        payment.provider = 'manual'
+        payment.payment_method = payment.payment_method or 'cash'
+        payment.paid_at = timezone.now()
+        payment.verified_by = verified_by
+        payment.save()
+
+        if allocations:
+            for alloc in allocations:
+                cls._create_allocation(
+                    payment,
+                    alloc['rent_charge_id'],
+                    Decimal(str(alloc['amount'])),
+                )
+        elif payment.tenancy_id:
+            cls._auto_allocate(payment)
+        return payment
+
+    @classmethod
+    @transaction.atomic
+    def reverse_payment(cls, payment: Payment, reversed_by=None) -> Payment:
+        """Reverse a payment and restore outstanding balances on charges."""
+        if payment.status != 'success':
+            raise ValueError('Only successful payments can be reversed')
+
+        # Flip status to 'reversed' first — recalculate_status() below re-derives
+        # amount_paid from allocations where payment__status='success', so this
+        # payment's allocations must already be excluded before recalculating,
+        # or the recompute silently undoes the reversal.
+        payment.status = 'reversed'
+        payment.metadata = {
+            **payment.metadata,
+            'reversed_at': timezone.now().isoformat(),
+            'reversed_by': str(reversed_by.id) if reversed_by else None,
+        }
+        payment.save(update_fields=['status', 'metadata', 'updated_at'])
+
+        for allocation in payment.allocations.select_related('rent_charge'):
+            charge = allocation.rent_charge
+            charge.recalculate_status()
+            charge.save(update_fields=['amount_paid', 'status', 'updated_at'])
+
+        return payment
+
+    @classmethod
+    def _create_allocation(cls, payment: Payment, rent_charge_id, amount: Decimal):
+        charge = RentCharge.objects.select_for_update().get(id=rent_charge_id)
+        if payment.status != 'success':
+            raise ValueError('Cannot allocate non-successful payment')
+
+        PaymentAllocation.objects.create(
+            payment=payment,
+            rent_charge=charge,
+            amount=amount,
+        )
+        paid = charge.payment_allocations.filter(
+            payment__status='success'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        charge.amount_paid = paid
+        charge.recalculate_status()
+        charge.save(update_fields=['amount_paid', 'status', 'updated_at'])
+
+    @classmethod
+    def _auto_allocate(cls, payment: Payment):
+        remaining = payment.amount
+        charges = RentCharge.objects.filter(
+            tenancy=payment.tenancy,
+            status__in=['due', 'partially_paid', 'overdue'],
+        ).order_by('due_date')
+
+        for charge in charges:
+            if remaining <= 0:
+                break
+            outstanding = charge.outstanding
+            alloc_amount = min(remaining, outstanding)
+            if alloc_amount > 0:
+                cls._create_allocation(payment, charge.id, alloc_amount)
+                remaining -= alloc_amount

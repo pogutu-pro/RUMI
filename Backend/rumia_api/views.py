@@ -1,0 +1,702 @@
+"""RUMIA canonical API views — organization-scoped."""
+
+import uuid
+from datetime import date
+from decimal import Decimal
+
+from django.conf import settings
+from django.db import transaction
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from audit.models import log_audit
+from core.permissions.rumia import (
+    CanAccessProperty,
+    CanAccessTenantProfile,
+    CanViewFinancials,
+    OrganizationScopedMixin,
+    get_canonical_role,
+)
+from organizations.models import Organization
+from properties.models import Property, RentalUnit, Tenancy
+from rent.models import Payment, RentCharge
+from rent.services.income_flow import IncomeFlowService
+from rent.services.payment_service import PaymentService
+from rent.services.rent_generation import RentChargeGenerationService
+from rumia_api.serializers import (
+    EmergencyContactSerializer,
+    ManualPaymentSerializer,
+    PaymentInitiateSerializer,
+    PaymentSerializer,
+    PropertySerializer,
+    RentalUnitSerializer,
+    RentChargeSerializer,
+    TenancySerializer,
+    TenancyTerminateSerializer,
+    TenantProfileSerializer,
+)
+from tenants.models import TenantProfile
+from tenants.services import onboard_tenant_user, save_emergency_contacts
+
+
+class RumiaBaseView(OrganizationScopedMixin, APIView):
+    permission_classes = [IsAuthenticated]
+    organization_lookup = 'organization'
+
+
+def _caretaker_can(user, flag: str) -> bool:
+    try:
+        return bool(user.caretaker_profile.permissions.get(flag, False))
+    except Exception:
+        return False
+
+
+def _sync_unit_status(tenancy: Tenancy) -> None:
+    """Keep RentalUnit.status consistent with whether it has an active tenancy."""
+    unit = tenancy.unit
+    if tenancy.status == 'active':
+        if unit.status != 'occupied':
+            unit.status = 'occupied'
+            unit.save(update_fields=['status', 'updated_at'])
+    else:
+        still_active = unit.tenancies.filter(status='active').exclude(pk=tenancy.pk).exists()
+        if not still_active and unit.status == 'occupied':
+            unit.status = 'vacant'
+            unit.save(update_fields=['status', 'updated_at'])
+
+
+class PropertyListCreateView(RumiaBaseView):
+    property_lookup = 'id'
+
+    def get(self, request):
+        qs = self.filter_by_organization(Property.objects.all())
+        return Response(PropertySerializer(qs, many=True).data)
+
+    def post(self, request):
+        if get_canonical_role(request.user) not in ('landlord', 'super_admin'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        org = self._resolve_organization(request)
+        if not org:
+            return Response({'detail': 'Organization required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = PropertySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        prop = serializer.save(organization=org)
+        log_audit('property_created', actor=request.user, organization=org, entity=prop)
+        return Response(PropertySerializer(prop).data, status=status.HTTP_201_CREATED)
+
+    def _resolve_organization(self, request):
+        org_id = request.data.get('organization_id')
+        if org_id:
+            return Organization.objects.filter(id=org_id).first()
+        return Organization.objects.filter(owner=request.user).first()
+
+
+class PropertyDetailView(RumiaBaseView):
+    permission_classes = [IsAuthenticated, CanAccessProperty]
+
+    def get_object(self, pk):
+        return Property.objects.get(pk=pk)
+
+    def get(self, request, pk):
+        prop = self.get_object(pk)
+        self.check_object_permissions(request, prop)
+        return Response(PropertySerializer(prop).data)
+
+    def patch(self, request, pk):
+        prop = self.get_object(pk)
+        self.check_object_permissions(request, prop)
+
+        role = get_canonical_role(request.user)
+        if role == 'caretaker' and not _caretaker_can(request.user, 'can_edit_properties'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        if role == 'tenant':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = PropertySerializer(prop, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        old_status = prop.status
+        serializer.save()
+        log_audit(
+            'property_updated', actor=request.user, organization=prop.organization, entity=prop,
+            old_value={'status': old_status}, new_value={'status': prop.status},
+        )
+        return Response(PropertySerializer(prop).data)
+
+    def delete(self, request, pk):
+        """Archive, never hard-delete — a property with historical tenancies/payments must not disappear."""
+        prop = self.get_object(pk)
+        self.check_object_permissions(request, prop)
+
+        role = get_canonical_role(request.user)
+        if role not in ('landlord', 'super_admin'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        prop.status = 'inactive'
+        prop.save(update_fields=['status', 'updated_at'])
+        log_audit('property_updated', actor=request.user, organization=prop.organization, entity=prop,
+                   new_value={'status': 'inactive'})
+        return Response(PropertySerializer(prop).data)
+
+
+class RentalUnitListCreateView(RumiaBaseView):
+    property_lookup = 'parent_property'
+
+    def get(self, request):
+        qs = self.filter_by_organization(RentalUnit.objects.select_related('parent_property'))
+        property_id = request.query_params.get('property_id')
+        if property_id:
+            qs = qs.filter(parent_property_id=property_id)
+        return Response(RentalUnitSerializer(qs, many=True).data)
+
+    def post(self, request):
+        role = get_canonical_role(request.user)
+        if role not in ('landlord', 'super_admin', 'caretaker'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        prop = Property.objects.get(pk=request.data['property'])
+        if role == 'caretaker':
+            if prop.id not in self.get_user_property_ids():
+                return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        elif role != 'super_admin':
+            org_ids = self.get_user_organization_ids()
+            if prop.organization_id not in org_ids:
+                return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = RentalUnitSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        unit = serializer.save(organization=prop.organization, parent_property=prop)
+        log_audit('unit_created', actor=request.user, organization=prop.organization, entity=unit)
+        return Response(RentalUnitSerializer(unit).data, status=status.HTTP_201_CREATED)
+
+
+class RentalUnitDetailView(RumiaBaseView):
+    permission_classes = [IsAuthenticated, CanAccessProperty]
+
+    def get_object(self, pk):
+        return RentalUnit.objects.select_related('parent_property').get(pk=pk)
+
+    def get(self, request, pk):
+        unit = self.get_object(pk)
+        self.check_object_permissions(request, unit)
+        return Response(RentalUnitSerializer(unit).data)
+
+    def patch(self, request, pk):
+        """Also how a unit is marked vacant/occupied/under maintenance — PATCH status."""
+        unit = self.get_object(pk)
+        self.check_object_permissions(request, unit)
+
+        role = get_canonical_role(request.user)
+        if role == 'tenant':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        if role == 'caretaker' and not _caretaker_can(request.user, 'can_edit_properties'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        data = dict(request.data)
+        if unit.active_tenancy and data.get('status') == 'vacant':
+            return Response(
+                {'detail': 'Unit has an active tenancy — terminate it first.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = RentalUnitSerializer(unit, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        log_audit('unit_updated', actor=request.user, organization=unit.organization, entity=unit)
+        return Response(RentalUnitSerializer(unit).data)
+
+
+class TenancyListCreateView(RumiaBaseView):
+    property_lookup = 'parent_property'
+
+    def get(self, request):
+        qs = self.filter_by_organization(
+            Tenancy.objects.select_related('tenant', 'unit', 'parent_property')
+        )
+        role = get_canonical_role(request.user)
+        if role == 'tenant':
+            qs = qs.filter(tenant__user=request.user)
+        return Response(TenancySerializer(qs, many=True).data)
+
+    def post(self, request):
+        role = get_canonical_role(request.user)
+        if role not in ('landlord', 'super_admin', 'caretaker'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        with transaction.atomic():
+            unit = RentalUnit.objects.select_for_update().get(pk=request.data['unit'])
+
+            if role == 'caretaker' and unit.parent_property_id not in self.get_user_property_ids():
+                return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+            elif role != 'super_admin' and unit.organization_id not in self.get_user_organization_ids():
+                return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+            tenant = TenantProfile.objects.get(pk=request.data['tenant'])
+
+            serializer = TenancySerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            new_status = serializer.validated_data.get('status', 'pending')
+
+            if new_status == 'active' and unit.tenancies.filter(status='active').exists():
+                return Response(
+                    {'detail': 'This unit already has an active tenancy.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            tenancy = serializer.save(
+                organization=unit.organization,
+                parent_property=unit.parent_property,
+                unit=unit,
+                tenant=tenant,
+                created_by=request.user,
+            )
+            _sync_unit_status(tenancy)
+
+        log_audit('tenancy_created', actor=request.user, organization=unit.organization, entity=tenancy)
+        # Outside the transaction — this is the point a tenant is actually tied to a
+        # property, so it's when they should get their account + login invite.
+        onboard_tenant_user(tenant, property_name=unit.parent_property.name)
+        return Response(TenancySerializer(tenancy).data, status=status.HTTP_201_CREATED)
+
+
+class TenancyDetailView(RumiaBaseView):
+    permission_classes = [IsAuthenticated, CanAccessProperty]
+
+    # Status transitions go through TenancyTerminateView, not a generic PATCH,
+    # so the unit-vacancy/one-active-tenancy side effects always happen correctly.
+    PATCHABLE_FIELDS = ('monthly_rent', 'deposit', 'rent_due_day', 'grace_period_days',
+                        'end_date', 'renewal_notes', 'notes')
+
+    def get_object(self, pk):
+        return Tenancy.objects.select_related('tenant', 'unit', 'parent_property').get(pk=pk)
+
+    def get(self, request, pk):
+        tenancy = self.get_object(pk)
+        self.check_object_permissions(request, tenancy)
+        return Response(TenancySerializer(tenancy).data)
+
+    def patch(self, request, pk):
+        tenancy = self.get_object(pk)
+        self.check_object_permissions(request, tenancy)
+
+        role = get_canonical_role(request.user)
+        if role == 'tenant':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        if role == 'caretaker' and not _caretaker_can(request.user, 'can_manage_tenants'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        data = {k: v for k, v in request.data.items() if k in self.PATCHABLE_FIELDS}
+        serializer = TenancySerializer(tenancy, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        log_audit('tenancy_updated', actor=request.user, organization=tenancy.organization, entity=tenancy)
+        return Response(TenancySerializer(tenancy).data)
+
+
+class TenancyTerminateView(RumiaBaseView):
+    permission_classes = [IsAuthenticated, CanAccessProperty]
+
+    def post(self, request, pk):
+        tenancy = Tenancy.objects.select_related('unit').get(pk=pk)
+        self.check_object_permissions(request, tenancy)
+
+        role = get_canonical_role(request.user)
+        if role == 'tenant':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        if role == 'caretaker' and not _caretaker_can(request.user, 'can_manage_tenants'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        if tenancy.status in ('terminated', 'expired'):
+            return Response({'detail': 'Tenancy is already ended.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = TenancyTerminateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        move_out_date = serializer.validated_data.get('move_out_date', timezone.now().date())
+
+        with transaction.atomic():
+            tenancy.status = 'terminated'
+            tenancy.end_date = move_out_date
+            tenancy.move_out_date = move_out_date
+            if 'renewal_notes' in serializer.validated_data:
+                tenancy.renewal_notes = serializer.validated_data['renewal_notes']
+            tenancy.save(update_fields=['status', 'end_date', 'move_out_date', 'renewal_notes', 'updated_at'])
+            _sync_unit_status(tenancy)
+
+        log_audit('tenancy_terminated', actor=request.user, organization=tenancy.organization, entity=tenancy)
+        return Response(TenancySerializer(tenancy).data)
+
+
+class TenantListCreateView(RumiaBaseView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        role = get_canonical_role(request.user)
+
+        if role == 'caretaker':
+            property_ids = self.get_user_property_ids()
+            qs = TenantProfile.objects.filter(
+                tenancies__unit__parent_property__in=property_ids,
+            ).distinct()
+        else:
+            qs = self.filter_by_organization(TenantProfile.objects.all())
+            if role == 'tenant':
+                qs = qs.filter(user=request.user)
+
+        return Response(TenantProfileSerializer(qs, many=True).data)
+
+    def post(self, request):
+        role = get_canonical_role(request.user)
+        if role not in ('landlord', 'super_admin', 'caretaker'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        if role == 'caretaker' and not _caretaker_can(request.user, 'can_manage_tenants'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        org = Organization.objects.filter(owner=request.user).first()
+        if not org:
+            org_ids = self.get_user_organization_ids()
+            org = Organization.objects.filter(id__in=org_ids).first() if org_ids else None
+        if not org:
+            return Response({'detail': 'Organization required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = TenantProfileSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        emergency_contacts = serializer.validated_data.pop('emergency_contacts', [])
+        profile = serializer.save(organization=org, created_by=request.user)
+        if emergency_contacts:
+            save_emergency_contacts(profile, emergency_contacts)
+        log_audit('tenant_created', actor=request.user, organization=org, entity=profile)
+        return Response(TenantProfileSerializer(profile).data, status=status.HTTP_201_CREATED)
+
+
+class TenantDetailView(RumiaBaseView):
+    permission_classes = [IsAuthenticated, CanAccessTenantProfile]
+
+    def get_object(self, pk):
+        return TenantProfile.objects.get(pk=pk)
+
+    def get(self, request, pk):
+        profile = self.get_object(pk)
+        self.check_object_permissions(request, profile)
+        data = TenantProfileSerializer(profile).data
+        data['emergency_contacts'] = EmergencyContactSerializer(
+            profile.emergency_contacts.all(), many=True,
+        ).data
+        return Response(data)
+
+    def patch(self, request, pk):
+        profile = self.get_object(pk)
+        self.check_object_permissions(request, profile)
+
+        role = get_canonical_role(request.user)
+        if role == 'tenant':
+            # Tenants may correct their own contact details, nothing else.
+            allowed = {'phone', 'email', 'occupation', 'address'}
+            data = {k: v for k, v in request.data.items() if k in allowed}
+        else:
+            data = request.data
+
+        serializer = TenantProfileSerializer(profile, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        log_audit('tenant_updated', actor=request.user, organization=profile.organization, entity=profile)
+        return Response(TenantProfileSerializer(profile).data)
+
+
+class RentChargeListView(RumiaBaseView):
+    permission_classes = [IsAuthenticated, CanViewFinancials]
+    property_lookup = 'parent_property'
+
+    def get(self, request):
+        qs = self.filter_by_organization(RentCharge.objects.select_related('tenant', 'unit'))
+        role = get_canonical_role(request.user)
+        if role == 'tenant':
+            qs = qs.filter(tenant__user=request.user)
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return Response(RentChargeSerializer(qs, many=True).data)
+
+
+class RentBalanceView(RumiaBaseView):
+    """Answers 'who owes me rent / how much do I owe' directly, with totals."""
+
+    permission_classes = [IsAuthenticated, CanViewFinancials]
+    property_lookup = 'parent_property'
+
+    def get(self, request):
+        qs = self.filter_by_organization(
+            RentCharge.objects.select_related('tenant', 'unit').exclude(status__in=['paid', 'waived'])
+        )
+        role = get_canonical_role(request.user)
+        if role == 'tenant':
+            qs = qs.filter(tenant__user=request.user)
+
+        tenancy_id = request.query_params.get('tenancy_id')
+        if tenancy_id:
+            qs = qs.filter(tenancy_id=tenancy_id)
+
+        charges = list(qs)
+        outstanding_total = sum((c.outstanding for c in charges), Decimal('0.00'))
+        overdue_total = sum((c.outstanding for c in charges if c.status == 'overdue'), Decimal('0.00'))
+
+        return Response({
+            'outstanding_total': str(outstanding_total),
+            'overdue_total': str(overdue_total),
+            'charges': RentChargeSerializer(charges, many=True).data,
+        })
+
+
+class RentChargeGenerateView(RumiaBaseView):
+    """Manual trigger for the same generation the daily Celery task runs — useful for demos/MVP."""
+
+    def post(self, request):
+        role = get_canonical_role(request.user)
+        if role not in ('landlord', 'super_admin'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        org_id = request.data.get('organization_id')
+        if not org_id:
+            org_ids = self.get_user_organization_ids()
+            org_id = org_ids[0] if org_ids else None
+        if not org_id:
+            return Response({'detail': 'Organization required'}, status=status.HTTP_400_BAD_REQUEST)
+        if role != 'super_admin' and str(org_id) not in [str(i) for i in self.get_user_organization_ids()]:
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        result = RentChargeGenerationService.generate_for_organization(org_id)
+        return Response({'created': result.created, 'tenancies_up_to_date': result.skipped})
+
+
+class PaymentListCreateView(RumiaBaseView):
+    # Not CanViewFinancials at the class level: that permission restricts
+    # tenants to safe (GET) methods only, which would also block the one
+    # write action tenants are explicitly allowed — starting their own
+    # payment. View/initiate authorization is enforced per-method below instead.
+    permission_classes = [IsAuthenticated]
+    property_lookup = 'parent_property'
+
+    def get(self, request):
+        if not CanViewFinancials().has_permission(request, self):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        qs = self.filter_by_organization(Payment.objects.select_related('tenant'))
+        role = get_canonical_role(request.user)
+        if role == 'tenant':
+            qs = qs.filter(tenant__user=request.user)
+        return Response(PaymentSerializer(qs, many=True).data)
+
+    def post(self, request):
+        """Start a Paystack payment via PaymentService.initiate(). Status always starts 'pending' —
+        the client can never set or claim a payment status; only the Paystack webhook can."""
+        role = get_canonical_role(request.user)
+        if role not in ('tenant', 'landlord', 'caretaker', 'super_admin'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = PaymentInitiateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        tenancy = serializer.validated_data['tenancy']
+
+        if role == 'tenant':
+            if tenancy.tenant.user_id != request.user.id:
+                return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        elif role != 'super_admin':
+            if tenancy.organization_id not in self.get_user_organization_ids():
+                return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        payment = Payment.objects.create(
+            organization=tenancy.organization,
+            tenancy=tenancy,
+            tenant=tenancy.tenant,
+            parent_property=tenancy.parent_property,
+            unit=tenancy.unit,
+            amount=serializer.validated_data['amount'],
+            currency=serializer.validated_data['currency'],
+            payment_method='paystack',
+            provider='paystack',
+            internal_reference=f'RUMIA-{uuid.uuid4().hex[:16].upper()}',
+            recorded_by=request.user,
+        )
+
+        callback_url = f'{settings.FRONTEND_URL}/payments/{payment.id}/callback'
+        result = PaymentService.initiate(payment, callback_url)
+
+        if not result.get('success'):
+            return Response(
+                {'detail': 'Payment could not be started.', 'error': result.get('error'),
+                 'required_env_vars': result.get('required_env_vars', [])},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        log_audit('payment_recorded', actor=request.user, organization=tenancy.organization, entity=payment,
+                   metadata={'action': 'initiated'})
+        return Response({
+            'payment_id': str(payment.id),
+            'internal_reference': payment.internal_reference,
+            'authorization_url': result.get('authorization_url', ''),
+            'status': 'processing',
+        }, status=status.HTTP_201_CREATED)
+
+
+class ManualPaymentView(RumiaBaseView):
+    """Cash/bank payments recorded by a landlord or permitted caretaker — never provider-verified."""
+
+    def post(self, request):
+        role = get_canonical_role(request.user)
+        if role not in ('landlord', 'super_admin', 'caretaker'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        if role == 'caretaker' and not _caretaker_can(request.user, 'can_record_payments'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = ManualPaymentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        tenancy = serializer.validated_data['tenancy']
+
+        if role != 'super_admin' and tenancy.organization_id not in self.get_user_organization_ids():
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        if role == 'caretaker' and tenancy.parent_property_id not in self.get_user_property_ids():
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        payment = Payment.objects.create(
+            organization=tenancy.organization,
+            tenancy=tenancy,
+            tenant=tenancy.tenant,
+            parent_property=tenancy.parent_property,
+            unit=tenancy.unit,
+            amount=serializer.validated_data['amount'],
+            payment_method=serializer.validated_data['payment_method'],
+            provider='manual',
+            internal_reference=f'RUMIA-MANUAL-{uuid.uuid4().hex[:16].upper()}',
+            notes=serializer.validated_data.get('notes', ''),
+            recorded_by=request.user,
+        )
+
+        allocations = None
+        rent_charge = serializer.validated_data.get('rent_charge_id')
+        if rent_charge:
+            allocations = [{'rent_charge_id': rent_charge.id, 'amount': serializer.validated_data['amount']}]
+
+        PaymentService.record_manual_payment(payment, allocations=allocations, verified_by=request.user)
+        log_audit('payment_recorded', actor=request.user, organization=tenancy.organization, entity=payment,
+                   metadata={'action': 'manual'})
+        return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
+
+
+class PaystackWebhookView(APIView):
+    """
+    No authentication — Paystack calls this directly. Trust nothing in the body;
+    the signature proves the request came from Paystack, and PaymentService
+    re-verifies the actual transaction status with Paystack's API before
+    ever touching a Payment/RentCharge row.
+    """
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        import hashlib
+        import hmac as hmac_module
+
+        secret = (getattr(settings, 'PAYSTACK_SECRET_KEY', '') or '').encode()
+        signature = request.headers.get('x-paystack-signature', '')
+
+        if not secret or not signature:
+            return Response({'error': 'Missing signature'}, status=status.HTTP_400_BAD_REQUEST)
+
+        computed = hmac_module.new(secret, request.body, hashlib.sha512).hexdigest()
+        if not hmac_module.compare_digest(computed, signature):
+            return Response({'error': 'Invalid signature'}, status=status.HTTP_400_BAD_REQUEST)
+
+        payload = request.data
+        data = payload.get('data', {})
+        reference = data.get('reference')
+        if not reference:
+            return Response({'status': 'ignored'}, status=status.HTTP_200_OK)
+
+        try:
+            payment = Payment.objects.get(internal_reference=reference)
+        except Payment.DoesNotExist:
+            # Not one of ours (or a stale/foreign reference) — 200 so Paystack doesn't retry forever.
+            return Response({'status': 'ignored'}, status=status.HTTP_200_OK)
+
+        payment = PaymentService.verify_and_allocate(payment, raw_callback=payload)
+
+        if payment.status == 'success':
+            log_audit('payment_recorded', organization=payment.organization, entity=payment,
+                       metadata={'action': 'webhook_verified'})
+            try:
+                from rent.tasks import send_payment_confirmation_task
+                send_payment_confirmation_task.delay(str(payment.id))
+            except Exception:
+                pass  # Never fail the webhook response over a notification-dispatch problem.
+
+        return Response({'status': 'processed', 'payment_status': payment.status})
+
+
+class IncomeSummaryView(RumiaBaseView):
+    permission_classes = [IsAuthenticated, CanViewFinancials]
+
+    def get(self, request):
+        if get_canonical_role(request.user) not in ('landlord', 'super_admin'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        org_ids = self.get_user_organization_ids()
+        if not org_ids:
+            return Response({'detail': 'No organization'}, status=status.HTTP_404_NOT_FOUND)
+
+        org_id = request.query_params.get('organization_id', org_ids[0])
+        if str(org_id) not in [str(i) for i in org_ids] and get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        today = timezone.now().date()
+        period_start = date.fromisoformat(
+            request.query_params.get('period_start', today.replace(day=1).isoformat())
+        )
+        period_end = date.fromisoformat(
+            request.query_params.get('period_end', today.isoformat())
+        )
+
+        report = IncomeFlowService.for_organization(org_id, period_start, period_end)
+        return Response({
+            'organization_id': report.organization_id,
+            'period_start': report.period_start.isoformat(),
+            'period_end': report.period_end.isoformat(),
+            'summary': {
+                'expected_rent': str(report.summary.expected_rent),
+                'collected_rent': str(report.summary.collected_rent),
+                'outstanding_rent': str(report.summary.outstanding_rent),
+                'overdue_rent': str(report.summary.overdue_rent),
+                'collection_rate': str(report.summary.collection_rate),
+                'vacancy_loss': str(report.summary.vacancy_loss),
+                'projected_income': str(report.summary.projected_income),
+            },
+            'by_property': [
+                {
+                    'property_id': p.property_id,
+                    'property_name': p.property_name,
+                    'expected_rent': str(p.expected_rent),
+                    'collected_rent': str(p.collected_rent),
+                    'outstanding_rent': str(p.outstanding_rent),
+                    'collection_rate': str(p.collection_rate),
+                }
+                for p in report.by_property
+            ],
+        })
+
+
+class PaymentProviderStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        providers = PaymentService.list_providers()
+        return Response([
+            {
+                'provider': p.provider,
+                'status': p.status.value,
+                'message': p.message,
+                'required_env_vars': p.required_env_vars,
+            }
+            for p in providers
+        ])

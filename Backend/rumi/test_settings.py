@@ -28,7 +28,6 @@ CACHES = {
 
 # Ensure tests don't hit external services
 CELERY_TASK_ALWAYS_EAGER = True
-MPESA_SANDBOX = True
 # Disable real Redis/Channels for unit tests where possible
 CHANNEL_LAYERS = {
     'default': {'BACKEND': 'channels.layers.InMemoryChannelLayer'}

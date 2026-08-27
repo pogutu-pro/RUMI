@@ -1519,3 +1519,8 @@ class Waitlist(models.Model):
 
 # Import bed-related models from separate file
 from .bed_models import Bed, BedOccupancy
+
+# Import review models from separate file (restores model registration —
+# migrations 0021-0023 created these tables; without this import Django's
+# autodetector thinks they were deleted and generates a drop migration)
+from .review_models import Review, ReviewHelpful, ReviewImage

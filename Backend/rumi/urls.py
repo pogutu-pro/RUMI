@@ -108,6 +108,9 @@ urlpatterns = [
         # Tech Support endpoints
         path('support/', include('support_api.urls')),
 
+        # RUMIA canonical domain APIs (Phase 2)
+        path('', include('rumia_api.urls')),
+
     ])),
 ]
 

@@ -80,6 +80,45 @@ def send_welcome_email(user_id):
 
 
 @shared_task
+def send_tenant_invite_email(user_id, reset_token, property_name=''):
+    """
+    Sent once when a landlord/caretaker adds a tenant to RUMIA — the tenant has
+    no password yet, so this reuses the password-reset confirm flow as the
+    account setup step rather than building a separate one.
+    """
+    from .models import User
+    try:
+        user = User.objects.get(id=user_id)
+        setup_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
+        property_line = f' for {property_name}' if property_name else ''
+
+        subject = 'You have been added to RUMIA'
+        message = f"""
+        Hi {user.first_name},
+
+        You have been added as a tenant{property_line} on RUMIA.
+
+        Set up your password to log in and view your tenancy, rent balance, and
+        payment history:
+        {setup_url}
+
+        This link will expire in 24 hours.
+
+        Best regards,
+        RUMIA Team
+        """
+
+        send_branded_email(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+        )
+    except User.DoesNotExist:
+        pass
+
+
+@shared_task
 def send_password_reset_email(user_id, reset_token):
     """
     Send password reset email

@@ -1,7 +1,7 @@
 {
   "seed_metadata": {
     "test_seeded_by": "rumia_ide",
-    "seed_date": "2026-02-08"
+    "seed_date": "2026-05-01"
   },
   "environment": "staging",
   "users": [
@@ -64,8 +64,6 @@
     "bookings": [
       "BK-TEST-2026-001"
     ],
-    "payment_configs": [
-      "174379"
-    ]
+    "payment_configs": []
   }
 }

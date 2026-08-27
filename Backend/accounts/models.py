@@ -41,7 +41,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     """Extended Django User model with role-based authentication"""
 
     ROLE_CHOICES = [
-        ('student', 'Student'),
+        ('student', 'Student'),  # Legacy — use tenant for new registrations
+        ('tenant', 'Tenant'),
         ('landlord', 'Landlord'),
         ('caretaker', 'Caretaker'),
         ('tech_support', 'Tech Support Admin'),
@@ -133,6 +134,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self):
         return self.first_name
+
+    def get_canonical_role(self) -> str:
+        """Return canonical role — maps legacy 'student' to 'tenant'."""
+        if self.role == 'student':
+            return 'tenant'
+        return self.role
 
     def __str__(self):
         return f"{self.email} ({self.get_role_display()})"
