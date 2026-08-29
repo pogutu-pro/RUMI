@@ -1,5 +1,6 @@
 import { axiosInstance as axios } from '@/lib/api/client';
 import type {
+  Caretaker,
   IncomeSummary,
   Organization,
   Payment,
@@ -24,6 +25,23 @@ export const rentalApi = {
   // Organizations (super_admin only)
   listOrganizations: async (): Promise<Organization[]> => {
     const res = await axios.get<Organization[]>('/organizations/');
+    return res.data;
+  },
+
+  // Caretakers
+  listCaretakers: async (): Promise<Caretaker[]> => {
+    const res = await axios.get<Caretaker[]>('/caretakers/');
+    return res.data;
+  },
+  createCaretaker: async (payload: {
+    full_name: string;
+    email: string;
+    phone: string;
+    emergency_contact_name: string;
+    emergency_contact_phone: string;
+    property_ids?: string[];
+  }): Promise<Caretaker> => {
+    const res = await axios.post<Caretaker>('/caretakers/', payload);
     return res.data;
   },
 

@@ -160,3 +160,35 @@ class ManualPaymentSerializer(serializers.Serializer):
 class TenancyTerminateSerializer(serializers.Serializer):
     move_out_date = serializers.DateField(required=False)
     renewal_notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class CaretakerSerializer(serializers.Serializer):
+    """Read view of a caretaker within an organization, with their assigned properties."""
+
+    id = serializers.IntegerField(source='user.id')
+    full_name = serializers.SerializerMethodField()
+    email = serializers.CharField(source='user.email')
+    phone = serializers.CharField(source='user.phone_number')
+    is_active = serializers.BooleanField()
+    permissions = serializers.JSONField()
+    assigned_properties = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField()
+
+    def get_full_name(self, obj):
+        return obj.user.get_full_name().strip() or obj.user.email
+
+    def get_assigned_properties(self, obj):
+        return [
+            {'id': str(a.property_assignment_id), 'name': a.property_assignment.name}
+            for a in obj.property_assignments.filter(is_active=True).select_related('property_assignment')
+        ]
+
+
+class CaretakerCreateSerializer(serializers.Serializer):
+    full_name = serializers.CharField()
+    email = serializers.EmailField()
+    phone = serializers.RegexField(r'^\+254[0-9]{9}$')
+    emergency_contact_name = serializers.CharField()
+    emergency_contact_phone = serializers.RegexField(r'^\+254[0-9]{9}$')
+    property_ids = serializers.ListField(child=serializers.UUIDField(), required=False, default=list)
+    permissions = serializers.DictField(required=False, default=dict)

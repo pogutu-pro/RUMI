@@ -12,6 +12,22 @@ export type RentChargeStatus =
   | 'upcoming' | 'due' | 'partially_paid' | 'paid' | 'overdue' | 'waived' | 'disputed';
 export type PaymentStatus = 'pending' | 'processing' | 'success' | 'failed' | 'reversed' | 'disputed';
 
+export interface CaretakerAssignedProperty {
+  id: string;
+  name: string;
+}
+
+export interface Caretaker {
+  id: number;
+  full_name: string;
+  email: string;
+  phone: string;
+  is_active: boolean;
+  permissions: Record<string, boolean>;
+  assigned_properties: CaretakerAssignedProperty[];
+  created_at: string;
+}
+
 export interface Organization {
   id: string;
   name: string;

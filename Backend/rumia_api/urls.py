@@ -3,6 +3,7 @@
 from django.urls import path
 
 from rumia_api.views import (
+    CaretakerListCreateView,
     IncomeSummaryView,
     ManualPaymentView,
     OrganizationListView,
@@ -25,6 +26,7 @@ from rumia_api.views import (
 
 urlpatterns = [
     path('organizations/', OrganizationListView.as_view(), name='rumia-organizations'),
+    path('caretakers/', CaretakerListCreateView.as_view(), name='rumia-caretakers'),
     path('properties/', PropertyListCreateView.as_view(), name='rumia-properties'),
     path('properties/<uuid:pk>/', PropertyDetailView.as_view(), name='rumia-property-detail'),
     path('units/', RentalUnitListCreateView.as_view(), name='rumia-units'),

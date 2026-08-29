@@ -21,12 +21,14 @@ from core.permissions.rumia import (
     get_canonical_role,
 )
 from organizations.models import Organization
-from properties.models import Property, RentalUnit, Tenancy
+from properties.models import CaretakerPropertyAssignment, Property, RentalUnit, Tenancy
 from rent.models import Payment, RentCharge
 from rent.services.income_flow import IncomeFlowService
 from rent.services.payment_service import PaymentService
 from rent.services.rent_generation import RentChargeGenerationService
 from rumia_api.serializers import (
+    CaretakerCreateSerializer,
+    CaretakerSerializer,
     EmergencyContactSerializer,
     ManualPaymentSerializer,
     OrganizationSerializer,
@@ -79,6 +81,99 @@ class OrganizationListView(APIView):
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
         qs = Organization.objects.all().order_by('name')
         return Response(OrganizationSerializer(qs, many=True).data)
+
+
+class CaretakerListCreateView(RumiaBaseView):
+    """Landlord/super_admin: list and add caretakers for their organization."""
+
+    def get(self, request):
+        from accounts.models import CaretakerProfile
+
+        org_ids = self.get_user_organization_ids()
+        qs = CaretakerProfile.objects.select_related('user').prefetch_related(
+            'property_assignments__property_assignment'
+        )
+        if org_ids is not None:  # None means super_admin — unrestricted
+            from organizations.models import OrganizationMembership
+            member_user_ids = OrganizationMembership.objects.filter(
+                organization_id__in=org_ids, role='caretaker', is_active=True,
+            ).values_list('user_id', flat=True)
+            qs = qs.filter(user_id__in=member_user_ids)
+
+        return Response(CaretakerSerializer(qs, many=True).data)
+
+    def post(self, request):
+        from django.db import transaction
+
+        from accounts.models import CaretakerProfile, User
+        from accounts.services import onboard_caretaker_user
+        from organizations.models import OrganizationMembership
+
+        role = get_canonical_role(request.user)
+        if role not in ('landlord', 'super_admin'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        org = self._resolve_organization(request)
+        if not org:
+            return Response({'detail': 'Organization required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = CaretakerCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        if User.objects.filter(email=data['email']).exists():
+            return Response(
+                {'detail': 'A user with this email already exists.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        name_parts = data['full_name'].strip().split(' ', 1)
+        first_name = name_parts[0] if name_parts else data['full_name']
+        last_name = name_parts[1] if len(name_parts) > 1 else ''
+
+        with transaction.atomic():
+            user = User.objects.create_user(
+                email=data['email'],
+                password=None,
+                first_name=first_name,
+                last_name=last_name,
+                role='caretaker',
+                phone_number=data['phone'],
+            )
+            caretaker_profile = CaretakerProfile.objects.create(
+                user=user,
+                created_by=request.user,
+                emergency_contact_name=data['emergency_contact_name'],
+                emergency_contact_phone=data['emergency_contact_phone'],
+                permissions=data.get('permissions') or {},
+            )
+            OrganizationMembership.objects.get_or_create(
+                organization=org, user=user, defaults={'role': 'caretaker'},
+            )
+
+            property_ids = data.get('property_ids') or []
+            if property_ids:
+                properties = Property.objects.filter(id__in=property_ids, organization=org)
+                for prop in properties:
+                    CaretakerPropertyAssignment.objects.get_or_create(
+                        caretaker_profile=caretaker_profile,
+                        property_assignment=prop,
+                        organization=org,
+                    )
+
+        onboard_caretaker_user(caretaker_profile)
+        log_audit('caretaker_created', actor=request.user, organization=org, entity=caretaker_profile)
+
+        caretaker_profile = CaretakerProfile.objects.select_related('user').prefetch_related(
+            'property_assignments__property_assignment'
+        ).get(pk=caretaker_profile.pk)
+        return Response(CaretakerSerializer(caretaker_profile).data, status=status.HTTP_201_CREATED)
+
+    def _resolve_organization(self, request):
+        org_id = request.data.get('organization_id')
+        if org_id:
+            return Organization.objects.filter(id=org_id).first()
+        return Organization.objects.filter(owner=request.user).first()
 
 
 class PropertyListCreateView(RumiaBaseView):

@@ -34,6 +34,23 @@ function useSelectedOrgId() {
 export const useOrganizations = () =>
   useQuery({ queryKey: keys.organizations, queryFn: rentalApi.listOrganizations });
 
+// -- Caretakers --
+
+export const useCaretakers = () =>
+  useQuery({ queryKey: ['rental', 'caretakers'], queryFn: rentalApi.listCaretakers });
+
+export const useCreateCaretaker = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: rentalApi.createCaretaker,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['rental', 'caretakers'] });
+      toast.success('Caretaker added — they\'ll get an email to set up their password');
+    },
+    onError: (err) => toast.error(errorMessage(err, 'Could not add caretaker')),
+  });
+};
+
 // -- Properties --
 
 export const useProperties = () => {

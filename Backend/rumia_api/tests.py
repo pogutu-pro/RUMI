@@ -1066,3 +1066,97 @@ class NextOfKinEscalationTests(RumiaTestFixtures):
         result = escalate_overdue_to_next_of_kin()
         self.assertEqual(result['notified'], 0)
         self.assertEqual(len(mail.outbox), 0)
+
+
+class CaretakerEndpointTests(RumiaTestFixtures):
+    def test_landlord_can_create_caretaker(self):
+        landlord, _, org = self.create_landlord_with_org()
+        prop, _ = self.create_property_with_unit(org)
+        client = APIClient()
+        client.force_authenticate(user=landlord)
+
+        resp = client.post('/api/v1/caretakers/', {
+            'full_name': 'Jane Caretaker',
+            'email': 'jane.caretaker@test.com',
+            'phone': '+254722333444',
+            'emergency_contact_name': 'Peter Kin',
+            'emergency_contact_phone': '+254733444555',
+            'property_ids': [str(prop.id)],
+        }, format='json')
+
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(len(resp.data['assigned_properties']), 1)
+        self.assertEqual(resp.data['assigned_properties'][0]['name'], prop.name)
+
+        caretaker_user = User.objects.get(email='jane.caretaker@test.com')
+        self.assertEqual(caretaker_user.role, 'caretaker')
+        self.assertFalse(caretaker_user.has_usable_password())
+        self.assertTrue(
+            OrganizationMembership.objects.filter(organization=org, user=caretaker_user, role='caretaker').exists()
+        )
+        self.assertTrue(PasswordResetToken.objects.filter(user=caretaker_user).exists())
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('caretaker', mail.outbox[0].body.lower())
+
+    def test_caretaker_creation_requires_valid_phone_format(self):
+        landlord, _, org = self.create_landlord_with_org()
+        client = APIClient()
+        client.force_authenticate(user=landlord)
+
+        resp = client.post('/api/v1/caretakers/', {
+            'full_name': 'Bad Phone',
+            'email': 'bad@test.com',
+            'phone': '0722333444',  # missing +254
+            'emergency_contact_name': 'Someone',
+            'emergency_contact_phone': '+254733444555',
+        }, format='json')
+        self.assertEqual(resp.status_code, 400)
+
+    def test_tenant_cannot_create_caretaker(self):
+        landlord, _, org = self.create_landlord_with_org()
+        _, tenant_profile = self.create_tenant(org)
+        client = APIClient()
+        client.force_authenticate(user=tenant_profile.user)
+
+        resp = client.post('/api/v1/caretakers/', {
+            'full_name': 'Jane', 'email': 'jane2@test.com', 'phone': '+254722333444',
+            'emergency_contact_name': 'X', 'emergency_contact_phone': '+254733444555',
+        }, format='json')
+        self.assertEqual(resp.status_code, 403)
+
+    def test_landlord_sees_only_their_caretakers(self):
+        landlord, _, org = self.create_landlord_with_org()
+        other_landlord, _, other_org = self.create_landlord_with_org(email='other@test.com')
+        prop, _ = self.create_property_with_unit(org)
+
+        client = APIClient()
+        client.force_authenticate(user=landlord)
+        client.post('/api/v1/caretakers/', {
+            'full_name': 'Mine', 'email': 'mine@test.com', 'phone': '+254722111111',
+            'emergency_contact_name': 'X', 'emergency_contact_phone': '+254733444555',
+            'property_ids': [str(prop.id)],
+        }, format='json')
+
+        client.force_authenticate(user=other_landlord)
+        other_prop, _ = self.create_property_with_unit(other_org, name='Other Place')
+        client.post('/api/v1/caretakers/', {
+            'full_name': 'Theirs', 'email': 'theirs@test.com', 'phone': '+254722222222',
+            'emergency_contact_name': 'X', 'emergency_contact_phone': '+254733444555',
+            'property_ids': [str(other_prop.id)],
+        }, format='json')
+
+        client.force_authenticate(user=landlord)
+        resp = client.get('/api/v1/caretakers/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data), 1)
+        self.assertEqual(resp.data[0]['full_name'], 'Mine')
+
+    def test_duplicate_email_rejected(self):
+        landlord, _, org = self.create_landlord_with_org()
+        client = APIClient()
+        client.force_authenticate(user=landlord)
+        resp = client.post('/api/v1/caretakers/', {
+            'full_name': 'Dup', 'email': landlord.email, 'phone': '+254722333444',
+            'emergency_contact_name': 'X', 'emergency_contact_phone': '+254733444555',
+        }, format='json')
+        self.assertEqual(resp.status_code, 400)

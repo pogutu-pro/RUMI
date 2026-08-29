@@ -12,7 +12,7 @@ class TicketMessageSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'ticket', 'author', 'created_at']
 
     def get_author_name(self, obj):
-        return obj.author.get_full_name() or obj.author.email
+        return obj.author.get_full_name().strip() or obj.author.email
 
 
 class SupportTicketSerializer(serializers.ModelSerializer):
@@ -30,12 +30,12 @@ class SupportTicketSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_by', 'organization', 'created_at', 'updated_at']
 
     def get_created_by_name(self, obj):
-        return obj.created_by.get_full_name() or obj.created_by.email
+        return obj.created_by.get_full_name().strip() or obj.created_by.email
 
     def get_assigned_to_name(self, obj):
         if not obj.assigned_to:
             return None
-        return obj.assigned_to.get_full_name() or obj.assigned_to.email
+        return obj.assigned_to.get_full_name().strip() or obj.assigned_to.email
 
 
 class SupportTicketDetailSerializer(SupportTicketSerializer):
