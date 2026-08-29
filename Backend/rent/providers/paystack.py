@@ -4,10 +4,10 @@ Paystack payment provider adapter.
 
 from __future__ import annotations
 
-import os
 from decimal import Decimal
 
 import requests
+from django.conf import settings
 
 from .base import (
     BasePaymentProvider,
@@ -26,7 +26,7 @@ class PaystackProvider(BasePaymentProvider):
     API_BASE = 'https://api.paystack.co'
 
     def get_config_status(self) -> ProviderConfigStatus:
-        secret = os.getenv('PAYSTACK_SECRET_KEY', '')
+        secret = getattr(settings, 'PAYSTACK_SECRET_KEY', '') or ''
         if not secret:
             return ProviderConfigStatus(
                 provider=self.provider_id,
@@ -40,7 +40,7 @@ class PaystackProvider(BasePaymentProvider):
         )
 
     def _headers(self) -> dict:
-        secret = os.getenv('PAYSTACK_SECRET_KEY', '')
+        secret = getattr(settings, 'PAYSTACK_SECRET_KEY', '') or ''
         if not secret:
             raise PaymentProviderError(
                 'Paystack is not configured', self.provider_id, recoverable=False
