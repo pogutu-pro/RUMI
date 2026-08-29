@@ -172,7 +172,7 @@ def send_sms_via_africastalking(phone_number, message):
     """
     Send SMS via Africa's Talking, with a simple monthly rate limit.
 
-    Public (no leading underscore) so other apps — e.g. the RUMIA rental
+    Public (no leading underscore) so other apps — e.g. the RumiaRent rental
     domain — can call this directly without depending on the DB-template
     notification pipeline below.
     """

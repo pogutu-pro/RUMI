@@ -82,7 +82,7 @@ def send_welcome_email(user_id):
 @shared_task
 def send_tenant_invite_email(user_id, reset_token, property_name=''):
     """
-    Sent once when a landlord/caretaker adds a tenant to RUMIA — the tenant has
+    Sent once when a landlord/caretaker adds a tenant to RumiaRent — the tenant has
     no password yet, so this reuses the password-reset confirm flow as the
     account setup step rather than building a separate one.
     """
@@ -92,11 +92,11 @@ def send_tenant_invite_email(user_id, reset_token, property_name=''):
         setup_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
         property_line = f' for {property_name}' if property_name else ''
 
-        subject = 'You have been added to RUMIA'
+        subject = 'You have been added to RumiaRent'
         message = f"""
         Hi {user.first_name},
 
-        You have been added as a tenant{property_line} on RUMIA.
+        You have been added as a tenant{property_line} on RumiaRent.
 
         Set up your password to log in and view your tenancy, rent balance, and
         payment history:
@@ -105,7 +105,7 @@ def send_tenant_invite_email(user_id, reset_token, property_name=''):
         This link will expire in 24 hours.
 
         Best regards,
-        RUMIA Team
+        RumiaRent Team
         """
 
         send_branded_email(
@@ -128,11 +128,11 @@ def send_password_reset_email(user_id, reset_token):
         user = User.objects.get(id=user_id)
         reset_url = f"https://rumi.co.ke/reset-password?token={reset_token}"
 
-        subject = 'Reset Your RUMI Password'
+        subject = 'Reset Your RumiaRent Password'
         message = f"""
         Hi {user.first_name},
 
-        You requested a password reset for your RUMI account.
+        You requested a password reset for your RumiaRent account.
 
         Click this link to reset your password:
         {reset_url}
@@ -142,7 +142,7 @@ def send_password_reset_email(user_id, reset_token):
         If you didn't request this reset, please ignore this email.
 
         Best regards,
-        RUMI Team
+        RumiaRent Team
         """
 
         send_branded_email(

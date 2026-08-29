@@ -1,5 +1,5 @@
 """
-RUMIA rental notifications — rent due reminder, payment confirmation only.
+RumiaRent rental notifications — rent due reminder, payment confirmation only.
 
 Deliberately minimal: no template management system, no escalation ladder.
 Uses Django's configured EMAIL_BACKEND directly (Mailtrap in dev, real SMTP
@@ -34,7 +34,7 @@ def _send_email(to_email: str, subject: str, body: str) -> bool:
         ).send(fail_silently=False)
         return True
     except Exception:
-        logger.exception('RUMIA email notification failed (to=%s)', to_email)
+        logger.exception('RumiaRent email notification failed (to=%s)', to_email)
         return False
 
 
@@ -45,7 +45,7 @@ def _send_sms(phone: str, message: str) -> bool:
         send_sms_via_africastalking(phone, message)
         return True
     except Exception:
-        logger.exception('RUMIA SMS notification failed (phone=%s)', phone)
+        logger.exception('RumiaRent SMS notification failed (phone=%s)', phone)
         return False
 
 
@@ -55,7 +55,7 @@ def send_rent_due_reminder(charge) -> None:
     unit_label = charge.unit.unit_number
     amount = charge.outstanding
 
-    subject = 'Rent reminder: RUMIA'
+    subject = 'Rent reminder: RumiaRent'
     body = (
         f'Hi {tenant.full_name},\n\n'
         f'This is a reminder that KES {amount} is due for unit {unit_label} '
@@ -65,7 +65,7 @@ def send_rent_due_reminder(charge) -> None:
     _send_email(tenant.email, subject, body)
 
     sms_text = (
-        f'RUMIA: KES {amount} rent due for unit {unit_label} on '
+        f'RumiaRent: KES {amount} rent due for unit {unit_label} on '
         f'{charge.due_date.isoformat()}.'
     )
     _send_sms(tenant.phone, sms_text)
@@ -76,7 +76,7 @@ def send_payment_confirmation(payment) -> None:
     tenant = payment.tenant
     unit_label = payment.unit.unit_number if payment.unit else ''
 
-    subject = 'Payment received: RUMIA'
+    subject = 'Payment received: RumiaRent'
     body = (
         f'Hi {tenant.full_name},\n\n'
         f'We received your payment of KES {payment.amount} for unit {unit_label}.\n'
@@ -87,7 +87,7 @@ def send_payment_confirmation(payment) -> None:
     _send_email(tenant.email, subject, body)
 
     sms_text = (
-        f'RUMIA: Payment of KES {payment.amount} received. '
+        f'RumiaRent: Payment of KES {payment.amount} received. '
         f'Ref: {payment.internal_reference}.'
     )
     _send_sms(tenant.phone, sms_text)
@@ -106,7 +106,7 @@ def send_next_of_kin_escalation(charge, contact) -> None:
     unit_label = charge.unit.unit_number
     amount = charge.outstanding
 
-    subject = 'Overdue rent: RUMIA'
+    subject = 'Overdue rent: RumiaRent'
     body = (
         f'Hi {contact.full_name},\n\n'
         f'You are listed as a contact for {tenant.full_name}, who has an overdue '
@@ -117,7 +117,7 @@ def send_next_of_kin_escalation(charge, contact) -> None:
     _send_email(contact.email, subject, body)
 
     sms_text = (
-        f'RUMIA: {tenant.full_name} has an overdue rent balance of KES {amount} '
+        f'RumiaRent: {tenant.full_name} has an overdue rent balance of KES {amount} '
         f'for unit {unit_label}. You are listed as their contact for this.'
     )
     _send_sms(contact.phone, sms_text)

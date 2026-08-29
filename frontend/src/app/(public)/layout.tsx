@@ -7,11 +7,11 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Rumia - Rental Management for Kenyan Landlords',
-    template: '%s | Rumia',
+    default: 'RumiaRent - Rental Management for Kenyan Landlords',
+    template: '%s | RumiaRent',
   },
   description:
-    'Rumia helps Kenyan landlords and agents manage properties, track tenants, and collect rent. Simple enough to start using today.',
+    'RumiaRent helps Kenyan landlords and agents manage properties, track tenants, and collect rent. Simple enough to start using today.',
   keywords: [
     'rental management Kenya',
     'landlord software Kenya',
@@ -24,9 +24,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://rumia.co.ke',
-    siteName: 'Rumia',
-    title: 'Rumia - Rental Management for Kenyan Landlords',
+    url: 'https://rumiarent.co.ke',
+    siteName: 'RumiaRent',
+    title: 'RumiaRent - Rental Management for Kenyan Landlords',
     description:
       'Properties, units, tenants, rent, and payments in one simple place for Kenyan landlords and property agents.',
     images: [
@@ -34,13 +34,13 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Rumia rental management platform',
+        alt: 'RumiaRent rental management platform',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Rumia - Rental Management for Kenyan Landlords',
+    title: 'RumiaRent - Rental Management for Kenyan Landlords',
     description:
       'Manage properties, tenants, and rent collection in one place.',
     images: ['/og-image.png'],

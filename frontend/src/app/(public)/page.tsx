@@ -17,19 +17,19 @@ import { AUTH_ROUTES } from '@/lib/constants/routes';
 import { WordSwitcher } from '@/components/animations/word-switcher';
 
 export const metadata: Metadata = {
-  title: 'Rumia - Rental Management for Kenyan Landlords',
+  title: 'RumiaRent - Rental Management for Kenyan Landlords',
   description:
-    'Rumia helps Kenyan landlords and agents manage properties, track tenants, and collect rent. Simple enough to start using today.',
+    'RumiaRent helps Kenyan landlords and agents manage properties, track tenants, and collect rent. Simple enough to start using today.',
   openGraph: {
-    title: 'Rumia - Rental Management for Kenyan Landlords',
+    title: 'RumiaRent - Rental Management for Kenyan Landlords',
     description:
       'Properties, units, tenants, rent, and payments in one simple place. Know who owes you, get paid via Paystack or cash, and see what needs attention.',
-    url: 'https://rumia.co.ke',
-    siteName: 'Rumia',
+    url: 'https://rumiarent.co.ke',
+    siteName: 'RumiaRent',
     images: [
       {
         url: '/og-image.png',
-        alt: 'Rumia - Rental Management Platform',
+        alt: 'RumiaRent - Rental Management Platform',
         width: 1200,
         height: 630,
       },

@@ -1,4 +1,4 @@
-# RUMIA RBAC Permission Matrix
+# RumiaRent RBAC Permission Matrix
 
 Formal resource/action/role/scope definitions for server-side authorization.
 

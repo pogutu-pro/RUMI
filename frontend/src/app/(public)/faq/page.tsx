@@ -12,7 +12,7 @@ import { ArrowRight, MessageCircle } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Frequently Asked Questions',
-  description: 'Find answers to common questions about Rumia.',
+  description: 'Find answers to common questions about RumiaRent.',
 };
 
 const FAQ_CATEGORIES = [
@@ -25,7 +25,7 @@ const FAQ_CATEGORIES = [
           'Click "Sign up," choose your role (Landlord or Tenant), and fill in your details. You\'ll receive a verification email to complete registration. Caretaker accounts are created by their landlord.',
       },
       {
-        question: 'Is Rumia free to try?',
+        question: 'Is RumiaRent free to try?',
         answer:
           'Yes. Every plan starts with a 30-day free trial, no credit card required. See Pricing for what\'s included.',
       },
@@ -47,7 +47,7 @@ const FAQ_CATEGORIES = [
       {
         question: 'Can a unit have two tenants at once?',
         answer:
-          'No. RUMIA enforces one active tenancy per unit. To move a new tenant in, terminate the current tenancy first.',
+          'No. RumiaRent enforces one active tenancy per unit. To move a new tenant in, terminate the current tenancy first.',
       },
       {
         question: 'How do I end a tenancy?',
@@ -62,7 +62,7 @@ const FAQ_CATEGORIES = [
       {
         question: 'How does rent get charged?',
         answer:
-          'RUMIA generates the next rent charge automatically for every active tenancy, based on the rent amount and due day you set.',
+          'RumiaRent generates the next rent charge automatically for every active tenancy, based on the rent amount and due day you set.',
       },
       {
         question: 'What payment methods do you support?',
@@ -117,7 +117,7 @@ const FAQ_CATEGORIES = [
       {
         question: 'Do you store card details?',
         answer:
-          'No. Card payments are processed entirely by Paystack, and RUMIA never stores card numbers.',
+          'No. Card payments are processed entirely by Paystack, and RumiaRent never stores card numbers.',
       },
     ],
   },
@@ -134,7 +134,7 @@ export default function FAQPage() {
               Frequently Asked Questions
             </h1>
             <p className="text-xl text-gray-600 leading-relaxed">
-              Find answers to common questions about Rumia. Can&apos;t find what you&apos;re
+              Find answers to common questions about RumiaRent. Can&apos;t find what you&apos;re
               looking for?{' '}
               <Link
                 href="/contact"

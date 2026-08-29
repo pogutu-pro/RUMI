@@ -29,12 +29,12 @@ export default function TermsPage() {
                   1. Acceptance of Terms
                 </h2>
                 <p className="leading-relaxed">
-                  By accessing and using Rumia, you accept and agree to be bound by
+                  By accessing and using RumiaRent, you accept and agree to be bound by
                   the terms and provision of this agreement. If you do not agree to
                   abide by the above, please do not use this service.
                 </p>
                 <p className="mt-4 leading-relaxed">
-                  Rumia is owned and operated by Stratnovo.
+                  RumiaRent is owned and operated by Stratnovo.
                 </p>
               </section>
 
@@ -43,7 +43,7 @@ export default function TermsPage() {
                   2. Use License
                 </h2>
                 <p className="mb-4 leading-relaxed">
-                  Permission is granted to temporarily use Rumia for personal,
+                  Permission is granted to temporarily use RumiaRent for personal,
                   non-commercial transitory viewing only. This is the grant of a
                   license, not a transfer of title, and under this license you may
                   not:
@@ -83,7 +83,7 @@ export default function TermsPage() {
                   5. Property Listings
                 </h2>
                 <p className="leading-relaxed">
-                  Landlords are responsible for the accuracy of their listings. Rumia
+                  Landlords are responsible for the accuracy of their listings. RumiaRent
                   verifies properties but does not guarantee the accuracy of all
                   information. We reserve the right to remove any listing that
                   violates our policies.
@@ -95,7 +95,7 @@ export default function TermsPage() {
                   6. Limitation of Liability
                 </h2>
                 <p className="leading-relaxed">
-                  Rumia shall not be liable for any indirect, incidental, special,
+                  RumiaRent shall not be liable for any indirect, incidental, special,
                   consequential, or punitive damages resulting from your use of or
                   inability to use the service.
                 </p>

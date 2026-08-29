@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 
 export const metadata: Metadata = {
-  title: 'About Rumia',
+  title: 'About RumiaRent',
   description:
-    'Rumia is rental management software built for Kenyan landlords and property agents: properties, tenants, rent, and payments in one place.',
+    'RumiaRent is rental management software built for Kenyan landlords and property agents: properties, tenants, rent, and payments in one place.',
 };
 
 export default function AboutPage() {
@@ -20,7 +20,7 @@ export default function AboutPage() {
               Rental management, built for how landlords actually work
             </h1>
             <p className="text-xl text-gray-700 font-medium leading-relaxed max-w-3xl">
-              Rumia is owned and operated by Stratnovo. We build exactly what a
+              RumiaRent is owned and operated by Stratnovo. We build exactly what a
               Kenyan landlord or agent needs to run their rentals, so you can start
               using it today instead of setting it up for a week.
             </p>
@@ -43,7 +43,7 @@ export default function AboutPage() {
                 just needs to know who paid and who didn&apos;t.
               </p>
               <p>
-                Rumia is built for that landlord first: properties, units, tenants,
+                RumiaRent is built for that landlord first: properties, units, tenants,
                 and rent charges, with payment collection that actually works in
                 Kenya. Paystack for card and bank payments, and simple cash
                 recording for everything else.

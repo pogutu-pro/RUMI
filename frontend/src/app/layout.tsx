@@ -40,14 +40,14 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || 'https://rumia.co.ke',
+    process.env.NEXT_PUBLIC_APP_URL || 'https://rumiarent.co.ke',
   ),
   title: {
-    default: 'RUMIA: Rental Management for Kenyan Landlords',
-    template: '%s | RUMIA',
+    default: 'RumiaRent: Rental Management for Kenyan Landlords',
+    template: '%s | RumiaRent',
   },
   description:
-    'RUMIA helps Kenyan landlords and agents manage properties, track tenants, and collect rent. Simple enough to start using today.',
+    'RumiaRent helps Kenyan landlords and agents manage properties, track tenants, and collect rent. Simple enough to start using today.',
   keywords: [
     'rental management Kenya',
     'landlord software Kenya',
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     'tenant management software',
     'property management for agents',
   ],
-  authors: [{ name: 'Stratnovo', url: 'https://rumia.co.ke/about' }],
+  authors: [{ name: 'Stratnovo', url: 'https://rumiarent.co.ke/about' }],
   creator: 'Stratnovo',
   publisher: 'Stratnovo',
   formatDetection: { email: false, address: false, telephone: false },
@@ -65,23 +65,23 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_KE',
     url: '/',
-    title: 'RUMIA: Rental Management for Kenyan Landlords',
+    title: 'RumiaRent: Rental Management for Kenyan Landlords',
     description:
       'Properties, units, tenants, rent, and payments in one simple place for Kenyan landlords and property agents.',
-    siteName: 'RUMIA',
+    siteName: 'RumiaRent',
     images: [
       {
         url: '/images/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'RUMIA: Rental Management Platform',
+        alt: 'RumiaRent: Rental Management Platform',
         type: 'image/jpeg',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'RUMIA: Rental Management for Kenyan Landlords',
+    title: 'RumiaRent: Rental Management for Kenyan Landlords',
     description: 'Manage properties, tenants, and rent collection in one place.',
     images: ['/images/og-image.jpg'],
     creator: '@rumiplatform',
@@ -114,7 +114,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
   appleWebApp: {
     statusBarStyle: 'default',
-    title: 'Rumia',
+    title: 'RumiaRent',
   },
   other: {
     'mobile-web-app-capable': 'yes',
@@ -130,8 +130,8 @@ export default function RootLayout({
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'RUMIA',
-    url: process.env.NEXT_PUBLIC_APP_URL || 'https://rumia.co.ke',
+    name: 'RumiaRent',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'https://rumiarent.co.ke',
     logo: `${process.env.NEXT_PUBLIC_APP_URL}/images/logo/logo.svg`,
     description:
       'Rental management platform helping Kenyan landlords and agents manage properties, tenants, and rent collection.',

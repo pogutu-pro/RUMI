@@ -54,7 +54,7 @@ const PUBLIC_NAV_ITEMS = [
   {
     href: '/about',
     label: 'About',
-    desc: 'Why we built RUMIA.',
+    desc: 'Why we built RumiaRent.',
     icon: <Info className="h-5 w-5" />
   },
 ];

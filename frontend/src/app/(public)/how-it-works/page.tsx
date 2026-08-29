@@ -5,7 +5,7 @@ import { AUTH_ROUTES } from '@/lib/constants/routes';
 
 export const metadata: Metadata = {
   title: 'How It Works',
-  description: 'How RUMIA works for landlords, agents, and tenants.',
+  description: 'How RumiaRent works for landlords, agents, and tenants.',
 };
 
 const LANDLORD_STEPS = [
@@ -19,7 +19,7 @@ const LANDLORD_STEPS = [
   },
   {
     title: 'Rent charges generate automatically',
-    description: 'Each billing period, RUMIA creates the next rent charge for every active tenancy.',
+    description: 'Each billing period, RumiaRent creates the next rent charge for every active tenancy.',
   },
   {
     title: 'Collect and record payments',
@@ -49,7 +49,7 @@ export default function HowItWorksPage() {
       <section className="border-b border-gray-100 py-20 px-4">
         <div className="container mx-auto max-w-3xl text-center">
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
-            How RUMIA Works
+            How RumiaRent Works
           </h1>
           <p className="text-lg lg:text-xl text-gray-600">
             Properties, tenants, rent, and payments. Set up in minutes, not a project.
@@ -132,7 +132,7 @@ export default function HowItWorksPage() {
                 Built to stay simple
               </h2>
               <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                RUMIA does what one landlord actually needs, and nothing you have to
+                RumiaRent does what one landlord actually needs, and nothing you have to
                 configure before it&apos;s useful.
               </p>
 
@@ -166,7 +166,7 @@ export default function HowItWorksPage() {
       <section className="py-20 px-4 bg-gray-900 text-white">
         <div className="container mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold mb-6">
-            Start Using RUMIA
+            Start Using RumiaRent
           </h2>
           <p className="text-lg text-gray-300 mb-8">
             Replace spreadsheets and WhatsApp with rent tracking built for landlords.

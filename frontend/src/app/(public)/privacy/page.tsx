@@ -26,7 +26,7 @@ export default function PrivacyPage() {
 
             <div className="prose prose-lg max-w-none space-y-8 text-gray-700">
               <p className="leading-relaxed">
-                Rumia is owned and operated by Stratnovo.
+                RumiaRent is owned and operated by Stratnovo.
               </p>
 
               <section>

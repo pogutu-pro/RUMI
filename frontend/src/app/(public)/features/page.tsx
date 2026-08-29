@@ -5,7 +5,7 @@ import { AUTH_ROUTES } from '@/lib/constants/routes';
 
 export const metadata: Metadata = {
   title: 'Features',
-  description: 'What RUMIA does for landlords, agents, and tenants.',
+  description: 'What RumiaRent does for landlords, agents, and tenants.',
 };
 
 const LANDLORD_FEATURES = [
@@ -22,7 +22,7 @@ const LANDLORD_FEATURES = [
   {
     title: 'Automatic rent charges',
     description:
-      'RUMIA generates the next rent charge for every active tenancy, so there is no manual invoicing.',
+      'RumiaRent generates the next rent charge for every active tenancy, so there is no manual invoicing.',
   },
   {
     title: 'Paystack & cash payments',
