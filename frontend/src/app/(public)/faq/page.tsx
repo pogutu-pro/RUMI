@@ -138,7 +138,7 @@ export default function FAQPage() {
               looking for?{' '}
               <Link
                 href="/contact"
-                className="text-green-600 hover:text-green-700 font-semibold underline-offset-4 hover:underline"
+                className="text-primary hover:text-primary/80 font-semibold underline-offset-4 hover:underline"
               >
                 Contact us
               </Link>
@@ -186,8 +186,8 @@ export default function FAQPage() {
         <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-6 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                <MessageCircle className="h-8 w-8 text-green-600" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <MessageCircle className="h-8 w-8 text-primary" />
               </div>
             </div>
             <h2 className="mb-4 text-3xl font-bold text-gray-900 sm:text-4xl">

@@ -29,13 +29,13 @@ export default function LoginPage() {
            <Link href="/">
              <Image
                src="/images/logo/logo.svg"
-               alt="RUMI"
+               alt="RumiaRent"
                width={32}
                height={32}
              />
            </Link>
         }
-        title={<span className="font-black text-3xl tracking-tight">Welcome to Rumia</span>}
+        title={<span className="font-black text-3xl tracking-tight">Welcome to RumiaRent</span>}
         description={<span className="text-gray-500 font-bold uppercase tracking-wider text-xs">Sign in to your account</span>}
       >
         <div className="space-y-4">

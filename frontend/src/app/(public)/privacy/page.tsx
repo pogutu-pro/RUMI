@@ -152,10 +152,10 @@ export default function PrivacyPage() {
                   If you have any questions about this Privacy Policy, please
                   contact us at{' '}
                   <a
-                    href="mailto:privacy@rumi.app"
-                    className="text-green-600 hover:text-green-700 underline"
+                    href="mailto:info@rumiarent.co.ke"
+                    className="text-primary hover:text-primary/80 underline"
                   >
-                    privacy@rumi.app
+                    info@rumiarent.co.ke
                   </a>
                   .
                 </p>

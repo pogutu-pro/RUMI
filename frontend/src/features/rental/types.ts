@@ -1,5 +1,5 @@
 /**
- * RUMIA rental domain types — mirror rumia_api/serializers.py exactly.
+ * RumiaRent rental domain types — mirror rumia_api/serializers.py exactly.
  * Kept in one file deliberately: this is a small, focused feature, not a
  * platform — see rumia_api PAYMENT PROVIDER AUDIT / product-scope notes.
  */
@@ -11,6 +11,16 @@ export type TenantStatus = 'prospect' | 'active' | 'notice_period' | 'former' | 
 export type RentChargeStatus =
   | 'upcoming' | 'due' | 'partially_paid' | 'paid' | 'overdue' | 'waived' | 'disputed';
 export type PaymentStatus = 'pending' | 'processing' | 'success' | 'failed' | 'reversed' | 'disputed';
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  organization_type: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface Property {
   id: string;
@@ -133,4 +143,29 @@ export interface PaymentInitiateResponse {
   internal_reference: string;
   authorization_url: string;
   status: string;
+}
+
+export interface IncomeSummaryByProperty {
+  property_id: string;
+  property_name: string;
+  expected_rent: string;
+  collected_rent: string;
+  outstanding_rent: string;
+  collection_rate: string;
+}
+
+export interface IncomeSummary {
+  organization_id: string;
+  period_start: string;
+  period_end: string;
+  summary: {
+    expected_rent: string;
+    collected_rent: string;
+    outstanding_rent: string;
+    overdue_rent: string;
+    collection_rate: string;
+    vacancy_loss: string;
+    projected_income: string;
+  };
+  by_property: IncomeSummaryByProperty[];
 }

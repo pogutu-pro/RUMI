@@ -38,7 +38,6 @@ urlpatterns = [
     path('onboarding/finalize/', OnboardingFinalizeView.as_view(), name='onboarding_finalize'),
 
     # Caretaker management (Landlord)
-    path('caretakers/', views.CaretakerListCreateView.as_view(), name='caretaker_list_create'),
     path('caretakers/<int:caretaker_id>/', views.CaretakerDetailView.as_view(), name='caretaker_detail'),
 
     # User management (Admin)
@@ -48,10 +47,8 @@ urlpatterns = [
     path('users/<int:user_id>/activity/', views.UserActivityLogView.as_view(), name='user_activity_log'),
 
     # Student dashboard
-    path('dashboard/', views.StudentDashboardView.as_view(), name='student_dashboard'),
 
     # Landlord dashboard
-    path('landlord/dashboard/', views.LandlordDashboardView.as_view(), name='landlord_dashboard'),
 
     path('landlords/verification/', views.LandlordVerificationListView.as_view(), name='landlord_verification_list'),
     path('landlords/<int:landlord_id>/verify/<str:action>/', views.LandlordVerificationView.as_view(), name='landlord_verification'),
@@ -63,11 +60,6 @@ urlpatterns = [
     path('messages/unread-count/', views.UnreadMessageCountView.as_view(), name='unread_message_count'),
     
     # Security endpoints
-    path('student/security/late-entries/', views.StudentSecurityLateEntriesView.as_view(), name='student_security_late_entries'),
-    path('student/security/visitor-invitations/', views.StudentSecurityVisitorInvitationsView.as_view(), name='student_security_visitor_invitations'),
-    path('student/security/visitor-invitations/<int:invitation_id>/', views.StudentSecurityVisitorInvitationsView.as_view(), name='student_security_visitor_invitation_action'),
 
     # Student dashboard support endpoints
-    path('student/support/tickets/', views.StudentSupportTicketsView.as_view(), name='student_support_tickets'),
-    path('student/activity/feed/', views.StudentActivityFeedView.as_view(), name='student_activity_feed'),
 ]

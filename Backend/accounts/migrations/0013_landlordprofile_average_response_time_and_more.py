@@ -6,7 +6,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("accounts", "0012_alter_caretakerprofile_hostel"),
+        ("accounts", "0011_caretakerprofile_draft_data_and_more"),
     ]
 
     operations = [

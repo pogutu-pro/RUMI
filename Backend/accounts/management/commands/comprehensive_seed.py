@@ -745,7 +745,7 @@ class Command(BaseCommand):
         Page.objects.create(
             title='Contact',
             slug='contact',
-            content='Contact us at info@rumi.co.ke',
+            content='Contact us at info@rumiarent.co.ke',
             meta_description='Get in touch with RUMI'
         )
         

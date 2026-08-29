@@ -168,13 +168,6 @@ class StudentProfile(models.Model):
     course = models.CharField(max_length=255, blank=True, null=True)
     campus = models.CharField(max_length=255, blank=True, null=True)
     high_school = models.CharField(max_length=255, blank=True, null=True)
-    preferred_hostel = models.ForeignKey(
-        'hostels.Hostel',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name='prospective_students'
-    )
     preferred_room_number = models.CharField(max_length=20, blank=True, null=True)
     draft_data = models.JSONField(default=dict, blank=True)
     lifestyle_preferences = models.JSONField(blank=True, null=True)
@@ -366,13 +359,6 @@ class CaretakerProfile(models.Model):
         null=True,
         validators=[MinLengthValidator(5), MaxLengthValidator(20)]
     )
-    hostel = models.ForeignKey(
-        'hostels.Hostel',
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name='caretakers'
-    )
     landlord = models.ForeignKey(
         LandlordProfile,
         on_delete=models.CASCADE,
@@ -404,13 +390,12 @@ class CaretakerProfile(models.Model):
     def validate_readiness(self, raise_exception=True):
         """Strict validation for Caretaker onboarding"""
         required_fields = [
-            (self.hostel, "Assigned Hostel"),
             (self.national_id, "National ID"),
             (self.user.phone_number, "Phone Number"),
         ]
-        
+
         missing = [name for field, name in required_fields if not field]
-        
+
         if missing:
             if raise_exception:
                 from django.core.exceptions import ValidationError
@@ -422,9 +407,8 @@ class CaretakerProfile(models.Model):
         db_table = 'accounts_caretakerprofile'
         indexes = [
             models.Index(fields=['user'], name='idx_caretaker_user'),
-            models.Index(fields=['hostel'], name='idx_caretaker_hostel'),
             models.Index(fields=['landlord'], name='idx_caretaker_landlord'),
-            models.Index(fields=['is_active', 'hostel'], name='idx_caretaker_active'),
+            models.Index(fields=['is_active'], name='idx_caretaker_active'),
         ]
         constraints = [
             models.CheckConstraint(
@@ -434,7 +418,7 @@ class CaretakerProfile(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.user.get_full_name()} - {self.hostel.name}"
+        return f"{self.user.get_full_name()}"
 
 
 class OTPVerification(models.Model):

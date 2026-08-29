@@ -20,7 +20,7 @@
     --text-primary: 240 10% 4%;
     --text-muted: 240 4% 45%;
     --text-inverse: 0 0% 100%;
-    
+
     /* --- Surfaces --- */
     --background: 0 0% 100%;
     --surface: 0 0% 98%;
@@ -30,15 +30,15 @@
     --popover-foreground: 240 10% 4%;
     --muted: 240 5% 96%;
     --muted-foreground: 240 4% 45%;
-    
+
     /* --- Brand & Actions --- */
     --primary: 154 85% 30%; /* Balanced Emerald - WCAG AA compliant on white */
     --primary-foreground: 0 0% 100%;
     --secondary: 240 5% 96%;
     --secondary-foreground: 240 6% 10%;
-    --accent: 39 95% 52%; 
+    --accent: 39 95% 52%;
     --accent-foreground: 240 10% 4%;
-    
+
     /* --- Status Colors --- */
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
@@ -70,7 +70,7 @@
     --text-primary: 213 31% 91%;
     --text-muted: 215.4 16.3% 56.9%;
     --text-inverse: 224 71% 4%;
-    
+
     /* --- Surfaces --- */
     --background: 224 71% 4%;
     --surface: 224 71% 6%;
@@ -80,7 +80,7 @@
     --popover-foreground: 213 31% 91%;
     --muted: 223 47% 11%;
     --muted-foreground: 215.4 16.3% 56.9%;
-    
+
     /* --- Brand & Actions --- */
     --primary: 154 85% 45%; /* Brighter Emerald for Dark Mode contrast */
     --primary-foreground: 224 71% 4%;
@@ -88,7 +88,7 @@
     --secondary-foreground: 210 40% 98%;
     --accent: 216 34% 17%;
     --accent-foreground: 210 40% 98%;
-    
+
     /* --- Status Colors --- */
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
@@ -98,7 +98,7 @@
     --warning-foreground: 224 71% 4%;
     --info: 214 95% 60%;
     --info-foreground: 224 71% 4%;
- 
+
     /* --- UI Components --- */
     --border: 216 34% 17%;
     --input: 216 34% 17%;

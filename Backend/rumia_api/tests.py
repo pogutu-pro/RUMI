@@ -20,7 +20,6 @@ from rest_framework.test import APIClient
 from django.core import mail
 
 from accounts.models import CaretakerProfile, LandlordProfile, PasswordResetToken, StudentProfile
-from hostels.models import Booking, Hostel, Room
 from organizations.models import Organization, OrganizationMembership
 from properties.models import Property, RentalUnit, Tenancy, CaretakerPropertyAssignment
 from rent.models import Payment, PaymentAllocation, RentCharge

@@ -1,5 +1,5 @@
 """
-Payment provider abstraction for RUMIA.
+Payment provider abstraction for RumiaRent.
 
 Providers implement a common interface. Business logic uses PaymentService,
 never provider-specific code directly.

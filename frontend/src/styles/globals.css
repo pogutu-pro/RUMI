@@ -39,6 +39,27 @@
     overflow-x: hidden;
   }
 
+  /* Pointer cursor on every clickable element — Tailwind's Preflight resets
+     native <button> to cursor: default, so anything interactive needs it
+     restored explicitly rather than relying on the browser default. */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  a[href],
+  select,
+  summary,
+  label[for],
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [role='button'][aria-disabled='true'],
+  input:disabled,
+  select:disabled {
+    cursor: not-allowed;
+  }
+
   /* Visible focus indicator for keyboard navigation */
   *:focus-visible {
     @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;

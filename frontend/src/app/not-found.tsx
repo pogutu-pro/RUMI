@@ -128,7 +128,7 @@ export default function NotFound() {
               </h3>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Link
-                  href="/hostels"
+                  href="/how-it-works"
                   className="group flex items-center gap-3 rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/50 hover:bg-accent"
                 >
                   <div className="rounded-md bg-primary/10 p-2 group-hover:bg-primary/20 transition-colors">
@@ -138,9 +138,9 @@ export default function NotFound() {
                     />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">Find hostels</p>
+                    <p className="font-medium text-foreground">How it works</p>
                     <p className="text-xs text-muted-foreground">
-                      Browse available accommodations
+                      See how RumiaRent works
                     </p>
                   </div>
                 </Link>
@@ -153,7 +153,7 @@ export default function NotFound() {
                     <Home className="h-5 w-5 text-primary" aria-hidden="true" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">About RUMI</p>
+                    <p className="font-medium text-foreground">About RumiaRent</p>
                     <p className="text-xs text-muted-foreground">
                       Learn more about our platform
                     </p>
@@ -167,7 +167,7 @@ export default function NotFound() {
             <p className="text-center text-xs text-muted-foreground">
               Need help?{' '}
               <a
-                href="mailto:support@rumi.app"
+                href="mailto:info@rumiarent.co.ke"
                 className="font-medium text-primary hover:underline"
               >
                 Contact our support team

@@ -165,7 +165,16 @@ export const Footer = React.memo(function Footer() {
                 &copy; {currentYear} RumiaRent. All rights reserved.
               </p>
               <p className="text-sm text-gray-500">
-                Built with ❤️ for students everywhere.
+                Built and managed by{' '}
+                <a
+                  href="https://www.stratnovo.co.ke/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-white underline underline-offset-2 transition-colors"
+                >
+                  Stratnovo
+                </a>
+                .
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">

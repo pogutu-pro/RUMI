@@ -2,33 +2,26 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Rumia — Student Accommodation Made Easy',
-    short_name: 'Rumia',
+    name: 'RumiaRent — Rental Management for Kenyan Landlords',
+    short_name: 'RumiaRent',
     description:
-      'Find and book verified student hostels near your university. Seamless offline booking and management.',
+      'RumiaRent helps Kenyan landlords and agents manage properties, track tenants, and collect rent via Paystack.',
     start_url: '/',
     display: 'standalone',
     orientation: 'portrait',
     background_color: '#ffffff',
-    theme_color: '#2d7a4f',
-    categories: ['productivity', 'travel', 'utilities'],
+    theme_color: '#0B8E55',
+    categories: ['productivity', 'business', 'utilities'],
     id: '/',
     dir: 'ltr',
     lang: 'en',
     prefer_related_applications: false,
     shortcuts: [
       {
-        name: 'Hostels',
-        short_name: 'Hostels',
-        description: 'Browse available student hostels',
-        url: '/hostels',
-        icons: [{ src: '/images/icons/icon-96x96.png', sizes: '96x96' }],
-      },
-      {
-        name: 'Dashboard',
-        short_name: 'Dashboard',
-        description: 'View your bookings and messages',
-        url: '/dashboard',
+        name: 'Sign in',
+        short_name: 'Sign in',
+        description: 'Sign in to your RumiaRent account',
+        url: '/login',
         icons: [{ src: '/images/icons/icon-96x96.png', sizes: '96x96' }],
       },
     ],

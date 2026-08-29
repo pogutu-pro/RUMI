@@ -1,5 +1,7 @@
 import { axiosInstance as axios } from '@/lib/api/client';
 import type {
+  IncomeSummary,
+  Organization,
   Payment,
   PaymentInitiateResponse,
   Property,
@@ -11,13 +13,25 @@ import type {
 } from '../types';
 
 /**
- * RUMIA rental API client. Endpoints return raw serialized data (no
+ * RumiaRent rental API client. Endpoints return raw serialized data (no
  * {success, data} envelope) — see Backend/rumia_api/views.py.
+ *
+ * `organizationId` is only meaningful for super_admin (the cross-org
+ * dashboard switcher) — every other role is already server-side scoped
+ * to their own organization and the param is ignored if sent.
  */
 export const rentalApi = {
+  // Organizations (super_admin only)
+  listOrganizations: async (): Promise<Organization[]> => {
+    const res = await axios.get<Organization[]>('/organizations/');
+    return res.data;
+  },
+
   // Properties
-  listProperties: async (): Promise<Property[]> => {
-    const res = await axios.get<Property[]>('/properties/');
+  listProperties: async (organizationId?: string): Promise<Property[]> => {
+    const res = await axios.get<Property[]>('/properties/', {
+      params: organizationId ? { organization_id: organizationId } : undefined,
+    });
     return res.data;
   },
   getProperty: async (id: string): Promise<Property> => {
@@ -38,9 +52,12 @@ export const rentalApi = {
   },
 
   // Units
-  listUnits: async (propertyId?: string): Promise<RentalUnit[]> => {
+  listUnits: async (propertyId?: string, organizationId?: string): Promise<RentalUnit[]> => {
     const res = await axios.get<RentalUnit[]>('/units/', {
-      params: propertyId ? { property_id: propertyId } : undefined,
+      params: {
+        ...(propertyId ? { property_id: propertyId } : undefined),
+        ...(organizationId ? { organization_id: organizationId } : undefined),
+      },
     });
     return res.data;
   },
@@ -54,8 +71,10 @@ export const rentalApi = {
   },
 
   // Tenants
-  listTenants: async (): Promise<TenantProfile[]> => {
-    const res = await axios.get<TenantProfile[]>('/tenants/');
+  listTenants: async (organizationId?: string): Promise<TenantProfile[]> => {
+    const res = await axios.get<TenantProfile[]>('/tenants/', {
+      params: organizationId ? { organization_id: organizationId } : undefined,
+    });
     return res.data;
   },
   createTenant: async (payload: Record<string, unknown>): Promise<TenantProfile> => {
@@ -64,8 +83,10 @@ export const rentalApi = {
   },
 
   // Tenancies
-  listTenancies: async (): Promise<Tenancy[]> => {
-    const res = await axios.get<Tenancy[]>('/tenancies/');
+  listTenancies: async (organizationId?: string): Promise<Tenancy[]> => {
+    const res = await axios.get<Tenancy[]>('/tenancies/', {
+      params: organizationId ? { organization_id: organizationId } : undefined,
+    });
     return res.data;
   },
   createTenancy: async (payload: Record<string, unknown>): Promise<Tenancy> => {
@@ -80,13 +101,21 @@ export const rentalApi = {
   },
 
   // Rent
-  listRentCharges: async (params?: { status?: string }): Promise<RentCharge[]> => {
-    const res = await axios.get<RentCharge[]>('/rent/', { params });
+  listRentCharges: async (params?: { status?: string; organizationId?: string }): Promise<RentCharge[]> => {
+    const res = await axios.get<RentCharge[]>('/rent/', {
+      params: {
+        ...(params?.status ? { status: params.status } : undefined),
+        ...(params?.organizationId ? { organization_id: params.organizationId } : undefined),
+      },
+    });
     return res.data;
   },
-  getRentBalance: async (tenancyId?: string): Promise<RentBalance> => {
+  getRentBalance: async (tenancyId?: string, organizationId?: string): Promise<RentBalance> => {
     const res = await axios.get<RentBalance>('/rent/balance/', {
-      params: tenancyId ? { tenancy_id: tenancyId } : undefined,
+      params: {
+        ...(tenancyId ? { tenancy_id: tenancyId } : undefined),
+        ...(organizationId ? { organization_id: organizationId } : undefined),
+      },
     });
     return res.data;
   },
@@ -96,8 +125,10 @@ export const rentalApi = {
   },
 
   // Payments
-  listPayments: async (): Promise<Payment[]> => {
-    const res = await axios.get<Payment[]>('/rent/payments/');
+  listPayments: async (organizationId?: string): Promise<Payment[]> => {
+    const res = await axios.get<Payment[]>('/rent/payments/', {
+      params: organizationId ? { organization_id: organizationId } : undefined,
+    });
     return res.data;
   },
   initiatePayment: async (
@@ -118,6 +149,22 @@ export const rentalApi = {
     rent_charge_id?: string;
   }): Promise<Payment> => {
     const res = await axios.post<Payment>('/rent/payments/manual/', payload);
+    return res.data;
+  },
+
+  // Income
+  getIncomeSummary: async (params?: {
+    period_start?: string;
+    period_end?: string;
+    organizationId?: string;
+  }): Promise<IncomeSummary> => {
+    const res = await axios.get<IncomeSummary>('/income/', {
+      params: {
+        ...(params?.period_start ? { period_start: params.period_start } : undefined),
+        ...(params?.period_end ? { period_end: params.period_end } : undefined),
+        ...(params?.organizationId ? { organization_id: params.organizationId } : undefined),
+      },
+    });
     return res.data;
   },
 };

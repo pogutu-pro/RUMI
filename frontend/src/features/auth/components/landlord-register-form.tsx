@@ -15,13 +15,8 @@ import {
   type RegisterLandlordFormData,
   registerLandlordSchema,
 } from '@/lib/validations/auth.schema';
-import { GoogleAuthButton, OAuthDivider } from '@/features/auth';
 
-interface LandlordRegisterFormProps {
-  onGoogleSuccess?: (data: any) => void;
-}
-
-export function LandlordRegisterForm({ onGoogleSuccess }: LandlordRegisterFormProps) {
+export function LandlordRegisterForm() {
   const {
     form: {
       register,
@@ -62,15 +57,6 @@ export function LandlordRegisterForm({ onGoogleSuccess }: LandlordRegisterFormPr
           <AlertDescription className="font-bold">{apiMessage}</AlertDescription>
         </Alert>
       )}
-
-      <div className="space-y-4">
-        <GoogleAuthButton 
-          mode="register" 
-          onSuccess={onGoogleSuccess}
-          onError={(err) => console.error(err)}
-        />
-        <OAuthDivider />
-      </div>
 
       <form onSubmit={onSubmit} className="space-y-5" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">

@@ -61,32 +61,6 @@ async function setPassword(password: string): Promise<{ message: string }> {
 }
 
 /**
- * Google OAuth login
- * Endpoint: POST /api/v1/accounts/auth/google/
- */
-async function googleLogin(
-  token: string, 
-  role: string = 'student',
-  extraData?: { 
-    gender?: string; 
-    date_of_birth?: string; 
-    phone_number?: string;
-    university?: string;
-    preferred_hostel_id?: number;
-    room_number?: string;
-    company_name?: string;
-    total_units?: number;
-  }
-): Promise<AuthResponse> {
-  const res = await axios.post<AuthResponse>('/accounts/auth/google/', { 
-    access_token: token, 
-    role,
-    ...extraData
-  });
-  return res.data;
-}
-
-/**
  * Register user
  * Endpoint: POST /api/v1/accounts/register/
  */
@@ -309,7 +283,6 @@ export const authApi = {
   checkEmail,
   checkPasswordStatus,
   setPassword,
-  googleLogin,
   registerStudent,
   registerLandlord,
   registerCaretaker,

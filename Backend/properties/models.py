@@ -40,14 +40,6 @@ class Property(models.Model):
         on_delete=models.CASCADE,
         related_name='properties',
     )
-    legacy_hostel = models.OneToOneField(
-        'hostels.Hostel',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='property',
-    )
-
     name = models.CharField(max_length=255)
     property_type = models.CharField(
         max_length=30, choices=PROPERTY_TYPE_CHOICES, default='apartment'
@@ -193,14 +185,6 @@ class RentalUnit(models.Model):
         blank=True,
         related_name='units',
     )
-    legacy_room = models.OneToOneField(
-        'hostels.Room',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='rental_unit',
-    )
-
     unit_number = models.CharField(max_length=50)
     unit_type = models.CharField(
         max_length=20, choices=UNIT_TYPE_CHOICES, default='1_bedroom'
@@ -283,14 +267,6 @@ class Tenancy(models.Model):
         on_delete=models.PROTECT,
         related_name='tenancies',
     )
-    legacy_booking = models.OneToOneField(
-        'hostels.Booking',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='tenancy',
-    )
-
     start_date = models.DateField()
     end_date = models.DateField(null=True, blank=True)
     move_in_date = models.DateField(null=True, blank=True)
@@ -461,21 +437,6 @@ class PropertyConditionReport(models.Model):
     meter_readings = models.JSONField(default=dict, blank=True)
     photos = models.JSONField(default=list, blank=True)
     notes = models.TextField(blank=True, default='')
-
-    legacy_inventory_check_in = models.ForeignKey(
-        'hostels.InventoryCheckIn',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='condition_report',
-    )
-    legacy_inventory_check_out = models.ForeignKey(
-        'hostels.InventoryCheckOut',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='condition_report',
-    )
 
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)

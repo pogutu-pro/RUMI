@@ -141,7 +141,7 @@ def _create_in_app_message(notification_type, context):
         'booking_expired': "Your room reservation at {{hostel_name}} has expired.",
         'product_listed': "Your product '{{product_title}}' has been listed successfully.",
         'contact_reveal': "Someone revealed contact info for your '{{product_title}}' listing.",
-        'welcome': "Welcome to RUMI! Your account has been verified.",
+        'welcome': "Welcome to RumiaRent! Your account has been verified.",
         'password_reset': "Your password has been reset successfully.",
     }
 

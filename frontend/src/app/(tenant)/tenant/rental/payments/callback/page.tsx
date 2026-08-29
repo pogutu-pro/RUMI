@@ -16,7 +16,7 @@ import { rentalApi } from '@/features/rental/api/client';
 export default function PaymentCallbackPage() {
   const { data: payments, isLoading } = useQuery({
     queryKey: ['rental', 'payments'],
-    queryFn: rentalApi.listPayments,
+    queryFn: () => rentalApi.listPayments(),
     refetchInterval: (query) => {
       const latest = query.state.data?.[0];
       return latest && latest.status === 'processing' ? 2000 : false;
@@ -37,12 +37,12 @@ export default function PaymentCallbackPage() {
           <p className="text-muted-foreground">No payment found.</p>
         ) : latest.status === 'success' ? (
           <>
-            <p className="font-medium text-green-600">Payment received — thank you.</p>
+            <p className="font-medium text-success">Payment received, thank you.</p>
             <p>Reference: <span className="font-mono text-xs">{latest.internal_reference}</span></p>
             <p>Amount: KES {latest.amount}</p>
           </>
         ) : latest.status === 'processing' ? (
-          <p className="text-muted-foreground">Confirming with Paystack — this updates automatically.</p>
+          <p className="text-muted-foreground">Confirming with Paystack, this updates automatically.</p>
         ) : (
           <p className="text-destructive">Payment was not completed. You can try again.</p>
         )}

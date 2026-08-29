@@ -3,30 +3,43 @@
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useProperties, useUnits, useRentBalance } from '@/features/rental/hooks/use-rental';
+import {
+  useProperties,
+  useUnits,
+  useRentBalance,
+  useIncomeSummary,
+} from '@/features/rental/hooks/use-rental';
 
-function StatCard({ label, value }: { label: string; value: React.ReactNode }) {
+function StatCard({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
   return (
-    <Card>
+    <Card className="rounded-2xl">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
       </CardHeader>
       <CardContent>
         <p className="text-2xl font-semibold">{value}</p>
+        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
       </CardContent>
     </Card>
   );
+}
+
+function formatKes(amount: string | number) {
+  const n = Number(amount);
+  return `KES ${n.toLocaleString('en-KE', { maximumFractionDigits: 0 })}`;
 }
 
 export default function LandlordRentalDashboard() {
   const { data: properties = [] } = useProperties();
   const { data: units = [] } = useUnits();
   const { data: balance } = useRentBalance();
+  const { data: income } = useIncomeSummary();
 
   const occupied = units.filter((u) => u.status === 'occupied').length;
   const vacant = units.filter((u) => u.status === 'vacant').length;
   const overdueCharges = (balance?.charges ?? []).filter((c) => c.status === 'overdue');
   const unitNumberById = new Map(units.map((u) => [u.id, u.unit_number]));
+  const collectionRate = income ? Math.round(Number(income.summary.collection_rate)) : null;
 
   return (
     <div className="space-y-6">
@@ -36,10 +49,56 @@ export default function LandlordRentalDashboard() {
         <StatCard label="Properties" value={properties.length} />
         <StatCard label="Occupied units" value={occupied} />
         <StatCard label="Vacant units" value={vacant} />
-        <StatCard label="Outstanding rent" value={`KES ${balance?.outstanding_total ?? '0.00'}`} />
+        <StatCard
+          label="Outstanding rent"
+          value={formatKes(balance?.outstanding_total ?? '0')}
+        />
       </div>
 
-      <Card>
+      {income && (
+        <Card className="rounded-2xl">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base">Rent collected this month</CardTitle>
+            {collectionRate !== null && (
+              <Badge
+                variant="outline"
+                className={
+                  collectionRate >= 90
+                    ? 'border-success/30 bg-success/10 text-success'
+                    : collectionRate >= 60
+                    ? 'border-warning/30 bg-warning/10 text-warning'
+                    : 'border-destructive/30 bg-destructive/10 text-destructive'
+                }
+              >
+                {collectionRate}% collected
+              </Badge>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-2xl font-semibold">
+              {formatKes(income.summary.collected_rent)}
+              <span className="ml-1 text-sm font-normal text-muted-foreground">
+                of {formatKes(income.summary.expected_rent)} expected
+              </span>
+            </p>
+
+            {income.by_property.length > 0 && (
+              <ul className="divide-y rounded-xl border">
+                {income.by_property.map((p) => (
+                  <li key={p.property_id} className="flex items-center justify-between px-4 py-2.5 text-sm">
+                    <span className="font-medium">{p.property_name}</span>
+                    <span className="text-muted-foreground">
+                      {formatKes(p.collected_rent)} / {formatKes(p.expected_rent)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle className="text-base">Needs attention — overdue rent</CardTitle>
         </CardHeader>
@@ -54,7 +113,7 @@ export default function LandlordRentalDashboard() {
                     Unit {unitNumberById.get(c.unit) ?? c.unit} — due {c.due_date}
                   </span>
                   <span className="flex items-center gap-2">
-                    <Badge variant="destructive">KES {c.outstanding}</Badge>
+                    <Badge variant="destructive">{formatKes(c.outstanding)}</Badge>
                     <Link href="/landlord/rental/rent" className="text-primary underline">
                       View
                     </Link>

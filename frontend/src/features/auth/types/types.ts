@@ -24,7 +24,7 @@ export const UserRole = {
   TECH_SUPPORT_ADMIN: 'tech_support_admin',
   TECH_SUPPORT: 'tech_support',
   SUPER_ADMIN: 'super_admin',
-  // Canonical RUMIA rental role — legacy 'student' maps to this server-side.
+  // Canonical RumiaRent rental role — legacy 'student' maps to this server-side.
   TENANT: 'tenant',
 } as const;
 

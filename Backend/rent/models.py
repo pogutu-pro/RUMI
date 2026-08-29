@@ -1,5 +1,5 @@
 """
-Rent domain — authoritative financial ledger for RUMIA.
+Rent domain — authoritative financial ledger for RumiaRent.
 
 Tenancy → RentCharge → Payment(s) via PaymentAllocation
 
@@ -59,15 +59,6 @@ class RentCharge(models.Model):
         'tenants.TenantProfile',
         on_delete=models.CASCADE,
         related_name='rent_charges',
-    )
-
-    # Legacy bridge
-    legacy_rent_period = models.OneToOneField(
-        'payments.RentPeriod',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='rent_charge',
     )
 
     period_start = models.DateField()
@@ -244,15 +235,6 @@ class Payment(models.Model):
     paid_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
-
-    # Legacy bridge
-    legacy_transaction = models.OneToOneField(
-        'payments.Transaction',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='rent_payment',
-    )
 
     class Meta:
         db_table = 'rent_payment'

@@ -64,23 +64,15 @@ INSTALLED_APPS = [
     'monitoring',
     # Custom apps
     'accounts',
-    'hostels',
     'home',
-    'payments',
     'notifications',
-    'admin_api',
-    'analytics',
-    'caretaker_operations',
-    'roommate_system',
-    'support_api',
-    'landlord_api',
-    'student_api',
-    # RUMIA domain apps (Phase 2)
+    # RumiaRent domain apps
     'organizations',
     'properties',
     'tenants',
     'rent',
     'audit',
+    'support',
 ]
 
 # Custom User Model (matches schema: email as unique identifier)
@@ -101,7 +93,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'rumi.middleware.PerformanceMonitoringMiddleware',
-    'payments.middleware.PrometheusMetricsMiddleware',
     'rumi.middleware.DatabaseQueryCountMiddleware',
     'rumi.middleware.APIResponseCacheMiddleware',
     'rumi.middleware.RateLimitMiddleware',
@@ -576,16 +567,6 @@ LOGGING = performance_settings.get('LOGGING', {
             'handlers': ['error_file'],
             'level': 'ERROR',
             'propagate': True,
-        },
-        'payments': {
-            'handlers': ['console', 'file', 'error_file'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'hostels': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
         },
         'accounts': {
             'handlers': ['console', 'file'],

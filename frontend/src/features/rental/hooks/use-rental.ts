@@ -3,17 +3,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { rentalApi } from '../api/client';
+import { useSelectedOrgStore } from '@/stores/selected-org.store';
 import type { Property, RentalUnit, Tenancy } from '../types';
 
 const keys = {
-  properties: ['rental', 'properties'] as const,
+  organizations: ['rental', 'organizations'] as const,
+  properties: (orgId?: string | null) => ['rental', 'properties', orgId ?? 'own'] as const,
   property: (id: string) => ['rental', 'properties', id] as const,
-  units: (propertyId?: string) => ['rental', 'units', propertyId ?? 'all'] as const,
-  tenants: ['rental', 'tenants'] as const,
-  tenancies: ['rental', 'tenancies'] as const,
-  rentCharges: (status?: string) => ['rental', 'rent-charges', status ?? 'all'] as const,
-  rentBalance: (tenancyId?: string) => ['rental', 'rent-balance', tenancyId ?? 'all'] as const,
-  payments: ['rental', 'payments'] as const,
+  units: (propertyId?: string, orgId?: string | null) => ['rental', 'units', propertyId ?? 'all', orgId ?? 'own'] as const,
+  tenants: (orgId?: string | null) => ['rental', 'tenants', orgId ?? 'own'] as const,
+  tenancies: (orgId?: string | null) => ['rental', 'tenancies', orgId ?? 'own'] as const,
+  rentCharges: (status?: string, orgId?: string | null) => ['rental', 'rent-charges', status ?? 'all', orgId ?? 'own'] as const,
+  rentBalance: (tenancyId?: string, orgId?: string | null) => ['rental', 'rent-balance', tenancyId ?? 'all', orgId ?? 'own'] as const,
+  payments: (orgId?: string | null) => ['rental', 'payments', orgId ?? 'own'] as const,
+  incomeSummary: (orgId?: string | null) => ['rental', 'income-summary', orgId ?? 'own'] as const,
 };
 
 function errorMessage(err: unknown, fallback: string): string {
@@ -21,10 +24,25 @@ function errorMessage(err: unknown, fallback: string): string {
   return anyErr?.response?.data?.detail || fallback;
 }
 
+/** Only meaningful for super_admin — every other role is already server-scoped. */
+function useSelectedOrgId() {
+  return useSelectedOrgStore((s) => s.selectedOrgId);
+}
+
+// -- Organizations (super_admin only) --
+
+export const useOrganizations = () =>
+  useQuery({ queryKey: keys.organizations, queryFn: rentalApi.listOrganizations });
+
 // -- Properties --
 
-export const useProperties = () =>
-  useQuery({ queryKey: keys.properties, queryFn: rentalApi.listProperties });
+export const useProperties = () => {
+  const orgId = useSelectedOrgId();
+  return useQuery({
+    queryKey: keys.properties(orgId),
+    queryFn: () => rentalApi.listProperties(orgId ?? undefined),
+  });
+};
 
 export const useProperty = (id: string) =>
   useQuery({ queryKey: keys.property(id), queryFn: () => rentalApi.getProperty(id), enabled: !!id });
@@ -34,7 +52,7 @@ export const useCreateProperty = () => {
   return useMutation({
     mutationFn: (payload: Partial<Property>) => rentalApi.createProperty(payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: keys.properties });
+      qc.invalidateQueries({ queryKey: ['rental', 'properties'] });
       toast.success('Property added');
     },
     onError: (err) => toast.error(errorMessage(err, 'Could not add property')),
@@ -47,7 +65,7 @@ export const useUpdateProperty = () => {
     mutationFn: ({ id, payload }: { id: string; payload: Partial<Property> }) =>
       rentalApi.updateProperty(id, payload),
     onSuccess: (_, { id }) => {
-      qc.invalidateQueries({ queryKey: keys.properties });
+      qc.invalidateQueries({ queryKey: ['rental', 'properties'] });
       qc.invalidateQueries({ queryKey: keys.property(id) });
       toast.success('Property updated');
     },
@@ -60,7 +78,7 @@ export const useArchiveProperty = () => {
   return useMutation({
     mutationFn: (id: string) => rentalApi.archiveProperty(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: keys.properties });
+      qc.invalidateQueries({ queryKey: ['rental', 'properties'] });
       toast.success('Property archived');
     },
     onError: (err) => toast.error(errorMessage(err, 'Could not archive property')),
@@ -69,8 +87,13 @@ export const useArchiveProperty = () => {
 
 // -- Units --
 
-export const useUnits = (propertyId?: string) =>
-  useQuery({ queryKey: keys.units(propertyId), queryFn: () => rentalApi.listUnits(propertyId) });
+export const useUnits = (propertyId?: string) => {
+  const orgId = useSelectedOrgId();
+  return useQuery({
+    queryKey: keys.units(propertyId, orgId),
+    queryFn: () => rentalApi.listUnits(propertyId, orgId ?? undefined),
+  });
+};
 
 export const useCreateUnit = () => {
   const qc = useQueryClient();
@@ -99,14 +122,20 @@ export const useUpdateUnit = () => {
 
 // -- Tenants --
 
-export const useTenants = () => useQuery({ queryKey: keys.tenants, queryFn: rentalApi.listTenants });
+export const useTenants = () => {
+  const orgId = useSelectedOrgId();
+  return useQuery({
+    queryKey: keys.tenants(orgId),
+    queryFn: () => rentalApi.listTenants(orgId ?? undefined),
+  });
+};
 
 export const useCreateTenant = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: Record<string, unknown>) => rentalApi.createTenant(payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: keys.tenants });
+      qc.invalidateQueries({ queryKey: ['rental', 'tenants'] });
       toast.success('Tenant added');
     },
     onError: (err) => toast.error(errorMessage(err, 'Could not add tenant')),
@@ -115,14 +144,20 @@ export const useCreateTenant = () => {
 
 // -- Tenancies --
 
-export const useTenancies = () => useQuery({ queryKey: keys.tenancies, queryFn: rentalApi.listTenancies });
+export const useTenancies = () => {
+  const orgId = useSelectedOrgId();
+  return useQuery({
+    queryKey: keys.tenancies(orgId),
+    queryFn: () => rentalApi.listTenancies(orgId ?? undefined),
+  });
+};
 
 export const useCreateTenancy = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: Record<string, unknown>) => rentalApi.createTenancy(payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: keys.tenancies });
+      qc.invalidateQueries({ queryKey: ['rental', 'tenancies'] });
       qc.invalidateQueries({ queryKey: ['rental', 'units'] });
       toast.success('Tenancy created');
     },
@@ -136,7 +171,7 @@ export const useTerminateTenancy = () => {
     mutationFn: ({ id, moveOutDate }: { id: string; moveOutDate?: string }) =>
       rentalApi.terminateTenancy(id, moveOutDate),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: keys.tenancies });
+      qc.invalidateQueries({ queryKey: ['rental', 'tenancies'] });
       qc.invalidateQueries({ queryKey: ['rental', 'units'] });
       toast.success('Tenancy terminated');
     },
@@ -146,11 +181,21 @@ export const useTerminateTenancy = () => {
 
 // -- Rent --
 
-export const useRentCharges = (status?: string) =>
-  useQuery({ queryKey: keys.rentCharges(status), queryFn: () => rentalApi.listRentCharges(status ? { status } : undefined) });
+export const useRentCharges = (status?: string) => {
+  const orgId = useSelectedOrgId();
+  return useQuery({
+    queryKey: keys.rentCharges(status, orgId),
+    queryFn: () => rentalApi.listRentCharges({ status, organizationId: orgId ?? undefined }),
+  });
+};
 
-export const useRentBalance = (tenancyId?: string) =>
-  useQuery({ queryKey: keys.rentBalance(tenancyId), queryFn: () => rentalApi.getRentBalance(tenancyId) });
+export const useRentBalance = (tenancyId?: string) => {
+  const orgId = useSelectedOrgId();
+  return useQuery({
+    queryKey: keys.rentBalance(tenancyId, orgId),
+    queryFn: () => rentalApi.getRentBalance(tenancyId, orgId ?? undefined),
+  });
+};
 
 export const useGenerateRentCharges = () => {
   const qc = useQueryClient();
@@ -167,7 +212,13 @@ export const useGenerateRentCharges = () => {
 
 // -- Payments --
 
-export const usePayments = () => useQuery({ queryKey: keys.payments, queryFn: rentalApi.listPayments });
+export const usePayments = () => {
+  const orgId = useSelectedOrgId();
+  return useQuery({
+    queryKey: keys.payments(orgId),
+    queryFn: () => rentalApi.listPayments(orgId ?? undefined),
+  });
+};
 
 export const useInitiatePayment = () => {
   return useMutation({
@@ -177,12 +228,20 @@ export const useInitiatePayment = () => {
   });
 };
 
+export const useIncomeSummary = () => {
+  const orgId = useSelectedOrgId();
+  return useQuery({
+    queryKey: keys.incomeSummary(orgId),
+    queryFn: () => rentalApi.getIncomeSummary({ organizationId: orgId ?? undefined }),
+  });
+};
+
 export const useRecordManualPayment = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: rentalApi.recordManualPayment,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: keys.payments });
+      qc.invalidateQueries({ queryKey: ['rental', 'payments'] });
       qc.invalidateQueries({ queryKey: ['rental', 'rent-charges'] });
       qc.invalidateQueries({ queryKey: ['rental', 'rent-balance'] });
       toast.success('Payment recorded');

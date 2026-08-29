@@ -1,4 +1,4 @@
-"""RUMIA rent domain Celery tasks — recurring charge generation and reminders."""
+"""RumiaRent rent domain Celery tasks — recurring charge generation and reminders."""
 
 import logging
 
@@ -15,7 +15,7 @@ def generate_rent_charges():
     result = RentChargeGenerationService.generate_for_all_organizations()
     updated = RentChargeGenerationService.refresh_statuses()
     logger.info(
-        'RUMIA rent generation: %s charges created, %s statuses refreshed',
+        'RumiaRent rent generation: %s charges created, %s statuses refreshed',
         result.created, updated,
     )
     return {'created': result.created, 'statuses_refreshed': updated}
@@ -62,7 +62,7 @@ def send_rent_due_reminders():
         RentCharge.objects.filter(pk=charge.pk).update(reminder_sent_at=timezone.now())
         sent += 1
 
-    logger.info('RUMIA rent reminders sent: %s', sent)
+    logger.info('RumiaRent rent reminders sent: %s', sent)
     return {'sent': sent}
 
 
@@ -114,5 +114,5 @@ def escalate_overdue_to_next_of_kin():
             RentCharge.objects.filter(pk=charge.pk).update(next_of_kin_notified_at=timezone.now())
             notified += 1
 
-    logger.info('RUMIA next-of-kin escalations sent: %s', notified)
+    logger.info('RumiaRent next-of-kin escalations sent: %s', notified)
     return {'notified': notified}

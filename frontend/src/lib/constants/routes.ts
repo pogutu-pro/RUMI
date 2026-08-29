@@ -312,9 +312,9 @@ export function getDashboardRoute(
       return '/landlord/rental';
     case UserRole.CARETAKER:
     case 'caretaker':
-      return CARETAKER_ROUTES.DASHBOARD;
+      return '/caretaker/rental';
     case UserRole.SUPER_ADMIN:
-      return ADMIN_ROUTES.DASHBOARD;
+      return '/landlord/rental';
     case UserRole.TECH_SUPPORT_ADMIN:
     case 'tech_support':
       return '/tech-support/dashboard';

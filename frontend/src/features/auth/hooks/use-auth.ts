@@ -25,11 +25,11 @@ import { toast } from 'sonner';
 // -- Constants --
 
 const AUTH_REDIRECTS: Record<string, string> = {
-  [UserRole.SUPER_ADMIN]: '/admin/dashboard',
+  [UserRole.SUPER_ADMIN]: '/landlord/rental',
   [UserRole.TECH_SUPPORT_ADMIN]: '/tech-support/dashboard',
   [UserRole.TECH_SUPPORT]: '/tech-support/dashboard',
   [UserRole.LANDLORD]: '/landlord/rental',
-  [UserRole.CARETAKER]: '/caretaker/dashboard',
+  [UserRole.CARETAKER]: '/caretaker/rental',
   [UserRole.STUDENT]: '/tenant/rental',
   [UserRole.TENANT]: '/tenant/rental',
 };
@@ -243,79 +243,6 @@ export function useCheckEmail() {
         error?.response?.data?.message ||
         error?.message ||
         'Failed to check email. Please try again.';
-      toast.error(message);
-    },
-  });
-}
-
-/**
- * Hook for completing Google login after role selection
- */
-export function useCompleteGoogleLogin() {
-  const handleSuccess = useAuthSuccess();
-
-  return useMutation({
-    mutationFn: ({ 
-      token, 
-      role, 
-      gender, 
-      date_of_birth, 
-      phone_number,
-      university,
-      preferred_hostel_id,
-      room_number,
-      company_name,
-      total_units
-    }: { 
-      token: string; 
-      role: string;
-      gender?: string;
-      date_of_birth?: string;
-      phone_number?: string;
-      university?: string;
-      preferred_hostel_id?: number;
-      room_number?: string;
-      company_name?: string;
-      total_units?: number;
-    }) => authApi.googleLogin(token, role, { 
-      gender, 
-      date_of_birth, 
-      phone_number,
-      university,
-      preferred_hostel_id,
-      room_number,
-      company_name,
-      total_units
-    }),
-    onSuccess: (response: AuthResponse) => {
-      handleSuccess(response, 'Successfully signed in with Google!');
-    },
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Google login failed. Please try again.';
-      toast.error(message);
-    },
-  });
-}
-
-/**
- * Hook for Google login (deprecated - use useCompleteGoogleLogin)
- */
-export function useGoogleLogin() {
-  const handleSuccess = useAuthSuccess();
-
-  return useMutation({
-    mutationFn: ({ token, role }: { token: string; role: string }) => authApi.googleLogin(token, role),
-    onSuccess: (response: AuthResponse) => {
-      handleSuccess(response, 'Successfully signed in with Google!');
-    },
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Google login failed. Please try again.';
       toast.error(message);
     },
   });

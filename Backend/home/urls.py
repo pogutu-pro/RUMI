@@ -3,7 +3,6 @@ from . import views
 
 urlpatterns = [
     # Landing page
-    path('', views.LandingPageView.as_view(), name='landing_page'),
 
     # About us
     path('about/', views.AboutUsView.as_view(), name='about_us'),

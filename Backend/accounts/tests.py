@@ -182,19 +182,10 @@ class RolePermissionTests(TestCase):
         response = self.client.get('/api/v1/accounts/landlord/dashboard/')
         self.assertIn(response.status_code, [403, 404])
 
-    def test_landlord_can_access_landlord_dashboard(self):
-        self.client.force_authenticate(user=self.landlord_user)
-        response = self.client.get('/api/v1/accounts/landlord/dashboard/')
-        self.assertEqual(response.status_code, 200)
-
     def test_landlord_cannot_access_student_dashboard(self):
         self.client.force_authenticate(user=self.landlord_user)
         response = self.client.get('/api/v1/accounts/dashboard/')
         self.assertIn(response.status_code, [403, 404])
-
-    def test_unauthenticated_cannot_access_dashboard(self):
-        response = self.client.get('/api/v1/accounts/dashboard/')
-        self.assertIn(response.status_code, [401, 403])
 
 
 @override_settings(

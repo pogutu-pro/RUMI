@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useTenancies, useRentBalance, usePayments, useInitiatePayment } from '@/features/rental/hooks/use-rental';
+import type { RentCharge } from '@/features/rental/types';
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = {
   success: 'default',
@@ -14,6 +15,34 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = 
   reversed: 'destructive',
 };
 
+function formatKes(amount: string | number) {
+  const n = Number(amount);
+  return `KES ${n.toLocaleString('en-KE', { maximumFractionDigits: 0 })}`;
+}
+
+function heroStateFor(nextCharge: RentCharge | undefined, outstandingTotal: string | undefined) {
+  const outstanding = Number(outstandingTotal ?? '0');
+  if (!nextCharge || outstanding <= 0) {
+    return {
+      tone: 'border-success/30 bg-success/5',
+      label: 'text-success',
+      badge: "You're paid up",
+    } as const;
+  }
+  if (nextCharge.status === 'overdue') {
+    return {
+      tone: 'border-destructive/30 bg-destructive/5',
+      label: 'text-destructive',
+      badge: 'Overdue',
+    } as const;
+  }
+  return {
+    tone: 'border-warning/30 bg-warning/5',
+    label: 'text-warning',
+    badge: 'Due',
+  } as const;
+}
+
 export default function TenantRentalDashboard() {
   const { data: tenancies = [] } = useTenancies();
   const { data: balance } = useRentBalance();
@@ -22,6 +51,7 @@ export default function TenantRentalDashboard() {
 
   const activeTenancy = tenancies.find((t) => t.status === 'active') ?? tenancies[0];
   const nextCharge = (balance?.charges ?? [])
+    .filter((c) => c.status !== 'paid' && c.status !== 'waived')
     .slice()
     .sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
 
@@ -38,27 +68,28 @@ export default function TenantRentalDashboard() {
     return <p className="text-sm text-muted-foreground">No tenancy on file yet — contact your landlord.</p>;
   }
 
+  const hero = heroStateFor(nextCharge, balance?.outstanding_total);
+  const outstanding = Number(balance?.outstanding_total ?? '0');
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">My tenancy</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-1 text-sm">
-          <p>Unit: <span className="font-medium">{activeTenancy.unit_number}</span></p>
-          <p>Monthly rent: <span className="font-medium">KES {activeTenancy.monthly_rent}</span></p>
-          {nextCharge && <p>Next due date: <span className="font-medium">{nextCharge.due_date}</span></p>}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Outstanding balance</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-2xl font-semibold">KES {balance?.outstanding_total ?? '0.00'}</p>
-          <Button onClick={handlePay} disabled={initiate.isPending} className="w-full">
-            Pay rent
+      <Card className={`rounded-2xl border-2 ${hero.tone}`}>
+        <CardContent className="space-y-4 pt-6">
+          <div className="flex items-center justify-between">
+            <span className={`text-xs font-semibold uppercase tracking-wide ${hero.label}`}>{hero.badge}</span>
+            <span className="text-xs text-muted-foreground">
+              {activeTenancy.unit_number}
+              {nextCharge && ` · due ${nextCharge.due_date}`}
+            </span>
+          </div>
+          <p className="text-3xl font-semibold">
+            {outstanding > 0 ? formatKes(outstanding) : formatKes(activeTenancy.monthly_rent)}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {outstanding > 0 ? 'Outstanding balance' : `Monthly rent · next charge not due yet`}
+          </p>
+          <Button onClick={handlePay} disabled={initiate.isPending} className="w-full rounded-xl">
+            Pay with Paystack
           </Button>
         </CardContent>
       </Card>
@@ -80,7 +111,7 @@ export default function TenantRentalDashboard() {
               {payments.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</TableCell>
-                  <TableCell>KES {p.amount}</TableCell>
+                  <TableCell>{formatKes(p.amount)}</TableCell>
                   <TableCell><Badge variant={STATUS_VARIANT[p.status] ?? 'secondary'}>{p.status}</Badge></TableCell>
                 </TableRow>
               ))}

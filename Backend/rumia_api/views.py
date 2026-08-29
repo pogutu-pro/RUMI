@@ -29,6 +29,7 @@ from rent.services.rent_generation import RentChargeGenerationService
 from rumia_api.serializers import (
     EmergencyContactSerializer,
     ManualPaymentSerializer,
+    OrganizationSerializer,
     PaymentInitiateSerializer,
     PaymentSerializer,
     PropertySerializer,
@@ -66,6 +67,18 @@ def _sync_unit_status(tenancy: Tenancy) -> None:
         if not still_active and unit.status == 'occupied':
             unit.status = 'vacant'
             unit.save(update_fields=['status', 'updated_at'])
+
+
+class OrganizationListView(APIView):
+    """Super-admin only: list every organization, for the cross-org dashboard switcher."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        qs = Organization.objects.all().order_by('name')
+        return Response(OrganizationSerializer(qs, many=True).data)
 
 
 class PropertyListCreateView(RumiaBaseView):

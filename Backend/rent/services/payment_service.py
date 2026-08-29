@@ -24,7 +24,7 @@ class PaymentService:
     Provider-independent payment orchestration.
 
     Rental business logic must use this service, not provider classes directly.
-    RUMIA uses Paystack only — see PAYMENT PROVIDER AUDIT for the M-Pesa removal decision.
+    RumiaRent uses Paystack only — see PAYMENT PROVIDER AUDIT for the M-Pesa removal decision.
     """
 
     _providers = {

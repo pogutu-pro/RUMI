@@ -14,11 +14,11 @@ def send_inquiry_confirmation_email(inquiry_id, reference_number):
     try:
         inquiry = ContactInquiry.objects.get(id=inquiry_id)
 
-        subject = f'RUMI Contact Inquiry Received - {reference_number}'
+        subject = f'RumiaRent Contact Inquiry Received - {reference_number}'
         message = f"""
         Hi {inquiry.full_name},
 
-        Thank you for contacting RUMI! We have received your inquiry and will respond within 24 hours.
+        Thank you for contacting RumiaRent! We have received your inquiry and will respond within 24 hours.
 
         Inquiry Details:
         Reference Number: {reference_number}
@@ -32,8 +32,8 @@ def send_inquiry_confirmation_email(inquiry_id, reference_number):
         For urgent matters, please call us at +254 700 000 000.
 
         Best regards,
-        RUMI Support Team
-        hello@rumi.co.ke
+        RumiaRent Support Team
+        info@rumiarent.co.ke
         """
 
         send_branded_email(
@@ -78,7 +78,7 @@ def notify_admin_new_inquiry(inquiry_id):
         """
 
         # Send to admin email
-        admin_email = getattr(settings, 'ADMIN_EMAIL', 'admin@rumi.co.ke')
+        admin_email = getattr(settings, 'ADMIN_EMAIL', 'admin@rumiarent.co.ke')
         send_branded_email(
             subject=subject,
             message=message,
@@ -102,11 +102,11 @@ def send_newsletter_verification_email(subscription_id, verification_token):
 
         verification_link = f"https://rumi.co.ke/newsletter/verify?token={verification_token}"
 
-        subject = 'Verify Your RUMI Newsletter Subscription'
+        subject = 'Verify Your RumiaRent Newsletter Subscription'
         message = f"""
         Hi {subscription.full_name or 'there'},
 
-        Thank you for subscribing to the RUMI newsletter!
+        Thank you for subscribing to the RumiaRent newsletter!
 
         Please verify your email address by clicking the link below:
         {verification_link}
@@ -122,7 +122,7 @@ def send_newsletter_verification_email(subscription_id, verification_token):
         - Exclusive student deals
 
         Best regards,
-        RUMI Team
+        RumiaRent Team
         """
 
         send_branded_email(
@@ -135,40 +135,6 @@ def send_newsletter_verification_email(subscription_id, verification_token):
         )
     except Exception as e:
         print(f"Failed to send newsletter verification email: {e}")
-
-
-@shared_task
-def update_platform_statistics():
-    """
-    Update platform statistics automatically
-    """
-    from .models import Statistics
-    from accounts.models import StudentProfile
-    from hostels.models import Hostel, Room, Booking
-    from marketplace.models import Product
-
-    try:
-        stats_to_update = {
-            'total_students': StudentProfile.objects.filter(user__is_active=True).count(),
-            'total_hostels': Hostel.objects.filter(is_active=True).count(),
-            'total_rooms': Room.objects.filter(is_available=True).count(),
-            'total_bookings': Booking.objects.filter(status='confirmed').count(),
-            'marketplace_items': Product.objects.filter(is_active=True, status='available').count()
-        }
-
-        for stat_key, stat_value in stats_to_update.items():
-            Statistics.objects.update_or_create(
-                stat_key=stat_key,
-                defaults={'stat_value': stat_value}
-            )
-
-        return {
-            'updated_stats': len(stats_to_update),
-            'timestamp': timezone.now().isoformat()
-        }
-    except Exception as e:
-        print(f"Failed to update platform statistics: {e}")
-        return {'error': str(e)}
 
 
 @shared_task

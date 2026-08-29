@@ -144,7 +144,7 @@ export default function RootLayout({
       '@type': 'ContactPoint',
       telephone: '+254-757-901596',
       contactType: 'customer service',
-      email: 'support@rumi.co.ke',
+      email: 'info@rumiarent.co.ke',
       availableLanguage: ['en', 'sw'],
     },
     sameAs: [
@@ -170,24 +170,6 @@ export default function RootLayout({
           rel="preconnect"
           href="https://res.cloudinary.com"
           crossOrigin="anonymous"
-        />
-        <link
-          rel="preconnect"
-          href="https://maps.googleapis.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="dns-prefetch"
-          href="https://maps.googleapis.com"
-        />
-        <link
-          rel="preconnect"
-          href="https://maps.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="dns-prefetch"
-          href="https://maps.gstatic.com"
         />
         <script
           type="application/ld+json"

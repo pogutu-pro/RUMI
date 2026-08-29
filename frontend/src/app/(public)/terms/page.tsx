@@ -120,10 +120,10 @@ export default function TermsPage() {
                   If you have any questions about these Terms of Service, please
                   contact us at{' '}
                   <a
-                    href="mailto:legal@rumi.app"
-                    className="text-green-600 hover:text-green-700 underline"
+                    href="mailto:info@rumiarent.co.ke"
+                    className="text-primary hover:text-primary/80 underline"
                   >
-                    legal@rumi.app
+                    info@rumiarent.co.ke
                   </a>
                   .
                 </p>

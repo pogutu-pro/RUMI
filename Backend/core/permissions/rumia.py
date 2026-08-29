@@ -107,6 +107,11 @@ class OrganizationScopedMixin:
         role = get_canonical_role(user)
 
         if role == 'super_admin':
+            # Unrestricted platform access, optionally narrowed to one
+            # organization for the super-admin cross-org dashboard switcher.
+            org_id = self.request.query_params.get('organization_id')
+            if org_id:
+                queryset = queryset.filter(**{f'{self.organization_lookup}__id': org_id})
             return queryset
 
         org_ids = self.get_user_organization_ids()

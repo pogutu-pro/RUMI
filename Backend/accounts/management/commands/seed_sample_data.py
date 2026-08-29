@@ -593,12 +593,12 @@ class Command(BaseCommand):
             {
                 'title': 'Contact Us',
                 'slug': 'contact',
-                'meta_title': 'Contact RUMI Platform - Get in Touch',
+                'meta_title': 'Contact RumiaRent - Get in Touch',
                 'meta_description': 'Have questions? Contact our support team. We\'re here to help with your accommodation needs.',
                 'content': '''
                 <h1>Contact Us</h1>
                 <p>Get in touch with our team for support, partnerships, or general inquiries.</p>
-                <p>Email: support@rumi.co.ke</p>
+                <p>Email: info@rumiarent.co.ke</p>
                 <p>Phone: +254 712 345 678</p>
                 ''',
                 'is_published': True,

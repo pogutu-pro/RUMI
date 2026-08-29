@@ -1,37 +1,11 @@
 export * from './auth.types';
 export * from './forms.types';
 export * from './ui.types';
-export * from './subscription.types';
 
 // Entities Types - resolving conflicts with auth.types
 export type {
-  RoommateProfile,
-  RoommateMatch,
-  RoommateRequest,
-  TransferListing,
-  TransferRequest,
-  TransferApproval,
-  SupportTicket,
-  TicketReply,
-  PlatformAnalytics,
-  RoommatePreferences,
-  Hostel,
-  Room,
-  Review,
-  // LifestylePreferences, // Conflicting with auth.types
   BudgetPreferences,
   AvailabilityPreferences,
-  RoommateMatchStatus,
-  RoommateRequestStatus,
-  TransferStatus,
-  TransferRequestStatus,
-  SupportCategory,
-  SupportPriority,
-  SupportStatus,
-  GrowthMetrics,
-  AnalyticsPeriod,
-  Booking,
-  Payment,
   // User, // Conflicting with auth.types
 } from './entities.types';
 

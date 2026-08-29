@@ -19,9 +19,9 @@ export default function Error({ error, reset }: ErrorProps) {
   useEffect(() => {
     headingRef.current?.focus();
     if (process.env.NODE_ENV === 'production') {
-      console.error('RUMI Error Digest:', error.digest ?? 'N/A');
+      console.error('RumiaRent Error Digest:', error.digest ?? 'N/A');
     } else {
-      console.error('RUMI Dev Error:', {
+      console.error('RumiaRent Dev Error:', {
         message: error.message,
         stack: error.stack,
         digest: error.digest,
@@ -139,7 +139,7 @@ export default function Error({ error, reset }: ErrorProps) {
 
             <div className="mt-6 text-center">
               <a
-                href="mailto:support@rumi.app"
+                href="mailto:info@rumiarent.co.ke"
                 className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Mail className="h-4 w-4" aria-hidden="true" />

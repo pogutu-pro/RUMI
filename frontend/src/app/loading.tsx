@@ -12,7 +12,7 @@ export default function Loading() {
       className="fixed inset-0 z-50 flex min-h-screen items-center justify-center bg-background"
     >
       <BrandedLoader size={180} />
-      <span className="sr-only">Preparing your Rumia experience</span>
+      <span className="sr-only">Preparing your RumiaRent experience</span>
     </div>
   );
 }
