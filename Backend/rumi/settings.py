@@ -205,7 +205,7 @@ SIMPLE_JWT = {
 }
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,https://rumi.co.ke').split(',')
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,https://rumiarent.co.ke').split(',')
 
 # Add common dev ports only in development
 if DEBUG:
@@ -248,7 +248,7 @@ EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@rumia.co.ke')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@rumiarent.co.ke')
 
 # SMS Configuration (Africa's Talking)
 AFRICASTALKING_USERNAME = os.getenv('AFRICASTALKING_USERNAME', 'sandbox')
@@ -260,10 +260,10 @@ PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
 PAYSTACK_WEBHOOK_SECRET = os.getenv('PAYSTACK_WEBHOOK_SECRET')
 
 # Webhook URLs (must include /api/v1/ and trailing slash)
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rumia.co.ke').rstrip('/')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rumiarent.co.ke').rstrip('/')
 # BACKEND_API_URL is used for all webhook callback URLs (Paystack, etc.)
 # Must point to the Django backend server — never the Next.js frontend domain.
-BACKEND_API_URL = os.getenv('BACKEND_API_URL', 'https://api.rumia.co.ke').rstrip('/')
+BACKEND_API_URL = os.getenv('BACKEND_API_URL', 'https://api.rumiarent.co.ke').rstrip('/')
 
 # Google Maps Configuration
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
