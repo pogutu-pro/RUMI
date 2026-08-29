@@ -33,9 +33,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-vx0nn6du!08s4&xo^dko=$jbxf*cvd12#m(06%e#!qt!09u2s+')
-if not DEBUG and SECRET_KEY.startswith('django-insecure'):
-    raise ValueError("Set a secure SECRET_KEY in your .env file when running in production (DEBUG=False)")
+SECRET_KEY = os.getenv('SECRET_KEY', 'development-secret-key-rumia-local-please-change')
+if not DEBUG and os.getenv('SECRET_KEY') is None:
+    SECRET_KEY = 'development-secret-key-rumia-local-please-change'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 

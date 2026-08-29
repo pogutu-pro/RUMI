@@ -1,6 +1,6 @@
-# RUMI — Student Accommodation Platform
+# RumiaRent
 
-RUMI is a Kenyan student accommodation platform that connects students with hostel owners. It handles the full rental lifecycle: property discovery, booking, M-Pesa and Paystack payment processing, caretaker operations, real-time notifications, and analytics.
+RumiaRent is a rental property management platform for landlords, caretakers, and tenants. It manages the full rental lifecycle across organizations, properties, units, tenancies, rent charges, payments, notifications, and financial reporting while preserving historical RUMI hostel data as migration-compatible legacy context.
 
 **Status:** v1.0 — Production-ready backend (112 tests passing)
 
