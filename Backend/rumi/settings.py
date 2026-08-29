@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'tenants',
     'rent',
     'audit',
+    'billing',
     'support',
 ]
 

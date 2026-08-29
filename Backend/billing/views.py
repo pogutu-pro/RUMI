@@ -1,0 +1,128 @@
+"""
+Billing API views — public plan catalog plus landlord/super_admin subscribe
+and switch-plan endpoints.
+
+Trust boundary (see this plan's threat model, T-01-01/T-01-02): mutating
+endpoints reject any caller whose canonical role is not landlord or
+super_admin, and the organization is ALWAYS resolved server-side from
+`request.user` — an `organization_id` is never accepted from the request body.
+"""
+from __future__ import annotations
+
+from django.core.exceptions import ValidationError
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from core.permissions.rumia import OrganizationScopedMixin, get_canonical_role
+from organizations.models import Organization
+
+from .models import SubscriptionPlan
+from .serializers import SubscriptionPlanSerializer
+from .services.subscription_service import SubscriptionService
+
+MUTATING_ROLES = ('landlord', 'super_admin')
+
+# Errors raised when the caller supplies an invalid/unresolvable plan id.
+PLAN_LOOKUP_ERRORS = (SubscriptionPlan.DoesNotExist, ValueError, ValidationError)
+
+
+class SubscriptionPlanListView(APIView):
+    """Public plan catalog — no auth required."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        plans = SubscriptionPlan.objects.filter(is_active=True).order_by('sort_order')
+        return Response(SubscriptionPlanSerializer(plans, many=True).data)
+
+
+class _OrgResolver(OrganizationScopedMixin):
+    """
+    Thin shim so `get_user_organization_ids()` can be reused outside a
+    ViewSet context, without duplicating its Q-filter.
+    """
+
+    def __init__(self, request):
+        self.request = request
+
+
+class _BillingMutationView(APIView):
+    """Shared auth/role/org-resolution for billing mutation endpoints."""
+
+    permission_classes = [IsAuthenticated]
+
+    def _resolve_organization(self, request):
+        role = get_canonical_role(request.user)
+        if role not in MUTATING_ROLES:
+            return None, Response({'error': 'Not permitted'}, status=status.HTTP_403_FORBIDDEN)
+
+        org_ids = _OrgResolver(request).get_user_organization_ids()
+        if not org_ids:
+            return None, Response(
+                {'error': 'No organization found for this user'}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        organization = Organization.objects.filter(id__in=org_ids).first()
+        if organization is None:
+            return None, Response(
+                {'error': 'No organization found for this user'}, status=status.HTTP_404_NOT_FOUND
+            )
+        return organization, None
+
+
+class SubscriptionSubscribeView(_BillingMutationView):
+    """POST {plan_id, billing_mode} -> subscribe the caller's organization."""
+
+    def post(self, request):
+        organization, error_response = self._resolve_organization(request)
+        if error_response:
+            return error_response
+
+        plan_id = request.data.get('plan_id')
+        billing_mode = request.data.get('billing_mode', 'auto')
+
+        try:
+            plan = SubscriptionPlan.objects.get(id=plan_id, is_active=True)
+        except PLAN_LOOKUP_ERRORS:
+            return Response({'error': 'Invalid plan_id'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            result = SubscriptionService.subscribe(
+                organization=organization,
+                plan=plan,
+                billing_mode=billing_mode,
+                requester_email=request.user.email,
+            )
+        except ValueError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(result, status=status.HTTP_201_CREATED)
+
+
+class SubscriptionSwitchPlanView(_BillingMutationView):
+    """POST {new_plan_id} -> switch the caller's organization to a new plan."""
+
+    def post(self, request):
+        organization, error_response = self._resolve_organization(request)
+        if error_response:
+            return error_response
+
+        new_plan_id = request.data.get('new_plan_id')
+
+        try:
+            new_plan = SubscriptionPlan.objects.get(id=new_plan_id, is_active=True)
+        except PLAN_LOOKUP_ERRORS:
+            return Response({'error': 'Invalid new_plan_id'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            result = SubscriptionService.switch_plan(
+                organization=organization,
+                new_plan=new_plan,
+                requester_email=request.user.email,
+            )
+        except ValueError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(result, status=status.HTTP_200_OK)
