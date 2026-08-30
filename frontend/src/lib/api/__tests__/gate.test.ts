@@ -37,4 +37,33 @@ describe('isGateRejection', () => {
     const err = makeAxiosError(403, body);
     expect(isGateRejection(err)).toEqual(body);
   });
+
+  // Regression for CR-01 (03-REVIEW.md): the shared axios response
+  // interceptor (client.ts) never rejects with a raw AxiosError — it
+  // normalizes into `{ statusCode, details }` before callers see it.
+  it('returns the parsed GateRejection for the normalized ApiError shape produced by client.ts', () => {
+    const body = {
+      detail: 'Caretaker seat limit reached for your plan.',
+      gate: 'max_caretaker_seats',
+      current_tier: 'starter',
+      required_tier: 'pro',
+    };
+    const normalizedError = {
+      error: 'api_error',
+      message: body.detail,
+      statusCode: 403,
+      details: body,
+    };
+    expect(isGateRejection(normalizedError)).toEqual(body);
+  });
+
+  it('returns null for the normalized ApiError shape with a non-403 statusCode', () => {
+    const normalizedError = {
+      error: 'api_error',
+      message: 'Bad request',
+      statusCode: 400,
+      details: { detail: 'Bad request' },
+    };
+    expect(isGateRejection(normalizedError)).toBeNull();
+  });
 });
