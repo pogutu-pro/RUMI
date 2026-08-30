@@ -25,6 +25,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.mail import EmailMessage
+from django.db.models import Q
 from django.utils import timezone
 
 from notifications.tasks import send_sms_via_africastalking
@@ -76,10 +77,20 @@ def notify_payout_blocked_attempt(organization) -> None:
         organization=organization, defaults={'status': 'not_started'}
     )
 
-    if (
-        payout_account.last_payout_blocked_notified_at
-        and timezone.now() - payout_account.last_payout_blocked_notified_at < THROTTLE_WINDOW
-    ):
+    # Atomic conditional update ("claim the throttle window") instead of a
+    # separate read-then-send-then-write: two concurrent callers (e.g. two
+    # tenants hitting the same blocked payout within seconds of each other)
+    # can otherwise both read a stale/None last_payout_blocked_notified_at,
+    # both pass the throttle check, and both send duplicate notifications.
+    # Only the caller whose UPDATE actually matches a row (rowcount == 1)
+    # wins the right to send; a losing caller's UPDATE matches zero rows.
+    cutoff = timezone.now() - THROTTLE_WINDOW
+    claimed = PayoutAccount.objects.filter(pk=payout_account.pk).filter(
+        Q(last_payout_blocked_notified_at__isnull=True)
+        | Q(last_payout_blocked_notified_at__lt=cutoff)
+    ).update(last_payout_blocked_notified_at=timezone.now())
+
+    if not claimed:
         return
 
     subject = 'Action needed: a tenant tried to pay rent but payout setup is incomplete'
@@ -101,10 +112,6 @@ def notify_payout_blocked_attempt(organization) -> None:
     for user in recipients:
         _send_email(user.email, subject, body)
         _send_sms(getattr(user, 'phone_number', ''), sms_text)
-
-    PayoutAccount.objects.filter(pk=payout_account.pk).update(
-        last_payout_blocked_notified_at=timezone.now()
-    )
 
 
 def _blocked_notification_recipients(organization) -> list:
