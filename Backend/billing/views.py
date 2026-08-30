@@ -18,8 +18,8 @@ from rest_framework.views import APIView
 from core.permissions.rumia import OrganizationScopedMixin, get_canonical_role
 from organizations.models import Organization
 
-from .models import SubscriptionPlan
-from .serializers import SubscriptionPlanSerializer
+from .models import OrganizationSubscription, SubscriptionPlan
+from .serializers import OrganizationSubscriptionSerializer, SubscriptionPlanSerializer
 from .services.subscription_service import SubscriptionService
 
 MUTATING_ROLES = ('landlord', 'super_admin')
@@ -99,6 +99,49 @@ class SubscriptionSubscribeView(_BillingMutationView):
             return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(result, status=status.HTTP_201_CREATED)
+
+
+class MyOrganizationSubscriptionView(APIView):
+    """
+    GET -> the caller's own OrganizationSubscription status (read-only).
+
+    A landlord's own organization is always resolved server-side and any
+    `organization_id` query param they supply is ignored — a landlord can
+    never see another organization's subscription this way. `super_admin`
+    is the only role permitted to target another organization via that
+    query param (mirrors the pattern in `rumia_api.views.IncomeSummaryView`).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        role = get_canonical_role(request.user)
+        if role not in MUTATING_ROLES:
+            return Response({'error': 'Not permitted'}, status=status.HTTP_403_FORBIDDEN)
+
+        if role == 'super_admin':
+            org_id = request.query_params.get('organization_id')
+            if not org_id:
+                return Response(
+                    {'error': 'organization_id is required for super_admin'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            org_ids = _OrgResolver(request).get_user_organization_ids()
+            if not org_ids:
+                return Response(
+                    {'error': 'No organization found for this user'}, status=status.HTTP_404_NOT_FOUND
+                )
+            org_id = org_ids[0]
+
+        try:
+            subscription = OrganizationSubscription.objects.select_related('plan').get(
+                organization_id=org_id
+            )
+        except OrganizationSubscription.DoesNotExist:
+            return Response({'error': 'No subscription found'}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(OrganizationSubscriptionSerializer(subscription).data)
 
 
 class SubscriptionSwitchPlanView(_BillingMutationView):
