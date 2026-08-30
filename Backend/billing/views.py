@@ -4,8 +4,12 @@ and switch-plan endpoints.
 
 Trust boundary (see this plan's threat model, T-01-01/T-01-02): mutating
 endpoints reject any caller whose canonical role is not landlord or
-super_admin, and the organization is ALWAYS resolved server-side from
-`request.user` — an `organization_id` is never accepted from the request body.
+super_admin. For a landlord, the organization is ALWAYS resolved server-side
+from `request.user` — an `organization_id` is never accepted from the
+request body, so a landlord can never act on another organization's
+subscription. `super_admin` has no organization of their own, so — mirroring
+the read-only `MyOrganizationSubscriptionView` pattern — they must supply an
+explicit `organization_id` to act on behalf of that organization.
 """
 from __future__ import annotations
 
@@ -57,6 +61,26 @@ class _BillingMutationView(APIView):
         role = get_canonical_role(request.user)
         if role not in MUTATING_ROLES:
             return None, Response({'error': 'Not permitted'}, status=status.HTTP_403_FORBIDDEN)
+
+        if role == 'super_admin':
+            # super_admin has no organization of their own — the read-only
+            # get_user_organization_ids() correctly returns None (unrestricted)
+            # for this role, which would otherwise always 404 here. Mirror
+            # MyOrganizationSubscriptionView's pattern: require an explicit
+            # organization_id to act on behalf of that organization.
+            org_id = request.data.get('organization_id')
+            if not org_id:
+                return None, Response(
+                    {'error': 'organization_id is required for super_admin'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                organization = Organization.objects.get(id=org_id)
+            except (Organization.DoesNotExist, ValueError, ValidationError):
+                return None, Response(
+                    {'error': 'No organization found for this user'}, status=status.HTTP_404_NOT_FOUND
+                )
+            return organization, None
 
         org_ids = _OrgResolver(request).get_user_organization_ids()
         if not org_ids:
