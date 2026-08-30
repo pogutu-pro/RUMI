@@ -57,9 +57,22 @@ export function isGateRejection(error: unknown): GateRejection | null {
   const data = extractResponseData(error);
   if (!data || typeof data !== 'object') return null;
 
-  const gate = (data as Record<string, unknown>).gate;
+  const body = data as Record<string, unknown>;
+  const gate = body.gate;
   if (typeof gate !== 'string') return null;
   if (!(GATE_KEYS as readonly string[]).includes(gate)) return null;
+
+  // WR-06: validate the rest of the D-10 contract too, not just `gate` —
+  // gateBannerTitle()/GateBanner call capitalizeTier(gate.required_tier),
+  // which does `slug.charAt(0)` and would throw a TypeError inside render
+  // for a malformed/regressed response body.
+  if (
+    typeof body.detail !== 'string' ||
+    typeof body.current_tier !== 'string' ||
+    typeof body.required_tier !== 'string'
+  ) {
+    return null;
+  }
 
   return data as GateRejection;
 }
