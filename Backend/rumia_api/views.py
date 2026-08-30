@@ -790,6 +790,11 @@ class IncomeSummaryView(RumiaBaseView):
         if str(org_id) not in [str(i) for i in org_ids] and get_canonical_role(request.user) != 'super_admin':
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
+        org = Organization.objects.get(id=org_id)
+        gate_error = GatingService.check_analytics_feature(org)
+        if gate_error:
+            return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
+
         today = timezone.now().date()
         period_start = date.fromisoformat(
             request.query_params.get('period_start', today.replace(day=1).isoformat())

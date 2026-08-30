@@ -649,3 +649,121 @@ class CaretakerSeatGateTests(RumiaTestFixtures):
             1,
         )
         self.assertIsNone(GatingService.check_caretaker_seat_limit(org))
+
+
+class AnalyticsGateTests(RumiaTestFixtures):
+    """D-08 — analytics feature gate wired into IncomeSummaryView.get."""
+
+    def _seed_plans(self):
+        call_command('seed_subscription_plans')
+        return {p.slug: p for p in SubscriptionPlan.objects.all()}
+
+    def test_starter_tier_blocked_from_income_summary_with_d10_body(self):
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(
+            organization=org, plan=plans['starter'], status='active', billing_mode='manual',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.get('/api/v1/income/')
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.data, {
+            'detail': 'Analytics is not included in your plan.',
+            'gate': 'analytics',
+            'current_tier': 'starter',
+            'required_tier': 'pro',
+        })
+
+    def test_pro_tier_allowed_income_summary(self):
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(
+            organization=org, plan=plans['pro'], status='active', billing_mode='manual',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.get('/api/v1/income/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('summary', response.data)
+
+    def test_enterprise_trial_org_allowed_income_summary(self):
+        self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        # No OrganizationSubscription row at all — org is within its 30-day
+        # no-subscription trial (D-03), so it gets Enterprise-tier access.
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.get('/api/v1/income/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('summary', response.data)
+
+
+class GateRejectionContractTests(RumiaTestFixtures):
+    """D-10 — every gate-check rejection body has exactly the canonical key shape."""
+
+    EXPECTED_KEYS = {'detail', 'gate', 'current_tier', 'required_tier'}
+
+    def _seed_plans(self):
+        call_command('seed_subscription_plans')
+        return {p.slug: p for p in SubscriptionPlan.objects.all()}
+
+    def test_all_four_gate_dicts_match_d10_key_shape_exactly(self):
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(
+            organization=org, plan=plans['starter'], status='active', billing_mode='manual',
+        )
+        # Starter is already at its property/unit caps by virtue of having
+        # zero properties created — max_properties=1, max_units=10, so we
+        # first create one property/unit to reach both caps simultaneously.
+        prop, _unit = self.create_property_with_unit(org)
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        property_response = client.post('/api/v1/properties/', {
+            'name': 'Overflow', 'property_type': 'apartment',
+            'address': '789 Test Rd', 'city': 'Nairobi',
+        })
+        self.assertEqual(property_response.status_code, 403)
+        self.assertEqual(set(property_response.data.keys()), self.EXPECTED_KEYS)
+
+        for i in range(9):
+            RentalUnit.objects.create(
+                organization=org, parent_property=prop, unit_number=f'D{i}',
+                unit_type='1_bedroom', monthly_rent=Decimal('20000.00'),
+                deposit=Decimal('20000.00'), status='vacant',
+            )
+        unit_response = client.post('/api/v1/units/', {
+            'property': str(prop.id), 'unit_number': 'Overflow',
+            'unit_type': '1_bedroom', 'monthly_rent': '20000.00', 'deposit': '20000.00',
+        })
+        self.assertEqual(unit_response.status_code, 403)
+        self.assertEqual(set(unit_response.data.keys()), self.EXPECTED_KEYS)
+
+        existing_caretaker_user = User.objects.create_user(
+            email='existing-caretaker-for-contract-test@test.com', password='TestPass123!',
+            first_name='Existing', last_name='Caretaker', role='caretaker',
+            phone_number='+254700000003',
+        )
+        OrganizationMembership.objects.create(
+            organization=org, user=existing_caretaker_user, role='caretaker',
+        )
+        caretaker_response = client.post('/api/v1/caretakers/', {
+            'full_name': 'Overflow Caretaker', 'email': 'overflow@test.com',
+            'phone': '+254722333444', 'emergency_contact_name': 'X',
+            'emergency_contact_phone': '+254733444555',
+        }, format='json')
+        self.assertEqual(caretaker_response.status_code, 403)
+        self.assertEqual(set(caretaker_response.data.keys()), self.EXPECTED_KEYS)
+
+        income_response = client.get('/api/v1/income/')
+        self.assertEqual(income_response.status_code, 403)
+        self.assertEqual(set(income_response.data.keys()), self.EXPECTED_KEYS)

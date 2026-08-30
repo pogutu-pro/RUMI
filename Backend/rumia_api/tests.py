@@ -13,6 +13,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -39,6 +40,16 @@ User = get_user_model()
 )
 class RumiaTestFixtures(TestCase):
     """Shared fixture factory for RUMIA domain tests."""
+
+    @classmethod
+    def setUpTestData(cls):
+        # GATE-01: GatingService.get_effective_plan() falls back to the
+        # seeded starter/enterprise SubscriptionPlan rows for any org with
+        # no OrganizationSubscription (the default for every fixture org
+        # created in this suite) — every gate-guarded endpoint now depends
+        # on these rows existing. Idempotent (get_or_create by slug), so
+        # harmless if a subclass also seeds explicitly.
+        call_command('seed_subscription_plans')
 
     @classmethod
     def create_landlord_with_org(cls, email='landlord@test.com'):
