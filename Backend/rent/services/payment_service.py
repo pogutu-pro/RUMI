@@ -9,6 +9,7 @@ from django.db import models, transaction
 from django.db.models import Sum
 from django.utils import timezone
 
+from organizations.services.notifications import notify_payout_blocked_attempt
 from rent.models import Payment, PaymentAllocation, RentCharge
 from rent.providers.base import (
     InitiatePaymentRequest,
@@ -56,8 +57,6 @@ class PaymentService:
         # the organization has a verified (status='active') PayoutAccount and
         # the payment splits to it, or the payment is refused outright (D-01).
         # `record_manual_payment` is intentionally untouched by this guard (D-02).
-        from organizations.services.notifications import notify_payout_blocked_attempt
-
         payout_account = getattr(payment.organization, 'payout_account', None)
         if payout_account is None or payout_account.status != 'active':
             payment.status = 'failed'
