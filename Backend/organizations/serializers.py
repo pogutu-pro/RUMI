@@ -14,9 +14,13 @@ from .models import PayoutAccount
 
 
 class PayoutBankDetailsInputSerializer(serializers.Serializer):
-    bank_name = serializers.CharField()
-    bank_account_number = serializers.CharField()
-    bank_code = serializers.CharField()
+    # max_length values mirror PayoutAccount's model field constraints
+    # (organizations/models.py) so an over-long value is rejected here with
+    # a clean 400 instead of reaching save() and raising an unhandled
+    # django.db.utils.DataError from the underlying varchar(N) column.
+    bank_name = serializers.CharField(max_length=100)
+    bank_account_number = serializers.CharField(max_length=20)
+    bank_code = serializers.CharField(max_length=10)
 
 
 class PayoutAccountSerializer(serializers.ModelSerializer):
