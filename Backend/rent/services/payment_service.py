@@ -88,7 +88,17 @@ class PaymentService:
             payout_account = PayoutAccount.objects.filter(
                 organization_id=payment.organization_id
             ).first()
-            payout_account_active = payout_account is not None and payout_account.status == 'active'
+            # Defense-in-depth: don't rely on status alone. `paystack_
+            # subaccount_code` is a nullable field with no DB-level CHECK
+            # tying it to status, so an out-of-band write (admin edit, data
+            # migration, future bug) that leaves status='active' with no
+            # subaccount code must still fail closed rather than silently
+            # routing the payment unsplit to the platform.
+            payout_account_active = (
+                payout_account is not None
+                and payout_account.status == 'active'
+                and bool(payout_account.paystack_subaccount_code)
+            )
         except Exception:
             logger.exception(
                 'Payout status check failed for organization %s during payment initiation',
