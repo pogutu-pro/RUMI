@@ -107,3 +107,86 @@ class PayoutAccountTracerTests(RumiaTestFixtures):
         mock_resolve.assert_not_called()
         mock_create.assert_not_called()
         self.assertFalse(PayoutAccount.objects.filter(organization=org).exists())
+
+
+class PayoutServiceEditResetTests(RumiaTestFixtures):
+    """Task 2: D-09 edit-reset flow — re-verification when bank details change on an active account."""
+
+    def _active_payout_account(self, org, subaccount_code='ACCT_original'):
+        return PayoutAccount.objects.create(
+            organization=org,
+            status='active',
+            bank_name='Equity Bank',
+            bank_account_number='1111111111',
+            bank_code='068',
+            account_name='John Kamau',
+            paystack_subaccount_code=subaccount_code,
+        )
+
+    def test_editing_active_account_calls_update_subaccount_with_original_code_not_create(self):
+        user, profile, org = self.create_landlord_with_org()
+        self._active_payout_account(org, subaccount_code='ACCT_original')
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        with patch.object(PaystackProvider, 'resolve_account', return_value=_mock_resolve_success('New Name')), \
+                patch.object(PaystackProvider, 'update_subaccount', return_value=_mock_subaccount_success('ACCT_original')) as mock_update, \
+                patch.object(PaystackProvider, 'create_subaccount') as mock_create:
+            response = client.post('/api/v1/organizations/payout/', {
+                'bank_name': 'KCB Bank',
+                'bank_account_number': '2222222222',
+                'bank_code': '001',
+            })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['status'], 'active')
+        mock_update.assert_called_once_with('ACCT_original', '001', '2222222222')
+        mock_create.assert_not_called()
+
+        payout_account = PayoutAccount.objects.get(organization=org)
+        self.assertEqual(payout_account.paystack_subaccount_code, 'ACCT_original')
+        self.assertEqual(payout_account.account_name, 'New Name')
+
+    def test_first_time_submission_calls_create_subaccount_never_update(self):
+        user, profile, org = self.create_landlord_with_org()
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        with patch.object(PaystackProvider, 'resolve_account', return_value=_mock_resolve_success()), \
+                patch.object(PaystackProvider, 'create_subaccount', return_value=_mock_subaccount_success()) as mock_create, \
+                patch.object(PaystackProvider, 'update_subaccount') as mock_update:
+            response = client.post('/api/v1/organizations/payout/', {
+                'bank_name': 'Equity Bank',
+                'bank_account_number': '1234567890',
+                'bank_code': '068',
+            })
+
+        self.assertEqual(response.status_code, 200)
+        mock_create.assert_called_once()
+        mock_update.assert_not_called()
+
+    def test_edit_resolve_failure_leaves_status_pending_verification(self):
+        user, profile, org = self.create_landlord_with_org()
+        self._active_payout_account(org, subaccount_code='ACCT_original')
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        with patch.object(PaystackProvider, 'resolve_account', return_value=_mock_resolve_failure()), \
+                patch.object(PaystackProvider, 'update_subaccount') as mock_update, \
+                patch.object(PaystackProvider, 'create_subaccount') as mock_create:
+            response = client.post('/api/v1/organizations/payout/', {
+                'bank_name': 'KCB Bank',
+                'bank_account_number': '2222222222',
+                'bank_code': '001',
+            })
+
+        self.assertEqual(response.status_code, 502)
+        mock_update.assert_not_called()
+        mock_create.assert_not_called()
+
+        payout_account = PayoutAccount.objects.get(organization=org)
+        self.assertEqual(payout_account.status, 'pending_verification')
+        # Old subaccount code untouched; new (unverified) bank fields are
+        # already saved so a retry resubmission is treated as a plain retry.
+        self.assertEqual(payout_account.paystack_subaccount_code, 'ACCT_original')
+        self.assertEqual(payout_account.bank_account_number, '2222222222')
