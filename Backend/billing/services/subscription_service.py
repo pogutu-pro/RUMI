@@ -7,6 +7,7 @@ guarantees an organization can never be double-billed.
 """
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import timedelta
 
@@ -16,6 +17,9 @@ from django.utils import timezone
 
 from billing.models import OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
 from billing.providers.paystack_billing import PaystackBillingClient
+from rent.providers.base import PaymentProviderError
+
+logger = logging.getLogger(__name__)
 
 # Only a subscription in one of these statuses is eligible to be switched, and
 # only a subscription NOT in one of these statuses is eligible for a fresh subscribe.
@@ -148,7 +152,27 @@ class SubscriptionService:
         new_plan: SubscriptionPlan,
         requester_email: str,
     ) -> dict:
-        """Switch an organization's existing subscription to `new_plan`."""
+        """
+        Switch an organization's existing subscription to `new_plan`.
+
+        The Paystack `disable_subscription` call is a real, irreversible external
+        side effect — it must never be made inside the same `transaction.atomic()`
+        block as a later step that can still fail and roll back the DB. Otherwise
+        a failure in `_initiate_auto_charge` (e.g. a second Paystack call raising)
+        would roll the DB back to believing the OLD Paystack subscription is still
+        live, while Paystack itself has already cancelled it — a permanent desync
+        where the org silently never gets billed again.
+
+        To avoid that, this method never opens more than one atomic block around
+        an external call: the "disable" intent is committed to the DB BEFORE the
+        Paystack call is made (so a crash before/after that call always leaves the
+        DB in a state consistent with "we no longer own that Paystack subscription
+        code"), and `_initiate_auto_charge` runs in its own, separate transaction
+        afterwards. If that second step fails, the subscription is left in a safe,
+        retryable state — `paystack_subscription_code` already cleared, no new
+        recurring subscription created yet — and calling `switch_plan` again picks
+        up cleanly from there.
+        """
         with transaction.atomic():
             subscription = OrganizationSubscription.objects.select_for_update().filter(
                 organization=organization
@@ -163,23 +187,46 @@ class SubscriptionService:
             if subscription.plan_id == new_plan.id:
                 raise ValueError('Already subscribed to this plan')
 
-            if subscription.billing_mode == 'auto':
-                # Disable-before-initiate ordering: this is what makes double-billing
-                # on a plan switch structurally impossible, not just conventionally avoided.
-                if subscription.paystack_subscription_code:
-                    PaystackBillingClient().disable_subscription(
-                        subscription.paystack_subscription_code,
-                        subscription.paystack_email_token,
-                    )
-                    subscription.paystack_subscription_code = ''
-                    subscription.paystack_email_token = ''
-                    subscription.save(update_fields=[
-                        'paystack_subscription_code', 'paystack_email_token', 'updated_at',
-                    ])
+            if subscription.billing_mode != 'auto':
+                # Manual mode — no Paystack call, just swap the plan.
+                subscription.plan = new_plan
+                subscription.save(update_fields=['plan', 'updated_at'])
+                return {'mode': 'manual', 'status': subscription.status}
 
-                return cls._initiate_auto_charge(subscription, new_plan, requester_email)
+            # Auto mode: capture the old Paystack identifiers and clear them from
+            # the DB record NOW, before the external call — this commits the
+            # "disabling" intent first, per the docstring above.
+            old_subscription_code = subscription.paystack_subscription_code
+            old_email_token = subscription.paystack_email_token
+            if old_subscription_code:
+                subscription.paystack_subscription_code = ''
+                subscription.paystack_email_token = ''
+                subscription.save(update_fields=[
+                    'paystack_subscription_code', 'paystack_email_token', 'updated_at',
+                ])
+        # transaction committed here — DB no longer references the old Paystack
+        # subscription code regardless of what happens next.
 
-            # Manual mode — no Paystack call, just swap the plan.
-            subscription.plan = new_plan
-            subscription.save(update_fields=['plan', 'updated_at'])
-            return {'mode': 'manual', 'status': subscription.status}
+        if old_subscription_code:
+            try:
+                PaystackBillingClient().disable_subscription(old_subscription_code, old_email_token)
+            except PaymentProviderError:
+                # The DB write already committed (we no longer track the old
+                # code), but Paystack may still be actively charging the old
+                # subscription. Never swallow this — it needs a human to cancel
+                # it manually in the Paystack dashboard, or the org keeps paying
+                # for a plan our system has already forgotten about.
+                logger.error(
+                    'Failed to disable Paystack subscription %s for organization %s during '
+                    'plan switch — manual cancellation in the Paystack dashboard is required '
+                    'to avoid a stray recurring charge.',
+                    old_subscription_code, organization.id,
+                )
+                raise
+
+        # Disable-before-initiate ordering: this is what makes double-billing
+        # on a plan switch structurally impossible, not just conventionally
+        # avoided. Runs in its own transaction, separate from the disable call.
+        with transaction.atomic():
+            subscription = OrganizationSubscription.objects.select_for_update().get(pk=subscription.pk)
+            return cls._initiate_auto_charge(subscription, new_plan, requester_email)
