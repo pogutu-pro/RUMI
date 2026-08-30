@@ -106,6 +106,17 @@ class SubscriptionService:
             if not created and subscription.status in ACTIVE_STATUSES:
                 raise ValueError('Organization already has a subscription — use switch_plan')
 
+            if not created and subscription.status == 'pending':
+                # The auto-charge flow leaves status='pending' until the Paystack
+                # webhook confirms payment — without this guard, a double-submit
+                # (double-click, retry after a slow response) here would create a
+                # SECOND SubscriptionPayment and a second Paystack checkout for the
+                # same organization while the first checkout is still live.
+                raise ValueError(
+                    'A subscription is already pending for this organization — '
+                    'complete or wait for the existing checkout before retrying'
+                )
+
             if billing_mode == 'manual':
                 today = timezone.now().date()
                 subscription.plan = plan
