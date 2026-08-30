@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from audit.models import log_audit
+from billing.services.gating_service import GatingService
 from core.permissions.rumia import (
     CanAccessProperty,
     CanAccessTenantProfile,
@@ -193,6 +194,10 @@ class PropertyListCreateView(RumiaBaseView):
         org = self._resolve_organization(request)
         if not org:
             return Response({'detail': 'Organization required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        gate_error = GatingService.check_property_limit(org)
+        if gate_error:
+            return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
 
         serializer = PropertySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

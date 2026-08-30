@@ -1,6 +1,8 @@
 """
-Billing app tests — plan catalog, subscribe (auto/manual), and plan switching.
+Billing app tests — plan catalog, subscribe (auto/manual), plan switching,
+and feature-gating enforcement (GATE-01).
 """
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.core.management import call_command
@@ -9,6 +11,8 @@ from rest_framework.test import APIClient
 
 from billing.models import OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
 from billing.providers.paystack_billing import PaystackBillingClient
+from billing.services.gating_service import GatingService
+from properties.models import Property
 from rumia_api.tests import RumiaTestFixtures
 
 
@@ -331,3 +335,178 @@ class MySubscriptionViewTests(RumiaTestFixtures):
         # Landlord A has no subscription of their own, and the org_id param
         # for org B must be ignored — never leaked as a 200 with org B's data.
         self.assertEqual(response.status_code, 404)
+
+
+class GatingServiceEffectiveTierTests(RumiaTestFixtures):
+    """D-01-D-04 effective-tier resolution."""
+
+    def _seed_plans(self):
+        call_command('seed_subscription_plans')
+        return {p.slug: p for p in SubscriptionPlan.objects.all()}
+
+    def test_no_subscription_within_trial_window_returns_enterprise(self):
+        self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+
+        plan = GatingService.get_effective_plan(org)
+
+        self.assertEqual(plan.slug, 'enterprise')
+
+    def test_no_subscription_after_trial_window_returns_starter(self):
+        self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        org.created_at = timezone.now() - timedelta(days=31)
+        org.save(update_fields=['created_at'])
+
+        plan = GatingService.get_effective_plan(org)
+
+        self.assertEqual(plan.slug, 'starter')
+
+    def test_active_subscription_returns_subscribed_plan(self):
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(
+            organization=org, plan=plans['pro'], status='active', billing_mode='manual',
+        )
+
+        plan = GatingService.get_effective_plan(org)
+
+        self.assertEqual(plan.slug, 'pro')
+
+    def test_past_due_within_grace_period_returns_subscribed_plan(self):
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(
+            organization=org, plan=plans['pro'], status='past_due', billing_mode='manual',
+            grace_period_ends_at=timezone.now() + timedelta(days=3),
+        )
+
+        plan = GatingService.get_effective_plan(org)
+
+        self.assertEqual(plan.slug, 'pro')
+
+    def test_past_due_after_grace_period_falls_back_to_floor(self):
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        org.created_at = timezone.now() - timedelta(days=31)
+        org.save(update_fields=['created_at'])
+        OrganizationSubscription.objects.create(
+            organization=org, plan=plans['pro'], status='past_due', billing_mode='manual',
+            grace_period_ends_at=timezone.now() - timedelta(days=1),
+        )
+
+        plan = GatingService.get_effective_plan(org)
+
+        self.assertEqual(plan.slug, 'starter')
+
+    def test_pending_subscription_treated_as_no_subscription(self):
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        org.created_at = timezone.now() - timedelta(days=31)
+        org.save(update_fields=['created_at'])
+        OrganizationSubscription.objects.create(
+            organization=org, plan=plans['pro'], status='pending', billing_mode='manual',
+        )
+
+        plan = GatingService.get_effective_plan(org)
+
+        self.assertEqual(plan.slug, 'starter')
+
+    def test_suspended_subscription_falls_back_to_floor(self):
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        org.created_at = timezone.now() - timedelta(days=31)
+        org.save(update_fields=['created_at'])
+        OrganizationSubscription.objects.create(
+            organization=org, plan=plans['pro'], status='suspended', billing_mode='manual',
+        )
+
+        plan = GatingService.get_effective_plan(org)
+
+        self.assertEqual(plan.slug, 'starter')
+
+
+class PropertyLimitGateTests(RumiaTestFixtures):
+    """D-06/D-10 — property-limit gate wired into PropertyListCreateView.post."""
+
+    def _seed_plans(self):
+        call_command('seed_subscription_plans')
+        return {p.slug: p for p in SubscriptionPlan.objects.all()}
+
+    def _property_payload(self, name='New Property'):
+        return {
+            'name': name,
+            'property_type': 'apartment',
+            'address': '456 Test Ave',
+            'city': 'Nairobi',
+        }
+
+    def test_property_creation_blocked_at_starter_cap_returns_403_with_d10_body(self):
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(
+            organization=org, plan=plans['starter'], status='active', billing_mode='manual',
+        )
+        self.create_property_with_unit(org)  # starter cap is 1 property — already at cap
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.post('/api/v1/properties/', self._property_payload())
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.data, {
+            'detail': 'Property limit reached for your plan.',
+            'gate': 'max_properties',
+            'current_tier': 'starter',
+            'required_tier': 'pro',
+        })
+
+    def test_property_creation_allowed_under_cap(self):
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(
+            organization=org, plan=plans['pro'], status='active', billing_mode='manual',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.post('/api/v1/properties/', self._property_payload())
+
+        self.assertEqual(response.status_code, 201)
+
+    def test_enterprise_zero_sentinel_means_unlimited_properties(self):
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(
+            organization=org, plan=plans['enterprise'], status='active', billing_mode='manual',
+        )
+        for i in range(5):
+            self.create_property_with_unit(org, name=f'Property {i}')
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.post('/api/v1/properties/', self._property_payload('Property 6'))
+
+        self.assertEqual(response.status_code, 201)
+
+    def test_downgrade_overage_blocks_new_create_but_keeps_existing_grandfathered(self):
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(
+            organization=org, plan=plans['enterprise'], status='active', billing_mode='manual',
+        )
+        for i in range(3):
+            self.create_property_with_unit(org, name=f'Property {i}')
+        self.assertEqual(Property.objects.filter(organization=org).count(), 3)
+
+        # Simulate a downgrade to Starter (cap 1) — existing 3 properties are grandfathered (D-06).
+        subscription = OrganizationSubscription.objects.get(organization=org)
+        subscription.plan = plans['starter']
+        subscription.save(update_fields=['plan'])
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.post('/api/v1/properties/', self._property_payload('Property 4'))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(Property.objects.filter(organization=org).count(), 3)
