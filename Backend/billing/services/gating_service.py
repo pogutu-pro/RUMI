@@ -30,6 +30,23 @@ class GatingService:
         return cls._UPGRADE_PATH.get(plan.slug, 'enterprise')
 
     @classmethod
+    def _get_floor_plan(cls, slug: str) -> SubscriptionPlan:
+        """
+        WR-05: every organization with no active/in-grace subscription (i.e.
+        every brand-new signup) depends on the 'enterprise' and 'starter'
+        seed rows existing. Surface a clear, actionable operational error
+        instead of letting SubscriptionPlan.DoesNotExist propagate as a bare
+        500 for every gate-guarded endpoint org-wide.
+        """
+        try:
+            return SubscriptionPlan.objects.get(slug=slug)
+        except SubscriptionPlan.DoesNotExist as exc:
+            raise RuntimeError(
+                f"SubscriptionPlan seed data missing (slug={slug!r}) — "
+                "run `python manage.py seed_subscription_plans`."
+            ) from exc
+
+    @classmethod
     def get_effective_plan(cls, organization) -> SubscriptionPlan:
         """
         Single entry point for all four gate checks (D-01-D-04).
@@ -58,8 +75,8 @@ class GatingService:
                 return subscription.plan
 
         if timezone.now() <= organization.created_at + timedelta(days=30):
-            return SubscriptionPlan.objects.get(slug='enterprise')
-        return SubscriptionPlan.objects.get(slug='starter')
+            return cls._get_floor_plan('enterprise')
+        return cls._get_floor_plan('starter')
 
     @classmethod
     def check_property_limit(cls, organization) -> dict | None:
