@@ -65,12 +65,18 @@ class OrganizationScopedMixin:
 
         if role == 'landlord':
             from organizations.models import Organization
+            # Deterministic ordering: callers (e.g. PayoutAccountView) take
+            # org_ids[0] as "the" organization for a landlord with no
+            # explicit organization_id. Without ORDER BY, Postgres does not
+            # guarantee row order for a DISTINCT query, so two consecutive
+            # requests from the same multi-org landlord could otherwise
+            # resolve to different organizations.
             return list(
                 Organization.objects.filter(
                     models.Q(owner=user)
                     | models.Q(memberships__user=user, memberships__is_active=True)
                     | models.Q(legacy_landlord_profile__user=user)
-                ).values_list('id', flat=True).distinct()
+                ).order_by('created_at').values_list('id', flat=True).distinct()
             )
 
         if role == 'caretaker':
