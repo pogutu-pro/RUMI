@@ -1,4 +1,4 @@
-from django.urls import path, include
+from django.urls import path
 from . import views
 from .onboarding_views import (
     OnboardingDraftView, OnboardingAdvanceView, 
@@ -6,9 +6,6 @@ from .onboarding_views import (
 )
 
 urlpatterns = [
-    # Subscription management
-    path('subscriptions/', include('accounts.subscription_urls')),
-    
     # Authentication
     path('register/', views.UserRegistrationView.as_view(), name='user_registration'),
     path('verify-email/', views.EmailVerificationView.as_view(), name='email_verification'),

@@ -18,8 +18,6 @@ from accounts.models import (
     OTPVerification, PasswordResetToken, UserActivityLog,
     Conversation, Message
 )
-from accounts.subscription_models import SubscriptionPlan, LandlordSubscription, FeatureAccess
-
 from hostels.models import (
     Hostel, Room, Booking, RoomImage, Amenity, HostelAmenity,
     RoomTransfer, DamageReport, InventoryTemplate, RoomReservation,
@@ -55,7 +53,6 @@ class Command(BaseCommand):
         with transaction.atomic():
             self.clear_existing_data()
             self.create_users_and_profiles()
-            self.create_subscription_plans()
             self.create_hostels_and_rooms()
             self.create_bookings_and_payments()
             self.create_notifications_and_communications()
@@ -112,11 +109,7 @@ class Command(BaseCommand):
         CaretakerProfile.objects.all().delete()
         LandlordProfile.objects.all().delete()
         StudentProfile.objects.all().delete()
-        
-        FeatureAccess.objects.all().delete()
-        LandlordSubscription.objects.all().delete()
-        SubscriptionPlan.objects.all().delete()
-        
+
         NotificationPreference.objects.all().delete()
         SMSTemplate.objects.all().delete()
         EmailTemplate.objects.all().delete()
@@ -251,60 +244,6 @@ class Command(BaseCommand):
         self.landlords = landlords
         self.students = students
         self.caretakers = caretakers
-
-    def create_subscription_plans(self):
-        """Create subscription plans and assign to landlords"""
-        self.stdout.write('Creating subscription plans...')
-        
-        # Create subscription plans
-        trial_plan = SubscriptionPlan.objects.create(
-            name='Free Trial',
-            slug='free-trial',
-            plan_type='trial',
-            billing_type='fixed',
-            fixed_price=Decimal('0.00'),
-            trial_duration_days=30,
-            description='1 month free trial with full access to all features',
-            features={'all_features': True, 'unlimited_access': True}
-        )
-        
-        basic_plan = SubscriptionPlan.objects.create(
-            name='Basic Plan',
-            slug='basic-plan',
-            plan_type='paid',
-            billing_type='monthly',
-            monthly_price=Decimal('5000.00'),
-            description='Basic features for small property owners',
-            features={'hostel_management': True, 'tenant_management': True, 'basic_analytics': True}
-        )
-        
-        premium_plan = SubscriptionPlan.objects.create(
-            name='Premium Plan',
-            slug='premium-plan',
-            plan_type='paid',
-            billing_type='monthly',
-            monthly_price=Decimal('15000.00'),
-            description='Premium features with advanced analytics and support',
-            features={
-                'hostel_management': True, 'tenant_management': True, 'advanced_analytics': True,
-                'priority_support': True, 'maintenance_tracking': True, 'incident_reporting': True
-            }
-        )
-        
-        # Assign plans to landlords
-        for landlord in self.landlords:
-            subscription = LandlordSubscription.objects.create(
-                landlord=landlord,
-                plan=basic_plan if random.random() < 0.7 else premium_plan,
-                status='active',
-                current_period_start=timezone.now().date(),
-                current_period_end=timezone.now().date() + timedelta(days=30),
-                next_billing_date=timezone.now().date() + timedelta(days=30)
-            )
-            
-            # Create feature access
-            feature_access = FeatureAccess.objects.create(landlord=landlord)
-            feature_access.sync_with_subscription()
 
     def create_hostels_and_rooms(self):
         """Create hostels with rooms and assign caretakers"""
