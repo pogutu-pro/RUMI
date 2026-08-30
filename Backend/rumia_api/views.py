@@ -184,8 +184,16 @@ class CaretakerListCreateView(RumiaBaseView):
         return Response(CaretakerSerializer(caretaker_profile).data, status=status.HTTP_201_CREATED)
 
     def _resolve_organization(self, request):
+        # CR-03: verify the caller actually belongs to the client-supplied
+        # organization_id before trusting it — mirrors the membership check
+        # already used correctly in IncomeSummaryView.get (views.py). Without
+        # this, any authenticated landlord who knows/guesses another org's
+        # UUID could create caretakers inside that org.
         org_id = request.data.get('organization_id')
         if org_id:
+            org_ids = self.get_user_organization_ids()
+            if org_ids is not None and str(org_id) not in [str(i) for i in org_ids]:
+                return None
             return Organization.objects.filter(id=org_id).first()
         return Organization.objects.filter(owner=request.user).first()
 
@@ -222,8 +230,16 @@ class PropertyListCreateView(RumiaBaseView):
         return Response(PropertySerializer(prop).data, status=status.HTTP_201_CREATED)
 
     def _resolve_organization(self, request):
+        # CR-03: verify the caller actually belongs to the client-supplied
+        # organization_id before trusting it — mirrors the membership check
+        # already used correctly in IncomeSummaryView.get (views.py). Without
+        # this, any authenticated landlord who knows/guesses another org's
+        # UUID could create properties inside that org.
         org_id = request.data.get('organization_id')
         if org_id:
+            org_ids = self.get_user_organization_ids()
+            if org_ids is not None and str(org_id) not in [str(i) for i in org_ids]:
+                return None
             return Organization.objects.filter(id=org_id).first()
         return Organization.objects.filter(owner=request.user).first()
 
