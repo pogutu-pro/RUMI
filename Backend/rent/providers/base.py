@@ -46,6 +46,12 @@ class InitiatePaymentRequest:
     internal_reference: str
     callback_url: str
     metadata: dict[str, Any] = field(default_factory=dict)
+    # Split-payment routing (PAY-03). Both default to '' so every existing
+    # call site (and every provider that doesn't support subaccounts) keeps
+    # working unchanged — only PaystackProvider reads these, and only when
+    # subaccount_code is non-empty.
+    subaccount_code: str = ''
+    bearer: str = ''
 
 
 @dataclass

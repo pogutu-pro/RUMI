@@ -73,6 +73,13 @@ class PaystackProvider(BasePaymentProvider):
             },
         }
 
+        if request.subaccount_code:
+            # Split-payment routing (PAY-03): the platform's Paystack account
+            # always bears the transaction fee on a split payment — hardcoded,
+            # never left to Paystack's default (T-02-07).
+            payload['subaccount'] = request.subaccount_code
+            payload['bearer'] = request.bearer or 'account'
+
         try:
             response = requests.post(
                 f'{self.API_BASE}/transaction/initialize',

@@ -20,7 +20,7 @@ from rest_framework.test import APIClient
 from django.core import mail
 
 from accounts.models import CaretakerProfile, LandlordProfile, PasswordResetToken, StudentProfile
-from organizations.models import Organization, OrganizationMembership
+from organizations.models import Organization, OrganizationMembership, PayoutAccount
 from properties.models import Property, RentalUnit, Tenancy, CaretakerPropertyAssignment
 from rent.models import Payment, PaymentAllocation, RentCharge
 from rent.providers.base import InitiatePaymentResult, ProviderConfigStatus, ProviderStatus, VerifyPaymentResult
@@ -655,6 +655,12 @@ class PaystackFlowTests(RumiaTestFixtures):
             authorization_url='https://checkout.paystack.com/abc123',
         )
         org, tenant_user, tenant, tenancy = self._tenancy_with_tenant()
+        # PAY-03 (Phase 2): a rent payment only splits/initiates for an
+        # organization with a verified, active PayoutAccount — otherwise
+        # PaymentService.initiate refuses it outright (D-01).
+        PayoutAccount.objects.create(
+            organization=org, status='active', paystack_subaccount_code='SUB_TEST_CODE',
+        )
 
         client = APIClient()
         client.force_authenticate(user=tenant_user)

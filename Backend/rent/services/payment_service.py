@@ -51,6 +51,24 @@ class PaymentService:
 
         Payment remains in 'pending' until verified via callback.
         """
+        # PAY-03 payout-verification guard — must run before any provider
+        # call. A rent payment is never routed 100% to the platform: either
+        # the organization has a verified (status='active') PayoutAccount and
+        # the payment splits to it, or the payment is refused outright (D-01).
+        # `record_manual_payment` is intentionally untouched by this guard (D-02).
+        from organizations.services.notifications import notify_payout_blocked_attempt
+
+        payout_account = getattr(payment.organization, 'payout_account', None)
+        if payout_account is None or payout_account.status != 'active':
+            payment.status = 'failed'
+            payment.notes = 'Payout setup incomplete for this landlord'
+            payment.save(update_fields=['status', 'notes', 'updated_at'])
+            notify_payout_blocked_attempt(payment.organization)
+            return {
+                'success': False,
+                'error': 'This landlord has not completed payout setup yet.',
+            }
+
         provider = cls.get_provider(payment.provider)
         config = provider.get_config_status()
 
@@ -73,6 +91,12 @@ class PaymentService:
                 internal_reference=payment.internal_reference,
                 callback_url=callback_url,
                 metadata={'payment_id': str(payment.id)},
+                # Reached only when the guard above already confirmed
+                # payout_account.status == 'active' — never keyed off a
+                # leftover subaccount code from an earlier, now-superseded
+                # verification attempt.
+                subaccount_code=payout_account.paystack_subaccount_code,
+                bearer='account',
             )
         )
 
