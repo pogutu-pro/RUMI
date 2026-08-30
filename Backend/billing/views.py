@@ -167,6 +167,10 @@ class MyOrganizationSubscriptionView(APIView):
             )
         except OrganizationSubscription.DoesNotExist:
             return Response({'error': 'No subscription found'}, status=status.HTTP_404_NOT_FOUND)
+        except (ValueError, ValidationError):
+            # A super_admin-supplied organization_id that isn't a valid UUID
+            # otherwise raises unhandled from Django's UUID field parsing.
+            return Response({'error': 'Invalid organization_id'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(OrganizationSubscriptionSerializer(subscription).data)
 
