@@ -121,10 +121,6 @@ class CaretakerListCreateView(RumiaBaseView):
         if not org:
             return Response({'detail': 'Organization required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        gate_error = GatingService.check_caretaker_seat_limit(org)
-        if gate_error:
-            return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
-
         serializer = CaretakerCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -139,7 +135,17 @@ class CaretakerListCreateView(RumiaBaseView):
         first_name = name_parts[0] if name_parts else data['full_name']
         last_name = name_parts[1] if len(name_parts) > 1 else ''
 
+        # CR-02: the gate check now runs inside the same locked transaction
+        # as the seat-consuming write (OrganizationMembership create) —
+        # select_for_update() on the org row serializes concurrent POSTs so
+        # they can no longer all read the same pre-creation seat count and
+        # all pass the max_caretaker_seats gate.
         with transaction.atomic():
+            org = Organization.objects.select_for_update().get(pk=org.pk)
+            gate_error = GatingService.check_caretaker_seat_limit(org)
+            if gate_error:
+                return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
+
             user = User.objects.create_user(
                 email=data['email'],
                 password=None,
@@ -199,13 +205,19 @@ class PropertyListCreateView(RumiaBaseView):
         if not org:
             return Response({'detail': 'Organization required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        gate_error = GatingService.check_property_limit(org)
-        if gate_error:
-            return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
+        # CR-02: lock the organization row for the duration of the
+        # check-then-create sequence — otherwise concurrent POSTs all read
+        # the same pre-creation count, all pass the gate, and all commit,
+        # permanently exceeding the plan's max_properties cap.
+        with transaction.atomic():
+            org = Organization.objects.select_for_update().get(pk=org.pk)
+            gate_error = GatingService.check_property_limit(org)
+            if gate_error:
+                return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = PropertySerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        prop = serializer.save(organization=org)
+            serializer = PropertySerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            prop = serializer.save(organization=org)
         log_audit('property_created', actor=request.user, organization=org, entity=prop)
         return Response(PropertySerializer(prop).data, status=status.HTTP_201_CREATED)
 
@@ -287,14 +299,20 @@ class RentalUnitListCreateView(RumiaBaseView):
             if prop.organization_id not in org_ids:
                 return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
-        gate_error = GatingService.check_unit_limit(prop.organization)
-        if gate_error:
-            return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
+        # CR-02: lock the organization row for the duration of the
+        # check-then-create sequence — see PropertyListCreateView.post for
+        # the full rationale (same race, same fix, one org can own units
+        # across multiple properties so the lock is on the org, not prop).
+        with transaction.atomic():
+            org = Organization.objects.select_for_update().get(pk=prop.organization_id)
+            gate_error = GatingService.check_unit_limit(org)
+            if gate_error:
+                return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = RentalUnitSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        unit = serializer.save(organization=prop.organization, parent_property=prop)
-        log_audit('unit_created', actor=request.user, organization=prop.organization, entity=unit)
+            serializer = RentalUnitSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            unit = serializer.save(organization=org, parent_property=prop)
+        log_audit('unit_created', actor=request.user, organization=org, entity=unit)
         return Response(RentalUnitSerializer(unit).data, status=status.HTTP_201_CREATED)
 
 
