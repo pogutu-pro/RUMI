@@ -190,3 +190,91 @@ class PayoutServiceEditResetTests(RumiaTestFixtures):
         # already saved so a retry resubmission is treated as a plain retry.
         self.assertEqual(payout_account.paystack_subaccount_code, 'ACCT_original')
         self.assertEqual(payout_account.bank_account_number, '2222222222')
+
+
+class IdempotentPayoutSubmissionTests(RumiaTestFixtures):
+    """Task 3: identical resubmission on an active account is a safe no-op."""
+
+    def test_double_submit_identical_active_details_makes_zero_paystack_calls(self):
+        user, profile, org = self.create_landlord_with_org()
+        PayoutAccount.objects.create(
+            organization=org,
+            status='active',
+            bank_name='Equity Bank',
+            bank_account_number='1234567890',
+            bank_code='068',
+            account_name='John Kamau',
+            paystack_subaccount_code='ACCT_original',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        with patch.object(PaystackProvider, 'resolve_account') as mock_resolve, \
+                patch.object(PaystackProvider, 'create_subaccount') as mock_create, \
+                patch.object(PaystackProvider, 'update_subaccount') as mock_update:
+            response = client.post('/api/v1/organizations/payout/', {
+                'bank_name': 'Equity Bank',
+                'bank_account_number': '1234567890',
+                'bank_code': '068',
+            })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['status'], 'active')
+        mock_resolve.assert_not_called()
+        mock_create.assert_not_called()
+        mock_update.assert_not_called()
+
+        self.assertEqual(PayoutAccount.objects.filter(organization=org).count(), 1)
+
+
+class StatusNotClientWritableTests(RumiaTestFixtures):
+    """Task 3: an extra client-supplied `status` key never influences the outcome."""
+
+    def test_status_key_in_post_body_is_ignored(self):
+        user, profile, org = self.create_landlord_with_org()
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        with patch.object(PaystackProvider, 'resolve_account', return_value=_mock_resolve_failure()), \
+                patch.object(PaystackProvider, 'create_subaccount') as mock_create:
+            response = client.post('/api/v1/organizations/payout/', {
+                'bank_name': 'Equity Bank',
+                'bank_account_number': '1234567890',
+                'bank_code': '068',
+                'status': 'active',
+            })
+
+        self.assertEqual(response.status_code, 502)
+        mock_create.assert_not_called()
+
+        payout_account = PayoutAccount.objects.get(organization=org)
+        # Driven entirely by the mocked resolve outcome (failure), never by
+        # the client-supplied status='active'.
+        self.assertEqual(payout_account.status, 'pending_verification')
+
+
+class CrossOrgPayoutIsolationTests(RumiaTestFixtures):
+    """Task 3: a supplied organization_id never leaks a foreign org's payout data."""
+
+    def test_landlord_cannot_see_another_orgs_payout_via_organization_id_param(self):
+        user_a, profile_a, org_a = self.create_landlord_with_org(email='landlord-a@test.com')
+        user_b, profile_b, org_b = self.create_landlord_with_org(email='landlord-b@test.com')
+        PayoutAccount.objects.create(
+            organization=org_b,
+            status='active',
+            bank_name='KCB Bank',
+            bank_account_number='9999999999',
+            bank_code='001',
+            account_name='Org B Owner',
+            paystack_subaccount_code='ACCT_orgb',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user_a)
+        response = client.get(f'/api/v1/organizations/payout/?organization_id={org_b.id}')
+
+        # Landlord A has no payout account of their own; org_b's
+        # organization_id param must be ignored entirely for a non-super_admin
+        # caller — never leaked as org B's active status.
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['status'], 'not_started')
