@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from decimal import Decimal
 from typing import Optional
 
@@ -9,6 +10,7 @@ from django.db import models, transaction
 from django.db.models import Sum
 from django.utils import timezone
 
+from organizations.models import PayoutAccount
 from organizations.services.notifications import notify_payout_blocked_attempt
 from rent.models import Payment, PaymentAllocation, RentCharge
 from rent.providers.base import (
@@ -18,6 +20,8 @@ from rent.providers.base import (
     VerifyPaymentRequest,
 )
 from rent.providers.paystack import PaystackProvider
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentService:
@@ -57,8 +61,43 @@ class PaymentService:
         # the organization has a verified (status='active') PayoutAccount and
         # the payment splits to it, or the payment is refused outright (D-01).
         # `record_manual_payment` is intentionally untouched by this guard (D-02).
-        payout_account = getattr(payment.organization, 'payout_account', None)
-        if payout_account is None or payout_account.status != 'active':
+        #
+        # The lookup is wrapped narrowly so any unexpected exception here
+        # (corrupted relation, DB error) is treated identically to "not
+        # verified" — refuse the payment (T-02-09). This is the opposite
+        # fail-closed direction from the FeatureAccess.sync_with_subscription()
+        # bug in PITFALLS.md Pitfall 4: that bug incorrectly fails closed on
+        # ALREADY-GRANTED paid access (revoking something a customer already
+        # has); this fails closed on NOT-YET-granted money routing (refusing
+        # to send money for the first time), which is the semantically
+        # correct fail-closed direction for this specific check.
+        #
+        # Queried directly by organization_id (not via the
+        # `payment.organization.payout_account` reverse-descriptor cache) so
+        # status is always read fresh from the database at the moment
+        # `initiate` runs — a concurrent D-09 bank-detail edit that resets an
+        # already-`active` PayoutAccount to `pending_verification` between
+        # two calls sharing the same in-memory Organization instance would
+        # otherwise be masked by Django's per-instance relation cache
+        # (T-02-06). [Deviation from Task 1's literal
+        # `getattr(payment.organization, 'payout_account', None)` spec — Rule
+        # 1 auto-fix: that form caches on the shared Organization instance
+        # and returned a stale 'active' status in the StaleStatusReCheck
+        # test, so Task 3 replaced it with a direct fresh query.]
+        try:
+            payout_account = PayoutAccount.objects.filter(
+                organization_id=payment.organization_id
+            ).first()
+            payout_account_active = payout_account is not None and payout_account.status == 'active'
+        except Exception:
+            logger.exception(
+                'Payout status check failed for organization %s during payment initiation',
+                payment.organization_id,
+            )
+            payout_account = None
+            payout_account_active = False
+
+        if not payout_account_active:
             payment.status = 'failed'
             payment.notes = 'Payout setup incomplete for this landlord'
             payment.save(update_fields=['status', 'notes', 'updated_at'])
@@ -91,9 +130,10 @@ class PaymentService:
                 callback_url=callback_url,
                 metadata={'payment_id': str(payment.id)},
                 # Reached only when the guard above already confirmed
-                # payout_account.status == 'active' — never keyed off a
-                # leftover subaccount code from an earlier, now-superseded
-                # verification attempt.
+                # payout_account.status == 'active' (freshly re-checked,
+                # never cached) — never keyed off a leftover subaccount code
+                # from an earlier, now-superseded verification attempt
+                # (T-02-06).
                 subaccount_code=payout_account.paystack_subaccount_code,
                 bearer='account',
             )

@@ -5,6 +5,8 @@ SplitPaymentRouting*: Task 1 — verified landlord splits, unverified landlord
 is refused, manual payments unaffected (D-01/D-02/D-07, T-02-07).
 PayoutBlockedNotification*: Task 2 — throttled landlord/caretaker
 notification on a blocked payment attempt (D-03/D-04, T-02-08).
+FailClosedOnException* / StaleStatusReCheck*: Task 3 — exception safety and
+stale-status re-checks (T-02-05/T-02-06/T-02-09).
 """
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
@@ -219,3 +221,86 @@ class PayoutBlockedNotificationTests(RumiaTestFixtures):
         self.assertTrue(mock_email.called)
         payout_account = PayoutAccount.objects.get(organization=self.org)
         self.assertIsNotNone(payout_account.last_payout_blocked_notified_at)
+
+
+@override_settings(PAYSTACK_SECRET_KEY='test_secret_key')
+class FailClosedOnExceptionTests(RumiaTestFixtures):
+    def setUp(self):
+        self.user, self.profile, self.org = self.create_landlord_with_org()
+        self.prop, self.unit = self.create_property_with_unit(self.org)
+        self.tenant_user, self.tenant = self.create_tenant(self.org)
+        self.tenancy = self.create_tenancy(self.org, self.prop, self.unit, self.tenant)
+
+    @patch('rent.providers.paystack.requests.post')
+    @patch('organizations.services.notifications._send_sms')
+    @patch('organizations.services.notifications._send_email')
+    def test_exception_during_payout_status_check_refuses_payment(
+        self, mock_email, mock_sms, mock_post
+    ):
+        mock_email.return_value = True
+        mock_sms.return_value = True
+        payment = _make_payment(self.org, self.tenant, self.tenancy, self.prop, self.unit)
+
+        original_filter = PayoutAccount.objects.filter
+
+        def _raise_only_on_lookup(*args, **kwargs):
+            # Only the payout-status lookup (filtered by organization_id) is
+            # corrupted — notify_payout_blocked_attempt's own PayoutAccount
+            # queries (get_or_create / filter(pk=...)) must keep working so
+            # the refusal path can still complete and notify.
+            if 'organization_id' in kwargs:
+                raise RuntimeError('corrupted relation')
+            return original_filter(*args, **kwargs)
+
+        with patch(
+            'rent.services.payment_service.PayoutAccount.objects.filter',
+            side_effect=_raise_only_on_lookup,
+        ):
+            result = PaymentService.initiate(payment, callback_url='https://app.test/callback')
+
+        self.assertFalse(result['success'])
+        mock_post.assert_not_called()
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, 'failed')
+
+
+@override_settings(PAYSTACK_SECRET_KEY='test_secret_key')
+class StaleStatusReCheckTests(RumiaTestFixtures):
+    def setUp(self):
+        self.user, self.profile, self.org = self.create_landlord_with_org()
+        self.prop, self.unit = self.create_property_with_unit(self.org)
+        self.tenant_user, self.tenant = self.create_tenant(self.org)
+        self.tenancy = self.create_tenancy(self.org, self.prop, self.unit, self.tenant)
+
+    @patch('organizations.services.notifications._send_sms')
+    @patch('organizations.services.notifications._send_email')
+    @patch('rent.providers.paystack.requests.post')
+    def test_status_reset_after_first_payment_refuses_second_payment(
+        self, mock_post, mock_email, mock_sms
+    ):
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                'status': True,
+                'data': {'reference': 'REF-1', 'authorization_url': 'https://paystack.test/pay'},
+            },
+        )
+        payout_account = PayoutAccount.objects.create(
+            organization=self.org,
+            status='active',
+            paystack_subaccount_code='SUB_CODE_1',
+        )
+        payment1 = _make_payment(self.org, self.tenant, self.tenancy, self.prop, self.unit, ref='REF-1')
+        result1 = PaymentService.initiate(payment1, callback_url='https://app.test/callback')
+        self.assertTrue(result1['success'])
+
+        # Simulate a concurrent D-09 bank-detail edit resetting status.
+        PayoutAccount.objects.filter(pk=payout_account.pk).update(status='pending_verification')
+
+        payment2 = _make_payment(self.org, self.tenant, self.tenancy, self.prop, self.unit, ref='REF-2')
+        result2 = PaymentService.initiate(payment2, callback_url='https://app.test/callback')
+
+        self.assertFalse(result2['success'])
+        mock_post.assert_called_once()  # only the first (successful) call happened
+        payment2.refresh_from_db()
+        self.assertEqual(payment2.status, 'failed')
