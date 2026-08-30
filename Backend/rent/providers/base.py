@@ -74,6 +74,36 @@ class VerifyPaymentResult:
     error_message: str = ''
 
 
+@dataclass
+class AccountResolveRequest:
+    account_number: str
+    bank_code: str
+
+
+@dataclass
+class AccountResolveResult:
+    success: bool
+    account_name: str = ''
+    error_message: str = ''
+    raw_response: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class CreateSubaccountRequest:
+    business_name: str
+    bank_code: str
+    account_number: str
+    percentage_charge: Decimal = Decimal('0')
+
+
+@dataclass
+class SubaccountResult:
+    success: bool
+    subaccount_code: str = ''
+    error_message: str = ''
+    raw_response: dict[str, Any] = field(default_factory=dict)
+
+
 class BasePaymentProvider(ABC):
     """Abstract payment provider — never fakes successful transactions."""
 

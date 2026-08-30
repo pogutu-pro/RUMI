@@ -219,6 +219,22 @@ class CanAccessTenantProfile(permissions.BasePermission):
         return False
 
 
+class IsOrganizationOwner(permissions.BasePermission):
+    """
+    Object-level: caller is the Organization's registered owner.
+
+    Deliberately does NOT consult `OrganizationMembership` — per D-08, even
+    an admin-role membership must be excluded from mutating payout bank
+    details. Only `Organization.owner_id` grants this permission.
+    """
+
+    def has_object_permission(self, request, view, obj):
+        if not request.user.is_authenticated:
+            return False
+        organization = obj if hasattr(obj, 'owner') else obj.organization
+        return organization.owner_id == request.user.id
+
+
 class CanViewFinancials(permissions.BasePermission):
     """Financial data access — caretakers and tech support are restricted."""
 

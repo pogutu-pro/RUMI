@@ -10,11 +10,13 @@ import requests
 from django.conf import settings
 
 from .base import (
+    AccountResolveResult,
     BasePaymentProvider,
     InitiatePaymentRequest,
     InitiatePaymentResult,
     ProviderConfigStatus,
     ProviderStatus,
+    SubaccountResult,
     VerifyPaymentRequest,
     VerifyPaymentResult,
     PaymentProviderError,
@@ -148,5 +150,133 @@ class PaystackProvider(BasePaymentProvider):
             status=status_map.get(paystack_status, 'failed'),
             amount=amount,
             provider_reference=txn.get('reference', ref),
+            raw_response=data,
+        )
+
+    def resolve_account(self, account_number: str, bank_code: str) -> AccountResolveResult:
+        config = self.get_config_status()
+        if config.status != ProviderStatus.AVAILABLE:
+            return AccountResolveResult(
+                success=False,
+                error_message=config.message,
+            )
+
+        try:
+            response = requests.get(
+                f'{self.API_BASE}/bank/resolve',
+                params={'account_number': account_number, 'bank_code': bank_code},
+                headers=self._headers(),
+                timeout=30,
+            )
+            data = response.json()
+        except requests.RequestException as exc:
+            return AccountResolveResult(
+                success=False,
+                error_message=f'Paystack account resolve failed: {exc}',
+            )
+
+        if not data.get('status'):
+            return AccountResolveResult(
+                success=False,
+                error_message=data.get('message', 'Account resolve failed'),
+                raw_response=data,
+            )
+
+        resolved = data.get('data', {})
+        return AccountResolveResult(
+            success=True,
+            account_name=resolved.get('account_name', ''),
+            raw_response=data,
+        )
+
+    def create_subaccount(
+        self,
+        business_name: str,
+        bank_code: str,
+        account_number: str,
+        percentage_charge: Decimal = Decimal('0'),
+    ) -> SubaccountResult:
+        config = self.get_config_status()
+        if config.status != ProviderStatus.AVAILABLE:
+            return SubaccountResult(
+                success=False,
+                error_message=config.message,
+            )
+
+        payload = {
+            'business_name': business_name,
+            'settlement_bank': bank_code,
+            'account_number': account_number,
+            'percentage_charge': float(percentage_charge),
+        }
+
+        try:
+            response = requests.post(
+                f'{self.API_BASE}/subaccount',
+                json=payload,
+                headers=self._headers(),
+                timeout=30,
+            )
+            data = response.json()
+        except requests.RequestException as exc:
+            return SubaccountResult(
+                success=False,
+                error_message=f'Paystack subaccount creation failed: {exc}',
+            )
+
+        if not data.get('status'):
+            return SubaccountResult(
+                success=False,
+                error_message=data.get('message', 'Subaccount creation failed'),
+                raw_response=data,
+            )
+
+        subaccount = data.get('data', {})
+        return SubaccountResult(
+            success=True,
+            subaccount_code=subaccount.get('subaccount_code', ''),
+            raw_response=data,
+        )
+
+    def update_subaccount(
+        self, subaccount_code: str, bank_code: str, account_number: str
+    ) -> SubaccountResult:
+        config = self.get_config_status()
+        if config.status != ProviderStatus.AVAILABLE:
+            return SubaccountResult(
+                success=False,
+                error_message=config.message,
+            )
+
+        payload = {
+            'settlement_bank': bank_code,
+            'account_number': account_number,
+        }
+
+        try:
+            response = requests.put(
+                f'{self.API_BASE}/subaccount/{subaccount_code}',
+                json=payload,
+                headers=self._headers(),
+                timeout=30,
+            )
+            data = response.json()
+        except requests.RequestException as exc:
+            return SubaccountResult(
+                success=False,
+                error_message=f'Paystack subaccount update failed: {exc}',
+            )
+
+        if not data.get('status'):
+            return SubaccountResult(
+                success=False,
+                error_message=data.get('message', 'Subaccount update failed'),
+                raw_response=data,
+            )
+
+        subaccount = data.get('data', {})
+        return SubaccountResult(
+            success=True,
+            subaccount_code=subaccount.get('subaccount_code', subaccount_code),
             raw_response=data,
         )

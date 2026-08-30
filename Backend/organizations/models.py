@@ -124,3 +124,53 @@ class OrganizationMembership(models.Model):
 
     def __str__(self):
         return f'{self.user.email} @ {self.organization.name} ({self.role})'
+
+
+class PayoutAccount(models.Model):
+    """
+    Verified Paystack payout target for an Organization (D-06: one subaccount
+    per Organization, never per Property).
+
+    `status` is never client-settable — it only transitions via
+    `organizations.services.payout_service.PayoutService`, driven by
+    Paystack's own account-resolve + subaccount create/update confirmation.
+    """
+
+    STATUS_CHOICES = [
+        ('not_started', 'Not Started'),
+        ('pending_verification', 'Pending Verification'),
+        ('active', 'Active'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.OneToOneField(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='payout_account',
+    )
+    status = models.CharField(max_length=25, choices=STATUS_CHOICES, default='not_started')
+
+    bank_name = models.CharField(max_length=100, blank=True, default='')
+    bank_account_number = models.CharField(max_length=20, blank=True, default='')
+    bank_code = models.CharField(max_length=10, blank=True, default='')
+    # Paystack-resolved account holder name — set only once resolve_account succeeds.
+    account_name = models.CharField(max_length=255, blank=True, default='')
+
+    # Per PITFALLS.md Security Mistakes table: unique=True requires None (not
+    # '') for "not set", or the second unconfigured landlord violates the
+    # uniqueness constraint on two empty strings.
+    paystack_subaccount_code = models.CharField(max_length=100, unique=True, blank=True, null=True)
+
+    last_verified_at = models.DateTimeField(null=True, blank=True)
+    # Dormant in this plan — consumed by Plan 02-02's landlord notification
+    # throttle (D-04). Landed now to avoid a second organizations migration.
+    last_payout_blocked_notified_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'organizations_payoutaccount'
+
+    def __str__(self):
+        return f'{self.organization.name} payout ({self.status})'
