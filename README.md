@@ -1,6 +1,6 @@
-# RUMIA — Rental Management Platform
+# RumiaRent
 
-RUMIA is a rental property management platform for landlords, caretakers, and tenants. It manages the full rental lifecycle across organizations, properties, units, tenancies, rent charges, payments, notifications, and financial reporting while preserving historical RUMI hostel data as migration-compatible legacy context.
+RumiaRent is a rental property management platform for landlords, caretakers, and tenants. It manages the full rental lifecycle across organizations, properties, units, tenancies, rent charges, payments, notifications, and financial reporting while preserving historical RUMI hostel data as migration-compatible legacy context.
 
 **Status:** v1.0 — Production-ready backend (112 tests passing)
 

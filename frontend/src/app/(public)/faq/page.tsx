@@ -12,7 +12,7 @@ import { ArrowRight, MessageCircle } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Frequently Asked Questions',
-  description: 'Find answers to common questions about Rumi.',
+  description: 'Find answers to common questions about RumiaRent.',
 };
 
 const FAQ_CATEGORIES = [
@@ -22,107 +22,102 @@ const FAQ_CATEGORIES = [
       {
         question: 'How do I create an account?',
         answer:
-          'Click the "Sign up" button in the top right corner, choose your role (Student or Landlord), and fill in your details. You\'ll receive a verification email to complete your registration. Note: Caretaker accounts are created by verified landlords.',
+          'Click "Sign up," choose your role (Landlord or Tenant), and fill in your details. You\'ll receive a verification email to complete registration. Caretaker accounts are created by their landlord.',
       },
       {
-        question: 'Is Rumi free to use?',
+        question: 'Is RumiaRent free to try?',
         answer:
-          'Yes! Creating an account and browsing hostels is completely free. We only charge a small service fee when you successfully book a hostel.',
+          'Yes. Every plan starts with a 30-day free trial, no credit card required. See Pricing for what\'s included.',
       },
       {
-        question: 'What information do I need to sign up?',
+        question: 'What do I need to set up my first property?',
         answer:
-          'You\'ll need your email address, phone number, and basic personal information. Students may need to provide university details, while landlords need property documentation.',
-      },
-    ],
-  },
-  {
-    title: 'Booking & Payments',
-    items: [
-      {
-        question: 'How do I book a hostel?',
-        answer:
-          'Simply browse our listings, select your preferred hostel, choose your room type, select your move-in date, and complete the booking with M-PESA. You\'ll receive instant confirmation.',
-      },
-      {
-        question: 'What payment methods do you accept?',
-        answer:
-          'We currently accept M-PESA payments for instant booking. All transactions are secure and you\'ll receive a payment confirmation immediately.',
-      },
-      {
-        question: 'Can I cancel my booking?',
-        answer:
-          'Cancellation policies vary by hostel. Most offer free cancellation up to 7 days before move-in. Check the specific hostel cancellation policy on their listing page.',
-      },
-      {
-        question: 'When will I be charged?',
-        answer:
-          'You\'ll be charged when you complete the booking. The payment is processed securely through M-PESA, and you\'ll receive a confirmation receipt.',
+          'Just a property name and address. Add units, then attach tenants as you go. There\'s no bulk import required to get started.',
       },
     ],
   },
   {
-    title: 'Hostel Verification',
+    title: 'Properties & Tenancies',
     items: [
       {
-        question: 'Are all hostels verified?',
+        question: 'What counts as a "unit"?',
         answer:
-          'Yes! Every hostel on Rumi undergoes a verification process. We check licenses, visit the property, verify photos, and ensure safety standards are met before listing.',
+          'Any rentable space: an apartment, a house, or a room in an estate. Each unit belongs to one property and can have one active tenancy at a time.',
       },
       {
-        question: 'What does "Verified Hostel" mean?',
+        question: 'Can a unit have two tenants at once?',
         answer:
-          'A verified hostel has been inspected by our team, has valid licenses, meets safety standards, and has accurate photos and information. Look for the green verification badge.',
+          'No. RumiaRent enforces one active tenancy per unit. To move a new tenant in, terminate the current tenancy first.',
       },
       {
-        question: 'How do I report a problem with a hostel?',
+        question: 'How do I end a tenancy?',
         answer:
-          'You can report issues through the hostel listing page or contact our support team directly. We take all reports seriously and investigate promptly.',
+          'Open the tenancy and choose "Terminate." The unit is automatically marked vacant and ready for the next tenant.',
       },
     ],
   },
   {
-    title: 'For Landlords',
+    title: 'Rent & Payments',
     items: [
       {
-        question: 'How do I list my hostel?',
+        question: 'How does rent get charged?',
         answer:
-          'Sign up as a landlord, complete your profile, and click "List Your Property". You\'ll need to provide property details, photos, pricing, and availability.',
+          'RumiaRent generates the next rent charge automatically for every active tenancy, based on the rent amount and due day you set.',
       },
       {
-        question: 'What fees do landlords pay?',
+        question: 'What payment methods do you support?',
         answer:
-          'We charge a small commission on successful bookings. There are no upfront fees to list your property. Contact us for detailed pricing information.',
+          'Paystack for card and bank payments, plus manual recording for cash or bank transfers you receive directly.',
       },
       {
-        question: 'How do I manage bookings?',
+        question: 'How is a payment confirmed?',
         answer:
-          'Use your landlord dashboard to view all bookings, manage availability, communicate with students, and track payments. Everything is in one place.',
+          'Paystack payments are verified directly with Paystack before your records update. It is never based on what the tenant\'s browser reports. You get a confirmation the moment it clears.',
       },
       {
-        question: 'How quickly will I receive payments?',
+        question: 'What if a payment is reversed or fails?',
         answer:
-          'Payments are processed through M-PESA and typically appear in your account within 24-48 hours after a booking is confirmed.',
+          'The rent charge automatically returns to outstanding, and it stays visible until it\'s resolved.',
       },
     ],
   },
   {
-    title: 'Safety & Security',
+    title: 'For Landlords & Agents',
     items: [
       {
-        question: 'How do you ensure student safety?',
+        question: 'Can I manage multiple properties?',
         answer:
-          'We verify all hostels, check safety standards, require valid licenses, and allow reviews from previous tenants. We also have a 24/7 support team available.',
+          'Yes. Add as many properties and units as you manage, all under one account.',
       },
       {
-        question: 'What if I have an emergency?',
+        question: 'Can I give caretakers access?',
         answer:
-          'Contact our 24/7 support team immediately. We also provide emergency contact information for each hostel on their listing page.',
+          'Yes. Caretaker accounts can be scoped to only the specific properties they manage, nothing else.',
       },
       {
-        question: 'Is my personal information safe?',
+        question: 'How do I see who owes me rent?',
         answer:
-          'Absolutely. We use industry-standard encryption and security measures to protect your data. We never share your information with third parties without your consent.',
+          'Your Rent page shows every outstanding and overdue charge, updated in real time, with a one-click way to record a payment.',
+      },
+    ],
+  },
+  {
+    title: 'Security & Privacy',
+    items: [
+      {
+        question: 'Can other landlords see my data?',
+        answer:
+          'No. Every property, tenant, and payment record is isolated to your organization, enforced on the server rather than just hidden in the interface.',
+      },
+      {
+        question: 'Is my tenant\'s personal information protected?',
+        answer:
+          'Yes. Tenant contact details and financial records are only visible to you, your permitted caretakers, and the tenant themselves.',
+      },
+      {
+        question: 'Do you store card details?',
+        answer:
+          'No. Card payments are processed entirely by Paystack, and RumiaRent never stores card numbers.',
       },
     ],
   },
@@ -139,11 +134,11 @@ export default function FAQPage() {
               Frequently Asked Questions
             </h1>
             <p className="text-xl text-gray-600 leading-relaxed">
-              Find answers to common questions about Rumi. Can't find what you're
+              Find answers to common questions about RumiaRent. Can&apos;t find what you&apos;re
               looking for?{' '}
               <Link
                 href="/contact"
-                className="text-green-600 hover:text-green-700 font-semibold underline-offset-4 hover:underline"
+                className="text-primary hover:text-primary/80 font-semibold underline-offset-4 hover:underline"
               >
                 Contact us
               </Link>
@@ -163,16 +158,12 @@ export default function FAQPage() {
                   <h2 className="mb-6 text-2xl font-bold text-gray-900 sm:text-3xl">
                     {category.title}
                   </h2>
-                  <Accordion
-                    type="single"
-                    collapsible
-                    className="w-full space-y-4"
-                  >
+                  <Accordion type="single" collapsible className="w-full space-y-4">
                     {category.items.map((item, itemIndex) => (
                       <AccordionItem
                         key={item.question}
                         value={`${categoryIndex}-${itemIndex}`}
-                        className="rounded-lg border border-gray-200 px-6"
+                        className="rounded-2xl border border-gray-100 px-6 shadow-sm"
                       >
                         <AccordionTrigger className="text-left font-semibold hover:no-underline">
                           {item.question}
@@ -195,15 +186,15 @@ export default function FAQPage() {
         <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-6 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                <MessageCircle className="h-8 w-8 text-green-600" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <MessageCircle className="h-8 w-8 text-primary" />
               </div>
             </div>
             <h2 className="mb-4 text-3xl font-bold text-gray-900 sm:text-4xl">
               Still have questions?
             </h2>
             <p className="mb-8 text-lg text-gray-600">
-              Our support team is here to help. Get in touch and we'll respond as
+              Our support team is here to help. Get in touch and we&apos;ll respond as
               soon as possible.
             </p>
             <Link href="/contact" prefetch>

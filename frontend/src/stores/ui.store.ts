@@ -22,7 +22,7 @@ export const useUiStore = create<UiStore>()(
     persist(
       (set) => ({
         theme: 'light',
-        isSidebarOpen: false,
+        isSidebarOpen: true,
         modals: {},
 
         setTheme: (theme) => set({ theme }),

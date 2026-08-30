@@ -5,6 +5,35 @@ from .models import User, StudentProfile, LandlordProfile, CaretakerProfile
 
 logger = logging.getLogger(__name__)
 
+
+def onboard_caretaker_user(caretaker_profile: CaretakerProfile) -> CaretakerProfile:
+    """
+    Give a newly created caretaker a way to log in.
+
+    Mirrors tenants.services.onboard_tenant_user: create an unusable-password
+    account if one doesn't already exist for this email, then email an
+    invite that reuses the password-reset-confirm flow as first-time setup.
+    """
+    user = caretaker_profile.user
+    if user.has_usable_password():
+        return caretaker_profile
+
+    from accounts.models import PasswordResetToken
+    from accounts.tasks import send_caretaker_invite_email
+
+    token = PasswordResetToken.objects.create(
+        user=user,
+        expires_at=timezone.now() + timezone.timedelta(hours=24),
+    )
+    try:
+        send_caretaker_invite_email.delay(
+            user_id=user.id,
+            reset_token=str(token.token),
+        )
+    except Exception:
+        logger.exception('Failed to queue caretaker invite email for user %s', user.id)
+    return caretaker_profile
+
 class OnboardingService:
     """
     Server-authoritative service for managing user onboarding lifecycle.

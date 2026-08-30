@@ -21,7 +21,6 @@ class UserRegistrationSerializer(serializers.Serializer):
     gender = serializers.ChoiceField(choices=['male', 'female', 'other'], required=False)
     date_of_birth = serializers.DateField(required=False)
     university = serializers.CharField(max_length=255, required=False)
-    preferred_hostel_id = serializers.IntegerField(required=False)
     room_number = serializers.CharField(max_length=20, required=False)
     
     # Landlord specific fields

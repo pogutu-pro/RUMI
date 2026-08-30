@@ -73,7 +73,7 @@ def send_notification(recipient_id, notification_type, channel, context):
             if channel == 'email':
                 _send_email_via_mailtrap(recipient.email, subject, message)
             elif channel == 'sms':
-                _send_sms_via_kenyatalking(recipient.phone_number, message)
+                send_sms_via_africastalking(recipient.phone_number, message)
             elif channel == 'in_app':
                 # Already stored in DB, no external service needed
                 pass
@@ -141,7 +141,7 @@ def _create_in_app_message(notification_type, context):
         'booking_expired': "Your room reservation at {{hostel_name}} has expired.",
         'product_listed': "Your product '{{product_title}}' has been listed successfully.",
         'contact_reveal': "Someone revealed contact info for your '{{product_title}}' listing.",
-        'welcome': "Welcome to RUMI! Your account has been verified.",
+        'welcome': "Welcome to RumiaRent! Your account has been verified.",
         'password_reset': "Your password has been reset successfully.",
     }
 
@@ -168,9 +168,13 @@ def _send_email_via_mailtrap(recipient, subject, html_content):
     return email.send(fail_silently=False)
 
 
-def _send_sms_via_kenyatalking(phone_number, message):
+def send_sms_via_africastalking(phone_number, message):
     """
-    Send SMS via kenyan Talking with rate limiting
+    Send SMS via Africa's Talking, with a simple monthly rate limit.
+
+    Public (no leading underscore) so other apps — e.g. the RumiaRent rental
+    domain — can call this directly without depending on the DB-template
+    notification pipeline below.
     """
     if not phone_number:
         raise ValueError("Phone number required for SMS")
@@ -180,29 +184,23 @@ def _send_sms_via_kenyatalking(phone_number, message):
     if monthly_count >= 50:  # Configurable limit
         raise Exception("SMS monthly limit reached")
 
-    # Send SMS
-    try:
-        import kenyastalking
-        kenyastalking.initialize(
-            username=settings.kenyaSTALKING_USERNAME,
-            api_key=settings.kenyaSTALKING_API_KEY
-        )
-        sms = kenyastalking.SMS
-
-        response = sms.send(
-            message=message,
-            recipients=[phone_number]
-        )
-
-        # Increment counter
-        cache.incr('sms:monthly_count')
-        return response
-
-    except ImportError:
-        # Mock SMS sending for development
+    if not settings.AFRICASTALKING_API_KEY:
+        # No credentials configured (e.g. local dev) — mock instead of failing.
         print(f"MOCK SMS to {phone_number}: {message}")
         cache.incr('sms:monthly_count')
         return {"mock": True}
+
+    import africastalking
+    africastalking.initialize(
+        username=settings.AFRICASTALKING_USERNAME,
+        api_key=settings.AFRICASTALKING_API_KEY,
+    )
+    sms = africastalking.SMS
+
+    response = sms.send(message, [phone_number])
+
+    cache.incr('sms:monthly_count')
+    return response
 
 
 @shared_task

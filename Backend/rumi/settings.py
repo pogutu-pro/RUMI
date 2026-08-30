@@ -64,18 +64,16 @@ INSTALLED_APPS = [
     'monitoring',
     # Custom apps
     'accounts',
-    'rent',
-    'hostels',
     'home',
-    'payments',
     'notifications',
-    'admin_api',
-    'analytics',
-    'caretaker_operations',
-    'roommate_system',
-    'support_api',
-    'landlord_api',
-    'student_api'
+    # RumiaRent domain apps
+    'organizations',
+    'properties',
+    'tenants',
+    'rent',
+    'audit',
+    'billing',
+    'support',
 ]
 
 # Custom User Model (matches schema: email as unique identifier)
@@ -96,7 +94,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'rumi.middleware.PerformanceMonitoringMiddleware',
-    'payments.middleware.PrometheusMetricsMiddleware',
     'rumi.middleware.DatabaseQueryCountMiddleware',
     'rumi.middleware.APIResponseCacheMiddleware',
     'rumi.middleware.RateLimitMiddleware',
@@ -200,7 +197,7 @@ SIMPLE_JWT = {
 }
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,https://rumi.co.ke').split(',')
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,https://rumiarent.co.ke').split(',')
 
 # Add common dev ports only in development
 if DEBUG:
@@ -243,33 +240,26 @@ EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@rumia.co.ke')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@rumiarent.co.ke')
 
-# SMS Configuration (kenya's Talking)
-kenyaSTALKING_USERNAME = os.getenv('kenyaSTALKING_USERNAME', 'sandbox')
-kenyaSTALKING_API_KEY = os.getenv('kenyaSTALKING_API_KEY')
+# SMS Configuration (Africa's Talking)
+AFRICASTALKING_USERNAME = os.getenv('AFRICASTALKING_USERNAME', 'sandbox')
+AFRICASTALKING_API_KEY = os.getenv('AFRICASTALKING_API_KEY')
 
 # Paystack Configuration
 PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
 PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
 PAYSTACK_WEBHOOK_SECRET = os.getenv('PAYSTACK_WEBHOOK_SECRET')
 
-# M-Pesa Configuration
-MPESA_CONSUMER_KEY = os.getenv('MPESA_CONSUMER_KEY')
-MPESA_CONSUMER_SECRET = os.getenv('MPESA_CONSUMER_SECRET')
-MPESA_SHORTCODE = os.getenv('MPESA_SHORTCODE')
-MPESA_PASSKEY = os.getenv('MPESA_PASSKEY')
+# Billing Configuration — days a past_due subscription (failed renewal) has
+# before billing.tasks.process_grace_period_expirations suspends it.
+BILLING_GRACE_PERIOD_DAYS = int(os.getenv('BILLING_GRACE_PERIOD_DAYS', '7'))
 
 # Webhook URLs (must include /api/v1/ and trailing slash)
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rumia.co.ke').rstrip('/')
-# BACKEND_API_URL is used for all webhook callback URLs (M-Pesa, etc.)
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rumiarent.co.ke').rstrip('/')
+# BACKEND_API_URL is used for all webhook callback URLs (Paystack, etc.)
 # Must point to the Django backend server — never the Next.js frontend domain.
-BACKEND_API_URL = os.getenv('BACKEND_API_URL', 'https://api.rumia.co.ke').rstrip('/')
-MPESA_CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL', f"{BACKEND_API_URL}/api/v1/payments/webhook/mpesa/stk_push/")
-MPESA_VALIDATION_URL = os.getenv('MPESA_VALIDATION_URL', f"{BACKEND_API_URL}/api/v1/payments/webhook/mpesa/c2b_validation/")
-MPESA_CONFIRMATION_URL = os.getenv('MPESA_C2B_CONFIRMATION_URL', f"{BACKEND_API_URL}/api/v1/payments/webhook/mpesa/c2b_confirmation/")
-
-MPESA_SANDBOX = os.getenv('MPESA_SANDBOX', 'True').lower() == 'true'
+BACKEND_API_URL = os.getenv('BACKEND_API_URL', 'https://api.rumiarent.co.ke').rstrip('/')
 
 # Google Maps Configuration
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
@@ -300,6 +290,35 @@ CELERY_ENABLE_UTC = True
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# NOTE: performance_settings.py's BEAT_SCHEDULE dict was previously never
+# assigned to CELERY_BEAT_SCHEDULE, so none of it actually ran. Wiring it up
+# here so the RUMIA rent-generation/reminder tasks below actually fire.
+from celery.schedules import crontab as _crontab  # noqa: E402
+
+CELERY_BEAT_SCHEDULE = {
+    **performance_settings.get('BEAT_SCHEDULE', {}),
+    'rumia-generate-rent-charges': {
+        'task': 'rent.tasks.generate_rent_charges',
+        'schedule': _crontab(minute=0, hour=1),  # Daily at 1 AM
+    },
+    'rumia-send-rent-reminders': {
+        'task': 'rent.tasks.send_rent_due_reminders',
+        'schedule': _crontab(minute=0, hour=8),  # Daily at 8 AM
+    },
+    'rumia-escalate-overdue-to-next-of-kin': {
+        'task': 'rent.tasks.escalate_overdue_to_next_of_kin',
+        'schedule': _crontab(minute=0, hour=9),  # Daily at 9 AM
+    },
+    'billing-process-grace-period-expirations': {
+        'task': 'billing.tasks.process_grace_period_expirations',
+        'schedule': _crontab(minute=30, hour=1),  # Daily at 1:30 AM
+    },
+    'billing-send-manual-renewal-reminders': {
+        'task': 'billing.tasks.send_manual_renewal_reminders',
+        'schedule': _crontab(minute=30, hour=8),  # Daily at 8:30 AM
+    },
+}
 
 # Performance optimizations
 CELERY_WORKER_CONCURRENCY = int(os.getenv('CELERY_WORKER_CONCURRENCY', '4'))
@@ -561,16 +580,6 @@ LOGGING = performance_settings.get('LOGGING', {
             'handlers': ['error_file'],
             'level': 'ERROR',
             'propagate': True,
-        },
-        'payments': {
-            'handlers': ['console', 'file', 'error_file'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'hostels': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
         },
         'accounts': {
             'handlers': ['console', 'file'],

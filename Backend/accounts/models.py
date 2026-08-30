@@ -41,16 +41,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     """Extended Django User model with role-based authentication"""
 
     ROLE_CHOICES = [
-        ('student', 'Student'),
-        ('TENANT', 'Tenant'),
+        ('student', 'Student'),  # Legacy — use tenant for new registrations
+        ('tenant', 'Tenant'),
         ('landlord', 'Landlord'),
-        ('LANDLORD', 'Landlord'),
         ('caretaker', 'Caretaker'),
-        ('CARETAKER', 'Caretaker'),
         ('tech_support', 'Tech Support Admin'),
-        ('TECH_SUPPORT', 'Tech Support Admin'),
         ('super_admin', 'Super Admin'),
-        ('SUPERADMIN', 'Super Admin'),
     ]
 
     ONBOARDING_STAGE_CHOICES = [
@@ -125,24 +121,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name', 'role']
 
-    @staticmethod
-    def normalize_role(role):
-        if role is None:
-            return 'tenant'
-        mapping = {
-            'SUPERADMIN': 'super_admin',
-            'LANDLORD': 'landlord',
-            'CARETAKER': 'caretaker',
-            'TENANT': 'tenant',
-            'TECH_SUPPORT': 'tech_support',
-            'STUDENT': 'student',
-        }
-        return mapping.get(str(role).upper(), str(role).lower())
-
-    def save(self, *args, **kwargs):
-        self.role = self.normalize_role(self.role)
-        super().save(*args, **kwargs)
-
     class Meta:
         db_table = 'accounts_user'
         indexes = [
@@ -156,6 +134,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self):
         return self.first_name
+
+    def get_canonical_role(self) -> str:
+        """Return canonical role — maps legacy 'student' to 'tenant'."""
+        if self.role == 'student':
+            return 'tenant'
+        return self.role
 
     def __str__(self):
         return f"{self.email} ({self.get_role_display()})"
@@ -184,13 +168,6 @@ class StudentProfile(models.Model):
     course = models.CharField(max_length=255, blank=True, null=True)
     campus = models.CharField(max_length=255, blank=True, null=True)
     high_school = models.CharField(max_length=255, blank=True, null=True)
-    preferred_hostel = models.ForeignKey(
-        'hostels.Hostel',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name='prospective_students'
-    )
     preferred_room_number = models.CharField(max_length=20, blank=True, null=True)
     draft_data = models.JSONField(default=dict, blank=True)
     lifestyle_preferences = models.JSONField(blank=True, null=True)
@@ -382,13 +359,6 @@ class CaretakerProfile(models.Model):
         null=True,
         validators=[MinLengthValidator(5), MaxLengthValidator(20)]
     )
-    hostel = models.ForeignKey(
-        'hostels.Hostel',
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name='caretakers'
-    )
     landlord = models.ForeignKey(
         LandlordProfile,
         on_delete=models.CASCADE,
@@ -420,13 +390,12 @@ class CaretakerProfile(models.Model):
     def validate_readiness(self, raise_exception=True):
         """Strict validation for Caretaker onboarding"""
         required_fields = [
-            (self.hostel, "Assigned Hostel"),
             (self.national_id, "National ID"),
             (self.user.phone_number, "Phone Number"),
         ]
-        
+
         missing = [name for field, name in required_fields if not field]
-        
+
         if missing:
             if raise_exception:
                 from django.core.exceptions import ValidationError
@@ -438,9 +407,8 @@ class CaretakerProfile(models.Model):
         db_table = 'accounts_caretakerprofile'
         indexes = [
             models.Index(fields=['user'], name='idx_caretaker_user'),
-            models.Index(fields=['hostel'], name='idx_caretaker_hostel'),
             models.Index(fields=['landlord'], name='idx_caretaker_landlord'),
-            models.Index(fields=['is_active', 'hostel'], name='idx_caretaker_active'),
+            models.Index(fields=['is_active'], name='idx_caretaker_active'),
         ]
         constraints = [
             models.CheckConstraint(
@@ -450,7 +418,7 @@ class CaretakerProfile(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.user.get_full_name()} - {self.hostel.name}"
+        return f"{self.user.get_full_name()}"
 
 
 class OTPVerification(models.Model):
@@ -641,61 +609,3 @@ class Message(models.Model):
             self.read_at = timezone.now()
             self.save(update_fields=['is_read', 'read_at'])
 
-
-# Import subscription models to register them with Django
-try:
-    from .subscription_models import (
-        SubscriptionPlan, LandlordSubscription,
-        SubscriptionPayment, FeatureAccess
-    )
-except ImportError:
-    pass  # Models will be imported after migration
-except Exception:
-    pass
-
-
-@receiver(post_save, sender=LandlordProfile)
-def create_landlord_subscription_and_features(sender, instance, created, **kwargs):
-    """
-    Automatically create subscription and feature access when landlord profile is created
-    """
-    if created:
-        # Get or create trial plan
-        try:
-            trial_plan = SubscriptionPlan.objects.get(slug='free-trial')
-        except SubscriptionPlan.DoesNotExist:
-            # Create default trial plan if it doesn't exist
-            trial_plan = SubscriptionPlan.objects.create(
-                name='Free Trial',
-                slug='free-trial',
-                plan_type='trial',
-                billing_type='fixed',
-                fixed_price=Decimal('0.00'),
-                trial_duration_days=30,
-                description='1 month free trial with full access to all features',
-                features={
-                    'all_features': True,
-                    'unlimited_access': True
-                }
-            )
-        
-        # Calculate trial dates
-        trial_start = timezone.now().date()
-        trial_end = trial_start + timezone.timedelta(days=30)
-        
-        # Create subscription with trial
-        subscription = LandlordSubscription.objects.create(
-            landlord=instance,
-            plan=trial_plan,
-            status='trial',
-            current_period_start=trial_start,
-            current_period_end=trial_end,
-            next_billing_date=trial_end + timezone.timedelta(days=1),
-            trial_start=trial_start,
-            trial_end=trial_end,
-            is_trial_used=True
-        )
-        
-        # Create feature access (trial gets all features)
-        feature_access = FeatureAccess.objects.create(landlord=instance)
-        feature_access.sync_with_subscription()

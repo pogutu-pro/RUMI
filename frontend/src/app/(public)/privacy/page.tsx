@@ -25,6 +25,10 @@ export default function PrivacyPage() {
             </p>
 
             <div className="prose prose-lg max-w-none space-y-8 text-gray-700">
+              <p className="leading-relaxed">
+                RumiaRent is owned and operated by Stratnovo.
+              </p>
+
               <section>
                 <h2 className="mb-4 text-2xl font-bold text-gray-900">
                   1. Information We Collect
@@ -148,10 +152,10 @@ export default function PrivacyPage() {
                   If you have any questions about this Privacy Policy, please
                   contact us at{' '}
                   <a
-                    href="mailto:privacy@rumi.app"
-                    className="text-green-600 hover:text-green-700 underline"
+                    href="mailto:info@rumiarent.co.ke"
+                    className="text-primary hover:text-primary/80 underline"
                   >
-                    privacy@rumi.app
+                    info@rumiarent.co.ke
                   </a>
                   .
                 </p>

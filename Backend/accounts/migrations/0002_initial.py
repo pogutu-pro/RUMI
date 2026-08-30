@@ -9,21 +9,11 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ("hostels", "0001_initial"),
         ("auth", "0012_alter_user_first_name_max_length"),
         ("accounts", "0001_initial"),
     ]
 
     operations = [
-        migrations.AddField(
-            model_name="caretakerprofile",
-            name="hostel",
-            field=models.OneToOneField(
-                on_delete=django.db.models.deletion.CASCADE,
-                related_name="caretaker",
-                to="hostels.hostel",
-            ),
-        ),
         migrations.AddField(
             model_name="caretakerprofile",
             name="landlord",
@@ -171,16 +161,12 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="caretakerprofile",
-            index=models.Index(fields=["hostel"], name="idx_caretaker_hostel"),
-        ),
-        migrations.AddIndex(
-            model_name="caretakerprofile",
             index=models.Index(fields=["landlord"], name="idx_caretaker_landlord"),
         ),
         migrations.AddIndex(
             model_name="caretakerprofile",
             index=models.Index(
-                fields=["is_active", "hostel"], name="idx_caretaker_active"
+                fields=["is_active"], name="idx_caretaker_active"
             ),
         ),
         migrations.AddConstraint(

@@ -10,7 +10,7 @@ interface UnifiedThemeProviderProps {
 
 
 /**
- * UnifiedThemeProvider consolidates theme management for Rumia.
+ * UnifiedThemeProvider consolidates theme management for RumiaRent.
  * 
  * - Dashboards: Use without forcedTheme to allow Light/Dark/System switching.
  * - Public Pages: Use with forcedTheme="light" to enforce light mode.
@@ -21,7 +21,7 @@ interface UnifiedThemeProviderProps {
  * UnifiedThemeProvider
  * 
  * THEME CONTRACT:
- * 1. This is the SINGLE source of truth for theming in Rumia.
+ * 1. This is the SINGLE source of truth for theming in RumiaRent.
  * 2. Dashboards MUST NOT define their own theme state or providers.
  * 3. Public pages MUST use `forcedTheme="light"`.
  * 4. All styling MUST consume semantic tokens from themes.css.

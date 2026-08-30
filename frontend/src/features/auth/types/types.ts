@@ -13,6 +13,7 @@ export const USER_ROLES = [
   'tech_support_admin',
   'tech_support',
   'super_admin',
+  'tenant',
 ] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
@@ -23,6 +24,8 @@ export const UserRole = {
   TECH_SUPPORT_ADMIN: 'tech_support_admin',
   TECH_SUPPORT: 'tech_support',
   SUPER_ADMIN: 'super_admin',
+  // Canonical RumiaRent rental role — legacy 'student' maps to this server-side.
+  TENANT: 'tenant',
 } as const;
 
 import { StudentProfile, LandlordProfile, CaretakerProfile, LifestylePreferences } from '@/features/profile/types';

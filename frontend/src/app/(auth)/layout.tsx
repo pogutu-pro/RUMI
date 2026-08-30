@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
-import { GoogleAuthProvider } from '@/components/providers/google-auth-provider';
 import { UnifiedThemeProvider } from '@/components/providers/unified-theme-provider';
 
 export const metadata: Metadata = {
-  title: 'Authentication - RUMI',
+  title: 'Authentication - RumiaRent',
   description: 'Sign in or create an account',
 };
 
@@ -14,14 +13,12 @@ export default function AuthLayout({
 }) {
   return (
     <UnifiedThemeProvider forcedTheme="light">
-      <GoogleAuthProvider>
-        <div className="min-h-screen flex items-center justify-center bg-surface py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex items-center justify-center bg-surface py-12 px-4 sm:px-6 lg:px-8">
 
-          <div className="w-full max-w-4xl space-y-8">
-            {children}
-          </div>
+        <div className="w-full max-w-4xl space-y-8">
+          {children}
         </div>
-      </GoogleAuthProvider>
+      </div>
     </UnifiedThemeProvider>
   );
 }

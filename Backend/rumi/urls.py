@@ -25,39 +25,19 @@ from drf_yasg import openapi
 # Swagger/OpenAPI Configuration
 schema_view = get_schema_view(
     openapi.Info(
-        title="RUMI Platform API",
+        title="RumiaRent API",
         default_version='v1',
-        description="RUMI Platform API Documentation - Connecting Students with Quality Accommodation",
-        terms_of_service="https://rumi.co.ke/terms/",
-        contact=openapi.Contact(email="support@rumi.co.ke"),
+        description="RumiaRent API Documentation - Rental management for Kenyan landlords and agents.",
+        terms_of_service="https://rumiarent.co.ke/terms/",
+        contact=openapi.Contact(email="info@rumiarent.co.ke"),
         license=openapi.License(name="Proprietary"),
     ),
     public=True,
     permission_classes=[permissions.AllowAny],
     patterns=[
-        # Landlord APIs
-        path('api/v1/landlord/', include('landlord_api.urls')),
-        path('api/v1/analytics/landlord/', include('analytics.urls')),
-        
-        # Tech Support APIs
-        path('api/v1/support/', include('support_api.urls')),
-        
-        # Payment APIs
-        path('api/v1/payments/', include('payments.urls')),
-        
-        # Admin APIs
-        path('api/v1/admin/', include('admin_api.urls')),
-
-        # Student APIs
-        path('api/v1/students/', include('student_api.urls')),
-        
-        # General APIs
         path('api/v1/accounts/', include('accounts.urls')),
-        path('api/v1/hostels/', include('hostels.urls')),
         path('api/v1/notifications/', include('notifications.urls')),
         path('api/v1/home/', include('home.urls')),
-        path('api/v1/roommates/', include('roommate_system.urls')),
-        path('api/v1/recommendations/', include('recommendations.urls')),
     ],
 )
 
@@ -82,35 +62,14 @@ urlpatterns = [
     # API routes
     path('api/v1/', include([
         path('accounts/', include('accounts.urls')),
-        path('hostels/', include('hostels.urls')),
         path('notifications/', include('notifications.urls')),
-        path('payments/', include('payments.urls')),
         path('home/', include('home.urls')),
-        path('analytics/', include('analytics.urls')),
-        path('roommates/', include('roommate_system.urls')),
-        path('recommendations/', include('recommendations.urls')),
-        
-        # RUMIA rental API
-        path('rent/', include('rent.urls')),
+        path('support/', include('support.urls')),
+        path('billing/', include('billing.urls')),
+        path('organizations/', include('organizations.urls')),
 
-        # Landlord API (new)
-        path('landlord/', include('landlord_api.urls')),
-
-        # Student API (new)
-        path('students/', include('student_api.urls')),
-
-        # Admin endpoints (consolidated)
-        path('admin/', include('admin_api.urls')),
-
-        # Admin endpoints (alternate path for compatibility)
-        path('users/admin/', include('admin_api.urls')),
-
-        # Caretaker endpoints (aligned with frontend)
-        path('caretaker/', include('caretaker_operations.urls')),
-
-        # Tech Support endpoints
-        path('support/', include('support_api.urls')),
-
+        # RumiaRent canonical domain APIs
+        path('', include('rumia_api.urls')),
     ])),
 ]
 

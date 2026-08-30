@@ -3,47 +3,46 @@ import { PublicHeader } from '@/components/layouts/public-header';
 import { Footer } from '@/components/layouts/public-footer';
 import { MobileBottomNav } from '@/components/layouts/mobile-bottom-nav';
 import { UnifiedThemeProvider } from '@/components/providers/unified-theme-provider';
-import { CompareTray } from '@/features/hostels';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Rumia - Your Campus Accommodation, Simplified',
-    template: '%s | Rumia',
+    default: 'RumiaRent - Rental Management for Kenyan Landlords',
+    template: '%s | RumiaRent',
   },
   description:
-    'Find verified campus hostels with safe bookings and trusted landlords. Rumia makes student housing simple.',
+    'RumiaRent helps Kenyan landlords and agents manage properties, track tenants, and collect rent. Simple enough to start using today.',
   keywords: [
-    'student accommodation',
-    'campus housing',
-    'hostel booking',
-    'student housing',
-    'campus hostels',
+    'rental management Kenya',
+    'landlord software Kenya',
+    'property management system Kenya',
+    'rent collection app',
+    'tenant management software',
   ],
-  authors: [{ name: 'Rumia' }],
-  creator: 'Rumia',
+  authors: [{ name: 'Stratnovo' }],
+  creator: 'Stratnovo',
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://rumia.co.ke',
-    siteName: 'Rumia',
-    title: 'Rumia - Your Campus Life, Simplified',
+    url: 'https://rumiarent.co.ke',
+    siteName: 'RumiaRent',
+    title: 'RumiaRent - Rental Management for Kenyan Landlords',
     description:
-      'Find verified campus hostels with safe bookings and trusted landlords. Rumia makes student housing simple.',
+      'Properties, units, tenants, rent, and payments in one simple place for Kenyan landlords and property agents.',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Rumia student accommodation platform',
+        alt: 'RumiaRent rental management platform',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Rumia - Your Campus Life, Simplified',
+    title: 'RumiaRent - Rental Management for Kenyan Landlords',
     description:
-      'Find verified campus hostels with safe bookings and trusted landlords.',
+      'Manage properties, tenants, and rent collection in one place.',
     images: ['/og-image.png'],
   },
   robots: {
@@ -71,7 +70,6 @@ export default function PublicLayout({ children }: LayoutProps) {
         <main className="flex-1 pb-16 md:pb-0">{children}</main>
         <Footer />
         <MobileBottomNav />
-        <CompareTray comparePath="/compare" />
       </div>
     </UnifiedThemeProvider>
   );

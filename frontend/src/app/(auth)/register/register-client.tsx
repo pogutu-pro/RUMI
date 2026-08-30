@@ -1,60 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
-import { 
-  AuthCard, 
-  RoleSelector, 
-  StudentRegisterForm, 
-  LandlordRegisterForm, 
-  CaretakerRegistrationForm,
-  GoogleAuthButton,
-  GoogleRoleSelection,
-  OAuthDivider
-} from '@/features/auth';
-import type { UserRole } from '@/types/auth.types';
+import { AuthCard, LandlordRegisterForm } from '@/features/auth';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 import Image from 'next/image';
 
-type RegisterableRole = Extract<UserRole, 'student' | 'landlord'>;
-
+/**
+ * Only organisations (landlords / agents) register here. Tenants never
+ * self-register — they're invited by their landlord or caretaker once
+ * added to a property, and set their password from that invite email.
+ */
 export function RegisterClientPage() {
-  const [selectedRole, setSelectedRole] =
-    useState<RegisterableRole | null>(null);
-  const [googleData, setGoogleData] = useState<{ userInfo: any; accessToken: string } | null>(null);
-
-  const handleGoogleSuccess = (data: any) => {
-    if (data.userInfo) {
-      setGoogleData(data);
-    }
-  };
-
-  if (googleData) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50/30 p-4 pt-12">
-        <section className="w-full max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.2 }}
-          >
-            <GoogleRoleSelection 
-              userInfo={googleData.userInfo} 
-              accessToken={googleData.accessToken}
-              initialRole={selectedRole}
-              onBack={() => setGoogleData(null)} 
-            />
-          </motion.div>
-        </section>
-      </main>
-    );
-  }
-
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 p-4 pt-12">
-      <section className="w-full max-w-4xl mx-auto">
+      <section className="w-full max-w-2xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -65,7 +27,7 @@ export function RegisterClientPage() {
               <Link href="/">
                 <Image
                   src="/images/logo/logo.svg"
-                  alt="RUMI"
+                  alt="RumiaRent"
                   width={32}
                   height={32}
                   className="w-8 h-auto"
@@ -73,21 +35,11 @@ export function RegisterClientPage() {
                 />
               </Link>
             }
-            title={<span className="font-black text-3xl tracking-tight">Create your Rumi account</span>}
-            description={<span className="text-gray-500 font-bold uppercase tracking-wider text-xs">Choose your role to get started</span>}
+            title={<span className="font-black text-3xl tracking-tight">Create your RumiaRent account</span>}
+            description={<span className="text-gray-500 font-bold uppercase tracking-wider text-xs">For landlords and agents. Your tenants will be added by you, not through sign up.</span>}
           >
             <div className="space-y-8">
-                <RoleSelector
-                  value={selectedRole}
-                  onValueChange={setSelectedRole}
-                />
-
-              {selectedRole && (
-                <div className="pt-8 border-t border-gray-100 animate-in fade-in slide-in-from-top-6 duration-700">
-                  {selectedRole === 'student' && <StudentRegisterForm onGoogleSuccess={handleGoogleSuccess} />}
-                  {selectedRole === 'landlord' && <LandlordRegisterForm onGoogleSuccess={handleGoogleSuccess} />}
-                </div>
-              )}
+              <LandlordRegisterForm />
 
               <div className="pt-4 border-t-2 border-primary/10 text-center text-sm font-bold text-gray-500">
                 Already have an account?{' '}
@@ -107,4 +59,3 @@ export function RegisterClientPage() {
 }
 
 export default RegisterClientPage;
-

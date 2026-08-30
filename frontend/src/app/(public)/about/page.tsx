@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { AUTH_ROUTES } from '@/lib/constants/routes';
 
 export const metadata: Metadata = {
-  title: 'About Rumia - The Operating System for Student Housing',
+  title: 'About RumiaRent',
   description:
-    'Rumia is the infrastructure layer for student housing in kenya, connecting listings, bookings, payments, and operations.',
+    'RumiaRent is rental management software built for Kenyan landlords and property agents: properties, tenants, rent, and payments in one place.',
 };
 
 export default function AboutPage() {
@@ -16,11 +17,12 @@ export default function AboutPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl">
             <h1 className="mb-6 text-4xl font-extrabold text-primary sm:text-5xl">
-              RUMI — The Operating System for Student Housing in kenya
+              Rental management, built for how landlords actually work
             </h1>
             <p className="text-xl text-gray-700 font-medium leading-relaxed max-w-3xl">
-              We are building the digital infrastructure that powers the entire
-              student housing lifecycle — from discovery to move-out.
+              RumiaRent is owned and operated by Stratnovo. We build exactly what a
+              Kenyan landlord or agent needs to run their rentals, so you can start
+              using it today instead of setting it up for a week.
             </p>
           </div>
         </div>
@@ -31,20 +33,20 @@ export default function AboutPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl">
             <h2 className="mb-8 text-3xl font-bold text-gray-900">
-              Built for How Student Housing Actually Works
+              Most landlords are running rentals on WhatsApp and spreadsheets
             </h2>
             <div className="space-y-6 text-gray-700 leading-relaxed font-medium text-lg">
               <p>
-                Most property management software is designed for conventional
-                rentals with long-term tenants, predictable billing cycles, and
-                simple landlord–tenant relationships. Student housing does not
-                work this way.
+                Not because they don&apos;t care about their business, but because most
+                property management software is built for large portfolios with
+                dedicated staff, not for a landlord with a handful of units who
+                just needs to know who paid and who didn&apos;t.
               </p>
               <p>
-                Around universities and colleges, housing is defined by shared
-                rooms and beds, semester-based occupancy, high tenant turnover,
-                frequent payments, and operational complexity handled by
-                caretakers. RUMI is purpose-built for this reality.
+                RumiaRent is built for that landlord first: properties, units, tenants,
+                and rent charges, with payment collection that actually works in
+                Kenya. Paystack for card and bank payments, and simple cash
+                recording for everything else.
               </p>
             </div>
           </div>
@@ -56,46 +58,43 @@ export default function AboutPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl">
             <h2 className="mb-12 text-3xl font-bold text-primary">
-              Connecting the Entire Lifecycle
+              What we actually do
             </h2>
             <div className="grid gap-8 md:grid-cols-2">
-              <div className="border border-gray-200 bg-white p-8 rounded-none">
+              <div className="border border-gray-100 bg-white p-8 rounded-3xl shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5 duration-300">
                 <h3 className="mb-3 text-xl font-bold text-gray-900">
-                  Discovery & Booking
+                  Properties & Tenants
                 </h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Students find verified listings and book specific beds, not
-                  just rooms. We verify every property to ensure safety and
-                  quality.
+                  Every property, unit, and tenancy in one record: who lives where,
+                  since when, and at what rent.
                 </p>
               </div>
-              <div className="border border-gray-200 bg-white p-8 rounded-none">
+              <div className="border border-gray-100 bg-white p-8 rounded-3xl shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5 duration-300">
                 <h3 className="mb-3 text-xl font-bold text-gray-900">
-                  Integrated Payments
+                  Rent & Payments
                 </h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Deep M-PESA integration (Paybill, STK Push) supports
-                  structured rent collection mapped directly to individual
-                  students and rent periods.
+                  Rent charges generate automatically. Payments come in via Paystack
+                  or get recorded by hand, and either way, balances stay accurate.
                 </p>
               </div>
-              <div className="border border-gray-200 bg-white p-8 rounded-none">
+              <div className="border border-gray-100 bg-white p-8 rounded-3xl shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5 duration-300">
                 <h3 className="mb-3 text-xl font-bold text-gray-900">
-                  Unified Operations
+                  One place, not five apps
                 </h3>
                 <p className="text-gray-600 leading-relaxed">
-                  A single system for occupancy management, caretaker workflows,
-                  and tenant onboarding. No more fragmented WhatsApp groups.
+                  No more piecing together a WhatsApp group, a notebook, and a
+                  bank statement to know where things stand.
                 </p>
               </div>
-              <div className="border border-gray-200 bg-white p-8 rounded-none">
+              <div className="border border-gray-100 bg-white p-8 rounded-3xl shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5 duration-300">
                 <h3 className="mb-3 text-xl font-bold text-gray-900">
-                  System of Record
+                  A real source of truth
                 </h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Rumia provides a single source of truth for financial
-                  reporting, reducing disputes and giving owners real-time
-                  visibility.
+                  Every payment is tied to a rent charge, and every rent charge to a
+                  tenancy, so the numbers always add up.
                 </p>
               </div>
             </div>
@@ -108,16 +107,16 @@ export default function AboutPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="mb-6 text-3xl font-bold text-primary">
-              Our Mission
+              Our approach
             </h2>
             <p className="text-xl text-gray-700 font-medium leading-relaxed mb-8">
-              To bring order, transparency, and scalability to student housing
-              in kenya. Rumia is the platform that brings modern financial and
-              operational workflows to the student accommodation sector.
+              Build what one landlord would pay for. Then make it work for every
+              landlord who needs the same thing. We&apos;d rather ship four things
+              that work perfectly than forty that don&apos;t.
             </p>
             <div className="flex justify-center gap-4">
-              <Link href="/hostels" prefetch>
-                <Button size="lg">Explore Listings</Button>
+              <Link href={`${AUTH_ROUTES.REGISTER}?role=landlord`} prefetch>
+                <Button size="lg">Get Started</Button>
               </Link>
             </div>
           </div>

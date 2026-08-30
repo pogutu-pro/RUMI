@@ -130,7 +130,7 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
         variant: "default",
       });
       
-      router.push(role === 'student' ? '/student/dashboard' : '/landlord/dashboard');
+      router.push(role === 'student' ? '/tenant/rental' : '/landlord/rental');
     } catch (error: any) {
       toast({
         title: "Finalization Failed",
@@ -390,7 +390,7 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="font-bold uppercase text-xs text-gray-500">Company / Property Name</FormLabel>
-                      <FormControl><Input {...field} placeholder="e.g. Rumia Property Management" className="rounded-none border-2 h-14" /></FormControl>
+                      <FormControl><Input {...field} placeholder="e.g. RumiaRent Property Management" className="rounded-none border-2 h-14" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

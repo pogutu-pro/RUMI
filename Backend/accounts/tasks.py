@@ -14,11 +14,11 @@ def send_verification_email(user_id, otp_code, first_name):
     from .models import User
     try:
         user = User.objects.get(id=user_id)
-        subject = 'Verify Your RUMI Account'
+        subject = 'Verify Your RumiaRent Account'
         message = f"""
         Hi {first_name},
 
-        Welcome to RUMI! Please verify your email address using this code:
+        Welcome to RumiaRent! Please verify your email address using this code:
 
         {otp_code}
 
@@ -27,7 +27,7 @@ def send_verification_email(user_id, otp_code, first_name):
         If you didn't create an account, please ignore this email.
 
         Best regards,
-        RUMI Team
+        RumiaRent Team
         """
 
         send_branded_email(
@@ -50,11 +50,11 @@ def send_welcome_email(user_id):
     from .models import User
     try:
         user = User.objects.get(id=user_id)
-        subject = 'Welcome to RUMI!'
+        subject = 'Welcome to RumiaRent!'
         message = f"""
         Hi {user.first_name},
 
-        Welcome to RUMI! Your account has been successfully verified.
+        Welcome to RumiaRent! Your account has been successfully verified.
 
         You can now:
         - Browse and book hostels
@@ -64,7 +64,7 @@ def send_welcome_email(user_id):
         Start exploring: https://rumi.co.ke/dashboard
 
         Best regards,
-        RUMI Team
+        RumiaRent Team
         """
 
         send_branded_email(
@@ -80,6 +80,79 @@ def send_welcome_email(user_id):
 
 
 @shared_task
+def send_tenant_invite_email(user_id, reset_token, property_name=''):
+    """
+    Sent once when a landlord/caretaker adds a tenant to RumiaRent — the tenant has
+    no password yet, so this reuses the password-reset confirm flow as the
+    account setup step rather than building a separate one.
+    """
+    from .models import User
+    try:
+        user = User.objects.get(id=user_id)
+        setup_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
+        property_line = f' for {property_name}' if property_name else ''
+
+        subject = 'You have been added to RumiaRent'
+        message = f"""
+        Hi {user.first_name},
+
+        You have been added as a tenant{property_line} on RumiaRent.
+
+        Set up your password to log in and view your tenancy, rent balance, and
+        payment history:
+        {setup_url}
+
+        This link will expire in 24 hours.
+
+        Best regards,
+        RumiaRent Team
+        """
+
+        send_branded_email(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+        )
+    except User.DoesNotExist:
+        pass
+
+
+@shared_task
+def send_caretaker_invite_email(user_id, reset_token):
+    """Sent once when a landlord adds a caretaker to RumiaRent."""
+    from .models import User
+    try:
+        user = User.objects.get(id=user_id)
+        setup_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
+
+        subject = 'You have been added to RumiaRent'
+        message = f"""
+        Hi {user.first_name},
+
+        You have been added as a caretaker on RumiaRent.
+
+        Set up your password to log in and manage your assigned properties
+        and tenants:
+        {setup_url}
+
+        This link will expire in 24 hours.
+
+        Best regards,
+        RumiaRent Team
+        """
+
+        send_branded_email(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+        )
+    except User.DoesNotExist:
+        pass
+
+
+@shared_task
 def send_password_reset_email(user_id, reset_token):
     """
     Send password reset email
@@ -89,11 +162,11 @@ def send_password_reset_email(user_id, reset_token):
         user = User.objects.get(id=user_id)
         reset_url = f"https://rumi.co.ke/reset-password?token={reset_token}"
 
-        subject = 'Reset Your RUMI Password'
+        subject = 'Reset Your RumiaRent Password'
         message = f"""
         Hi {user.first_name},
 
-        You requested a password reset for your RUMI account.
+        You requested a password reset for your RumiaRent account.
 
         Click this link to reset your password:
         {reset_url}
@@ -103,7 +176,7 @@ def send_password_reset_email(user_id, reset_token):
         If you didn't request this reset, please ignore this email.
 
         Best regards,
-        RUMI Team
+        RumiaRent Team
         """
 
         send_branded_email(
@@ -130,11 +203,11 @@ def send_caretaker_welcome_email(caretaker_id, temporary_password):
         hostel = caretaker.hostel
         landlord = caretaker.landlord
 
-        subject = 'Welcome to RUMI - Caretaker Account Created'
+        subject = 'Welcome to RumiaRent - Caretaker Account Created'
         message = f"""
         Hi {user.first_name},
 
-        A caretaker account has been created for you on RUMI.
+        A caretaker account has been created for you on RumiaRent.
 
         Hostel: {hostel.name}
         Landlord: {landlord.company_name or landlord.user.get_full_name()}
@@ -147,7 +220,7 @@ def send_caretaker_welcome_email(caretaker_id, temporary_password):
         You will be prompted to verify your email address.
 
         Best regards,
-        RUMI Team
+        RumiaRent Team
         """
 
         send_branded_email(
@@ -172,7 +245,7 @@ def send_caretaker_termination_email(caretaker_id, reason):
         caretaker = CaretakerProfile.objects.select_related('user').get(id=caretaker_id)
         user = caretaker.user
 
-        subject = 'RUMI Caretaker Account Update'
+        subject = 'RumiaRent Caretaker Account Update'
         message = f"""
         Hi {user.first_name},
 
@@ -185,7 +258,7 @@ def send_caretaker_termination_email(caretaker_id, reason):
         If you believe this is an error, please contact your landlord directly.
 
         Best regards,
-        RUMI Team
+        RumiaRent Team
         """
 
         send_branded_email(
@@ -209,18 +282,18 @@ def send_account_deactivation_email(user_id, reason):
     try:
         user = User.objects.get(id=user_id)
 
-        subject = 'RUMI Account Deactivated'
+        subject = 'RumiaRent Account Deactivated'
         message = f"""
         Hi {user.first_name},
 
-        Your RUMI account has been deactivated.
+        Your RumiaRent account has been deactivated.
 
         Reason: {reason}
 
         If you believe this is an error, please contact support.
 
         Best regards,
-        RUMI Team
+        RumiaRent Team
         """
 
         send_branded_email(
@@ -246,28 +319,28 @@ def send_landlord_verification_email(landlord_id, approved, reason=None):
         user = landlord.user
 
         if approved:
-            subject = 'RUMI Landlord Account Approved'
+            subject = 'RumiaRent Landlord Account Approved'
             message = f"""
             Hi {user.first_name},
 
             Congratulations! Your landlord account has been approved.
 
             You can now:
-            - List your hostels on RUMI
+            - Manage your properties on RumiaRent
             - Manage your properties
             - Receive automated payments
 
             Start listing: https://rumi.co.ke/dashboard
 
             Best regards,
-            RUMI Team
+            RumiaRent Team
             """
         else:
-            subject = 'RUMI Landlord Application Update'
+            subject = 'RumiaRent Landlord Application Update'
             message = f"""
             Hi {user.first_name},
 
-            Thank you for your interest in RUMI.
+            Thank you for your interest in RumiaRent.
 
             Unfortunately, we are unable to approve your landlord application at this time.
 
@@ -276,7 +349,7 @@ def send_landlord_verification_email(landlord_id, approved, reason=None):
             You can reapply after addressing the issues mentioned.
 
             Best regards,
-            RUMI Team
+            RumiaRent Team
             """
 
         send_branded_email(

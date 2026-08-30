@@ -2,13 +2,13 @@
 
 /**
  * Mobile Bottom Navigation for public pages
- * Sticky navigation bar with Home, Hostels, Profile, and More tabs
+ * Sticky navigation bar with Home, Pricing, Profile, and More tabs
  */
 
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Building2, User, Menu } from 'lucide-react';
+import { Home, CreditCard, User, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { PublicMenuContent } from '@/components/layouts/public-menu-content';
@@ -26,9 +26,9 @@ const NAV_ITEMS: NavItem[] = [
     icon: <Home className="h-5 w-5" />,
   },
   {
-    href: '/hostels',
-    label: 'Hostels',
-    icon: <Building2 className="h-5 w-5" />,
+    href: '/pricing',
+    label: 'Pricing',
+    icon: <CreditCard className="h-5 w-5" />,
   },
   {
     href: '/profile',
@@ -145,7 +145,7 @@ export function MobileBottomNav() {
                         <PublicMenuContent 
                           onClose={() => setIsOpen(false)} 
                           isGrid 
-                          excludeItems={['/', '/hostels']}
+                          excludeItems={['/', '/pricing']}
                         />
                      </div>
                   </SheetContent>

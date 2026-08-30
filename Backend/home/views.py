@@ -14,108 +14,6 @@ from rest_framework.viewsets import ModelViewSet
 from .models import Page, TeamMember, ContactInquiry, FAQ, BlogPost, Newsletter, Testimonial, Statistics
 
 
-class LandingPageView(APIView):
-    """Get landing page data"""
-
-    permission_classes = [permissions.AllowAny]
-
-    def get(self, request):
-        """Return landing page data"""
-        cached = cache.get('home_data')
-        if cached is not None:
-            return Response(cached)
-
-        # Cache statistics for 1 hour to reduce database queries (optimization for high traffic)
-        cache_key_stats = 'landing_page_stats'
-        stats_data = cache.get(cache_key_stats)
-        if stats_data is None:
-            statistics = Statistics.objects.filter(is_active=True).order_by('display_order')
-            stats_data = [
-                {
-                    'label': stat.stat_label,
-                    'value': stat.stat_value,
-                    'icon': stat.stat_icon
-                }
-                for stat in statistics
-            ]
-            cache.set(cache_key_stats, stats_data, timeout=3600)  # 1 hour
-
-        # Cache featured testimonials for 30 minutes (optimization for frequently accessed data)
-        cache_key_testimonials = 'landing_page_testimonials'
-        testimonials_data = cache.get(cache_key_testimonials)
-        if testimonials_data is None:
-            testimonials = Testimonial.objects.filter(
-                is_published=True,
-                is_featured=True
-            ).order_by('display_order')[:3]
-
-            testimonials_data = [
-                {
-                    'author_name': t.author_name,
-                    'author_role': t.author_role,
-                    'author_university': t.author_university,
-                    'author_photo': t.author_photo,
-                    'testimonial_text': t.testimonial_text,
-                    'rating': t.rating
-                }
-                for t in testimonials
-            ]
-            cache.set(cache_key_testimonials, testimonials_data, timeout=1800)  # 30 minutes
-
-        # Mock featured hostels (would come from hostels app)
-        featured_hostels = [
-            {
-                'hostel_id': 1,
-                'name': 'University Heights',
-                'university': 'University of Nairobi',
-                'min_price': 5000.00,
-                'available_rooms': 15,
-                'rating': 4.5,
-                'image': 'https://example.com/hostel1.jpg'
-            }
-        ]
-
-        # Platform features
-        features = [
-            {
-                'title': 'Verified Hostels',
-                'description': 'All hostels verified for quality and safety',
-                'icon': 'shield-check'
-            },
-            {
-                'title': 'Secure Payments',
-                'description': 'Pay securely via M-Pesa with platform protection',
-                'icon': 'lock'
-            },
-            {
-                'title': 'Roommate Matching',
-                'description': 'Find compatible roommates based on lifestyle',
-                'icon': 'users'
-            },
-            {
-                'title': 'Student Marketplace',
-                'description': 'Buy and sell items within your university',
-                'icon': 'shopping-bag'
-            }
-        ]
-
-        response_data = {
-            'hero': {
-                'title': 'Find Your Perfect Student Accommodation',
-                'subtitle': 'Browse verified hostels near your university. Book rooms with confidence.',
-                'cta_buttons': [
-                    {'text': 'Find Rooms', 'link': '/hostels'},
-                    {'text': 'List Your Hostel', 'link': '/landlord/register'}
-                ]
-            },
-            'statistics': stats_data,
-            'featured_hostels': featured_hostels,
-            'testimonials': testimonials_data,
-            'features': features
-        }
-        cache.set('home_data', response_data, timeout=900)
-        return Response(response_data, status=status.HTTP_200_OK)
-
 
 class AboutUsView(APIView):
     """Get about us page content"""
@@ -313,8 +211,8 @@ class ContactInfoView(APIView):
     def get(self, request):
         """Return contact information"""
         return Response({
-            'email': 'hello@rumi.co.ke',
-            'support_email': 'support@rumi.co.ke',
+            'email': 'info@rumiarent.co.ke',
+            'support_email': 'info@rumiarent.co.ke',
             'phone': '+254 700 000 000',
             'whatsapp': '+254 700 000 000',
             'address': {

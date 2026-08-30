@@ -76,19 +76,19 @@ export default function PWAInstallPrompt() {
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl p-4 flex flex-col gap-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-md">
-                <Download className="w-6 h-6 text-green-600 dark:text-green-500" />
+              <div className="bg-primary/10 p-2 rounded-md">
+                <Download className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
-                  {isIOS ? 'Install Rumia on iOS' : isMobile ? 'Install App' : 'Install Desktop App'}
+                  {isIOS ? 'Install RumiaRent on iOS' : isMobile ? 'Install App' : 'Install Desktop App'}
                 </h3>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {isIOS 
-                    ? 'Tap the Share button and select "Add to Home Screen"' 
-                    : isMobile 
-                      ? 'Install Rumia for a better mobile experience.' 
-                      : 'Install Rumia on your desktop for quick access.'}
+                  {isIOS
+                    ? 'Tap the Share button and select "Add to Home Screen"'
+                    : isMobile
+                      ? 'Install RumiaRent for a better mobile experience.'
+                      : 'Install RumiaRent on your desktop for quick access.'}
                 </p>
               </div>
             </div>

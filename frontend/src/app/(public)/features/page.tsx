@@ -1,55 +1,62 @@
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { AUTH_ROUTES } from '@/lib/constants/routes';
 
 export const metadata: Metadata = {
   title: 'Features',
-  description: 'Platform features for students and landlords.',
+  description: 'What RumiaRent does for landlords, agents, and tenants.',
 };
-
-const STUDENT_FEATURES = [
-  {
-    title: 'Search and Filter',
-    description:
-      'Filter hostels by location, price range, room type, and amenities.',
-  },
-  {
-    title: 'Verified Listings',
-    description:
-      'All hostels undergo license verification and physical inspection.',
-  },
-  {
-    title: 'M-PESA Payments',
-    description:
-      'Pay rent securely via M-PESA with instant confirmation.',
-  },
-  {
-    title: 'Booking History',
-    description:
-      'Access past bookings and payment receipts from your dashboard.',
-  },
-];
 
 const LANDLORD_FEATURES = [
   {
-    title: 'Property Listing',
+    title: 'Properties & units',
     description:
-      'Upload hostel details, photos, and set room pricing.',
+      'Organize every property into units, whether that’s apartments, houses, or an estate. See vacancy status at a glance.',
   },
   {
-    title: 'Availability Control',
+    title: 'Tenants & tenancies',
     description:
-      'Update room availability in real-time as students book.',
+      'Attach tenants to units with a start date and rent amount. One active tenancy per unit, always.',
   },
   {
-    title: 'Payment Tracking',
+    title: 'Automatic rent charges',
     description:
-      'View all incoming M-PESA payments and download reports.',
+      'RumiaRent generates the next rent charge for every active tenancy, so there is no manual invoicing.',
   },
   {
-    title: 'Booking Management',
+    title: 'Paystack & cash payments',
     description:
-      'Review student bookings and manage check-in dates.',
+      'Accept card and bank payments via Paystack, or record cash and bank payments yourself.',
+  },
+  {
+    title: 'Outstanding & overdue tracking',
+    description:
+      'See exactly who owes what, and which charges are overdue, without opening a spreadsheet.',
+  },
+  {
+    title: 'Caretaker access, scoped',
+    description:
+      'Give caretakers access to only the properties they manage. Nothing more.',
+  },
+];
+
+const TENANT_FEATURES = [
+  {
+    title: 'Your tenancy, at a glance',
+    description: 'See your unit, your monthly rent, and when it’s due.',
+  },
+  {
+    title: 'Real-time balance',
+    description: 'Know exactly what you owe, with no waiting on your landlord to tell you.',
+  },
+  {
+    title: 'Pay via Paystack',
+    description: 'Pay your rent securely from your dashboard, in seconds.',
+  },
+  {
+    title: 'Payment history',
+    description: 'Every payment is recorded and confirmed, always available to you.',
   },
 ];
 
@@ -57,36 +64,37 @@ export default function FeaturesPage() {
   return (
     <div className="flex flex-col bg-white text-gray-900">
       {/* Header */}
-      <section className="bg-white py-24 relative overflow-hidden border-b border-gray-200">
+      <section className="bg-white py-24 relative overflow-hidden border-b border-gray-100">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl">
-            <h1 className="mb-4 text-4xl font-extrabold text-primary">
-              Platform Features
+            <h1 className="mb-4 text-4xl font-bold text-primary">
+              Built for how rentals actually work
             </h1>
-            <p className="text-xl text-gray-700 font-medium leading-relaxed">
-              Core functions available to students and landlords.
+            <p className="text-xl text-gray-600 leading-relaxed">
+              Properties, tenants, rent, and payments. Everything a landlord or agent
+              actually needs, and nothing they don&apos;t.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Student Features */}
+      {/* Landlord Features */}
       <section className="bg-white py-24">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl">
-            <h2 className="mb-12 text-3xl font-bold text-primary">
-              For Students
+            <h2 className="mb-12 text-3xl font-bold text-gray-900">
+              For Landlords & Agents
             </h2>
-            <div className="grid gap-8 md:grid-cols-2">
-              {STUDENT_FEATURES.map((feature) => (
+            <div className="grid gap-6 md:grid-cols-2">
+              {LANDLORD_FEATURES.map((feature) => (
                 <div
                   key={feature.title}
-                  className="bg-white p-8 rounded-none border-b-4 border-gray-100 shadow-sm hover:border-primary transition-all"
+                  className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5 duration-300"
                 >
-                  <h3 className="mb-3 text-xl font-bold text-primary transition-colors">
+                  <h3 className="mb-3 text-xl font-bold text-gray-900">
                     {feature.title}
                   </h3>
-                  <p className="text-base text-gray-600 font-medium">
+                  <p className="text-base text-gray-600 leading-relaxed">
                     {feature.description}
                   </p>
                 </div>
@@ -96,23 +104,23 @@ export default function FeaturesPage() {
         </div>
       </section>
 
-      {/* Landlord Features */}
-      <section className="bg-white py-24">
+      {/* Tenant Features */}
+      <section className="bg-gray-50/50 py-24">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl">
-            <h2 className="mb-12 text-3xl font-bold text-primary">
-              For Landlords
+            <h2 className="mb-12 text-3xl font-bold text-gray-900">
+              For Tenants
             </h2>
-            <div className="grid gap-8 md:grid-cols-2">
-              {LANDLORD_FEATURES.map((feature) => (
+            <div className="grid gap-6 md:grid-cols-2">
+              {TENANT_FEATURES.map((feature) => (
                 <div
                   key={feature.title}
-                  className="bg-gray-50 p-8 rounded-none border-b-4 border-gray-200 shadow-sm hover:border-primary transition-all"
+                  className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5 duration-300"
                 >
-                  <h3 className="mb-3 text-xl font-bold text-primary transition-colors">
+                  <h3 className="mb-3 text-xl font-bold text-gray-900">
                     {feature.title}
                   </h3>
-                  <p className="text-base text-gray-600 font-medium">
+                  <p className="text-base text-gray-600 leading-relaxed">
                     {feature.description}
                   </p>
                 </div>
@@ -127,14 +135,14 @@ export default function FeaturesPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl">
             <div className="flex flex-col gap-4 sm:flex-row">
-              <Link href="/hostels" prefetch>
-                <Button size="lg">
-                  Browse Hostels
+              <Link href={`${AUTH_ROUTES.REGISTER}?role=landlord`} prefetch>
+                <Button size="lg" className="rounded-full h-14 px-8 text-lg font-medium">
+                  Start managing your properties
                 </Button>
               </Link>
-              <Link href="/register" prefetch>
-                <Button size="lg" variant="outline">
-                  Create Account
+              <Link href="/pricing" prefetch>
+                <Button size="lg" variant="outline" className="rounded-full h-14 px-8 text-lg font-medium">
+                  See pricing
                 </Button>
               </Link>
             </div>

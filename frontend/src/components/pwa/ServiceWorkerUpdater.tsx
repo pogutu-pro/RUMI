@@ -52,11 +52,11 @@ export default function ServiceWorkerUpdater() {
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-4 py-3 rounded-lg shadow-xl border border-zinc-700 dark:border-zinc-300">
       <RefreshCw className="w-4 h-4 shrink-0" />
-      <span className="text-sm">A new version of Rumia is available.</span>
+      <span className="text-sm">A new version of RumiaRent is available.</span>
       <Button
         size="sm"
         onClick={applyUpdate}
-        className="bg-green-600 hover:bg-green-700 text-white h-7 px-3 text-xs"
+        className="bg-primary hover:bg-primary/90 text-white h-7 px-3 text-xs"
       >
         Update
       </Button>

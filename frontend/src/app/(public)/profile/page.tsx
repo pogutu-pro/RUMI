@@ -7,7 +7,7 @@ import { AUTH_ROUTES } from '@/lib/constants/routes';
 
 export const metadata: Metadata = {
   title: 'Profile',
-  description: 'Manage your RUMI profile, bookings, and preferences',
+  description: 'Manage your RumiaRent profile, bookings, and preferences',
 };
 
 export default function ProfilePage() {
@@ -118,8 +118,8 @@ export default function ProfilePage() {
 
           <Card className="p-6 hover:shadow-md transition-shadow cursor-pointer">
             <div className="flex items-start gap-4">
-              <div className="rounded-lg bg-green-100 p-3">
-                <HelpCircle className="h-6 w-6 text-green-600" />
+              <div className="rounded-lg bg-primary/10 p-3">
+                <HelpCircle className="h-6 w-6 text-primary" />
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-900 mb-1">Help \u0026 Support</h3>

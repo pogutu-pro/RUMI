@@ -75,7 +75,7 @@ export const PublicHeader = React.memo(function PublicHeader({
               <div className="relative h-16 w-16 xs:h-20 xs:w-20 overflow-hidden rounded-lg transition-transform group-hover:scale-105">
                 <Image
                   src="/images/logo/logo.svg"
-                  alt="Rumia Logo"
+                  alt="RumiaRent Logo"
                   width={80}
                   height={80}
                   priority
@@ -92,10 +92,10 @@ export const PublicHeader = React.memo(function PublicHeader({
                 aria-label="Main navigation"
               >
                 {[
-                    { href: '/hostels', label: 'Find a Hostel' },
-                    { href: '/host', label: 'List your Hostel' },
-                    { href: '/about', label: 'About Us' },
+                    { href: '/features', label: 'Features' },
+                    { href: '/how-it-works', label: 'How It Works' },
                     { href: '/pricing', label: 'Pricing' },
+                    { href: '/about', label: 'About' },
                 ].map((item) => (
                   <Link
                     key={item.href}

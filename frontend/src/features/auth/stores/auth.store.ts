@@ -15,26 +15,26 @@ export const useAuthStore = create<AuthSlice>()(
 
         login: (payload: LoginPayload) => {
           const { user, accessToken, refreshToken, profile } = payload;
-          
+
           setTokens(accessToken, refreshToken || '');
           if (user.role) setUserRole(user.role);
           if (user.onboarding_stage) setOnboardingStage(user.onboarding_stage);
-          
-          set({ 
-            status: 'authenticated', 
-            user, 
-            accessToken, 
-            profile: profile || null, 
-            error: null 
+
+          set({
+            status: 'authenticated',
+            user,
+            accessToken,
+            profile: profile || null,
+            error: null
           });
         },
 
         logout: () => {
           clearTokens();
-          set({ 
-            status: 'unauthenticated', 
-            user: null, 
-            profile: null, 
+          set({
+            status: 'unauthenticated',
+            user: null,
+            profile: null,
             accessToken: null,
             error: null
           });
@@ -44,9 +44,14 @@ export const useAuthStore = create<AuthSlice>()(
           const token = getAccessToken();
           const { user, status } = get();
 
-          if (token) {
-            if (status === 'authenticated' && user) return;
+          // A live authenticated session already in memory must never be
+          // downgraded by a redundant hydrate() call (e.g. a re-mount racing
+          // a moment after login() before it re-reads the cookie) — hydrate()
+          // exists to initialize state from storage, not to re-derive it away
+          // from a session that's already correctly established.
+          if (status === 'authenticated' && user) return;
 
+          if (token) {
             if (user) {
               set({ status: 'authenticated', accessToken: token });
             } else {
@@ -138,7 +143,7 @@ export const useIsStudentProfileComplete = () =>
     if (s.profile?.type === 'student') {
       return Boolean(s.profile.is_profile_complete);
     }
-    return true; 
+    return true;
   });
 
 export const useIsLandlordVerified = () =>

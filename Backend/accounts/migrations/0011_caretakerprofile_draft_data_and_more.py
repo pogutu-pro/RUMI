@@ -7,7 +7,6 @@ import django.db.models.deletion
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("hostels", "0008_booking_amount_paid"),
         ("accounts", "0010_landlordprofile_is_profile_complete_and_more"),
     ]
 
@@ -57,17 +56,6 @@ class Migration(migrations.Migration):
             model_name="caretakerprofile",
             name="employment_start_date",
             field=models.DateField(blank=True, null=True),
-        ),
-        migrations.AlterField(
-            model_name="caretakerprofile",
-            name="hostel",
-            field=models.ForeignKey(
-                blank=True,
-                null=True,
-                on_delete=django.db.models.deletion.SET_NULL,
-                related_name="caretakers",
-                to="hostels.hostel",
-            ),
         ),
         migrations.AlterField(
             model_name="caretakerprofile",

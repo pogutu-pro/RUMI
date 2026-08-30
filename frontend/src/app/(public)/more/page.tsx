@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = {
   title: 'More',
-  description: 'Explore more RUMI features, help resources, and information',
+  description: 'Explore more RumiaRent features, help resources, and information',
 };
 
 interface MenuItemProps {
@@ -68,26 +68,26 @@ export default function MorePage() {
         {/* About & Information Section */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold text-gray-900">
-            About RUMI
+            About RumiaRent
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <MenuItem
               href="/about"
               icon={<Info className="h-6 w-6 text-primary" />}
               title="About Us"
-              description="Learn more about RUMI and our mission"
+              description="Learn more about RumiaRent and our mission"
             />
             <MenuItem
               href="/how-it-works"
               icon={<HelpCircle className="h-6 w-6 text-primary" />}
               title="How It Works"
-              description="Understand how RUMI simplifies hostel booking"
+              description="Understand how RumiaRent simplifies rent collection"
             />
             <MenuItem
               href="/features"
               icon={<Briefcase className="h-6 w-6 text-primary" />}
               title="Features"
-              description="Discover all RUMI platform features"
+              description="Discover all RumiaRent platform features"
             />
             <MenuItem
               href="/pricing"
@@ -202,10 +202,10 @@ export default function MorePage() {
             <Download className="h-12 w-12 text-primary mx-auto" />
             <div className="space-y-2">
               <h3 className="text-xl font-bold text-gray-900">
-                Download the RUMI App
+                Download the RumiaRent App
               </h3>
               <p className="text-gray-600">
-                Get the best hostel booking experience on your mobile device
+                Get the best rent management experience on your mobile device
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
@@ -219,8 +219,19 @@ export default function MorePage() {
 
         {/* Footer Info */}
         <div className="text-center pt-6 pb-8 text-sm text-gray-600">
-          <p>© 2024 RUMI. All rights reserved.</p>
-          <p className="mt-2">Made with ❤️ for students in Kenya</p>
+          <p>© 2024 RumiaRent. All rights reserved.</p>
+          <p className="mt-2">
+            Built and managed by{' '}
+            <a
+              href="https://www.stratnovo.co.ke/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-gray-700 transition-colors"
+            >
+              Stratnovo
+            </a>
+            .
+          </p>
         </div>
       </div>
     </div>

@@ -40,51 +40,49 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || 'https://rumia.co.ke',
+    process.env.NEXT_PUBLIC_APP_URL || 'https://rumiarent.co.ke',
   ),
   title: {
-    default: 'RUMIA — Student Accommodation Made Easy',
-    template: '%s | RUMIA',
+    default: 'RumiaRent: Rental Management for Kenyan Landlords',
+    template: '%s | RumiaRent',
   },
   description:
-    'Find and book verified student hostels near your university. Manage bookings, payments, and roommates seamlessly with the RUMIA Platform.',
+    'RumiaRent helps Kenyan landlords and agents manage properties, track tenants, and collect rent. Simple enough to start using today.',
   keywords: [
-    'student accommodation',
-    'student housing Kenya',
-    'university hostels',
-    'hostel booking',
-    'student rentals',
-    'roommate matching',
-    'verified hostels',
-    'student apartments',
-    'affordable student housing',
+    'rental management Kenya',
+    'landlord software Kenya',
+    'property management system Kenya',
+    'rent collection app',
+    'Paystack rent payment',
+    'tenant management software',
+    'property management for agents',
   ],
-  authors: [{ name: 'RUMIA Platform Team', url: 'https://rumia.co.ke/about' }],
-  creator: 'RUMIA Platform',
-  publisher: 'RUMIA Platform',
+  authors: [{ name: 'Stratnovo', url: 'https://rumiarent.co.ke/about' }],
+  creator: 'Stratnovo',
+  publisher: 'Stratnovo',
   formatDetection: { email: false, address: false, telephone: false },
   openGraph: {
     type: 'website',
     locale: 'en_KE',
     url: '/',
-    title: 'RUMIA — Student Accommodation Made Easy',
+    title: 'RumiaRent: Rental Management for Kenyan Landlords',
     description:
-      'Find verified student hostels near your university. Real-time availability and seamless booking.',
-    siteName: 'RUMIA',
+      'Properties, units, tenants, rent, and payments in one simple place for Kenyan landlords and property agents.',
+    siteName: 'RumiaRent',
     images: [
       {
         url: '/images/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'RUMIA Platform — Smart Student Housing',
+        alt: 'RumiaRent: Rental Management Platform',
         type: 'image/jpeg',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'RUMIA — Student Accommodation Made Easy',
-    description: 'Book and manage student housing conveniently.',
+    title: 'RumiaRent: Rental Management for Kenyan Landlords',
+    description: 'Manage properties, tenants, and rent collection in one place.',
     images: ['/images/og-image.jpg'],
     creator: '@rumiplatform',
     site: '@rumiplatform',
@@ -116,12 +114,12 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
   appleWebApp: {
     statusBarStyle: 'default',
-    title: 'Rumia',
+    title: 'RumiaRent',
   },
   other: {
     'mobile-web-app-capable': 'yes',
   },
-  category: 'education',
+  category: 'business',
 };
 
 export default function RootLayout({
@@ -132,11 +130,11 @@ export default function RootLayout({
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'RUMIA',
-    url: process.env.NEXT_PUBLIC_APP_URL || 'https://rumia.co.ke',
+    name: 'RumiaRent',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'https://rumiarent.co.ke',
     logo: `${process.env.NEXT_PUBLIC_APP_URL}/images/logo/logo.svg`,
     description:
-      'Smart student housing platform connecting students with verified hostels across Kenya.',
+      'Rental management platform helping Kenyan landlords and agents manage properties, tenants, and rent collection.',
     address: {
       '@type': 'PostalAddress',
       addressCountry: 'KE',
@@ -146,7 +144,7 @@ export default function RootLayout({
       '@type': 'ContactPoint',
       telephone: '+254-757-901596',
       contactType: 'customer service',
-      email: 'support@rumi.co.ke',
+      email: 'info@rumiarent.co.ke',
       availableLanguage: ['en', 'sw'],
     },
     sameAs: [
@@ -172,24 +170,6 @@ export default function RootLayout({
           rel="preconnect"
           href="https://res.cloudinary.com"
           crossOrigin="anonymous"
-        />
-        <link
-          rel="preconnect"
-          href="https://maps.googleapis.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="dns-prefetch"
-          href="https://maps.googleapis.com"
-        />
-        <link
-          rel="preconnect"
-          href="https://maps.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="dns-prefetch"
-          href="https://maps.gstatic.com"
         />
         <script
           type="application/ld+json"

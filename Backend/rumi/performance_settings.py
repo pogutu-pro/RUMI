@@ -213,48 +213,6 @@ PERFORMANCE_CELERY = {
             'schedule': 3600.0,  # Every hour
         },
         
-        # Payment Processing
-        'process-recurring-payments': {
-            'task': 'payments.tasks.process_recurring_payments',
-            'schedule': crontab(minute=0, hour=9),  # Daily at 9 AM
-        },
-        
-        # Analytics and Reporting
-        'update-daily-analytics': {
-            'task': 'analytics.tasks.update_daily_analytics',
-            'schedule': crontab(minute=30, hour=23),  # Daily at 11:30 PM
-        },
-        
-        # Wallet Management
-        'reconcile-payment-trackers': {
-            'task': 'payments.tasks.reconcile_payment_trackers',
-            'schedule': crontab(minute=0, hour=8),  # Daily at 8 AM
-        },
-        
-        # Payment Reminders
-        'send-payment-reminders': {
-            'task': 'payments.tasks.send_payment_reminders',
-            'schedule': crontab(minute=0, hour=10),  # Daily at 10 AM
-        },
-        
-        # Late Fee Processing
-        'assess-late-fees': {
-            'task': 'payments.tasks.assess_late_fees',
-            'schedule': crontab(minute=0, hour=0),  # Daily at midnight
-        },
-
-        # Webhook Retry
-        'retry-failed-webhook-events': {
-            'task': 'payments.tasks.retry_failed_webhook_events',
-            'schedule': crontab(minute='*/5'),  # Every 5 minutes
-        },
-        
-        # Payment Reconciliation
-        'reconcile-payments': {
-            'task': 'payments.tasks.reconcile_payments',
-            'schedule': crontab(minute=30, hour=2),  # Daily at 2:30 AM
-        },
-        
         # Cache Cleanup
         'cleanup-expired-cache': {
             'task': 'rumi.tasks.cleanup_expired_cache',

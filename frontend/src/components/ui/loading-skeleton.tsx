@@ -115,7 +115,7 @@ const presets = {
 } as const;
 
 /**
- * Ultimate reusable skeleton loader – used across the entire RUMI app.
+ * Ultimate reusable skeleton loader – used across the entire RumiaRent app.
  * Beautiful, realistic, matches exact UI density, zero jank.
  */
 export function LoadingSkeleton({

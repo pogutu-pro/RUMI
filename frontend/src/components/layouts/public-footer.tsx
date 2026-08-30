@@ -8,10 +8,9 @@ const FOOTER_LINKS = [
   {
     title: 'Product',
     links: [
-      { href: '/hostels', label: 'Find Hostels' },
       { href: '/features', label: 'Features' },
-      { href: '/pricing', label: 'Pricing' },
       { href: '/how-it-works', label: 'How It Works' },
+      { href: '/pricing', label: 'Pricing' },
     ],
   },
   {
@@ -64,15 +63,15 @@ export const Footer = React.memo(function Footer() {
               >
                 <Image
                   src="/images/logo/logo.svg"
-                  alt="RUMIA Logo"
+                  alt="RumiaRent Logo"
                   width={56}
                   height={56}
                   className="h-14 w-auto"
                 />
-                <span className="font-extrabold text-4xl text-white tracking-tight">RUMIA</span>
+                <span className="font-extrabold text-4xl text-white tracking-tight">RumiaRent</span>
               </Link>
               <p className="text-lg text-gray-400 max-w-lg leading-relaxed">
-                The Living Campus Standard: Safe, modern, and smart student accommodation booking platform.
+                Rental management for Kenyan landlords and agents. Properties, tenants, rent, and payments in one place.
               </p>
               
               {/* Social Media */}
@@ -81,7 +80,7 @@ export const Footer = React.memo(function Footer() {
                 <div className="flex items-center space-x-5">
                   <a
                     href="https://twitter.com/rumia"
-                    aria-label="RUMIA on Twitter"
+                    aria-label="RumiaRent on Twitter"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group flex items-center justify-center w-12 h-12 rounded-xl bg-gray-900 border border-gray-800 text-gray-400 hover:border-gray-700 hover:text-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950"
@@ -93,7 +92,7 @@ export const Footer = React.memo(function Footer() {
                   </a>
                   <a
                     href="https://instagram.com/rumia"
-                    aria-label="RUMIA on Instagram"
+                    aria-label="RumiaRent on Instagram"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group flex items-center justify-center w-12 h-12 rounded-xl bg-gray-900 border border-gray-800 text-gray-400 hover:border-gray-700 hover:text-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950"
@@ -105,7 +104,7 @@ export const Footer = React.memo(function Footer() {
                   </a>
                   <a
                     href="https://facebook.com/rumia"
-                    aria-label="RUMIA on Facebook"
+                    aria-label="RumiaRent on Facebook"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group flex items-center justify-center w-12 h-12 rounded-xl bg-gray-900 border border-gray-800 text-gray-400 hover:border-gray-700 hover:text-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950"
@@ -117,7 +116,7 @@ export const Footer = React.memo(function Footer() {
                   </a>
                   <a
                     href="https://linkedin.com/company/rumia"
-                    aria-label="RUMIA on LinkedIn"
+                    aria-label="RumiaRent on LinkedIn"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group flex items-center justify-center w-12 h-12 rounded-xl bg-gray-900 border border-gray-800 text-gray-400 hover:border-gray-700 hover:text-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950"
@@ -163,10 +162,19 @@ export const Footer = React.memo(function Footer() {
           <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
             <div className="flex flex-col items-center space-y-3 md:items-start">
               <p className="text-base text-gray-400">
-                &copy; {currentYear} RUMIA. All rights reserved.
+                &copy; {currentYear} RumiaRent. All rights reserved.
               </p>
               <p className="text-sm text-gray-500">
-                Built with ❤️ for students everywhere.
+                Built and managed by{' '}
+                <a
+                  href="https://www.stratnovo.co.ke/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-white underline underline-offset-2 transition-colors"
+                >
+                  Stratnovo
+                </a>
+                .
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
