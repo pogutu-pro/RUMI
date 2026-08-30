@@ -11,12 +11,15 @@ import {
 } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useProperties, useCreateProperty } from '@/features/rental/hooks/use-rental';
+import { GateBanner } from '@/features/rental/components/gate-banner';
+import { isGateRejection } from '@/lib/api/gate';
 
 export default function PropertiesPage() {
   const { data: properties = [], isLoading } = useProperties();
   const createProperty = useCreateProperty();
   const [open, setOpen] = React.useState(false);
   const [form, setForm] = React.useState({ name: '', address: '', city: 'Nairobi' });
+  const gateError = isGateRejection(createProperty.error);
 
   const handleCreate = async () => {
     await createProperty.mutateAsync(form);
@@ -50,6 +53,7 @@ export default function PropertiesPage() {
                 <Input id="city" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
               </div>
             </div>
+            {gateError && <GateBanner gate={gateError} onDismiss={() => createProperty.reset()} />}
             <DialogFooter>
               <Button onClick={handleCreate} disabled={!form.name || !form.address || createProperty.isPending}>
                 Save

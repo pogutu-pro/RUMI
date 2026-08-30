@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { rentalApi } from '../api/client';
 import { useSelectedOrgStore } from '@/stores/selected-org.store';
+import { isGateRejection } from '@/lib/api/gate';
 import type { Property, RentalUnit, Tenancy } from '../types';
 
 const keys = {
@@ -72,7 +73,10 @@ export const useCreateProperty = () => {
       qc.invalidateQueries({ queryKey: ['rental', 'properties'] });
       toast.success('Property added');
     },
-    onError: (err) => toast.error(errorMessage(err, 'Could not add property')),
+    onError: (err) => {
+      if (isGateRejection(err)) return;
+      toast.error(errorMessage(err, 'Could not add property'));
+    },
   });
 };
 
