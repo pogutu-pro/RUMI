@@ -113,6 +113,17 @@ class PayoutService:
             payout_account = PayoutAccount.objects.select_for_update().get(
                 organization=organization,
             )
+            if (
+                payout_account.bank_account_number != bank_account_number
+                or payout_account.bank_code != bank_code
+            ):
+                # A newer submission overwrote the bank fields while this
+                # call's Paystack round-trip was in flight — the details we
+                # just resolved/linked are stale. Do not activate; let the
+                # newer submission's own resolve/subaccount call be the one
+                # that flips status to active.
+                return payout_account
+
             payout_account.paystack_subaccount_code = (
                 subaccount_result.subaccount_code or existing_subaccount_code
             )
