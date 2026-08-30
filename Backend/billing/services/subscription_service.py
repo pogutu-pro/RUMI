@@ -57,8 +57,14 @@ class SubscriptionService:
             billing_period_end=today + timedelta(days=30),
         )
 
-        backend_api_url = getattr(settings, 'BACKEND_API_URL', '').rstrip('/')
-        callback_url = f'{backend_api_url}/api/v1/billing/callback/'
+        # Mirrors the established convention (see rumia_api.views's rent-payment
+        # checkout and rent/services/payment_service.py): the Paystack checkout
+        # callback_url always redirects the browser to a FRONTEND_URL page, never
+        # a bare backend API endpoint — no such backend route exists, and the
+        # actual state transition is only ever driven by the verified webhook,
+        # never by this redirect. `/api/v1/billing/callback/` is not registered
+        # in billing/urls.py, so it was a guaranteed 404 dead end.
+        callback_url = f'{settings.FRONTEND_URL}/landlord/rental'
 
         result = PaystackBillingClient().initialize_subscription_transaction(
             email=requester_email,
