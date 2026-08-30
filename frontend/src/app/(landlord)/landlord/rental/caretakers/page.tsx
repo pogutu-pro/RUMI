@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useCaretakers, useCreateCaretaker, useProperties } from '@/features/rental/hooks/use-rental';
+import { GateBanner } from '@/features/rental/components/gate-banner';
+import { isGateRejection } from '@/lib/api/gate';
 
 const EMPTY_FORM = {
   full_name: '',
@@ -27,6 +29,7 @@ export default function CaretakersPage() {
   const [open, setOpen] = React.useState(false);
   const [form, setForm] = React.useState(EMPTY_FORM);
   const [propertyIds, setPropertyIds] = React.useState<string[]>([]);
+  const gateError = isGateRejection(createCaretaker.error);
 
   const togglePropertyId = (id: string) => {
     setPropertyIds((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
@@ -129,6 +132,7 @@ export default function CaretakersPage() {
                 </div>
               )}
             </div>
+            {gateError && <GateBanner gate={gateError} onDismiss={() => createCaretaker.reset()} />}
             <DialogFooter>
               <Button onClick={handleCreate} disabled={!canSubmit || createCaretaker.isPending}>
                 Save

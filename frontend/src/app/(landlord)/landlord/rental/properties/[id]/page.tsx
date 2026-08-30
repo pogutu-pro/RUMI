@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useProperty, useUnits, useCreateUnit } from '@/features/rental/hooks/use-rental';
+import { GateBanner } from '@/features/rental/components/gate-banner';
+import { isGateRejection } from '@/lib/api/gate';
 
 const UNIT_TYPES = ['studio', 'bedsitter', '1_bedroom', '2_bedroom', '3_bedroom', '4_bedroom', 'house', 'other'];
 
@@ -23,6 +25,7 @@ export default function PropertyDetailPage() {
 
   const [open, setOpen] = React.useState(false);
   const [form, setForm] = React.useState({ unit_number: '', unit_type: '1_bedroom', monthly_rent: '' });
+  const gateError = isGateRejection(createUnit.error);
 
   const handleCreate = async () => {
     await createUnit.mutateAsync({ ...form, property: propertyId });
@@ -80,6 +83,7 @@ export default function PropertyDetailPage() {
                 />
               </div>
             </div>
+            {gateError && <GateBanner gate={gateError} onDismiss={() => createUnit.reset()} />}
             <DialogFooter>
               <Button
                 onClick={handleCreate}

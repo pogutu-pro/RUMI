@@ -48,7 +48,10 @@ export const useCreateCaretaker = () => {
       qc.invalidateQueries({ queryKey: ['rental', 'caretakers'] });
       toast.success('Caretaker added — they\'ll get an email to set up their password');
     },
-    onError: (err) => toast.error(errorMessage(err, 'Could not add caretaker')),
+    onError: (err) => {
+      if (isGateRejection(err)) return;
+      toast.error(errorMessage(err, 'Could not add caretaker'));
+    },
   });
 };
 
@@ -124,7 +127,10 @@ export const useCreateUnit = () => {
       qc.invalidateQueries({ queryKey: ['rental', 'units'] });
       toast.success('Unit added');
     },
-    onError: (err) => toast.error(errorMessage(err, 'Could not add unit')),
+    onError: (err) => {
+      if (isGateRejection(err)) return;
+      toast.error(errorMessage(err, 'Could not add unit'));
+    },
   });
 };
 
