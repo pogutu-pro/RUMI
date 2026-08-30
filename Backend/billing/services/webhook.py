@@ -21,6 +21,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from billing.models import OrganizationSubscription, SubscriptionPayment, SubscriptionWebhookEvent
@@ -85,10 +86,25 @@ def _handle_subscription_create(data: dict) -> dict:
         ).first()
 
     if subscription is None and email:
-        subscription = OrganizationSubscription.objects.select_for_update().filter(
-            status='pending',
-            organization__owner__email__iexact=email,
-        ).order_by('-created_at').first()
+        # A landlord may own/be a member of MULTIPLE organizations — matching
+        # via email alone (owner OR active membership) can find more than one
+        # pending subscription across those organizations. Picking the most
+        # recent one would risk activating the WRONG organization's
+        # subscription. Only accept this fallback when it is unambiguous:
+        # exactly one pending subscription across every organization tied to
+        # that email.
+        candidates = list(
+            OrganizationSubscription.objects.select_for_update().filter(
+                Q(organization__owner__email__iexact=email)
+                | Q(
+                    organization__memberships__user__email__iexact=email,
+                    organization__memberships__is_active=True,
+                ),
+                status='pending',
+            ).distinct()
+        )
+        if len(candidates) == 1:
+            subscription = candidates[0]
 
     if subscription is None:
         # No unambiguous match — never guess which organization this belongs to.
