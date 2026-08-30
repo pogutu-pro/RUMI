@@ -824,7 +824,14 @@ class IncomeSummaryView(RumiaBaseView):
         if str(org_id) not in [str(i) for i in org_ids] and get_canonical_role(request.user) != 'super_admin':
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
-        org = Organization.objects.get(id=org_id)
+        # WR-02: super_admin's org_id isn't checked against a known-valid
+        # set above (the membership guard is skipped for that role), so a
+        # non-existent organization_id must 404 cleanly instead of letting
+        # Organization.DoesNotExist propagate into an opaque 500 (DRF's
+        # exception_handler doesn't map bare Model.DoesNotExist to 404).
+        org = Organization.objects.filter(id=org_id).first()
+        if org is None:
+            return Response({'detail': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
         gate_error = GatingService.check_analytics_feature(org)
         if gate_error:
             return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
