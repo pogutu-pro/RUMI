@@ -13,7 +13,8 @@ from datetime import timedelta
 from django.utils import timezone
 
 from billing.models import SubscriptionPlan
-from properties.models import Property
+from organizations.models import OrganizationMembership
+from properties.models import Property, RentalUnit
 
 
 class GatingService:
@@ -71,6 +72,43 @@ class GatingService:
             return {
                 'detail': 'Property limit reached for your plan.',
                 'gate': 'max_properties',
+                'current_tier': plan.slug,
+                'required_tier': cls._next_tier_unlocking(plan),
+            }
+        return None
+
+    @classmethod
+    def check_unit_limit(cls, organization) -> dict | None:
+        plan = cls.get_effective_plan(organization)
+        if plan.max_units == 0:  # 0 means unlimited (billing/models.py)
+            return None
+
+        current_count = RentalUnit.objects.filter(organization=organization).count()
+        if current_count >= plan.max_units:
+            return {
+                'detail': 'Unit limit reached for your plan.',
+                'gate': 'max_units',
+                'current_tier': plan.slug,
+                'required_tier': cls._next_tier_unlocking(plan),
+            }
+        return None
+
+    @classmethod
+    def check_caretaker_seat_limit(cls, organization) -> dict | None:
+        plan = cls.get_effective_plan(organization)
+        if plan.max_caretaker_seats == 0:  # 0 means unlimited (billing/models.py)
+            return None
+
+        # D-07: a seat is one distinct caretaker membership, never one per
+        # property-assignment row — a caretaker assigned to 3 properties
+        # still consumes exactly 1 seat.
+        current_count = OrganizationMembership.objects.filter(
+            organization=organization, role='caretaker', is_active=True,
+        ).count()
+        if current_count >= plan.max_caretaker_seats:
+            return {
+                'detail': 'Caretaker seat limit reached for your plan.',
+                'gate': 'max_caretaker_seats',
                 'current_tier': plan.slug,
                 'required_tier': cls._next_tier_unlocking(plan),
             }

@@ -121,6 +121,10 @@ class CaretakerListCreateView(RumiaBaseView):
         if not org:
             return Response({'detail': 'Organization required'}, status=status.HTTP_400_BAD_REQUEST)
 
+        gate_error = GatingService.check_caretaker_seat_limit(org)
+        if gate_error:
+            return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
+
         serializer = CaretakerCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -282,6 +286,10 @@ class RentalUnitListCreateView(RumiaBaseView):
             org_ids = self.get_user_organization_ids()
             if prop.organization_id not in org_ids:
                 return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        gate_error = GatingService.check_unit_limit(prop.organization)
+        if gate_error:
+            return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
 
         serializer = RentalUnitSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

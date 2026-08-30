@@ -3,17 +3,23 @@ Billing app tests — plan catalog, subscribe (auto/manual), plan switching,
 and feature-gating enforcement (GATE-01).
 """
 from datetime import timedelta
+from decimal import Decimal
 from unittest.mock import patch
 
+from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from accounts.models import CaretakerProfile
 from billing.models import OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
 from billing.providers.paystack_billing import PaystackBillingClient
 from billing.services.gating_service import GatingService
-from properties.models import Property
+from organizations.models import OrganizationMembership
+from properties.models import CaretakerPropertyAssignment, Property, RentalUnit
 from rumia_api.tests import RumiaTestFixtures
+
+User = get_user_model()
 
 
 class SeedSubscriptionPlansCommandTests(RumiaTestFixtures):
@@ -510,3 +516,136 @@ class PropertyLimitGateTests(RumiaTestFixtures):
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(Property.objects.filter(organization=org).count(), 3)
+
+
+class UnitLimitGateTests(RumiaTestFixtures):
+    """D-10 — unit-limit gate wired into RentalUnitListCreateView.post."""
+
+    def _seed_plans(self):
+        call_command('seed_subscription_plans')
+        return {p.slug: p for p in SubscriptionPlan.objects.all()}
+
+    def _unit_payload(self, prop, unit_number='C1'):
+        return {
+            'property': str(prop.id),
+            'unit_number': unit_number,
+            'unit_type': '1_bedroom',
+            'monthly_rent': '20000.00',
+            'deposit': '20000.00',
+        }
+
+    def test_unit_creation_blocked_at_starter_cap_of_ten(self):
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(
+            organization=org, plan=plans['starter'], status='active', billing_mode='manual',
+        )
+        prop, _first_unit = self.create_property_with_unit(org)  # 1 unit already
+        for i in range(9):
+            RentalUnit.objects.create(
+                organization=org, parent_property=prop, unit_number=f'B{i}',
+                unit_type='1_bedroom', monthly_rent=Decimal('20000.00'),
+                deposit=Decimal('20000.00'), status='vacant',
+            )
+        self.assertEqual(RentalUnit.objects.filter(organization=org).count(), 10)
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.post('/api/v1/units/', self._unit_payload(prop))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.data, {
+            'detail': 'Unit limit reached for your plan.',
+            'gate': 'max_units',
+            'current_tier': 'starter',
+            'required_tier': 'pro',
+        })
+
+    def test_enterprise_zero_sentinel_means_unlimited_units(self):
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(
+            organization=org, plan=plans['enterprise'], status='active', billing_mode='manual',
+        )
+        prop, _first_unit = self.create_property_with_unit(org)
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.post('/api/v1/units/', self._unit_payload(prop))
+
+        self.assertEqual(response.status_code, 201)
+
+
+class CaretakerSeatGateTests(RumiaTestFixtures):
+    """D-07/D-10 — caretaker-seat gate wired into CaretakerListCreateView.post."""
+
+    def _seed_plans(self):
+        call_command('seed_subscription_plans')
+        return {p.slug: p for p in SubscriptionPlan.objects.all()}
+
+    def _create_caretaker_membership(self, org, email='existing.caretaker@test.com'):
+        user = User.objects.create_user(
+            email=email, password='TestPass123!', first_name='Care', last_name='Taker',
+            role='caretaker', phone_number='+254700000001',
+        )
+        caretaker_profile = CaretakerProfile.objects.create(
+            user=user, created_by=org.owner,
+            emergency_contact_name='X', emergency_contact_phone='+254700000002',
+        )
+        OrganizationMembership.objects.create(organization=org, user=user, role='caretaker')
+        return caretaker_profile
+
+    def test_caretaker_creation_blocked_at_starter_cap_of_one(self):
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(
+            organization=org, plan=plans['starter'], status='active', billing_mode='manual',
+        )
+        self._create_caretaker_membership(org)  # starter cap is 1 — already at cap
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.post('/api/v1/caretakers/', {
+            'full_name': 'New Caretaker', 'email': 'new.caretaker@test.com',
+            'phone': '+254722333444', 'emergency_contact_name': 'X',
+            'emergency_contact_phone': '+254733444555',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.data, {
+            'detail': 'Caretaker seat limit reached for your plan.',
+            'gate': 'max_caretaker_seats',
+            'current_tier': 'starter',
+            'required_tier': 'pro',
+        })
+
+    def test_caretaker_assigned_to_multiple_properties_still_counts_as_one_seat(self):
+        # A bespoke 2-seat plan makes the assertion unambiguous: if the gate
+        # mistakenly counted CaretakerPropertyAssignment rows (2) instead of
+        # distinct caretaker memberships (1), 2 >= 2 would incorrectly block.
+        two_seat_plan = SubscriptionPlan.objects.create(
+            slug='test-two-seat', name='Test Two Seat', price=Decimal('0.00'),
+            max_properties=0, max_units=0, max_caretaker_seats=2,
+            features={'analytics': True, 'branded_receipts': False},
+        )
+        user, profile, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(
+            organization=org, plan=two_seat_plan, status='active', billing_mode='manual',
+        )
+        prop_a, _ = self.create_property_with_unit(org, name='Property A')
+        prop_b, _ = self.create_property_with_unit(org, name='Property B')
+        caretaker_profile = self._create_caretaker_membership(org)
+        CaretakerPropertyAssignment.objects.create(
+            caretaker_profile=caretaker_profile, property_assignment=prop_a, organization=org,
+        )
+        CaretakerPropertyAssignment.objects.create(
+            caretaker_profile=caretaker_profile, property_assignment=prop_b, organization=org,
+        )
+
+        self.assertEqual(
+            OrganizationMembership.objects.filter(
+                organization=org, role='caretaker', is_active=True,
+            ).count(),
+            1,
+        )
+        self.assertIsNone(GatingService.check_caretaker_seat_limit(org))
