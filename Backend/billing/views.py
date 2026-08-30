@@ -21,6 +21,7 @@ from rest_framework.views import APIView
 
 from core.permissions.rumia import OrganizationScopedMixin, get_canonical_role
 from organizations.models import Organization
+from rent.providers.base import PaymentProviderError
 
 from .models import OrganizationSubscription, SubscriptionPlan
 from .serializers import OrganizationSubscriptionSerializer, SubscriptionPlanSerializer
@@ -121,6 +122,8 @@ class SubscriptionSubscribeView(_BillingMutationView):
             )
         except ValueError as exc:
             return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except PaymentProviderError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
 
         return Response(result, status=status.HTTP_201_CREATED)
 
@@ -191,5 +194,7 @@ class SubscriptionSwitchPlanView(_BillingMutationView):
             )
         except ValueError as exc:
             return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except PaymentProviderError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
 
         return Response(result, status=status.HTTP_200_OK)
