@@ -1,5 +1,6 @@
 """RUMIA canonical API views — organization-scoped."""
 
+import logging
 import uuid
 from datetime import date
 from decimal import Decimal
@@ -43,6 +44,8 @@ from rumia_api.serializers import (
 )
 from tenants.models import TenantProfile
 from tenants.services import onboard_tenant_user, save_emergency_contacts
+
+logger = logging.getLogger(__name__)
 
 
 class RumiaBaseView(OrganizationScopedMixin, APIView):
@@ -718,29 +721,45 @@ class PaystackWebhookView(APIView):
             return Response({'error': 'Invalid signature'}, status=status.HTTP_400_BAD_REQUEST)
 
         payload = request.data
+        event = payload.get('event')
         data = payload.get('data', {})
         reference = data.get('reference')
-        if not reference:
-            return Response({'status': 'ignored'}, status=status.HTTP_200_OK)
 
-        try:
-            payment = Payment.objects.get(internal_reference=reference)
-        except Payment.DoesNotExist:
-            # Not one of ours (or a stale/foreign reference) — 200 so Paystack doesn't retry forever.
-            return Response({'status': 'ignored'}, status=status.HTTP_200_OK)
-
-        payment = PaymentService.verify_and_allocate(payment, raw_callback=payload)
-
-        if payment.status == 'success':
-            log_audit('payment_recorded', organization=payment.organization, entity=payment,
-                       metadata={'action': 'webhook_verified'})
+        if event == 'charge.success' and reference:
             try:
-                from rent.tasks import send_payment_confirmation_task
-                send_payment_confirmation_task.delay(str(payment.id))
-            except Exception:
-                pass  # Never fail the webhook response over a notification-dispatch problem.
+                payment = Payment.objects.get(internal_reference=reference)
+            except Payment.DoesNotExist:
+                payment = None
 
-        return Response({'status': 'processed', 'payment_status': payment.status})
+            if payment is not None:
+                payment = PaymentService.verify_and_allocate(payment, raw_callback=payload)
+
+                if payment.status == 'success':
+                    log_audit('payment_recorded', organization=payment.organization, entity=payment,
+                               metadata={'action': 'webhook_verified'})
+                    try:
+                        from rent.tasks import send_payment_confirmation_task
+                        send_payment_confirmation_task.delay(str(payment.id))
+                    except Exception:
+                        pass  # Never fail the webhook response over a notification-dispatch problem.
+
+                return Response({'status': 'processed', 'payment_status': payment.status})
+
+        # Not a rent-payment reference (unmatched, or the event isn't
+        # charge.success at all) — the only other consumer of this single
+        # physical webhook URL is the billing/subscription domain. Paystack
+        # never calls a second endpoint for subscription.*/invoice.* events.
+        try:
+            from billing.services.webhook import handle_billing_event
+            result = handle_billing_event(payload)
+        except Exception:
+            # Never surface a 5xx to Paystack over a malformed/unrecognized
+            # billing event — same "ignored -> 200" philosophy as the
+            # unmatched-rent-reference case above.
+            logger.exception('Billing webhook dispatch failed for event=%s', event)
+            result = {'status': 'error'}
+
+        return Response(result, status=status.HTTP_200_OK)
 
 
 class IncomeSummaryView(RumiaBaseView):
