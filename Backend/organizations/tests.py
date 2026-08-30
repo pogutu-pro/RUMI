@@ -7,6 +7,7 @@ from unittest.mock import patch
 from rest_framework.test import APIClient
 
 from organizations.models import Organization, OrganizationMembership, PayoutAccount
+from organizations.services.payout_service import PayoutService
 from rent.providers.base import AccountResolveResult, SubaccountResult
 from rent.providers.paystack import PaystackProvider
 from rumia_api.tests import RumiaTestFixtures
@@ -190,6 +191,48 @@ class PayoutServiceEditResetTests(RumiaTestFixtures):
         # already saved so a retry resubmission is treated as a plain retry.
         self.assertEqual(payout_account.paystack_subaccount_code, 'ACCT_original')
         self.assertEqual(payout_account.bank_account_number, '2222222222')
+
+
+class ConcurrentSubmissionStaleActivationTests(RumiaTestFixtures):
+    """CR-01 regression: an in-flight submission must not activate against
+    bank details a newer, overlapping submission has already superseded.
+    """
+
+    def test_stale_submission_does_not_activate_over_newer_bank_details(self):
+        user, profile, org = self.create_landlord_with_org()
+        original_account_number = '1234567890'
+        superseding_account_number = '5555555555'
+
+        def resolve_side_effect(*_args, **_kwargs):
+            # Simulate a second, overlapping submission completing its own
+            # first atomic block (new bank fields, back to
+            # pending_verification) while THIS call's Paystack round-trip
+            # is still in flight — the exact interleaving CR-01 describes.
+            PayoutAccount.objects.filter(organization=org).update(
+                bank_account_number=superseding_account_number,
+                bank_code='001',
+                status='pending_verification',
+            )
+            return _mock_resolve_success()
+
+        with patch.object(PaystackProvider, 'resolve_account', side_effect=resolve_side_effect), \
+                patch.object(PaystackProvider, 'create_subaccount', return_value=_mock_subaccount_success('SUB_STALE')) as mock_create:
+            result = PayoutService.submit_bank_details(
+                org, 'Equity Bank', original_account_number, '068',
+            )
+
+        mock_create.assert_called_once()
+
+        # The stale call must return without activating — it must not link
+        # SUB_STALE (resolved/created against the original, now-superseded
+        # account number) to a row that now holds different bank details.
+        self.assertEqual(result.status, 'pending_verification')
+        self.assertIsNone(result.paystack_subaccount_code)
+
+        payout_account = PayoutAccount.objects.get(organization=org)
+        self.assertEqual(payout_account.status, 'pending_verification')
+        self.assertEqual(payout_account.bank_account_number, superseding_account_number)
+        self.assertIsNone(payout_account.paystack_subaccount_code)
 
 
 class IdempotentPayoutSubmissionTests(RumiaTestFixtures):
