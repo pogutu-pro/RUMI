@@ -251,6 +251,10 @@ PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
 PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
 PAYSTACK_WEBHOOK_SECRET = os.getenv('PAYSTACK_WEBHOOK_SECRET')
 
+# Billing Configuration — days a past_due subscription (failed renewal) has
+# before billing.tasks.process_grace_period_expirations suspends it.
+BILLING_GRACE_PERIOD_DAYS = int(os.getenv('BILLING_GRACE_PERIOD_DAYS', '7'))
+
 # Webhook URLs (must include /api/v1/ and trailing slash)
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rumiarent.co.ke').rstrip('/')
 # BACKEND_API_URL is used for all webhook callback URLs (Paystack, etc.)
@@ -305,6 +309,14 @@ CELERY_BEAT_SCHEDULE = {
     'rumia-escalate-overdue-to-next-of-kin': {
         'task': 'rent.tasks.escalate_overdue_to_next_of_kin',
         'schedule': _crontab(minute=0, hour=9),  # Daily at 9 AM
+    },
+    'billing-process-grace-period-expirations': {
+        'task': 'billing.tasks.process_grace_period_expirations',
+        'schedule': _crontab(minute=30, hour=1),  # Daily at 1:30 AM
+    },
+    'billing-send-manual-renewal-reminders': {
+        'task': 'billing.tasks.send_manual_renewal_reminders',
+        'schedule': _crontab(minute=30, hour=8),  # Daily at 8:30 AM
     },
 }
 

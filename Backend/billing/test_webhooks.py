@@ -351,3 +351,91 @@ class DispatchFromPaystackWebhookTests(RumiaTestFixtures):
         self.assertEqual(rent_response.status_code, 400)
         self.assertEqual(billing_response.status_code, 400)
         self.assertEqual(mock_billing.call_count, 0)
+
+
+class GracePeriodAndReminderTaskTests(RumiaTestFixtures):
+    """Task 3 — grace-period expiration and manual-renewal-reminder Celery Beat tasks."""
+
+    def test_grace_period_expiration_suspends_past_due_subscription_past_grace(self):
+        from billing.tasks import process_grace_period_expirations
+
+        user, profile, org = self.create_landlord_with_org(email='grace-expired@test.com')
+        plan = _make_plan('starter-grace-expired')
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plan, status='past_due', billing_mode='auto',
+            grace_period_ends_at=timezone.now() - timedelta(days=1),
+        )
+
+        result = process_grace_period_expirations()
+
+        self.assertEqual(result['suspended'], 1)
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.status, 'suspended')
+
+    def test_grace_period_expiration_leaves_future_grace_subscription_untouched(self):
+        from billing.tasks import process_grace_period_expirations
+
+        user, profile, org = self.create_landlord_with_org(email='grace-future@test.com')
+        plan = _make_plan('starter-grace-future')
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plan, status='past_due', billing_mode='auto',
+            grace_period_ends_at=timezone.now() + timedelta(days=3),
+        )
+
+        result = process_grace_period_expirations()
+
+        self.assertEqual(result['suspended'], 0)
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.status, 'past_due')
+
+    @patch('billing.services.notifications.send_sms_via_africastalking')
+    def test_manual_renewal_reminder_sent_once_for_approaching_period_end(self, mock_sms):
+        from django.core import mail
+
+        from billing.tasks import send_manual_renewal_reminders
+
+        user, profile, org = self.create_landlord_with_org(email='reminder-manual@test.com')
+        plan = _make_plan('starter-reminder-manual')
+        today = timezone.now().date()
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plan, status='active', billing_mode='manual',
+            current_period_start=today - timedelta(days=27),
+            current_period_end=today + timedelta(days=2),
+        )
+
+        result = send_manual_renewal_reminders()
+
+        self.assertEqual(result['sent'], 1)
+        self.assertEqual(len(mail.outbox), 1)
+        subscription.refresh_from_db()
+        self.assertIsNotNone(subscription.last_reminder_sent_at)
+
+        # Running again the same day must not send a second reminder for the
+        # same subscription/period.
+        mail.outbox.clear()
+        second_result = send_manual_renewal_reminders()
+
+        self.assertEqual(second_result['sent'], 0)
+        self.assertEqual(len(mail.outbox), 0)
+
+    @patch('billing.services.notifications.send_sms_via_africastalking')
+    def test_manual_renewal_reminder_never_touches_auto_mode_subscriptions(self, mock_sms):
+        from django.core import mail
+
+        from billing.tasks import send_manual_renewal_reminders
+
+        user, profile, org = self.create_landlord_with_org(email='reminder-auto@test.com')
+        plan = _make_plan('starter-reminder-auto')
+        today = timezone.now().date()
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plan, status='active', billing_mode='auto',
+            current_period_start=today - timedelta(days=27),
+            current_period_end=today + timedelta(days=2),
+        )
+
+        result = send_manual_renewal_reminders()
+
+        self.assertEqual(result['sent'], 0)
+        self.assertEqual(len(mail.outbox), 0)
+        subscription.refresh_from_db()
+        self.assertIsNone(subscription.last_reminder_sent_at)
