@@ -16,6 +16,8 @@ current model state.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 from datetime import timedelta
 
@@ -38,7 +40,31 @@ def handle_billing_event(payload: dict) -> dict:
     """
     event_type = payload.get('event', '') or ''
     data = payload.get('data', {}) or {}
-    paystack_object_id = str(data.get('id', ''))
+
+    raw_id = data.get('id')
+    if raw_id not in (None, ''):
+        paystack_object_id = str(raw_id)
+    else:
+        # Never collapse a missing data.id to the literal empty string — the
+        # unique_together(event_type, paystack_object_id) constraint would
+        # then treat EVERY such malformed event for this event_type as a
+        # duplicate of the first one seen, silently dropping legitimate
+        # events. Fall back to the billing reference if present, else a
+        # content hash of the full payload so distinct deliveries still get
+        # distinct idempotency keys.
+        reference = data.get('reference') or ''
+        if reference:
+            paystack_object_id = f'noid-ref:{reference}'
+        else:
+            payload_hash = hashlib.sha256(
+                json.dumps(payload, sort_keys=True, default=str).encode()
+            ).hexdigest()
+            paystack_object_id = f'noid-hash:{payload_hash}'
+        logger.warning(
+            'Paystack webhook payload for event_type=%s is missing data.id; '
+            'using fallback idempotency key %s instead of an empty string.',
+            event_type, paystack_object_id,
+        )
 
     with transaction.atomic():
         webhook_event, created = SubscriptionWebhookEvent.objects.get_or_create(
