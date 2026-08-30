@@ -261,3 +261,73 @@ class SwitchPlanTests(RumiaTestFixtures):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(OrganizationSubscription.objects.filter(organization=org).count(), 1)
+
+
+class MySubscriptionViewTests(RumiaTestFixtures):
+    def _seed_plans(self):
+        call_command('seed_subscription_plans')
+        return {p.slug: p for p in SubscriptionPlan.objects.all()}
+
+    def test_landlord_in_grace_period_sees_past_due_status_and_grace_period_ends_at(self):
+        plans = self._seed_plans()
+        starter = plans['starter']
+        user, profile, org = self.create_landlord_with_org()
+        grace_ends_at = timezone.now() + timezone.timedelta(days=3)
+        OrganizationSubscription.objects.create(
+            organization=org,
+            plan=starter,
+            status='past_due',
+            billing_mode='auto',
+            grace_period_ends_at=grace_ends_at,
+            paystack_subscription_code='SUB_code_123',
+            paystack_email_token='email_tok_123',
+            paystack_customer_code='CUS_code_123',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.get('/api/v1/billing/my-subscription/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['status'], 'past_due')
+        self.assertIsNotNone(response.data['grace_period_ends_at'])
+        self.assertNotIn('paystack_subscription_code', response.data)
+        self.assertNotIn('paystack_email_token', response.data)
+        self.assertNotIn('paystack_customer_code', response.data)
+
+    def test_landlord_with_no_subscription_gets_404_not_500(self):
+        user, profile, org = self.create_landlord_with_org()
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.get('/api/v1/billing/my-subscription/')
+
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('error', response.data)
+
+    def test_non_landlord_non_super_admin_forbidden(self):
+        user, profile, org = self.create_landlord_with_org()
+        tenant_user, _ = self.create_tenant(org)
+
+        client = APIClient()
+        client.force_authenticate(user=tenant_user)
+        response = client.get('/api/v1/billing/my-subscription/')
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_landlord_cannot_see_another_orgs_subscription_via_organization_id_param(self):
+        plans = self._seed_plans()
+        starter = plans['starter']
+        user_a, profile_a, org_a = self.create_landlord_with_org(email='landlord-a@test.com')
+        user_b, profile_b, org_b = self.create_landlord_with_org(email='landlord-b@test.com')
+        OrganizationSubscription.objects.create(
+            organization=org_b, plan=starter, status='active', billing_mode='manual',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user_a)
+        response = client.get(f'/api/v1/billing/my-subscription/?organization_id={org_b.id}')
+
+        # Landlord A has no subscription of their own, and the org_id param
+        # for org B must be ignored — never leaked as a 200 with org B's data.
+        self.assertEqual(response.status_code, 404)
