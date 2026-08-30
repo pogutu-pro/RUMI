@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { rentalApi } from '../api/client';
@@ -257,10 +258,21 @@ export const useInitiatePayment = () => {
 
 export const useIncomeSummary = () => {
   const orgId = useSelectedOrgId();
-  return useQuery({
+  const query = useQuery({
     queryKey: keys.incomeSummary(orgId),
     queryFn: () => rentalApi.getIncomeSummary({ organizationId: orgId ?? undefined }),
   });
+
+  // TanStack Query v5 removed onError/onSuccess from useQuery — this useEffect
+  // reproduces the same "toast for non-gate errors only" behavior the other
+  // gate-aware hooks get via useMutation's onError.
+  useEffect(() => {
+    if (query.error && !isGateRejection(query.error)) {
+      toast.error(errorMessage(query.error, 'Could not load income summary'));
+    }
+  }, [query.error]);
+
+  return query;
 };
 
 export const useRecordManualPayment = () => {
