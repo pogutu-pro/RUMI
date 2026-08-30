@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from organizations.models import PayoutAccount
@@ -46,11 +46,22 @@ class PayoutService:
         with transaction.atomic():
             # Chaining select_for_update() before get_or_create() locks the
             # row on both the found and newly-created path, closing the
-            # concurrency race between two simultaneous submissions.
-            payout_account, _created = PayoutAccount.objects.select_for_update().get_or_create(
-                organization=organization,
-                defaults={'status': 'not_started'},
-            )
+            # concurrency race between two simultaneous submissions — except
+            # for the very first submission, where select_for_update() has
+            # no existing row to lock. Two concurrent first-time submissions
+            # for a brand-new organization can both fall through to
+            # create(), and PayoutAccount.organization is a unique
+            # OneToOneField, so the loser raises IntegrityError. Catch it
+            # and re-fetch instead of surfacing an unhandled 500.
+            try:
+                payout_account, _created = PayoutAccount.objects.select_for_update().get_or_create(
+                    organization=organization,
+                    defaults={'status': 'not_started'},
+                )
+            except IntegrityError:
+                payout_account = PayoutAccount.objects.select_for_update().get(
+                    organization=organization,
+                )
 
             unchanged = (
                 payout_account.bank_name == bank_name
