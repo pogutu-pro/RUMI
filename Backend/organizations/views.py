@@ -60,13 +60,19 @@ class PayoutAccountView(APIView):
                     {'error': 'organization_id is required for super_admin'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-        else:
+        elif role == 'landlord':
             org_ids = _OrgResolver(request).get_user_organization_ids()
             if not org_ids:
                 return Response(
                     {'error': 'No organization found for this user'}, status=status.HTTP_404_NOT_FOUND
                 )
             org_id = org_ids[0]
+        else:
+            # Bank details (account_name, bank_name, masked account number)
+            # are landlord-sensitive — not exposed to tenants/caretakers,
+            # matching the owner-only trust boundary this endpoint mutates
+            # under (see module docstring).
+            return Response({'error': 'Not permitted'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
             payout_account = PayoutAccount.objects.filter(organization_id=org_id).first()
