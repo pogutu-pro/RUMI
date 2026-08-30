@@ -265,6 +265,14 @@ export const useIncomeSummary = () => {
   const query = useQuery({
     queryKey: keys.incomeSummary(orgId),
     queryFn: () => rentalApi.getIncomeSummary({ organizationId: orgId ?? undefined }),
+    // WR-04: a blocked (e.g. starter-tier) landlord's analytics gate
+    // rejection is a deterministic 4xx — retrying it twice with backoff
+    // just delays the gate banner and sends redundant requests that can
+    // never succeed. Only retry 5xx/network/429 failures.
+    retry: (failureCount, err) => {
+      const status = (err as { statusCode?: number } | undefined)?.statusCode;
+      return status !== undefined && status < 500 && status !== 429 ? false : failureCount < 2;
+    },
   });
 
   // TanStack Query v5 removed onError/onSuccess from useQuery — this useEffect
