@@ -28,9 +28,13 @@ export default function PropertyDetailPage() {
   const gateError = isGateRejection(createUnit.error);
 
   const handleCreate = async () => {
-    await createUnit.mutateAsync({ ...form, property: propertyId });
-    setOpen(false);
-    setForm({ unit_number: '', unit_type: '1_bedroom', monthly_rent: '' });
+    try {
+      await createUnit.mutateAsync({ ...form, property: propertyId });
+      setOpen(false);
+      setForm({ unit_number: '', unit_type: '1_bedroom', monthly_rent: '' });
+    } catch {
+      // handled via createUnit.error / isGateRejection in render
+    }
   };
 
   return (

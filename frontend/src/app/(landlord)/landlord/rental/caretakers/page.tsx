@@ -36,10 +36,14 @@ export default function CaretakersPage() {
   };
 
   const handleCreate = async () => {
-    await createCaretaker.mutateAsync({ ...form, property_ids: propertyIds });
-    setOpen(false);
-    setForm(EMPTY_FORM);
-    setPropertyIds([]);
+    try {
+      await createCaretaker.mutateAsync({ ...form, property_ids: propertyIds });
+      setOpen(false);
+      setForm(EMPTY_FORM);
+      setPropertyIds([]);
+    } catch {
+      // handled via createCaretaker.error / isGateRejection in render
+    }
   };
 
   const canSubmit =

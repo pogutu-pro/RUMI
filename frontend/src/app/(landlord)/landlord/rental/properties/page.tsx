@@ -22,9 +22,13 @@ export default function PropertiesPage() {
   const gateError = isGateRejection(createProperty.error);
 
   const handleCreate = async () => {
-    await createProperty.mutateAsync(form);
-    setOpen(false);
-    setForm({ name: '', address: '', city: 'Nairobi' });
+    try {
+      await createProperty.mutateAsync(form);
+      setOpen(false);
+      setForm({ name: '', address: '', city: 'Nairobi' });
+    } catch {
+      // handled via createProperty.error / isGateRejection in render
+    }
   };
 
   return (
