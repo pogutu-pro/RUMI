@@ -345,7 +345,12 @@ class RentalUnitListCreateView(RumiaBaseView):
         if role not in ('landlord', 'super_admin', 'caretaker'):
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
-        prop = Property.objects.get(pk=request.data['property'])
+        # WR-05: a missing/unknown/deleted `property` id previously raised
+        # KeyError/DoesNotExist, which DRF's default exception handling
+        # turns into an opaque 500 — surface a clean 400 instead.
+        prop = Property.objects.filter(pk=request.data.get('property')).first()
+        if not prop:
+            return Response({'detail': 'Property not found'}, status=status.HTTP_400_BAD_REQUEST)
         if role == 'caretaker':
             if prop.id not in self.get_user_property_ids():
                 return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
@@ -425,14 +430,23 @@ class TenancyListCreateView(RumiaBaseView):
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
         with transaction.atomic():
-            unit = RentalUnit.objects.select_for_update().get(pk=request.data['unit'])
+            # WR-05: missing/unknown/deleted `unit` or `tenant` ids
+            # previously raised KeyError/DoesNotExist -> opaque 500;
+            # `.filter().first()` + explicit 400 gives a clean, actionable
+            # error instead (matches the validation-error style used
+            # everywhere else in this file).
+            unit = RentalUnit.objects.select_for_update().filter(pk=request.data.get('unit')).first()
+            if not unit:
+                return Response({'detail': 'Unit not found'}, status=status.HTTP_400_BAD_REQUEST)
 
             if role == 'caretaker' and unit.parent_property_id not in self.get_user_property_ids():
                 return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
             elif role != 'super_admin' and unit.organization_id not in self.get_user_organization_ids():
                 return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
-            tenant = TenantProfile.objects.get(pk=request.data['tenant'])
+            tenant = TenantProfile.objects.filter(pk=request.data.get('tenant')).first()
+            if not tenant:
+                return Response({'detail': 'Tenant not found'}, status=status.HTTP_400_BAD_REQUEST)
 
             serializer = TenancySerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
