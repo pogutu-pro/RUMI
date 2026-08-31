@@ -92,20 +92,31 @@ class OrganizationListView(APIView):
         return Response(OrganizationSerializer(qs, many=True).data)
 
     def post(self, request):
+        from accounts.models import User
+
         role = get_canonical_role(request.user)
         if role != 'landlord':
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
-        existing = Organization.objects.filter(owner=request.user).first()
-        if existing:
-            # Idempotent — the wizard's org step may be resubmitted on resume;
-            # never create a second org for the same landlord.
-            return Response(OrganizationSerializer(existing).data, status=status.HTTP_200_OK)
-
         serializer = OrganizationCreateInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        # WR-04: lock the requesting user's row so two concurrent POSTs from
+        # the same landlord (double-click on "Continue", or a retried
+        # request after a timeout) serialize instead of both reading
+        # `existing is None` and both creating an org — mirrors the
+        # select_for_update pattern already applied elsewhere in this file
+        # (see the CR-02 comments on CaretakerListCreateView/
+        # PropertyListCreateView/RentalUnitListCreateView).
         with transaction.atomic():
+            User.objects.select_for_update().get(pk=request.user.pk)
+
+            existing = Organization.objects.filter(owner=request.user).first()
+            if existing:
+                # Idempotent — the wizard's org step may be resubmitted on
+                # resume; never create a second org for the same landlord.
+                return Response(OrganizationSerializer(existing).data, status=status.HTTP_200_OK)
+
             org = Organization.objects.create(owner=request.user, **serializer.validated_data)
             OrganizationMembership.objects.create(
                 organization=org, user=request.user, role='owner', is_active=True,
