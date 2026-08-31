@@ -339,3 +339,22 @@ export const landlordOnboardingSchema = z.object({
 });
 
 export type LandlordOnboardingFormData = z.infer<typeof landlordOnboardingSchema>;
+
+/**
+ * Landlord onboarding wizard — org/property/payout step schemas (Phase 4,
+ * Plan 03). Reuses the same `requiredString`/`phoneSchema` helpers as the
+ * rest of this file rather than redefining validation rules.
+ */
+export const wizardOrgSchema = z.object({
+  name: requiredString(2, 255, 'Organization name'),
+});
+
+export type WizardOrgFormData = z.infer<typeof wizardOrgSchema>;
+
+export const wizardPropertySchema = z.object({
+  name: requiredString(2, 255, 'Property name'),
+  address: requiredString(5, 500, 'Address'),
+  city: z.string().max(100).optional(),
+});
+
+export type WizardPropertyFormData = z.infer<typeof wizardPropertySchema>;
