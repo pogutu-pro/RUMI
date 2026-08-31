@@ -22,6 +22,7 @@ import {
 import { Loader2, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { LandlordOnboardingWizard } from './landlord-onboarding-wizard';
 
 interface OnboardingFormProps {
   role: 'student' | 'landlord' | 'caretaker' | string;
@@ -365,102 +366,7 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
   }
 
   if (role === 'landlord') {
-    return (
-      <div className="space-y-6">
-        {/* Step Indicator */}
-        <div className="flex justify-between items-center mb-8">
-          {[1, 2].map((s) => (
-            <div key={s} className="flex items-center">
-              <div className={`h-10 w-10 flex items-center justify-center font-black border-2 transition-all ${currentStep >= s ? 'bg-primary border-primary text-white' : 'border-gray-200 text-gray-300'}`}>
-                {currentStep > s ? <CheckCircle2 className="h-6 w-6" /> : s}
-              </div>
-              {s < 2 && <div className={`h-0.5 w-32 mx-2 ${currentStep > s ? 'bg-primary' : 'bg-gray-100'}`} />}
-            </div>
-          ))}
-        </div>
-
-        <Form {...landlordForm}>
-          <form className="space-y-6">
-            {currentStep === 1 && (
-              <div className="space-y-4">
-                <h3 className="font-black text-2xl uppercase tracking-tighter border-b-4 border-primary pb-2">Business Identity</h3>
-                <FormField
-                  control={landlordForm.control}
-                  name="company_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-bold uppercase text-xs text-gray-500">Company / Property Name</FormLabel>
-                      <FormControl><Input {...field} placeholder="e.g. RumiaRent Property Management" className="rounded-none border-2 h-14" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={landlordForm.control}
-                  name="national_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-bold uppercase text-xs text-gray-500">National ID</FormLabel>
-                      <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={landlordForm.control}
-                  name="phone_number"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-bold uppercase text-xs text-gray-500">Business Phone</FormLabel>
-                      <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button 
-                  type="button" 
-                  onClick={() => handleNextStep(['company_name', 'national_id', 'phone_number'])} 
-                  className="w-full h-16 rounded-none font-black text-lg uppercase tracking-widest mt-4"
-                >
-                  Save & Continue <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </div>
-            )}
-
-            {currentStep === 2 && (
-              <div className="space-y-4">
-                <h3 className="font-black text-2xl uppercase tracking-tighter border-b-4 border-primary pb-2">Verification & Finalization</h3>
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <CheckCircle2 className="h-5 w-5 text-yellow-400" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm text-yellow-700">
-                        By finalizing, you agree that the information provided is accurate. 
-                        Your account will undergo a 24-hour verification period before you can list properties.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex gap-4 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setCurrentStep(1)} className="flex-1 h-16 rounded-none border-2 font-bold uppercase"><ArrowLeft className="mr-2" /> Back</Button>
-                  <Button 
-                    type="button" 
-                    onClick={onFinalSubmit} 
-                    className="flex-[2] h-16 rounded-none font-black uppercase text-xl bg-primary hover:bg-primary/90"
-                    disabled={isFinalizing}
-                  >
-                    {isFinalizing ? <Loader2 className="animate-spin" /> : "Finalize Registration"}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </form>
-        </Form>
-      </div>
-    );
+    return <LandlordOnboardingWizard />;
   }
 
   return <div>Unknown Role</div>;

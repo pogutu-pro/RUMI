@@ -28,6 +28,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { getUserInitials } from '@/lib/utils/user';
 import { cn } from '@/lib/utils/cn';
 import { OrganizationSwitcher } from '@/features/rental/components/organization-switcher';
+import { PayoutPendingBanner } from '@/features/payout/components/payout-pending-banner';
 
 const NAV = [
   { href: '/landlord/rental', label: 'Dashboard', icon: LayoutDashboard },
@@ -210,7 +211,10 @@ export default function RentalLandlordLayout({ children }: { children: React.Rea
           )}
 
           <div className="min-w-0 flex-1">
-            <main className={cn('mx-auto max-w-5xl px-4 py-6 md:py-8', !isDesktop && 'pt-[4.5rem]')}>{children}</main>
+            <main className={cn('mx-auto max-w-5xl space-y-6 px-4 py-6 md:py-8', !isDesktop && 'pt-[4.5rem]')}>
+              {!isSuperAdmin && <PayoutPendingBanner />}
+              {children}
+            </main>
           </div>
         </div>
       </TooltipProvider>

@@ -39,8 +39,34 @@ class OnboardingService:
     Server-authoritative service for managing user onboarding lifecycle.
     Prevents illegal state transitions and ensures atomic draft persistence.
     """
-    
+
     from .logic import OnboardingStateMachine
+
+    # Fields a user is allowed to self-promote from draft_data to their
+    # profile at finalize time, per role. Deliberately excludes
+    # system/derived/verification fields (e.g. paystack_subaccount_code,
+    # is_verified, is_profile_complete, total_units, verified_at,
+    # verified_by) that must only ever be written by trusted server-side
+    # flows (Paystack subaccount provisioning, admin verification, etc.).
+    # See CR-01: without this allowlist, `finalize_onboarding` promoted
+    # every key of the attacker-controlled draft_data dict onto the model.
+    PROMOTABLE_FIELDS = {
+        'student': {
+            'university', 'student_id_number', 'year_of_study',
+            'graduation_year', 'course', 'campus', 'high_school',
+            'preferred_room_number', 'lifestyle_preferences', 'bio',
+            'emergency_contact_name', 'emergency_contact_phone',
+            'emergency_contact_relationship',
+        },
+        'landlord': {
+            'company_name', 'national_id', 'business_address',
+            'bank_name', 'bank_account_number', 'bank_code',
+        },
+        'caretaker': {
+            'national_id', 'employment_start_date', 'employment_end_date',
+            'emergency_contact_name', 'emergency_contact_phone',
+        },
+    }
 
     @staticmethod
     def update_stage(user, next_stage):
@@ -103,12 +129,17 @@ class OnboardingService:
             return False
 
         with transaction.atomic():
-            # 1. Promote draft data to actual model fields if they match
+            # 1. Promote draft data to actual model fields, restricted to an
+            # explicit per-role allowlist (CR-01). draft_data is populated
+            # via OnboardingDraftView with no server-side field validation,
+            # so it must never be trusted to promote arbitrary keys (e.g.
+            # paystack_subaccount_code, is_verified) onto the profile.
             draft = profile.draft_data or {}
+            promotable = OnboardingService.PROMOTABLE_FIELDS.get(user.role, set())
             for field, value in draft.items():
-                if hasattr(profile, field) and value:
+                if field in promotable and hasattr(profile, field) and value:
                     setattr(profile, field, value)
-            
+
             # 2. Strict Readiness Check
             # This raises ValidationError if fields are missing, causing atomic rollback
             profile.validate_readiness(raise_exception=True)

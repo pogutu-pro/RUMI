@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from audit.models import log_audit
+from billing.services.gating_service import GatingService
 from core.permissions.rumia import (
     CanAccessProperty,
     CanAccessTenantProfile,
@@ -21,7 +22,7 @@ from core.permissions.rumia import (
     OrganizationScopedMixin,
     get_canonical_role,
 )
-from organizations.models import Organization
+from organizations.models import Organization, OrganizationMembership
 from properties.models import CaretakerPropertyAssignment, Property, RentalUnit, Tenancy
 from rent.models import Payment, RentCharge
 from rent.services.income_flow import IncomeFlowService
@@ -32,6 +33,7 @@ from rumia_api.serializers import (
     CaretakerSerializer,
     EmergencyContactSerializer,
     ManualPaymentSerializer,
+    OrganizationCreateInputSerializer,
     OrganizationSerializer,
     PaymentInitiateSerializer,
     PaymentSerializer,
@@ -75,7 +77,11 @@ def _sync_unit_status(tenancy: Tenancy) -> None:
 
 
 class OrganizationListView(APIView):
-    """Super-admin only: list every organization, for the cross-org dashboard switcher."""
+    """Super-admin only: list every organization, for the cross-org dashboard switcher.
+
+    POST is a separate role branch (landlord-only): the landlord onboarding
+    wizard's org-creation step, idempotent per-landlord.
+    """
 
     permission_classes = [IsAuthenticated]
 
@@ -84,6 +90,40 @@ class OrganizationListView(APIView):
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
         qs = Organization.objects.all().order_by('name')
         return Response(OrganizationSerializer(qs, many=True).data)
+
+    def post(self, request):
+        from accounts.models import User
+
+        role = get_canonical_role(request.user)
+        if role != 'landlord':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = OrganizationCreateInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # WR-04: lock the requesting user's row so two concurrent POSTs from
+        # the same landlord (double-click on "Continue", or a retried
+        # request after a timeout) serialize instead of both reading
+        # `existing is None` and both creating an org — mirrors the
+        # select_for_update pattern already applied elsewhere in this file
+        # (see the CR-02 comments on CaretakerListCreateView/
+        # PropertyListCreateView/RentalUnitListCreateView).
+        with transaction.atomic():
+            User.objects.select_for_update().get(pk=request.user.pk)
+
+            existing = Organization.objects.filter(owner=request.user).first()
+            if existing:
+                # Idempotent — the wizard's org step may be resubmitted on
+                # resume; never create a second org for the same landlord.
+                return Response(OrganizationSerializer(existing).data, status=status.HTTP_200_OK)
+
+            org = Organization.objects.create(owner=request.user, **serializer.validated_data)
+            OrganizationMembership.objects.create(
+                organization=org, user=request.user, role='owner', is_active=True,
+            )
+            log_audit('organization_created', actor=request.user, organization=org, entity=org)
+
+        return Response(OrganizationSerializer(org).data, status=status.HTTP_201_CREATED)
 
 
 class CaretakerListCreateView(RumiaBaseView):
@@ -134,7 +174,17 @@ class CaretakerListCreateView(RumiaBaseView):
         first_name = name_parts[0] if name_parts else data['full_name']
         last_name = name_parts[1] if len(name_parts) > 1 else ''
 
+        # CR-02: the gate check now runs inside the same locked transaction
+        # as the seat-consuming write (OrganizationMembership create) —
+        # select_for_update() on the org row serializes concurrent POSTs so
+        # they can no longer all read the same pre-creation seat count and
+        # all pass the max_caretaker_seats gate.
         with transaction.atomic():
+            org = Organization.objects.select_for_update().get(pk=org.pk)
+            gate_error = GatingService.check_caretaker_seat_limit(org)
+            if gate_error:
+                return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
+
             user = User.objects.create_user(
                 email=data['email'],
                 password=None,
@@ -173,8 +223,16 @@ class CaretakerListCreateView(RumiaBaseView):
         return Response(CaretakerSerializer(caretaker_profile).data, status=status.HTTP_201_CREATED)
 
     def _resolve_organization(self, request):
+        # CR-03: verify the caller actually belongs to the client-supplied
+        # organization_id before trusting it — mirrors the membership check
+        # already used correctly in IncomeSummaryView.get (views.py). Without
+        # this, any authenticated landlord who knows/guesses another org's
+        # UUID could create caretakers inside that org.
         org_id = request.data.get('organization_id')
         if org_id:
+            org_ids = self.get_user_organization_ids()
+            if org_ids is not None and str(org_id) not in [str(i) for i in org_ids]:
+                return None
             return Organization.objects.filter(id=org_id).first()
         return Organization.objects.filter(owner=request.user).first()
 
@@ -194,15 +252,33 @@ class PropertyListCreateView(RumiaBaseView):
         if not org:
             return Response({'detail': 'Organization required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = PropertySerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        prop = serializer.save(organization=org)
+        # CR-02: lock the organization row for the duration of the
+        # check-then-create sequence — otherwise concurrent POSTs all read
+        # the same pre-creation count, all pass the gate, and all commit,
+        # permanently exceeding the plan's max_properties cap.
+        with transaction.atomic():
+            org = Organization.objects.select_for_update().get(pk=org.pk)
+            gate_error = GatingService.check_property_limit(org)
+            if gate_error:
+                return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
+
+            serializer = PropertySerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            prop = serializer.save(organization=org)
         log_audit('property_created', actor=request.user, organization=org, entity=prop)
         return Response(PropertySerializer(prop).data, status=status.HTTP_201_CREATED)
 
     def _resolve_organization(self, request):
+        # CR-03: verify the caller actually belongs to the client-supplied
+        # organization_id before trusting it — mirrors the membership check
+        # already used correctly in IncomeSummaryView.get (views.py). Without
+        # this, any authenticated landlord who knows/guesses another org's
+        # UUID could create properties inside that org.
         org_id = request.data.get('organization_id')
         if org_id:
+            org_ids = self.get_user_organization_ids()
+            if org_ids is not None and str(org_id) not in [str(i) for i in org_ids]:
+                return None
             return Organization.objects.filter(id=org_id).first()
         return Organization.objects.filter(owner=request.user).first()
 
@@ -269,7 +345,12 @@ class RentalUnitListCreateView(RumiaBaseView):
         if role not in ('landlord', 'super_admin', 'caretaker'):
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
-        prop = Property.objects.get(pk=request.data['property'])
+        # WR-05: a missing/unknown/deleted `property` id previously raised
+        # KeyError/DoesNotExist, which DRF's default exception handling
+        # turns into an opaque 500 — surface a clean 400 instead.
+        prop = Property.objects.filter(pk=request.data.get('property')).first()
+        if not prop:
+            return Response({'detail': 'Property not found'}, status=status.HTTP_400_BAD_REQUEST)
         if role == 'caretaker':
             if prop.id not in self.get_user_property_ids():
                 return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
@@ -278,10 +359,20 @@ class RentalUnitListCreateView(RumiaBaseView):
             if prop.organization_id not in org_ids:
                 return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = RentalUnitSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        unit = serializer.save(organization=prop.organization, parent_property=prop)
-        log_audit('unit_created', actor=request.user, organization=prop.organization, entity=unit)
+        # CR-02: lock the organization row for the duration of the
+        # check-then-create sequence — see PropertyListCreateView.post for
+        # the full rationale (same race, same fix, one org can own units
+        # across multiple properties so the lock is on the org, not prop).
+        with transaction.atomic():
+            org = Organization.objects.select_for_update().get(pk=prop.organization_id)
+            gate_error = GatingService.check_unit_limit(org)
+            if gate_error:
+                return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
+
+            serializer = RentalUnitSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            unit = serializer.save(organization=org, parent_property=prop)
+        log_audit('unit_created', actor=request.user, organization=org, entity=unit)
         return Response(RentalUnitSerializer(unit).data, status=status.HTTP_201_CREATED)
 
 
@@ -339,14 +430,23 @@ class TenancyListCreateView(RumiaBaseView):
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
         with transaction.atomic():
-            unit = RentalUnit.objects.select_for_update().get(pk=request.data['unit'])
+            # WR-05: missing/unknown/deleted `unit` or `tenant` ids
+            # previously raised KeyError/DoesNotExist -> opaque 500;
+            # `.filter().first()` + explicit 400 gives a clean, actionable
+            # error instead (matches the validation-error style used
+            # everywhere else in this file).
+            unit = RentalUnit.objects.select_for_update().filter(pk=request.data.get('unit')).first()
+            if not unit:
+                return Response({'detail': 'Unit not found'}, status=status.HTTP_400_BAD_REQUEST)
 
             if role == 'caretaker' and unit.parent_property_id not in self.get_user_property_ids():
                 return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
             elif role != 'super_admin' and unit.organization_id not in self.get_user_organization_ids():
                 return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
-            tenant = TenantProfile.objects.get(pk=request.data['tenant'])
+            tenant = TenantProfile.objects.filter(pk=request.data.get('tenant')).first()
+            if not tenant:
+                return Response({'detail': 'Tenant not found'}, status=status.HTTP_400_BAD_REQUEST)
 
             serializer = TenancySerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -776,6 +876,18 @@ class IncomeSummaryView(RumiaBaseView):
         org_id = request.query_params.get('organization_id', org_ids[0])
         if str(org_id) not in [str(i) for i in org_ids] and get_canonical_role(request.user) != 'super_admin':
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        # WR-02: super_admin's org_id isn't checked against a known-valid
+        # set above (the membership guard is skipped for that role), so a
+        # non-existent organization_id must 404 cleanly instead of letting
+        # Organization.DoesNotExist propagate into an opaque 500 (DRF's
+        # exception_handler doesn't map bare Model.DoesNotExist to 404).
+        org = Organization.objects.filter(id=org_id).first()
+        if org is None:
+            return Response({'detail': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+        gate_error = GatingService.check_analytics_feature(org)
+        if gate_error:
+            return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
 
         today = timezone.now().date()
         period_start = date.fromisoformat(

@@ -20,6 +20,15 @@ class OrganizationSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
 
 
+class OrganizationCreateInputSerializer(serializers.Serializer):
+    """Input validation for POST /organizations/ — landlord onboarding wizard's org step."""
+
+    name = serializers.CharField(min_length=2, max_length=255)
+    organization_type = serializers.ChoiceField(
+        choices=Organization.TYPE_CHOICES, default='individual', required=False,
+    )
+
+
 class PropertySerializer(serializers.ModelSerializer):
     class Meta:
         model = Property

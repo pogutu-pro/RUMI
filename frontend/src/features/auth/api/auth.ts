@@ -257,6 +257,22 @@ async function finalizeOnboarding(): Promise<{ status: string; user: any }> {
 }
 
 /**
+ * Landlord wizard-derivation block returned by
+ * `GET /accounts/onboarding/status/` for landlord users only (Backend/
+ * accounts/onboarding_views.py `OnboardingStatusView.get`, Phase 4 Plan 01).
+ * `current_step` is 1-5, server-derived from real org/property/payout/tier
+ * state — never a client-local draft-replay value.
+ */
+export interface OnboardingWizardStatus {
+  organization_id: string | null;
+  organization_name: string | null;
+  has_property: boolean;
+  payout_status: 'not_started' | 'pending_verification' | 'active';
+  selected_tier: string | null;
+  current_step: number;
+}
+
+/**
  * Get onboarding status
  */
 async function getOnboardingStatus(): Promise<{
@@ -264,6 +280,7 @@ async function getOnboardingStatus(): Promise<{
   is_complete: boolean;
   draft_data: any;
   role: string;
+  wizard: OnboardingWizardStatus | null;
 }> {
   const res = await axios.get('/accounts/onboarding/status/');
   return res.data;

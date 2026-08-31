@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 import { WordSwitcher } from '@/components/animations/word-switcher';
+import { PricingTeaser } from './_components/pricing-teaser';
+import { TestimonialsSection } from '@/features/public/components/testimonials-section';
 
 export const metadata: Metadata = {
   title: 'RumiaRent - Rental Management for Kenyan Landlords',
@@ -264,21 +266,12 @@ export default function HomePage() {
         </div>
       </section>
 
+      <TestimonialsSection />
+
       {/* Pricing teaser */}
       <section className="py-20 lg:py-28">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-8 rounded-3xl bg-gray-50/60 p-10 text-center shadow-sm sm:flex-row sm:text-left">
-            <div>
-              <p className="mb-1 text-sm font-semibold uppercase tracking-wider text-primary">Pricing</p>
-              <h3 className="text-2xl font-bold text-gray-900">From KES 50 per unit, per month</h3>
-              <p className="mt-1 text-gray-600">30-day free trial. No credit card required.</p>
-            </div>
-            <Link href="/pricing" prefetch>
-              <Button size="lg" variant="outline" className="rounded-full px-8 font-semibold">
-                See full pricing
-              </Button>
-            </Link>
-          </div>
+          <PricingTeaser />
         </div>
       </section>
 

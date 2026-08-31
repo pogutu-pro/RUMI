@@ -1,14 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { Lock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   useProperties,
   useUnits,
   useRentBalance,
   useIncomeSummary,
 } from '@/features/rental/hooks/use-rental';
+import { isGateRejection, capitalizeTier } from '@/lib/api/gate';
 
 function StatCard({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
   return (
@@ -33,13 +36,14 @@ export default function LandlordRentalDashboard() {
   const { data: properties = [] } = useProperties();
   const { data: units = [] } = useUnits();
   const { data: balance } = useRentBalance();
-  const { data: income } = useIncomeSummary();
+  const { data: income, error: incomeError } = useIncomeSummary();
 
   const occupied = units.filter((u) => u.status === 'occupied').length;
   const vacant = units.filter((u) => u.status === 'vacant').length;
   const overdueCharges = (balance?.charges ?? []).filter((c) => c.status === 'overdue');
   const unitNumberById = new Map(units.map((u) => [u.id, u.unit_number]));
   const collectionRate = income ? Math.round(Number(income.summary.collection_rate)) : null;
+  const gateError = isGateRejection(incomeError);
 
   return (
     <div className="space-y-6">
@@ -55,7 +59,7 @@ export default function LandlordRentalDashboard() {
         />
       </div>
 
-      {income && (
+      {income && !gateError && (
         <Card className="rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base">Rent collected this month</CardTitle>
@@ -94,6 +98,26 @@ export default function LandlordRentalDashboard() {
                 ))}
               </ul>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {gateError && (
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold flex items-center gap-2">
+              <Lock className="h-5 w-5 text-warning" />
+              Unlock rent-collection analytics
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              See collected vs. expected rent by property once you upgrade to{' '}
+              {capitalizeTier(gateError.required_tier)}.
+            </p>
+            <Button asChild>
+              <Link href="/pricing">See plans</Link>
+            </Button>
           </CardContent>
         </Card>
       )}

@@ -26,7 +26,7 @@ const emailSchema = z
   .email('Please enter a valid email address')
   .transform((s) => s.toLowerCase());
 
-const passwordSchema = z
+export const passwordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters')
   .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
@@ -339,3 +339,41 @@ export const landlordOnboardingSchema = z.object({
 });
 
 export type LandlordOnboardingFormData = z.infer<typeof landlordOnboardingSchema>;
+
+/**
+ * Landlord onboarding wizard — org/property/payout step schemas (Phase 4,
+ * Plan 03). Reuses the same `requiredString`/`phoneSchema` helpers as the
+ * rest of this file rather than redefining validation rules.
+ */
+export const wizardOrgSchema = z.object({
+  name: requiredString(2, 255, 'Organization name'),
+});
+
+export type WizardOrgFormData = z.infer<typeof wizardOrgSchema>;
+
+export const wizardPropertySchema = z.object({
+  name: requiredString(2, 255, 'Property name'),
+  address: requiredString(5, 500, 'Address'),
+  city: z.string().max(100).optional(),
+});
+
+export type WizardPropertyFormData = z.infer<typeof wizardPropertySchema>;
+
+/**
+ * Mirrors Backend/organizations/serializers.py
+ * PayoutBankDetailsInputSerializer's max_length constraints exactly
+ * (100/20/10) so client-side validation never accepts something the server
+ * would 400 on.
+ */
+export const wizardPayoutSchema = z.object({
+  bank_name: requiredString(2, 100, 'Bank name'),
+  bank_account_number: z
+    .string()
+    .trim()
+    .min(10, 'Account number too short')
+    .max(20, 'Account number too long')
+    .regex(/^[0-9]+$/, 'Account number must be numeric'),
+  bank_code: requiredString(2, 10, 'Bank code'),
+});
+
+export type WizardPayoutFormData = z.infer<typeof wizardPayoutSchema>;
