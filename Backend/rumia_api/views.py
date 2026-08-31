@@ -22,7 +22,7 @@ from core.permissions.rumia import (
     OrganizationScopedMixin,
     get_canonical_role,
 )
-from organizations.models import Organization
+from organizations.models import Organization, OrganizationMembership
 from properties.models import CaretakerPropertyAssignment, Property, RentalUnit, Tenancy
 from rent.models import Payment, RentCharge
 from rent.services.income_flow import IncomeFlowService
@@ -33,6 +33,7 @@ from rumia_api.serializers import (
     CaretakerSerializer,
     EmergencyContactSerializer,
     ManualPaymentSerializer,
+    OrganizationCreateInputSerializer,
     OrganizationSerializer,
     PaymentInitiateSerializer,
     PaymentSerializer,
@@ -76,7 +77,11 @@ def _sync_unit_status(tenancy: Tenancy) -> None:
 
 
 class OrganizationListView(APIView):
-    """Super-admin only: list every organization, for the cross-org dashboard switcher."""
+    """Super-admin only: list every organization, for the cross-org dashboard switcher.
+
+    POST is a separate role branch (landlord-only): the landlord onboarding
+    wizard's org-creation step, idempotent per-landlord.
+    """
 
     permission_classes = [IsAuthenticated]
 
@@ -85,6 +90,29 @@ class OrganizationListView(APIView):
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
         qs = Organization.objects.all().order_by('name')
         return Response(OrganizationSerializer(qs, many=True).data)
+
+    def post(self, request):
+        role = get_canonical_role(request.user)
+        if role != 'landlord':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        existing = Organization.objects.filter(owner=request.user).first()
+        if existing:
+            # Idempotent — the wizard's org step may be resubmitted on resume;
+            # never create a second org for the same landlord.
+            return Response(OrganizationSerializer(existing).data, status=status.HTTP_200_OK)
+
+        serializer = OrganizationCreateInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        with transaction.atomic():
+            org = Organization.objects.create(owner=request.user, **serializer.validated_data)
+            OrganizationMembership.objects.create(
+                organization=org, user=request.user, role='owner', is_active=True,
+            )
+            log_audit('organization_created', actor=request.user, organization=org, entity=org)
+
+        return Response(OrganizationSerializer(org).data, status=status.HTTP_201_CREATED)
 
 
 class CaretakerListCreateView(RumiaBaseView):

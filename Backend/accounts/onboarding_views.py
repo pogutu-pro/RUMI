@@ -77,9 +77,41 @@ class OnboardingStatusView(APIView):
         elif user.role == 'caretaker':
             profile = getattr(user, 'caretaker_profile', None)
 
+        wizard = None
+        if user.role == 'landlord':
+            from organizations.models import Organization, PayoutAccount
+            from properties.models import Property
+
+            org = Organization.objects.filter(owner=user).first()
+            has_property = Property.objects.filter(organization=org).exists() if org else False
+            payout = PayoutAccount.objects.filter(organization=org).first() if org else None
+            payout_status = payout.status if payout else 'not_started'
+            selected_tier = (org.settings or {}).get('preferred_tier') if org else None
+
+            if not org:
+                current_step = 1
+            elif not has_property:
+                current_step = 2
+            elif payout_status == 'not_started':
+                current_step = 3
+            elif not selected_tier:
+                current_step = 4
+            else:
+                current_step = 5
+
+            wizard = {
+                "organization_id": str(org.id) if org else None,
+                "organization_name": org.name if org else None,
+                "has_property": has_property,
+                "payout_status": payout_status,
+                "selected_tier": selected_tier,
+                "current_step": current_step,
+            }
+
         return Response({
             "onboarding_stage": user.onboarding_stage,
             "is_complete": user.onboarding_stage == 'COMPLETED',
             "draft_data": profile.draft_data if profile else {},
-            "role": user.role
+            "role": user.role,
+            "wizard": wizard,
         }, status=status.HTTP_200_OK)
