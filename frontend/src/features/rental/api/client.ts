@@ -27,6 +27,13 @@ export const rentalApi = {
     const res = await axios.get<Organization[]>('/organizations/');
     return res.data;
   },
+  createOrganization: async (payload: {
+    name: string;
+    organization_type?: string;
+  }): Promise<Organization> => {
+    const res = await axios.post<Organization>('/organizations/', payload);
+    return res.data;
+  },
 
   // Caretakers
   listCaretakers: async (): Promise<Caretaker[]> => {

@@ -40,6 +40,21 @@ function useSelectedOrgId() {
 export const useOrganizations = () =>
   useQuery({ queryKey: keys.organizations, queryFn: rentalApi.listOrganizations });
 
+export const useCreateOrganization = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { name: string; organization_type?: string }) =>
+      rentalApi.createOrganization(payload),
+    onSuccess: () => {
+      // Invalidates 'onboarding-status' (owned by use-auth.ts's
+      // useOnboardingStatus, Plan 04-03), not keys.organizations — that key
+      // is the super_admin-only cross-org list this landlord never sees.
+      qc.invalidateQueries({ queryKey: ['onboarding-status'] });
+    },
+    onError: (err) => toast.error(errorMessage(err, 'Could not create organization')),
+  });
+};
+
 // -- Caretakers --
 
 export const useCaretakers = () =>
