@@ -1,8 +1,8 @@
 from django.urls import path
 from . import views
 from .onboarding_views import (
-    OnboardingDraftView, OnboardingAdvanceView, 
-    OnboardingFinalizeView, OnboardingStatusView
+    OnboardingDraftView, OnboardingAdvanceView,
+    OnboardingFinalizeView, OnboardingStatusView, LandlordWizardCompleteView
 )
 
 urlpatterns = [
@@ -33,6 +33,7 @@ urlpatterns = [
     path('onboarding/draft/', OnboardingDraftView.as_view(), name='onboarding_draft'),
     path('onboarding/advance/', OnboardingAdvanceView.as_view(), name='onboarding_advance'),
     path('onboarding/finalize/', OnboardingFinalizeView.as_view(), name='onboarding_finalize'),
+    path('onboarding/wizard-complete/', LandlordWizardCompleteView.as_view(), name='onboarding_wizard_complete'),
 
     # Caretaker management (Landlord)
     path('caretakers/<int:caretaker_id>/', views.CaretakerDetailView.as_view(), name='caretaker_detail'),

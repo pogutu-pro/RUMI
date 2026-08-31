@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -114,4 +115,61 @@ class OnboardingStatusView(APIView):
             "draft_data": profile.draft_data if profile else {},
             "role": user.role,
             "wizard": wizard,
+        }, status=status.HTTP_200_OK)
+
+
+class LandlordWizardCompleteView(APIView):
+    """
+    Completes the landlord onboarding wizard once org, property, and a
+    payout-submission are all present (payout verification itself is NOT
+    required — D-04/D-05). Records the selected tier as a preference only
+    (D-06): never triggers a billing subscription call or a Paystack charge.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        if user.role != 'landlord':
+            return Response({'error': 'Not permitted'}, status=status.HTTP_403_FORBIDDEN)
+
+        plan_slug = request.data.get('plan_slug')
+        if not plan_slug:
+            return Response({'error': 'plan_slug is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from organizations.models import Organization, PayoutAccount
+        from properties.models import Property
+        from billing.models import SubscriptionPlan
+
+        org = Organization.objects.filter(owner=user).first()
+        if not org:
+            return Response({'error': 'Organization setup is required first'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not Property.objects.filter(organization=org).exists():
+            return Response({'error': 'Property setup is required first'}, status=status.HTTP_400_BAD_REQUEST)
+
+        payout = PayoutAccount.objects.filter(organization=org).first()
+        if not payout or payout.status == 'not_started':
+            return Response({'error': 'Payout details are required first'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            plan = SubscriptionPlan.objects.get(slug=plan_slug, is_active=True)
+        except SubscriptionPlan.DoesNotExist:
+            return Response({'error': 'Invalid plan'}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            # Preference record only (D-06) — no billing/Paystack call here.
+            org.settings = {**(org.settings or {}), 'preferred_tier': plan.slug}
+            org.save(update_fields=['settings', 'updated_at'])
+
+            user.onboarding_stage = 'COMPLETED'
+            user.is_verified = True
+            caps = set(user.capabilities or [])
+            caps.update(['hostel:create', 'caretaker:invite', 'payout:request'])
+            user.capabilities = list(caps)
+            user.save(update_fields=['onboarding_stage', 'is_verified', 'capabilities', 'updated_at'])
+
+        return Response({
+            'status': 'onboarding_completed',
+            'organization_id': str(org.id),
+            'selected_tier': plan.slug,
         }, status=status.HTTP_200_OK)
