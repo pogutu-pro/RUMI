@@ -1,17 +1,33 @@
 'use client';
 
 import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useTenants, useCreateTenant } from '@/features/rental/hooks/use-rental';
 
-const EMPTY_FORM = {
+const tenantSchema = z.object({
+  full_name: z.string().trim().min(2, 'Full name is required').max(150),
+  phone: z.string().trim().min(1, 'Phone is required'),
+  email: z.string().trim().email('Enter a valid email address').optional().or(z.literal('')),
+  nok_full_name: z.string().trim().optional(),
+  nok_relationship: z.string().trim().optional(),
+  nok_phone: z.string().trim().optional(),
+  nok_authorized: z.boolean(),
+});
+
+type TenantFormValues = z.infer<typeof tenantSchema>;
+
+const EMPTY_FORM: TenantFormValues = {
   full_name: '',
   phone: '',
   email: '',
@@ -25,29 +41,33 @@ export default function TenantsPage() {
   const { data: tenants = [], isLoading } = useTenants();
   const createTenant = useCreateTenant();
   const [open, setOpen] = React.useState(false);
-  const [form, setForm] = React.useState(EMPTY_FORM);
 
-  const handleCreate = async () => {
-    const emergency_contacts = form.nok_full_name
+  const form = useForm<TenantFormValues>({
+    resolver: zodResolver(tenantSchema),
+    defaultValues: EMPTY_FORM,
+  });
+
+  const handleCreate = form.handleSubmit(async (values) => {
+    const emergency_contacts = values.nok_full_name
       ? [{
-          full_name: form.nok_full_name,
-          relationship: form.nok_relationship,
-          phone: form.nok_phone,
+          full_name: values.nok_full_name,
+          relationship: values.nok_relationship,
+          phone: values.nok_phone,
           is_primary: true,
-          purpose: form.nok_authorized ? 'rent_escalation_authorized' : 'emergency_only',
-          consent_given: form.nok_authorized,
+          purpose: values.nok_authorized ? 'rent_escalation_authorized' : 'emergency_only',
+          consent_given: values.nok_authorized,
         }]
       : [];
 
     await createTenant.mutateAsync({
-      full_name: form.full_name,
-      phone: form.phone,
-      email: form.email,
+      full_name: values.full_name,
+      phone: values.phone,
+      email: values.email,
       emergency_contacts,
     });
     setOpen(false);
-    setForm(EMPTY_FORM);
-  };
+    form.reset(EMPTY_FORM);
+  });
 
   return (
     <div className="space-y-4">
@@ -61,68 +81,118 @@ export default function TenantsPage() {
             <DialogHeader>
               <DialogTitle>Add tenant</DialogTitle>
             </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="full_name">Full name</Label>
-                <Input id="full_name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  They&apos;ll get an email to set up their password once attached to a unit.
-                </p>
-              </div>
+            <Form {...form}>
+              <div className="space-y-3">
+                <FormField
+                  control={form.control}
+                  name="full_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full name</FormLabel>
+                      <FormControl>
+                        <Input className="h-11" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl>
+                        <Input className="h-11" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input className="h-11" type="email" {...field} />
+                      </FormControl>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        They&apos;ll get an email to set up their password once attached to a unit.
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <div className="pt-2 border-t">
-                <p className="mb-2 text-sm font-medium">Next of kin (optional)</p>
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="nok_full_name">Full name</Label>
-                    <Input
-                      id="nok_full_name"
-                      value={form.nok_full_name}
-                      onChange={(e) => setForm({ ...form, nok_full_name: e.target.value })}
+                <div className="pt-2 border-t">
+                  <p className="mb-2 text-sm font-medium">Next of kin (optional)</p>
+                  <div className="space-y-3">
+                    <FormField
+                      control={form.control}
+                      name="nok_full_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full name</FormLabel>
+                          <FormControl>
+                            <Input className="h-11" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="nok_relationship"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Relationship</FormLabel>
+                          <FormControl>
+                            <Input className="h-11" placeholder="Parent, sibling, spouse..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="nok_phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone</FormLabel>
+                          <FormControl>
+                            <Input className="h-11" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="nok_authorized"
+                      render={({ field }) => (
+                        <FormItem className="flex items-start gap-2">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              className="mt-0.5"
+                            />
+                          </FormControl>
+                          <span className="text-sm text-muted-foreground">
+                            Contact this person about rent if the tenant falls behind and can&apos;t be
+                            reached. Off by default; only used with this consent.
+                          </span>
+                        </FormItem>
+                      )}
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="nok_relationship">Relationship</Label>
-                    <Input
-                      id="nok_relationship"
-                      placeholder="Parent, sibling, spouse..."
-                      value={form.nok_relationship}
-                      onChange={(e) => setForm({ ...form, nok_relationship: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="nok_phone">Phone</Label>
-                    <Input
-                      id="nok_phone"
-                      value={form.nok_phone}
-                      onChange={(e) => setForm({ ...form, nok_phone: e.target.value })}
-                    />
-                  </div>
-                  <label className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      className="mt-0.5"
-                      checked={form.nok_authorized}
-                      onChange={(e) => setForm({ ...form, nok_authorized: e.target.checked })}
-                    />
-                    <span>
-                      Contact this person about rent if the tenant falls behind and can&apos;t be
-                      reached. Off by default; only used with this consent.
-                    </span>
-                  </label>
                 </div>
               </div>
-            </div>
+            </Form>
             <DialogFooter>
-              <Button onClick={handleCreate} disabled={!form.full_name || createTenant.isPending}>
+              <Button onClick={handleCreate} disabled={createTenant.isPending}>
                 Save
               </Button>
             </DialogFooter>
