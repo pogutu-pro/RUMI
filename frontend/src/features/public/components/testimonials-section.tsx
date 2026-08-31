@@ -45,6 +45,12 @@ export function TestimonialsSection() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-14 max-w-3xl text-center">
           <h2 className="text-3xl font-bold text-gray-900 lg:text-4xl">What landlords are saying</h2>
+          {/* WR-03: RumiaRent is pre-launch with no real customers yet — these
+              quotes are illustrative of the value proposition, not attributed
+              to real people. Disclose that in the rendered UI, not just in a
+              source comment, so a visitor can't mistake them for confirmed
+              customer endorsements. */}
+          <p className="mt-3 text-sm text-gray-400">Illustrative examples — RumiaRent is pre-launch.</p>
         </div>
         <div className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {TESTIMONIALS.map(({ quote, name, role }) => (
