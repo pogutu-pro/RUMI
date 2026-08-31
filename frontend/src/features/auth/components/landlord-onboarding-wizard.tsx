@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { axiosInstance as axios } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
@@ -409,6 +410,14 @@ function TierStep({ onBack }: { onBack: () => void }) {
       axios.post('/accounts/onboarding/wizard-complete/', { plan_slug }),
     onSuccess: () => {
       router.push('/landlord/rental');
+    },
+    onError: (err) => {
+      // CR-03: surface a toast on failure so the landlord isn't left
+      // staring at a stopped spinner with no explanation (e.g. the
+      // backend's 400s for missing org/property/payout setup, a stale
+      // plan slug, or a network error).
+      const message = (err as { message?: string })?.message || 'Could not complete setup';
+      toast.error(message);
     },
   });
 
