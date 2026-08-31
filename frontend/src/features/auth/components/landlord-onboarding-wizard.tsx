@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation } from '@tanstack/react-query';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 
+import { axiosInstance as axios } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,9 +19,13 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Steps } from '@/components/ui/steps';
+import { PriceDisplay } from '@/components/ui/price-display';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
 import { useOnboardingStatus } from '@/features/auth/hooks/use-auth';
 import { useCreateOrganization, useCreateProperty } from '@/features/rental/hooks/use-rental';
 import { usePayoutStatus, useSubmitPayoutDetails } from '@/features/payout/hooks/use-payout';
+import { usePlans } from '@/features/billing/hooks/use-plans';
 import {
   wizardOrgSchema,
   wizardPropertySchema,
@@ -110,11 +116,7 @@ export function LandlordOnboardingWizard() {
         />
       )}
       {step === 3 && <PayoutStep onAdvance={() => goToStep(4)} onBack={() => goToStep(2)} />}
-      {step === 4 && (
-        <div className="rounded-3xl border border-gray-100 bg-white p-10 shadow-sm">
-          <p className="text-sm text-muted-foreground">Plan selection — coming next.</p>
-        </div>
-      )}
+      {step === 4 && <TierStep onBack={() => goToStep(3)} />}
     </div>
   );
 }
@@ -392,6 +394,118 @@ function PayoutStep({ onAdvance, onBack }: { onAdvance: () => void; onBack: () =
           </Button>
         </form>
       </Form>
+    </div>
+  );
+}
+
+function TierStep({ onBack }: { onBack: () => void }) {
+  const router = useRouter();
+  const { data: plans, isLoading, isError, refetch } = usePlans();
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+
+  // Records the landlord's tier choice as a preference only (D-06) — this
+  // call never creates a Paystack charge; the actual billing flow (Phase 6)
+  // is triggered later, from the dashboard.
+  const completeMutation = useMutation({
+    mutationFn: (plan_slug: string) =>
+      axios.post('/accounts/onboarding/wizard-complete/', { plan_slug }),
+    onSuccess: () => {
+      router.push('/landlord/rental');
+    },
+  });
+
+  const handleComplete = () => {
+    if (!selectedSlug) return;
+    completeMutation.mutate(selectedSlug);
+  };
+
+  return (
+    <div className="rounded-3xl border border-gray-100 bg-white p-10 shadow-sm">
+      <div className="mb-6 flex items-center gap-3">
+        <Button type="button" variant="ghost" size="icon" aria-label="Go back" onClick={onBack}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h2 className="text-2xl font-semibold text-gray-900">Choose your plan</h2>
+      </div>
+
+      {isLoading && (
+        <div className="grid gap-6 sm:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="skeleton h-64 rounded-3xl" />
+          ))}
+        </div>
+      )}
+
+      {!isLoading && isError && (
+        <ErrorState
+          title="Couldn't load pricing"
+          message="We're having trouble reaching pricing right now. Try again in a moment."
+          onRetry={() => refetch()}
+        />
+      )}
+
+      {!isLoading && !isError && plans && plans.length === 0 && (
+        <EmptyState
+          variant="alert"
+          title="Pricing unavailable right now"
+          description="We couldn't load our current plans. Refresh the page, or contact support if this keeps happening."
+        />
+      )}
+
+      {!isLoading && !isError && plans && plans.length > 0 && (
+        <div className="grid gap-6 sm:grid-cols-3">
+          {plans.map((plan) => {
+            const isSelected = selectedSlug === plan.slug;
+            const propertiesLabel =
+              plan.max_properties === 0
+                ? 'Unlimited properties'
+                : `${plan.max_properties} propert${plan.max_properties === 1 ? 'y' : 'ies'}`;
+            const unitsLabel =
+              plan.max_units === 0 ? 'Unlimited units' : `${plan.max_units} units`;
+            const seatsLabel =
+              plan.max_caretaker_seats === 0
+                ? 'Unlimited caretaker seats'
+                : `${plan.max_caretaker_seats} caretaker seat${plan.max_caretaker_seats === 1 ? '' : 's'}`;
+
+            return (
+              <button
+                key={plan.id}
+                type="button"
+                onClick={() => setSelectedSlug(plan.slug)}
+                aria-pressed={isSelected}
+                className={`rounded-3xl p-8 text-left transition-all ${
+                  isSelected
+                    ? 'border border-primary bg-white shadow-xl'
+                    : 'border border-gray-100 bg-white shadow-sm hover:shadow-md'
+                }`}
+              >
+                <h3 className="text-2xl font-semibold text-gray-900">{plan.name}</h3>
+                <div className="mt-2 flex items-baseline gap-1">
+                  <PriceDisplay amount={plan.price} size="lg" />
+                  <span className="text-sm text-muted-foreground">/month</span>
+                </div>
+                <ul className="mt-4 space-y-1 text-sm text-muted-foreground">
+                  <li>{propertiesLabel}</li>
+                  <li>{unitsLabel}</li>
+                  <li>{seatsLabel}</li>
+                </ul>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <Button
+        type="button"
+        variant="charcoal"
+        size="lg"
+        className="mt-8 h-14 w-full rounded-full"
+        disabled={!selectedSlug || completeMutation.isPending}
+        isLoading={completeMutation.isPending}
+        onClick={handleComplete}
+      >
+        Complete setup
+      </Button>
     </div>
   );
 }
