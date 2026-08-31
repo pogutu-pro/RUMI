@@ -38,7 +38,7 @@ function FieldWrapper({
       {label && (
         <label
           htmlFor={fieldId}
-          className="text-sm font-medium text-gray-700 flex items-center gap-1"
+          className="text-sm font-semibold text-gray-700 flex items-center gap-1"
         >
           {label}
           {/* Required asterisk could be added here if needed */}
@@ -147,7 +147,7 @@ const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
         {label && (
           <label
             htmlFor={fieldId}
-            className="text-sm font-medium text-foreground flex items-center gap-1"
+            className="text-sm font-semibold text-foreground flex items-center gap-1"
           >
             {label}
             {props.required && <span className="text-destructive">*</span>}
@@ -232,7 +232,7 @@ const PasswordField = React.forwardRef<HTMLInputElement, PasswordFieldProps>(
         {label && (
           <label
             htmlFor={fieldId}
-            className="text-sm font-medium text-foreground flex items-center gap-1"
+            className="text-sm font-semibold text-foreground flex items-center gap-1"
           >
             {label}
             {props.required && <span className="text-destructive">*</span>}
