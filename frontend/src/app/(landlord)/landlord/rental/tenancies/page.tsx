@@ -1,18 +1,32 @@
 'use client';
 
 import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   useTenancies, useCreateTenancy, useTerminateTenancy, useUnits, useTenants,
 } from '@/features/rental/hooks/use-rental';
+
+const tenancySchema = z.object({
+  unit: z.string().min(1, 'Choose a unit'),
+  tenant: z.string().min(1, 'Choose a tenant'),
+  monthly_rent: z.string().min(1, 'Monthly rent is required'),
+  start_date: z.string().optional(),
+});
+
+type TenancyFormValues = z.infer<typeof tenancySchema>;
+
+const EMPTY_FORM: TenancyFormValues = { unit: '', tenant: '', monthly_rent: '', start_date: '' };
 
 export default function TenanciesPage() {
   const { data: tenancies = [], isLoading } = useTenancies();
@@ -22,19 +36,23 @@ export default function TenanciesPage() {
   const terminateTenancy = useTerminateTenancy();
 
   const [open, setOpen] = React.useState(false);
-  const [form, setForm] = React.useState({ unit: '', tenant: '', monthly_rent: '', start_date: '' });
+
+  const form = useForm<TenancyFormValues>({
+    resolver: zodResolver(tenancySchema),
+    defaultValues: EMPTY_FORM,
+  });
 
   const vacantUnits = units.filter((u) => u.status !== 'occupied');
 
-  const handleCreate = async () => {
+  const handleCreate = form.handleSubmit(async (values) => {
     await createTenancy.mutateAsync({
-      ...form,
+      ...values,
       status: 'active',
-      start_date: form.start_date || new Date().toISOString().slice(0, 10),
+      start_date: values.start_date || new Date().toISOString().slice(0, 10),
     });
     setOpen(false);
-    setForm({ unit: '', tenant: '', monthly_rent: '', start_date: '' });
-  };
+    form.reset(EMPTY_FORM);
+  });
 
   return (
     <div className="space-y-4">
@@ -48,48 +66,89 @@ export default function TenanciesPage() {
             <DialogHeader>
               <DialogTitle>New tenancy</DialogTitle>
             </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label>Unit</Label>
-                <Select value={form.unit} onValueChange={(v) => {
-                  const unit = units.find((u) => u.id === v);
-                  setForm({ ...form, unit: v, monthly_rent: unit?.monthly_rent ?? form.monthly_rent });
-                }}>
-                  <SelectTrigger><SelectValue placeholder="Choose a vacant unit" /></SelectTrigger>
-                  <SelectContent>
-                    {vacantUnits.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>{u.unit_number}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <Form {...form}>
+              <div className="space-y-3">
+                <FormField
+                  control={form.control}
+                  name="unit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Unit</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={(v) => {
+                          field.onChange(v);
+                          const unit = units.find((u) => u.id === v);
+                          if (unit?.monthly_rent) form.setValue('monthly_rent', unit.monthly_rent);
+                        }}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="Choose a vacant unit" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {vacantUnits.map((u) => (
+                            <SelectItem key={u.id} value={u.id}>{u.unit_number}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="tenant"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tenant</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="Choose a tenant" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {tenants.map((t) => (
+                            <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="monthly_rent"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Monthly rent (KES)</FormLabel>
+                      <FormControl>
+                        <Input className="h-11" type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="start_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start date</FormLabel>
+                      <FormControl>
+                        <Input className="h-11" type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-              <div>
-                <Label>Tenant</Label>
-                <Select value={form.tenant} onValueChange={(v) => setForm({ ...form, tenant: v })}>
-                  <SelectTrigger><SelectValue placeholder="Choose a tenant" /></SelectTrigger>
-                  <SelectContent>
-                    {tenants.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="monthly_rent">Monthly rent (KES)</Label>
-                <Input id="monthly_rent" type="number" value={form.monthly_rent}
-                  onChange={(e) => setForm({ ...form, monthly_rent: e.target.value })} />
-              </div>
-              <div>
-                <Label htmlFor="start_date">Start date</Label>
-                <Input id="start_date" type="date" value={form.start_date}
-                  onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
-              </div>
-            </div>
+            </Form>
             <DialogFooter>
-              <Button
-                onClick={handleCreate}
-                disabled={!form.unit || !form.tenant || !form.monthly_rent || createTenancy.isPending}
-              >
+              <Button onClick={handleCreate} disabled={createTenancy.isPending}>
                 Save
               </Button>
             </DialogFooter>

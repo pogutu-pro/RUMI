@@ -1,13 +1,16 @@
 'use client';
 
 import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   useRentBalance, useGenerateRentCharges, useRecordManualPayment, useTenancies,
@@ -24,6 +27,12 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = 
   disputed: 'destructive',
 };
 
+const paymentSchema = z.object({
+  amount: z.coerce.number().positive('Enter an amount greater than 0'),
+});
+
+type PaymentFormValues = z.infer<typeof paymentSchema>;
+
 export default function RentPage() {
   const { data: balance, isLoading } = useRentBalance();
   const { data: tenancies = [] } = useTenancies();
@@ -31,7 +40,6 @@ export default function RentPage() {
   const recordPayment = useRecordManualPayment();
 
   const [activeCharge, setActiveCharge] = React.useState<RentCharge | null>(null);
-  const [amount, setAmount] = React.useState('');
 
   const tenancyIdByCharge = React.useMemo(() => {
     const map = new Map<string, string>();
@@ -42,19 +50,23 @@ export default function RentPage() {
     return map;
   }, [balance, tenancies]);
 
-  const handleRecord = async () => {
+  const form = useForm<z.input<typeof paymentSchema>, unknown, PaymentFormValues>({
+    resolver: zodResolver(paymentSchema),
+    values: { amount: activeCharge?.outstanding ? Number(activeCharge.outstanding) : 0 },
+  });
+
+  const handleRecord = form.handleSubmit(async (values) => {
     if (!activeCharge) return;
     const tenancyId = tenancyIdByCharge.get(activeCharge.id);
     if (!tenancyId) return;
     await recordPayment.mutateAsync({
       tenancy: tenancyId,
-      amount,
+      amount: String(values.amount),
       rent_charge_id: activeCharge.id,
       payment_method: 'cash',
     });
     setActiveCharge(null);
-    setAmount('');
-  };
+  });
 
   return (
     <div className="space-y-4">
@@ -99,7 +111,7 @@ export default function RentPage() {
                 <TableCell>KES {c.outstanding}</TableCell>
                 <TableCell><Badge variant={STATUS_VARIANT[c.status] ?? 'secondary'}>{c.status}</Badge></TableCell>
                 <TableCell>
-                  <Button size="sm" onClick={() => { setActiveCharge(c); setAmount(c.outstanding); }}>
+                  <Button size="sm" onClick={() => setActiveCharge(c)}>
                     Record payment
                   </Button>
                 </TableCell>
@@ -114,12 +126,28 @@ export default function RentPage() {
           <DialogHeader>
             <DialogTitle>Record payment</DialogTitle>
           </DialogHeader>
-          <div>
-            <Label htmlFor="amount">Amount received (KES)</Label>
-            <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
-          </div>
+          <Form {...form}>
+            <FormField
+              control={form.control}
+              name="amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Amount received (KES)</FormLabel>
+                  <FormControl>
+                    <Input
+                      className="h-11"
+                      type="number"
+                      {...field}
+                      value={field.value as number | string}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </Form>
           <DialogFooter>
-            <Button onClick={handleRecord} disabled={!amount || recordPayment.isPending}>
+            <Button onClick={handleRecord} disabled={recordPayment.isPending}>
               Save
             </Button>
           </DialogFooter>
