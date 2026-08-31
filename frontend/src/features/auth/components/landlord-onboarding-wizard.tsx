@@ -50,11 +50,9 @@ function clampStep(step: number): number {
  * 4-step resumable landlord onboarding wizard (org -> property -> payout ->
  * tier), replacing the brutalist 2-step landlord branch of onboarding-form.tsx
  * (D-01, D-02). Resumability is a read of server state (useOnboardingStatus's
- * `wizard` block, Phase 4 Plan 01), not a client-local draft replay.
- *
- * Task 1 (tracer): wizard shell + org step + property step, end-to-end.
- * Payout (Task 2) and tier-selection (Task 3) steps land as placeholders
- * here and are replaced with their real implementations in later tasks.
+ * `wizard` block, Phase 4 Plan 01), not a client-local draft replay. Each
+ * step persists real data immediately via its own endpoint (org/property/
+ * payout/tier) — resumability never depends on a client-side draft replay.
  */
 export function LandlordOnboardingWizard() {
   const router = useRouter();
