@@ -1,14 +1,17 @@
 'use client';
 
 import * as React from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useTickets, useCreateTicket, useTicket, useAddTicketMessage } from '../hooks/use-support';
 import type { TicketStatus } from '../types/types';
 
@@ -26,16 +29,34 @@ const STATUS_LABEL: Record<TicketStatus, string> = {
   closed: 'Closed',
 };
 
+const ticketSchema = z.object({
+  subject: z.string().trim().min(3, 'Subject is required').max(200),
+  description: z.string().trim().min(10, 'Please describe the issue in a bit more detail'),
+});
+
+type TicketFormValues = z.infer<typeof ticketSchema>;
+
+const EMPTY_TICKET_FORM: TicketFormValues = { subject: '', description: '' };
+
+const replySchema = z.object({
+  message: z.string().trim().min(1, 'Reply cannot be empty'),
+});
+
+type ReplyFormValues = z.infer<typeof replySchema>;
+
 function TicketThread({ ticketId, onClose }: { ticketId: string; onClose: () => void }) {
   const { data: ticket, isLoading } = useTicket(ticketId);
   const addMessage = useAddTicketMessage();
-  const [reply, setReply] = React.useState('');
 
-  const handleReply = async () => {
-    if (!reply.trim()) return;
-    await addMessage.mutateAsync({ ticketId, message: reply.trim() });
-    setReply('');
-  };
+  const form = useForm<ReplyFormValues>({
+    resolver: zodResolver(replySchema),
+    defaultValues: { message: '' },
+  });
+
+  const handleReply = form.handleSubmit(async (values) => {
+    await addMessage.mutateAsync({ ticketId, message: values.message });
+    form.reset({ message: '' });
+  });
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -68,13 +89,26 @@ function TicketThread({ ticketId, onClose }: { ticketId: string; onClose: () => 
               )}
             </div>
 
-            <div className="space-y-2 border-t pt-3">
-              <Label htmlFor="reply">Reply</Label>
-              <Textarea id="reply" rows={3} value={reply} onChange={(e) => setReply(e.target.value)} />
-              <Button onClick={handleReply} disabled={!reply.trim() || addMessage.isPending} className="w-full">
-                Send reply
-              </Button>
-            </div>
+            <Form {...form}>
+              <form onSubmit={handleReply} className="space-y-2 border-t pt-3">
+                <FormField
+                  control={form.control}
+                  name="message"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold">Reply</FormLabel>
+                      <FormControl>
+                        <Textarea rows={3} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" disabled={addMessage.isPending} className="w-full">
+                  Send reply
+                </Button>
+              </form>
+            </Form>
           </>
         )}
       </DialogContent>
@@ -92,13 +126,17 @@ export function MyTicketsPage() {
   const createTicket = useCreateTicket();
   const [open, setOpen] = React.useState(false);
   const [activeTicketId, setActiveTicketId] = React.useState<string | null>(null);
-  const [form, setForm] = React.useState({ subject: '', description: '' });
 
-  const handleCreate = async () => {
-    await createTicket.mutateAsync(form);
+  const form = useForm<TicketFormValues>({
+    resolver: zodResolver(ticketSchema),
+    defaultValues: EMPTY_TICKET_FORM,
+  });
+
+  const handleCreate = form.handleSubmit(async (values) => {
+    await createTicket.mutateAsync(values);
     setOpen(false);
-    setForm({ subject: '', description: '' });
-  };
+    form.reset(EMPTY_TICKET_FORM);
+  });
 
   return (
     <div className="space-y-4">
@@ -112,33 +150,41 @@ export function MyTicketsPage() {
             <DialogHeader>
               <DialogTitle>New support ticket</DialogTitle>
             </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="subject">Subject</Label>
-                <Input
-                  id="subject"
-                  value={form.subject}
-                  onChange={(e) => setForm({ ...form, subject: e.target.value })}
+            <Form {...form}>
+              <form onSubmit={handleCreate} className="space-y-3">
+                <FormField
+                  control={form.control}
+                  name="subject"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold">Subject</FormLabel>
+                      <FormControl>
+                        <Input className="h-11" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div>
-                <Label htmlFor="description">Describe the issue</Label>
-                <Textarea
-                  id="description"
-                  rows={4}
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold">Describe the issue</FormLabel>
+                      <FormControl>
+                        <Textarea rows={4} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                onClick={handleCreate}
-                disabled={!form.subject.trim() || !form.description.trim() || createTicket.isPending}
-              >
-                Submit
-              </Button>
-            </DialogFooter>
+                <DialogFooter>
+                  <Button type="submit" disabled={createTicket.isPending}>
+                    Submit
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
