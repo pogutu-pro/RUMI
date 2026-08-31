@@ -19,6 +19,13 @@ import { isGateRejection } from '@/lib/api/gate';
 
 const KENYAN_PHONE_REGEX = /^(\+254|0)[17]\d{8}$/;
 
+// WR-01: the backend (`CaretakerCreateSerializer`) only accepts the
+// `+254XXXXXXXXX` format, but this schema's regex accepts the equally
+// common local `0XXXXXXXXX` format too. Normalize to +254 before submit so
+// a landlord who types the local format doesn't get a raw 400 from the API.
+const normalizeKenyanPhone = (value: string) =>
+  value.startsWith('0') ? `+254${value.slice(1)}` : value;
+
 const caretakerSchema = z.object({
   full_name: z.string().trim().min(2, 'Full name is required').max(150),
   email: z.string().trim().email('Enter a valid email address'),
@@ -54,7 +61,12 @@ export default function CaretakersPage() {
 
   const handleCreate = form.handleSubmit(async (values) => {
     try {
-      await createCaretaker.mutateAsync({ ...values, property_ids: propertyIds });
+      await createCaretaker.mutateAsync({
+        ...values,
+        phone: normalizeKenyanPhone(values.phone),
+        emergency_contact_phone: normalizeKenyanPhone(values.emergency_contact_phone),
+        property_ids: propertyIds,
+      });
       setOpen(false);
       form.reset();
       setPropertyIds([]);
