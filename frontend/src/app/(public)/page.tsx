@@ -16,6 +16,7 @@ import {
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 import { WordSwitcher } from '@/components/animations/word-switcher';
 import { PricingTeaser } from './_components/pricing-teaser';
+import { TestimonialsSection } from '@/features/public/components/testimonials-section';
 
 export const metadata: Metadata = {
   title: 'RumiaRent - Rental Management for Kenyan Landlords',
@@ -264,6 +265,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <TestimonialsSection />
 
       {/* Pricing teaser */}
       <section className="py-20 lg:py-28">
