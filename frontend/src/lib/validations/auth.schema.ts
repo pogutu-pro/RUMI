@@ -358,3 +358,22 @@ export const wizardPropertySchema = z.object({
 });
 
 export type WizardPropertyFormData = z.infer<typeof wizardPropertySchema>;
+
+/**
+ * Mirrors Backend/organizations/serializers.py
+ * PayoutBankDetailsInputSerializer's max_length constraints exactly
+ * (100/20/10) so client-side validation never accepts something the server
+ * would 400 on.
+ */
+export const wizardPayoutSchema = z.object({
+  bank_name: requiredString(2, 100, 'Bank name'),
+  bank_account_number: z
+    .string()
+    .trim()
+    .min(10, 'Account number too short')
+    .max(20, 'Account number too long')
+    .regex(/^[0-9]+$/, 'Account number must be numeric'),
+  bank_code: requiredString(2, 10, 'Bank code'),
+});
+
+export type WizardPayoutFormData = z.infer<typeof wizardPayoutSchema>;
