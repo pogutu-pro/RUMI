@@ -34,9 +34,9 @@ export function PayoutPendingBanner() {
       </div>
       {expanded && (
         <p className="mt-2 text-sm text-muted-foreground">
-          {
-            "Your bank details are submitted and being verified. Rent payments won't route to you until this completes."
-          }
+          {data.status === 'not_started'
+            ? 'Add your bank details so rent payments can route to you.'
+            : "Your bank details are submitted and being verified. Rent payments won't route to you until this completes."}
         </p>
       )}
     </div>

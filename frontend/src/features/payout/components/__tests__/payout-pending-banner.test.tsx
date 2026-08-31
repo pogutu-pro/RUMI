@@ -18,15 +18,18 @@ describe('PayoutPendingBanner', () => {
     jest.clearAllMocks();
   });
 
-  it('renders the Copywriting Contract heading/body when status is not_started', () => {
+  it('renders the not-started copy (no bank details submitted yet) when status is not_started', () => {
     mockStatus({ status: 'not_started' });
     render(<PayoutPendingBanner />);
     expect(screen.getByText('Finish setting up your payouts')).toBeInTheDocument();
     expect(
-      screen.getByText(
+      screen.getByText('Add your bank details so rent payments can route to you.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
         "Your bank details are submitted and being verified. Rent payments won't route to you until this completes.",
       ),
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
   });
 
   it('renders the Copywriting Contract heading/body when status is pending_verification', () => {
