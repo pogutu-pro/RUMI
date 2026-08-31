@@ -1,6 +1,9 @@
 'use client';
 
 import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,9 +12,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import {
+  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
+} from '@/components/ui/form';
 import { cn } from '@/lib/utils/cn';
 import { useTickets, useTicket, useUpdateTicket, useAddTicketMessage } from '@/features/support/hooks/use-support';
 import type { TicketStatus } from '@/features/support/types/types';
+
+const replySchema = z.object({
+  message: z.string().trim().min(1, 'Reply cannot be empty'),
+});
+
+type ReplyFormData = z.infer<typeof replySchema>;
 
 const STATUS_VARIANT: Record<TicketStatus, 'default' | 'secondary' | 'destructive'> = {
   open: 'destructive',
@@ -39,13 +51,16 @@ function TicketDetailDialog({ ticketId, onClose }: { ticketId: string; onClose: 
   const { data: ticket, isLoading } = useTicket(ticketId);
   const updateTicket = useUpdateTicket();
   const addMessage = useAddTicketMessage();
-  const [reply, setReply] = React.useState('');
 
-  const handleReply = async () => {
-    if (!reply.trim()) return;
-    await addMessage.mutateAsync({ ticketId, message: reply.trim() });
-    setReply('');
-  };
+  const form = useForm<ReplyFormData>({
+    resolver: zodResolver(replySchema),
+    defaultValues: { message: '' },
+  });
+
+  const handleReply = form.handleSubmit(async (values) => {
+    await addMessage.mutateAsync({ ticketId, message: values.message });
+    form.reset();
+  });
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -99,13 +114,26 @@ function TicketDetailDialog({ ticketId, onClose }: { ticketId: string; onClose: 
               )}
             </div>
 
-            <div className="space-y-2 border-t pt-3">
-              <Label htmlFor="reply">Reply</Label>
-              <Textarea id="reply" rows={3} value={reply} onChange={(e) => setReply(e.target.value)} />
-              <Button onClick={handleReply} disabled={!reply.trim() || addMessage.isPending} className="w-full">
-                Send reply
-              </Button>
-            </div>
+            <Form {...form}>
+              <form onSubmit={handleReply} className="space-y-2 border-t pt-3">
+                <FormField
+                  control={form.control}
+                  name="message"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold">Reply</FormLabel>
+                      <FormControl>
+                        <Textarea rows={3} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" disabled={addMessage.isPending} className="w-full">
+                  Send reply
+                </Button>
+              </form>
+            </Form>
           </>
         )}
       </DialogContent>
