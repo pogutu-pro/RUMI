@@ -76,7 +76,7 @@ export default function CaretakersPage() {
               <DialogTitle>Add caretaker</DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form className="space-y-3">
+              <form onSubmit={handleCreate} className="space-y-3">
                 <FormField
                   control={form.control}
                   name="full_name"
@@ -168,14 +168,14 @@ export default function CaretakersPage() {
                     </div>
                   </div>
                 )}
+                {gateError && <GateBanner gate={gateError} onDismiss={() => createCaretaker.reset()} />}
+                <DialogFooter>
+                  <Button type="submit" disabled={createCaretaker.isPending} className="rounded-full">
+                    Save
+                  </Button>
+                </DialogFooter>
               </form>
             </Form>
-            {gateError && <GateBanner gate={gateError} onDismiss={() => createCaretaker.reset()} />}
-            <DialogFooter>
-              <Button onClick={handleCreate} disabled={createCaretaker.isPending} className="rounded-full">
-                Save
-              </Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

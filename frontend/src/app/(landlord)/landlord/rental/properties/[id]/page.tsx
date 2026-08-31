@@ -69,7 +69,7 @@ export default function PropertyDetailPage() {
               <DialogTitle>Add unit</DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form className="space-y-3">
+              <form onSubmit={handleCreate} className="space-y-3">
                 <FormField
                   control={form.control}
                   name="unit_number"
@@ -118,14 +118,14 @@ export default function PropertyDetailPage() {
                     </FormItem>
                   )}
                 />
+                {gateError && <GateBanner gate={gateError} onDismiss={() => createUnit.reset()} />}
+                <DialogFooter>
+                  <Button type="submit" disabled={createUnit.isPending} className="rounded-full">
+                    Save
+                  </Button>
+                </DialogFooter>
               </form>
             </Form>
-            {gateError && <GateBanner gate={gateError} onDismiss={() => createUnit.reset()} />}
-            <DialogFooter>
-              <Button onClick={handleCreate} disabled={createUnit.isPending} className="rounded-full">
-                Save
-              </Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

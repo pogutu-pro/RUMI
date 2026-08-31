@@ -57,7 +57,7 @@ export default function PropertiesPage() {
               <DialogTitle>Add property</DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form className="space-y-3">
+              <form onSubmit={handleCreate} className="space-y-3">
                 <FormField
                   control={form.control}
                   name="name"
@@ -97,14 +97,14 @@ export default function PropertiesPage() {
                     </FormItem>
                   )}
                 />
+                {gateError && <GateBanner gate={gateError} onDismiss={() => createProperty.reset()} />}
+                <DialogFooter>
+                  <Button type="submit" disabled={createProperty.isPending} className="rounded-full">
+                    Save
+                  </Button>
+                </DialogFooter>
               </form>
             </Form>
-            {gateError && <GateBanner gate={gateError} onDismiss={() => createProperty.reset()} />}
-            <DialogFooter>
-              <Button onClick={handleCreate} disabled={createProperty.isPending} className="rounded-full">
-                Save
-              </Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
