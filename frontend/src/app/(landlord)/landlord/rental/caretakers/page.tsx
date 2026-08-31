@@ -1,18 +1,31 @@
 'use client';
 
 import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useCaretakers, useCreateCaretaker, useProperties } from '@/features/rental/hooks/use-rental';
 import { GateBanner } from '@/features/rental/components/gate-banner';
 import { isGateRejection } from '@/lib/api/gate';
+
+const KENYAN_PHONE_REGEX = /^(\+254|0)[17]\d{8}$/;
+
+const caretakerSchema = z.object({
+  full_name: z.string().trim().min(2, 'Full name is required').max(150),
+  email: z.string().trim().email('Enter a valid email address'),
+  phone: z.string().trim().regex(KENYAN_PHONE_REGEX, 'Enter a valid Kenyan phone number'),
+  emergency_contact_name: z.string().trim().min(2, 'Emergency contact name is required').max(150),
+  emergency_contact_phone: z.string().trim().regex(KENYAN_PHONE_REGEX, 'Enter a valid Kenyan phone number'),
+});
 
 const EMPTY_FORM = {
   full_name: '',
@@ -27,31 +40,28 @@ export default function CaretakersPage() {
   const { data: properties = [] } = useProperties();
   const createCaretaker = useCreateCaretaker();
   const [open, setOpen] = React.useState(false);
-  const [form, setForm] = React.useState(EMPTY_FORM);
   const [propertyIds, setPropertyIds] = React.useState<string[]>([]);
   const gateError = isGateRejection(createCaretaker.error);
+
+  const form = useForm<z.infer<typeof caretakerSchema>>({
+    resolver: zodResolver(caretakerSchema),
+    defaultValues: EMPTY_FORM,
+  });
 
   const togglePropertyId = (id: string) => {
     setPropertyIds((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
   };
 
-  const handleCreate = async () => {
+  const handleCreate = form.handleSubmit(async (values) => {
     try {
-      await createCaretaker.mutateAsync({ ...form, property_ids: propertyIds });
+      await createCaretaker.mutateAsync({ ...values, property_ids: propertyIds });
       setOpen(false);
-      setForm(EMPTY_FORM);
+      form.reset();
       setPropertyIds([]);
     } catch {
       // handled via createCaretaker.error / isGateRejection in render
     }
-  };
-
-  const canSubmit =
-    form.full_name.trim() &&
-    form.email.trim() &&
-    /^\+254[0-9]{9}$/.test(form.phone) &&
-    form.emergency_contact_name.trim() &&
-    /^\+254[0-9]{9}$/.test(form.emergency_contact_phone);
+  });
 
   return (
     <div className="space-y-4">
@@ -65,80 +75,104 @@ export default function CaretakersPage() {
             <DialogHeader>
               <DialogTitle>Add caretaker</DialogTitle>
             </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="full_name">Full name</Label>
-                <Input
-                  id="full_name"
-                  value={form.full_name}
-                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+            <Form {...form}>
+              <form className="space-y-3">
+                <FormField
+                  control={form.control}
+                  name="full_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full name</FormLabel>
+                      <FormControl>
+                        <Input {...field} className="h-11" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="email" className="h-11" />
+                      </FormControl>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        They&apos;ll get an email to set up their password.
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  They&apos;ll get an email to set up their password.
-                </p>
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  placeholder="+254712345678"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="+254712345678" className="h-11" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
 
-              <div className="pt-2 border-t">
-                <p className="mb-2 text-sm font-medium">Emergency contact</p>
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="ec_name">Full name</Label>
-                    <Input
-                      id="ec_name"
-                      value={form.emergency_contact_name}
-                      onChange={(e) => setForm({ ...form, emergency_contact_name: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="ec_phone">Phone</Label>
-                    <Input
-                      id="ec_phone"
-                      placeholder="+254712345678"
-                      value={form.emergency_contact_phone}
-                      onChange={(e) => setForm({ ...form, emergency_contact_phone: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {properties.length > 0 && (
                 <div className="pt-2 border-t">
-                  <p className="mb-2 text-sm font-medium">Assign to properties</p>
-                  <div className="space-y-2">
-                    {properties.map((p) => (
-                      <label key={p.id} className="flex items-center gap-2 text-sm">
-                        <Checkbox
-                          checked={propertyIds.includes(p.id)}
-                          onCheckedChange={() => togglePropertyId(p.id)}
-                        />
-                        {p.name}
-                      </label>
-                    ))}
+                  <p className="mb-2 text-sm font-semibold">Emergency contact</p>
+                  <div className="space-y-3">
+                    <FormField
+                      control={form.control}
+                      name="emergency_contact_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full name</FormLabel>
+                          <FormControl>
+                            <Input {...field} className="h-11" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="emergency_contact_phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="+254712345678" className="h-11" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
                 </div>
-              )}
-            </div>
+
+                {properties.length > 0 && (
+                  <div className="pt-2 border-t">
+                    <p className="mb-2 text-sm font-semibold">Assign to properties</p>
+                    <div className="space-y-2">
+                      {properties.map((p) => (
+                        <label key={p.id} className="flex items-center gap-2 text-sm">
+                          <Checkbox
+                            checked={propertyIds.includes(p.id)}
+                            onCheckedChange={() => togglePropertyId(p.id)}
+                          />
+                          {p.name}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </form>
+            </Form>
             {gateError && <GateBanner gate={gateError} onDismiss={() => createCaretaker.reset()} />}
             <DialogFooter>
-              <Button onClick={handleCreate} disabled={!canSubmit || createCaretaker.isPending}>
+              <Button onClick={handleCreate} disabled={createCaretaker.isPending} className="rounded-full">
                 Save
               </Button>
             </DialogFooter>

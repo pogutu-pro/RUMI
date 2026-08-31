@@ -2,34 +2,47 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useProperties, useCreateProperty } from '@/features/rental/hooks/use-rental';
 import { GateBanner } from '@/features/rental/components/gate-banner';
 import { isGateRejection } from '@/lib/api/gate';
 
+const propertySchema = z.object({
+  name: z.string().trim().min(2, 'Property name is required').max(255),
+  address: z.string().trim().min(5, 'Address is required').max(500),
+  city: z.string().trim().max(100).optional(),
+});
+
 export default function PropertiesPage() {
   const { data: properties = [], isLoading } = useProperties();
   const createProperty = useCreateProperty();
   const [open, setOpen] = React.useState(false);
-  const [form, setForm] = React.useState({ name: '', address: '', city: 'Nairobi' });
   const gateError = isGateRejection(createProperty.error);
 
-  const handleCreate = async () => {
+  const form = useForm<z.infer<typeof propertySchema>>({
+    resolver: zodResolver(propertySchema),
+    defaultValues: { name: '', address: '', city: 'Nairobi' },
+  });
+
+  const handleCreate = form.handleSubmit(async (values) => {
     try {
-      await createProperty.mutateAsync(form);
+      await createProperty.mutateAsync(values);
       setOpen(false);
-      setForm({ name: '', address: '', city: 'Nairobi' });
+      form.reset();
     } catch {
       // handled via createProperty.error / isGateRejection in render
     }
-  };
+  });
 
   return (
     <div className="space-y-4">
@@ -43,23 +56,52 @@ export default function PropertiesPage() {
             <DialogHeader>
               <DialogTitle>Add property</DialogTitle>
             </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              </div>
-              <div>
-                <Label htmlFor="address">Address</Label>
-                <Input id="address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-              </div>
-              <div>
-                <Label htmlFor="city">City</Label>
-                <Input id="city" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-              </div>
-            </div>
+            <Form {...form}>
+              <form className="space-y-3">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} className="h-11" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl>
+                        <Input {...field} className="h-11" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City</FormLabel>
+                      <FormControl>
+                        <Input {...field} className="h-11" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </form>
+            </Form>
             {gateError && <GateBanner gate={gateError} onDismiss={() => createProperty.reset()} />}
             <DialogFooter>
-              <Button onClick={handleCreate} disabled={!form.name || !form.address || createProperty.isPending}>
+              <Button onClick={handleCreate} disabled={createProperty.isPending} className="rounded-full">
                 Save
               </Button>
             </DialogFooter>

@@ -2,19 +2,29 @@
 
 import * as React from 'react';
 import { useParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useProperty, useUnits, useCreateUnit } from '@/features/rental/hooks/use-rental';
 import { GateBanner } from '@/features/rental/components/gate-banner';
 import { isGateRejection } from '@/lib/api/gate';
 
-const UNIT_TYPES = ['studio', 'bedsitter', '1_bedroom', '2_bedroom', '3_bedroom', '4_bedroom', 'house', 'other'];
+const UNIT_TYPES = ['studio', 'bedsitter', '1_bedroom', '2_bedroom', '3_bedroom', '4_bedroom', 'house', 'other'] as const;
+
+const unitSchema = z.object({
+  unit_number: z.string().trim().min(1, 'Unit number is required').max(50),
+  unit_type: z.enum(UNIT_TYPES),
+  monthly_rent: z.coerce.number().positive('Monthly rent must be greater than 0'),
+});
 
 export default function PropertyDetailPage() {
   const params = useParams<{ id: string }>();
@@ -24,18 +34,22 @@ export default function PropertyDetailPage() {
   const createUnit = useCreateUnit();
 
   const [open, setOpen] = React.useState(false);
-  const [form, setForm] = React.useState({ unit_number: '', unit_type: '1_bedroom', monthly_rent: '' });
   const gateError = isGateRejection(createUnit.error);
 
-  const handleCreate = async () => {
+  const form = useForm<z.input<typeof unitSchema>, unknown, z.output<typeof unitSchema>>({
+    resolver: zodResolver(unitSchema),
+    defaultValues: { unit_number: '', unit_type: '1_bedroom', monthly_rent: 0 },
+  });
+
+  const handleCreate = form.handleSubmit(async (values) => {
     try {
-      await createUnit.mutateAsync({ ...form, property: propertyId });
+      await createUnit.mutateAsync({ ...values, property: propertyId });
       setOpen(false);
-      setForm({ unit_number: '', unit_type: '1_bedroom', monthly_rent: '' });
+      form.reset();
     } catch {
       // handled via createUnit.error / isGateRejection in render
     }
-  };
+  });
 
   return (
     <div className="space-y-4">
@@ -54,45 +68,61 @@ export default function PropertyDetailPage() {
             <DialogHeader>
               <DialogTitle>Add unit</DialogTitle>
             </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="unit_number">Unit number</Label>
-                <Input
-                  id="unit_number"
-                  placeholder="A101"
-                  value={form.unit_number}
-                  onChange={(e) => setForm({ ...form, unit_number: e.target.value })}
+            <Form {...form}>
+              <form className="space-y-3">
+                <FormField
+                  control={form.control}
+                  name="unit_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Unit number</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="A101" className="h-11" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div>
-                <Label htmlFor="unit_type">Type</Label>
-                <select
-                  id="unit_type"
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  value={form.unit_type}
-                  onChange={(e) => setForm({ ...form, unit_type: e.target.value })}
-                >
-                  {UNIT_TYPES.map((t) => (
-                    <option key={t} value={t}>{t.replace('_', ' ')}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="monthly_rent">Monthly rent (KES)</Label>
-                <Input
-                  id="monthly_rent"
-                  type="number"
-                  value={form.monthly_rent}
-                  onChange={(e) => setForm({ ...form, monthly_rent: e.target.value })}
+                <FormField
+                  control={form.control}
+                  name="unit_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-11">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {UNIT_TYPES.map((t) => (
+                            <SelectItem key={t} value={t}>{t.replace('_', ' ')}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-            </div>
+                <FormField
+                  control={form.control}
+                  name="monthly_rent"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Monthly rent (KES)</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" className="h-11" value={field.value as number} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </form>
+            </Form>
             {gateError && <GateBanner gate={gateError} onDismiss={() => createUnit.reset()} />}
             <DialogFooter>
-              <Button
-                onClick={handleCreate}
-                disabled={!form.unit_number || !form.monthly_rent || createUnit.isPending}
-              >
+              <Button onClick={handleCreate} disabled={createUnit.isPending} className="rounded-full">
                 Save
               </Button>
             </DialogFooter>
