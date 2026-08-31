@@ -373,7 +373,7 @@ function PayoutStep({ onAdvance, onBack }: { onAdvance: () => void; onBack: () =
 
           {showBankError && (
             <div className="rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-              <p className="font-semibold">We couldn't verify those bank details</p>
+              <p className="font-semibold">{"We couldn't verify those bank details"}</p>
               <p>
                 Double-check the account number and bank, then try again. Your other onboarding
                 progress is saved.
