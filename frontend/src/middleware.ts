@@ -14,6 +14,30 @@ const TOKEN_COOKIE = 'rumi_access_token';
 const ROLE_COOKIE = 'rumi_user_role';
 const ONBOARDING_COOKIE = 'rumi_onboarding_stage';
 
+// The backend commonly runs on a different origin than the frontend (e.g.
+// localhost:8000 vs localhost:3000 in dev, or a separate api.* host in some
+// deployments) — frontend/src/lib/api/client.ts talks to it via axios, and
+// the browser enforces CSP connect-src on those requests. Without the API
+// origin here, every XHR/fetch to the backend (including login itself) is
+// silently blocked by the browser as a CSP violation, surfacing to the user
+// as a generic "Network error" with no server round-trip at all. Mirrors the
+// same fallback chain as frontend/src/lib/utils/env.ts:getApiUrl().
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  'http://localhost:8000/api/v1';
+
+function safeOrigin(url: string): string | null {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return null;
+  }
+}
+
+const API_ORIGIN = safeOrigin(API_BASE_URL);
+
 const PUBLIC_ROUTES = new Set([
   '/',
   '/home',
@@ -166,7 +190,7 @@ export function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://maps.googleapis.com",
     "img-src 'self' data: blob: https://maps.googleapis.com https://maps.gstatic.com https://*.googleusercontent.com",
     "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https://maps.googleapis.com",
+    `connect-src 'self' https://maps.googleapis.com${API_ORIGIN ? ` ${API_ORIGIN}` : ''}`,
     "frame-src 'self' https://www.google.com",
     "worker-src 'self' blob:",
   ].join('; ');
