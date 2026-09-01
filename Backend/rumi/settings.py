@@ -261,9 +261,6 @@ FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rumiarent.co.ke').rstrip('/')
 # Must point to the Django backend server — never the Next.js frontend domain.
 BACKEND_API_URL = os.getenv('BACKEND_API_URL', 'https://api.rumiarent.co.ke').rstrip('/')
 
-# Google Maps Configuration
-GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
-
 # Platform Fee Configuration (UPDATED v2.0)
 # Student pays 2% service fee, Landlord receives full rent
 PLATFORM_SERVICE_FEE = 0.02  # 2% service fee charged to student

@@ -48,22 +48,6 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
-      {
-        protocol: 'https',
-        hostname: 'maps.googleapis.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'maps.gstatic.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'mt0.google.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'mt1.google.com',
-      },
     ],
   },
   async headers() {

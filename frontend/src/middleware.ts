@@ -183,14 +183,14 @@ export function middleware(request: NextRequest) {
     'camera=(), microphone=(), geolocation=(self), interest-cohort=()',
   );
 
-  // Content Security Policy for Google Maps
+  // Content Security Policy
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://maps.googleapis.com",
-    "img-src 'self' data: blob: https://maps.googleapis.com https://maps.gstatic.com https://*.googleusercontent.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "img-src 'self' data: blob: https://*.googleusercontent.com",
     "font-src 'self' https://fonts.gstatic.com",
-    `connect-src 'self' https://maps.googleapis.com${API_ORIGIN ? ` ${API_ORIGIN}` : ''}`,
+    `connect-src 'self'${API_ORIGIN ? ` ${API_ORIGIN}` : ''}`,
     "frame-src 'self' https://www.google.com",
     "worker-src 'self' blob:",
   ].join('; ');
