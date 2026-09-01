@@ -3,9 +3,11 @@ import type { NextRequest } from 'next/server';
 
 type UserRole =
   | 'student'
+  | 'tenant'
   | 'landlord'
   | 'caretaker'
   | 'super_admin'
+  | 'tech_support'
   | 'tech_support_admin';
 
 const TOKEN_COOKIE = 'rumi_access_token';
@@ -40,11 +42,11 @@ const PUBLIC_PREFIXES = [
 ];
 
 const ROLE_RESTRICTED_PATHS: Record<string, UserRole[]> = {
-  '/roommates': ['student'],
+  '/roommates': ['student', 'tenant'],
   '/tenants': ['landlord'],
   '/properties': ['landlord', 'caretaker'],
   '/admin': ['super_admin'],
-  '/tech-support': ['tech_support_admin'],
+  '/tech-support': ['tech_support', 'tech_support_admin'],
 };
 
 function isPublicPath(pathname: string): boolean {
@@ -56,19 +58,23 @@ function isAuthPath(pathname: string): boolean {
   return AUTH_ROUTES.has(pathname);
 }
 
+// Mirrors AUTH_REDIRECTS in frontend/src/features/auth/hooks/use-auth.ts —
+// keep these in sync or authenticated users get bounced to a route that
+// doesn't exist (e.g. the old '/student/dashboard', '/admin/dashboard').
 function getDashboardUrl(role?: UserRole): string {
   switch (role) {
     case 'landlord':
-      return '/landlord/dashboard';
-    case 'caretaker':
-      return '/caretaker/dashboard';
     case 'super_admin':
-      return '/admin/dashboard';
+      return '/landlord/rental';
+    case 'caretaker':
+      return '/caretaker/rental';
+    case 'tech_support':
     case 'tech_support_admin':
       return '/tech-support/dashboard';
     case 'student':
+    case 'tenant':
     default:
-      return '/student/dashboard';
+      return '/tenant/rental';
   }
 }
 
