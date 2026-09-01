@@ -79,6 +79,36 @@ class AuthenticationTests(TestCase):
         response = self.client.post(self.login_url, data, format='json')
         self.assertEqual(response.status_code, 200)
 
+    def test_login_response_includes_onboarding_stage(self):
+        """
+        Regression test for post-login-redirect-broken: the frontend's
+        onboarding-guard cookie (rumi_onboarding_stage) is only ever
+        populated from this field (see auth.store.ts login()). If it is
+        missing from the login response, every fresh login gets stuck in a
+        permanent /onboarding redirect loop regardless of the account's
+        actual onboarding_stage in the DB — independent of role.
+        """
+        for role, stage in [
+            ('tenant', 'COMPLETED'),
+            ('landlord', 'IDENTITY_DRAFT'),
+            ('caretaker', 'REGISTERED'),
+        ]:
+            with self.subTest(role=role):
+                email = f'onboarding-{role}@test.com'
+                User.objects.create_user(
+                    email=email, password='Pass123!',
+                    first_name='Test', last_name='User', role=role,
+                    is_verified=True, onboarding_stage=stage,
+                )
+                response = self.client.post(
+                    self.login_url,
+                    {'email': email, 'password': 'Pass123!'},
+                    format='json',
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertIn('onboarding_stage', response.data['user'])
+                self.assertEqual(response.data['user']['onboarding_stage'], stage)
+
     def test_login_wrong_password(self):
         User.objects.create_user(
             email='login@test.com', password='Pass123!',

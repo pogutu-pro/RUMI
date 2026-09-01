@@ -558,7 +558,15 @@ class UserLoginView(APIView):
             'phone_number': user.phone_number,
             'profile_picture': user.profile_picture,
             'date_joined': user.date_joined,
-            'last_login': user.last_login
+            'last_login': user.last_login,
+            # Required by the frontend post-login redirect flow: middleware
+            # (frontend/src/middleware.ts) only lets an authenticated user
+            # past its onboarding guard once rumi_onboarding_stage='COMPLETED',
+            # and that cookie is only ever set from this field. Omitting it
+            # here sends every fresh login into a permanent /onboarding loop
+            # regardless of the account's actual onboarding_stage in the DB.
+            'onboarding_stage': user.onboarding_stage,
+            'capabilities': user.capabilities,
         }
 
         if user.role == 'student':
