@@ -80,7 +80,7 @@ export function middleware(request: NextRequest) {
     | UserRole
     | undefined;
   const isAuthenticated = !!token;
-  
+
   if (pathname === '/dashboard') {
     return NextResponse.redirect(
       new URL(getDashboardUrl(userRole), request.url),
@@ -115,7 +115,7 @@ export function middleware(request: NextRequest) {
   // Onboarding Guard
   if (isAuthenticated && !pathname.startsWith('/onboarding') && !isPublic) {
     const onboardingStage = request.cookies.get(ONBOARDING_COOKIE)?.value;
-    
+
     // Force onboarding if stage is explicitly missing or not completed
     // Exceptions for specific admin roles might be needed, but for now we follow the cookie truth
     if (onboardingStage !== 'COMPLETED') {
@@ -152,7 +152,7 @@ export function middleware(request: NextRequest) {
     'Permissions-Policy',
     'camera=(), microphone=(), geolocation=(self), interest-cohort=()',
   );
-  
+
   // Content Security Policy for Google Maps
   const csp = [
     "default-src 'self'",
@@ -164,7 +164,7 @@ export function middleware(request: NextRequest) {
     "frame-src 'self' https://www.google.com",
     "worker-src 'self' blob:",
   ].join('; ');
-  
+
   response.headers.set('Content-Security-Policy', csp);
 
   return response;
