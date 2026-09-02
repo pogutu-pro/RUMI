@@ -19,12 +19,14 @@ class SupportTicketSerializer(serializers.ModelSerializer):
     created_by_name = serializers.SerializerMethodField()
     created_by_role = serializers.CharField(source='created_by.role', read_only=True)
     assigned_to_name = serializers.SerializerMethodField()
+    unit_label = serializers.SerializerMethodField()
 
     class Meta:
         model = SupportTicket
         fields = [
             'id', 'created_by', 'created_by_name', 'created_by_role', 'organization',
             'assigned_to', 'assigned_to_name', 'subject', 'description', 'status',
+            'category', 'unit', 'unit_label', 'priority',
             'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_by', 'organization', 'created_at', 'updated_at']
@@ -36,6 +38,11 @@ class SupportTicketSerializer(serializers.ModelSerializer):
         if not obj.assigned_to:
             return None
         return obj.assigned_to.get_full_name().strip() or obj.assigned_to.email
+
+    def get_unit_label(self, obj):
+        if not obj.unit_id:
+            return None
+        return f'{obj.unit.unit_number} — {obj.unit.parent_property.name}'
 
 
 class SupportTicketDetailSerializer(SupportTicketSerializer):

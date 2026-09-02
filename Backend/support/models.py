@@ -20,6 +20,16 @@ class SupportTicket(models.Model):
         ('resolved', 'Resolved'),
         ('closed', 'Closed'),
     ]
+    CATEGORY_CHOICES = [
+        ('general', 'General'),
+        ('maintenance', 'Maintenance'),
+    ]
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_by = models.ForeignKey(
@@ -44,6 +54,15 @@ class SupportTicket(models.Model):
     subject = models.CharField(max_length=255)
     description = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='general')
+    unit = models.ForeignKey(
+        'properties.RentalUnit',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='maintenance_tickets',
+    )
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
