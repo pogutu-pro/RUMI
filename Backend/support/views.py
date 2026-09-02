@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 
 from core.permissions.rumia import get_canonical_role
 from organizations.models import Organization
+from properties.models import RentalUnit
 
 from .models import SupportTicket, TicketMessage
 from .serializers import (
@@ -39,12 +40,56 @@ def _user_organization_id(user):
     return None
 
 
+def _user_can_access_unit(user, unit_id) -> bool:
+    """
+    Authorization gate for the ticket-create endpoint's `unit` field (T-05-04).
+
+    Any authenticated user of any role can supply an arbitrary `unit` UUID in
+    the request body — this closes that IDOR by scoping the unit to the
+    caller's own org (landlord), assigned properties (caretaker), or own
+    tenancy (tenant). Staff triage roles are never blocked.
+    """
+    if not unit_id:
+        return True
+
+    unit = RentalUnit.objects.filter(pk=unit_id).select_related('parent_property').first()
+    if unit is None:
+        return False
+
+    role = get_canonical_role(user)
+
+    if _is_staff_role(role):
+        return True
+
+    if role == 'landlord':
+        return Organization.objects.filter(
+            id=unit.organization_id, owner=user,
+        ).exists()
+
+    if role == 'caretaker':
+        try:
+            return user.caretaker_profile.property_assignments.filter(
+                is_active=True,
+                property_assignment_id=unit.parent_property_id,
+            ).exists()
+        except Exception:
+            return False
+
+    if role == 'tenant':
+        return unit.tenancies.filter(
+            tenant__user=user,
+            status__in=['active', 'pending', 'notice_period'],
+        ).exists()
+
+    return False
+
+
 class SupportTicketListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         role = get_canonical_role(request.user)
-        qs = SupportTicket.objects.select_related('created_by', 'assigned_to')
+        qs = SupportTicket.objects.select_related('created_by', 'assigned_to', 'unit', 'unit__parent_property')
 
         if not _is_staff_role(role):
             qs = qs.filter(created_by=request.user)
@@ -58,9 +103,22 @@ class SupportTicketListCreateView(APIView):
     def post(self, request):
         subject = request.data.get('subject', '').strip()
         description = request.data.get('description', '').strip()
+        category = request.data.get('category', 'general')
+        priority = request.data.get('priority', 'medium')
+        unit_id = request.data.get('unit') or None
+
         if not subject or not description:
             return Response(
                 {'detail': 'Subject and description are required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if category not in dict(SupportTicket.CATEGORY_CHOICES):
+            return Response({'detail': 'Invalid category.'}, status=status.HTTP_400_BAD_REQUEST)
+        if priority not in dict(SupportTicket.PRIORITY_CHOICES):
+            return Response({'detail': 'Invalid priority.'}, status=status.HTTP_400_BAD_REQUEST)
+        if unit_id and not _user_can_access_unit(request.user, unit_id):
+            return Response(
+                {'detail': 'Unit not found or not accessible.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -69,6 +127,9 @@ class SupportTicketListCreateView(APIView):
             organization_id=_user_organization_id(request.user),
             subject=subject,
             description=description,
+            category=category,
+            priority=priority,
+            unit_id=unit_id,
         )
         return Response(SupportTicketSerializer(ticket).data, status=status.HTTP_201_CREATED)
 
@@ -78,7 +139,9 @@ class SupportTicketDetailView(APIView):
 
     def _get_ticket(self, request, pk):
         ticket = get_object_or_404(
-            SupportTicket.objects.select_related('created_by', 'assigned_to').prefetch_related('messages__author'),
+            SupportTicket.objects.select_related(
+                'created_by', 'assigned_to', 'unit', 'unit__parent_property',
+            ).prefetch_related('messages__author'),
             pk=pk,
         )
         role = get_canonical_role(request.user)
