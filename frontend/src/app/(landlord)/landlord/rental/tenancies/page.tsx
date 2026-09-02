@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
   useTenancies, useCreateTenancy, useTerminateTenancy, useUnits, useTenants,
 } from '@/features/rental/hooks/use-rental';
+import { PageHeader } from '@/components/dashboard/page-header';
 
 const tenancySchema = z.object({
   unit: z.string().min(1, 'Choose a unit'),
@@ -56,105 +58,107 @@ export default function TenanciesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Tenancies</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>New tenancy</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>New tenancy</DialogTitle>
-            </DialogHeader>
-            <Form {...form}>
-              <div className="space-y-3">
-                <FormField
-                  control={form.control}
-                  name="unit"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Unit</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={(v) => {
-                          field.onChange(v);
-                          const unit = units.find((u) => u.id === v);
-                          if (unit?.monthly_rent) form.setValue('monthly_rent', unit.monthly_rent);
-                        }}
-                      >
+      <PageHeader
+        title="Tenancies"
+        action={(
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button leftIcon={<Plus className="h-4 w-4" />}>New tenancy</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>New tenancy</DialogTitle>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={handleCreate} className="space-y-3">
+                  <FormField
+                    control={form.control}
+                    name="unit"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Unit</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={(v) => {
+                            field.onChange(v);
+                            const unit = units.find((u) => u.id === v);
+                            if (unit?.monthly_rent) form.setValue('monthly_rent', unit.monthly_rent);
+                          }}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-11">
+                              <SelectValue placeholder="Choose a vacant unit" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {vacantUnits.map((u) => (
+                              <SelectItem key={u.id} value={u.id}>{u.unit_number}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="tenant"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tenant</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger className="h-11">
+                              <SelectValue placeholder="Choose a tenant" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {tenants.map((t) => (
+                              <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="monthly_rent"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Monthly rent (KES)</FormLabel>
                         <FormControl>
-                          <SelectTrigger className="h-11">
-                            <SelectValue placeholder="Choose a vacant unit" />
-                          </SelectTrigger>
+                          <Input className="h-11" type="number" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {vacantUnits.map((u) => (
-                            <SelectItem key={u.id} value={u.id}>{u.unit_number}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="tenant"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tenant</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="start_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start date</FormLabel>
                         <FormControl>
-                          <SelectTrigger className="h-11">
-                            <SelectValue placeholder="Choose a tenant" />
-                          </SelectTrigger>
+                          <Input className="h-11" type="date" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {tenants.map((t) => (
-                            <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="monthly_rent"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Monthly rent (KES)</FormLabel>
-                      <FormControl>
-                        <Input className="h-11" type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="start_date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Start date</FormLabel>
-                      <FormControl>
-                        <Input className="h-11" type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </Form>
-            <DialogFooter>
-              <Button onClick={handleCreate} disabled={createTenancy.isPending}>
-                Save
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <DialogFooter>
+                    <Button type="submit" disabled={createTenancy.isPending}>
+                      Save
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        )}
+      />
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
