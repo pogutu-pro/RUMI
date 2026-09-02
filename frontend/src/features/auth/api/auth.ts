@@ -178,12 +178,20 @@ async function updateProfile(
 /**
  * Upload profile picture
  * Endpoint: POST /api/v1/accounts/profile/picture/
+ *
+ * Backend/accounts/views.py ProfilePictureUploadView.post returns a FLAT
+ * { message, profile_picture_url } shape — no `.user` key, unlike
+ * ProfileResponse. The previous `Promise<ProfileResponse>` return type lied
+ * about the real shape, which is what let the response.user.profile_picture
+ * bug ship silently in use-auth.ts's uploadPhoto.
  */
-async function uploadProfilePicture(file: File): Promise<ProfileResponse> {
+async function uploadProfilePicture(
+  file: File,
+): Promise<{ message: string; profile_picture_url: string }> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await axios.post<ProfileResponse>(
+  const res = await axios.post<{ message: string; profile_picture_url: string }>(
     '/accounts/profile/picture/',
     formData,
     {
