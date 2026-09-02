@@ -27,6 +27,17 @@ jest.mock('@/features/rental/components/organization-switcher', () => ({
 
 const NAV = [{ href: '/landlord/rental', label: 'Dashboard', icon: LayoutDashboard }];
 
+function mockUser(role: UserRole, overrides: Partial<{ email: string; first_name: string; last_name: string }> = {}) {
+  return {
+    id: 'user-1',
+    role,
+    email: overrides.email ?? 'user@example.com',
+    first_name: overrides.first_name ?? 'Test',
+    last_name: overrides.last_name ?? 'User',
+    is_verified: true,
+  };
+}
+
 function mockAuth(overrides: Partial<ReturnType<typeof useAuth>>) {
   (useAuth as jest.Mock).mockReturnValue({
     user: null,
@@ -44,7 +55,7 @@ describe('DashboardShell', () => {
 
   it('redirects to /login when the user role is not in allowedRoles', () => {
     mockAuth({
-      user: { role: UserRole.CARETAKER, email: 'c@example.com', first_name: 'Carl', last_name: 'Taker' },
+      user: mockUser(UserRole.CARETAKER, { email: 'c@example.com', first_name: 'Carl', last_name: 'Taker' }),
     });
     render(
       <DashboardShell allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]} nav={NAV}>
@@ -56,7 +67,7 @@ describe('DashboardShell', () => {
 
   it('renders children (no redirect) when the user role is in allowedRoles', () => {
     mockAuth({
-      user: { role: UserRole.LANDLORD, email: 'l@example.com', first_name: 'Lucy', last_name: 'Land' },
+      user: mockUser(UserRole.LANDLORD, { email: 'l@example.com', first_name: 'Lucy', last_name: 'Land' }),
     });
     render(
       <DashboardShell allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]} nav={NAV}>
@@ -81,7 +92,7 @@ describe('DashboardShell', () => {
 
   it('renders OrganizationSwitcher for super_admin but not for landlord', () => {
     mockAuth({
-      user: { role: UserRole.SUPER_ADMIN, email: 's@example.com', first_name: 'Sam', last_name: 'Admin' },
+      user: mockUser(UserRole.SUPER_ADMIN, { email: 's@example.com', first_name: 'Sam', last_name: 'Admin' }),
     });
     const { rerender } = render(
       <DashboardShell allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]} nav={NAV}>
@@ -91,7 +102,7 @@ describe('DashboardShell', () => {
     expect(screen.getByTestId('org-switcher')).toBeInTheDocument();
 
     mockAuth({
-      user: { role: UserRole.LANDLORD, email: 'l@example.com', first_name: 'Lucy', last_name: 'Land' },
+      user: mockUser(UserRole.LANDLORD, { email: 'l@example.com', first_name: 'Lucy', last_name: 'Land' }),
     });
     rerender(
       <DashboardShell allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]} nav={NAV}>
@@ -103,7 +114,7 @@ describe('DashboardShell', () => {
 
   it('renders bannerSlot inside main above children when provided, and nothing extra when omitted', () => {
     mockAuth({
-      user: { role: UserRole.LANDLORD, email: 'l@example.com', first_name: 'Lucy', last_name: 'Land' },
+      user: mockUser(UserRole.LANDLORD, { email: 'l@example.com', first_name: 'Lucy', last_name: 'Land' }),
     });
     const { rerender } = render(
       <DashboardShell
