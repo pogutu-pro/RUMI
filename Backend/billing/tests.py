@@ -837,3 +837,84 @@ class AdminOrganizationBillingDetailViewTests(RumiaTestFixtures):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['last_charge_event']['id'], str(expected_id))
+
+
+class AdminOrganizationBillingListViewTests(RumiaTestFixtures):
+    """Plan 06-03 Task 2 — super_admin-only searchable organization list."""
+
+    def _seed_plans(self):
+        call_command('seed_subscription_plans')
+        return {p.slug: p for p in SubscriptionPlan.objects.all()}
+
+    def test_list_includes_plan_status_payout_inline(self):
+        from organizations.models import PayoutAccount
+
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org_a = self.create_landlord_with_org(email='landlord-a@test.com')
+        OrganizationSubscription.objects.create(organization=org_a, plan=plans['pro'], status='active')
+        PayoutAccount.objects.create(organization=org_a, status='active')
+        _, _, org_b = self.create_landlord_with_org(email='landlord-b@test.com')
+        org_b.name = 'Zzz No Subscription Org'
+        org_b.save(update_fields=['name'])
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/organizations/')
+
+        self.assertEqual(response.status_code, 200)
+        rows_by_id = {row['id']: row for row in response.data}
+        self.assertEqual(rows_by_id[str(org_a.id)]['plan_slug'], 'pro')
+        self.assertEqual(rows_by_id[str(org_a.id)]['subscription_status'], 'active')
+        self.assertEqual(rows_by_id[str(org_a.id)]['payout_status'], 'active')
+        self.assertEqual(rows_by_id[str(org_b.id)]['plan_slug'], None)
+        self.assertEqual(rows_by_id[str(org_b.id)]['payout_status'], 'not_started')
+
+    def test_search_filters_by_name_icontains(self):
+        self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org_a = self.create_landlord_with_org(email='landlord-a@test.com')
+        org_a.name = 'Greenview Holdings'
+        org_a.save(update_fields=['name'])
+        _, _, org_b = self.create_landlord_with_org(email='landlord-b@test.com')
+        org_b.name = 'Riverside Estates'
+        org_b.save(update_fields=['name'])
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/organizations/', {'search': 'green'})
+
+        self.assertEqual(response.status_code, 200)
+        names = {row['name'] for row in response.data}
+        self.assertEqual(names, {'Greenview Holdings'})
+
+    def test_ordering_is_deterministic_by_name_then_id(self):
+        self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org_a = self.create_landlord_with_org(email='landlord-a@test.com')
+        org_a.name = 'Identical Name Org'
+        org_a.save(update_fields=['name'])
+        _, _, org_b = self.create_landlord_with_org(email='landlord-b@test.com')
+        org_b.name = 'Identical Name Org'
+        org_b.save(update_fields=['name'])
+        expected_order = sorted([org_a.id, org_b.id])
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/organizations/', {'search': 'Identical Name Org'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [row['id'] for row in response.data],
+            [str(i) for i in expected_order],
+        )
+
+    def test_landlord_gets_403(self):
+        self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.get('/api/v1/billing/admin/organizations/')
+
+        self.assertEqual(response.status_code, 403)

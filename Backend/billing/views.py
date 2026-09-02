@@ -26,6 +26,7 @@ from rent.providers.base import PaymentProviderError
 from .models import OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
 from .serializers import (
     AdminOrganizationBillingDetailSerializer,
+    AdminOrganizationBillingListSerializer,
     OrganizationSubscriptionSerializer,
     SubscriptionPlanSerializer,
 )
@@ -228,6 +229,45 @@ def _build_admin_billing_detail(organization: Organization) -> dict:
         'payout': getattr(organization, 'payout_account', None),
         'last_charge_event': last_charge,
     }
+
+
+class AdminOrganizationBillingListView(APIView):
+    """
+    GET -> every organization's plan/status/payout inline (ADMIN-01 read,
+    ADMIN-02), super_admin only. Optionally filtered by ?search=<name
+    icontains>, ordered deterministically by name then id (stable tiebreak
+    on identical names).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        qs = Organization.objects.select_related(
+            'subscription__plan', 'payout_account'
+        ).order_by('name', 'id')
+
+        search = request.query_params.get('search')
+        if search:
+            qs = qs.filter(name__icontains=search)
+
+        rows = []
+        for org in qs:
+            subscription = getattr(org, 'subscription', None)
+            payout_account = getattr(org, 'payout_account', None)
+            rows.append({
+                'id': org.id,
+                'name': org.name,
+                'slug': org.slug,
+                'subscription_status': subscription.status if subscription else None,
+                'plan_name': subscription.plan.name if subscription else None,
+                'plan_slug': subscription.plan.slug if subscription else None,
+                'payout_status': payout_account.status if payout_account else 'not_started',
+            })
+
+        return Response(AdminOrganizationBillingListSerializer(rows, many=True).data)
 
 
 class AdminOrganizationBillingDetailView(APIView):

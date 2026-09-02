@@ -46,6 +46,21 @@ class SubscriptionPaymentSerializer(serializers.ModelSerializer):
         ]
 
 
+class AdminOrganizationBillingListSerializer(serializers.Serializer):
+    """
+    Flat summary row for the super-admin organization list (ADMIN-02):
+    plan/status/payout visible inline, no click-through required.
+    """
+
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    slug = serializers.CharField()
+    subscription_status = serializers.CharField(allow_null=True)
+    plan_name = serializers.CharField(allow_null=True)
+    plan_slug = serializers.CharField(allow_null=True)
+    payout_status = serializers.CharField()
+
+
 class AdminOrganizationBillingDetailSerializer(serializers.Serializer):
     """
     Super-admin-only joined billing record (ADMIN-01/ADMIN-02): raw
