@@ -23,8 +23,13 @@ from core.permissions.rumia import OrganizationScopedMixin, get_canonical_role
 from organizations.models import Organization
 from rent.providers.base import PaymentProviderError
 
-from .models import OrganizationSubscription, SubscriptionPlan
-from .serializers import OrganizationSubscriptionSerializer, SubscriptionPlanSerializer
+from .models import OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
+from .serializers import (
+    AdminOrganizationBillingDetailSerializer,
+    OrganizationSubscriptionSerializer,
+    SubscriptionPlanSerializer,
+)
+from .services.gating_service import GatingService
 from .services.subscription_service import SubscriptionService
 
 MUTATING_ROLES = ('landlord', 'super_admin')
@@ -202,3 +207,49 @@ class SubscriptionSwitchPlanView(_BillingMutationView):
             return Response({'error': str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
 
         return Response(result, status=status.HTTP_200_OK)
+
+
+def _build_admin_billing_detail(organization: Organization) -> dict:
+    """
+    Shared payload builder for the admin detail GET and the override POST's
+    response — guarantees a post-override refresh returns the identical
+    shape as a plain detail fetch.
+    """
+    effective_plan = GatingService.get_effective_plan(organization)
+    last_charge = (
+        SubscriptionPayment.objects.filter(subscription__organization=organization)
+        .order_by('-initiated_at', '-id')
+        .first()
+    )
+    return {
+        'organization': organization,
+        'subscription': getattr(organization, 'subscription', None),
+        'effective_plan': effective_plan,
+        'payout': getattr(organization, 'payout_account', None),
+        'last_charge_event': last_charge,
+    }
+
+
+class AdminOrganizationBillingDetailView(APIView):
+    """
+    GET -> super_admin-only joined billing record for a single organization
+    (ADMIN-01 read, ADMIN-02): raw subscription fields, the GatingService-
+    computed effective plan, masked payout status, and the most-recent
+    SubscriptionPayment row as "last charge event".
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        if get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            organization = Organization.objects.select_related(
+                'subscription__plan', 'payout_account'
+            ).get(pk=pk)
+        except (Organization.DoesNotExist, ValueError, ValidationError):
+            return Response({'detail': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        payload = _build_admin_billing_detail(organization)
+        return Response(AdminOrganizationBillingDetailSerializer(payload).data)

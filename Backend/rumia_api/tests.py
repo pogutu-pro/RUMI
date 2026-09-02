@@ -72,6 +72,20 @@ class RumiaTestFixtures(TestCase):
         return user, profile, org
 
     @classmethod
+    def create_super_admin(cls, email='admin@test.com'):
+        # super_admin has no Organization of its own — matches the pattern
+        # already established: get_user_organization_ids() returns None
+        # (unrestricted) for this role (see core/permissions/rumia.py).
+        return User.objects.create_user(
+            email=email,
+            password='TestPass123!',
+            first_name='Super',
+            last_name='Admin',
+            role='super_admin',
+            phone_number='+254700000099',
+        )
+
+    @classmethod
     def create_property_with_unit(cls, org, name='Greenview Apartments'):
         prop = Property.objects.create(
             organization=org,

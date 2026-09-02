@@ -767,3 +767,73 @@ class GateRejectionContractTests(RumiaTestFixtures):
         income_response = client.get('/api/v1/income/')
         self.assertEqual(income_response.status_code, 403)
         self.assertEqual(set(income_response.data.keys()), self.EXPECTED_KEYS)
+
+
+class AdminOrganizationBillingDetailViewTests(RumiaTestFixtures):
+    """Plan 06-03 Task 1 — super_admin-only joined billing detail."""
+
+    def _seed_plans(self):
+        call_command('seed_subscription_plans')
+        return {p.slug: p for p in SubscriptionPlan.objects.all()}
+
+    def test_super_admin_sees_full_detail_including_effective_plan_and_last_charge(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        user, profile, org = self.create_landlord_with_org()
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plans['pro'], status='active',
+        )
+        payment = SubscriptionPayment.objects.create(
+            subscription=subscription, amount=Decimal('2500.00'),
+            internal_reference='SUB-DETAILTEST1', status='success',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get(f'/api/v1/billing/admin/organizations/{org.id}/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['last_charge_event']['id'], str(payment.id))
+        self.assertNotIn('paystack_subscription_code', response.data['subscription'])
+
+    def test_landlord_gets_403(self):
+        self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.get(f'/api/v1/billing/admin/organizations/{org.id}/')
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_last_charge_tiebreak_uses_id_when_initiated_at_matches(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        user, profile, org = self.create_landlord_with_org()
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plans['pro'], status='active',
+        )
+        same_instant = timezone.now()
+        payment_a = SubscriptionPayment.objects.create(
+            subscription=subscription, amount=Decimal('2500.00'),
+            internal_reference='SUB-TIEBREAK1', status='success',
+            initiated_at=same_instant,
+        )
+        payment_b = SubscriptionPayment.objects.create(
+            subscription=subscription, amount=Decimal('2500.00'),
+            internal_reference='SUB-TIEBREAK2', status='success',
+            initiated_at=same_instant,
+        )
+        # UUID primary keys are random (UUID4), not creation-ordered, so the
+        # `-id` secondary sort picks whichever row has the lexicographically
+        # greater id — compute that directly rather than assuming insertion
+        # order, which is what this test must prove is NOT what determines
+        # the result.
+        expected_id = max(payment_a.id, payment_b.id)
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get(f'/api/v1/billing/admin/organizations/{org.id}/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['last_charge_event']['id'], str(expected_id))
