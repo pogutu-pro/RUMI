@@ -16,8 +16,9 @@ import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from '@/components/ui/form';
 import { cn } from '@/lib/utils/cn';
+import { PageHeader } from '@/components/dashboard/page-header';
 import { useTickets, useTicket, useUpdateTicket, useAddTicketMessage } from '@/features/support/hooks/use-support';
-import type { TicketStatus } from '@/features/support/types/types';
+import type { TicketStatus, TicketPriority } from '@/features/support/types/types';
 
 const replySchema = z.object({
   message: z.string().trim().min(1, 'Reply cannot be empty'),
@@ -37,6 +38,13 @@ const STATUS_LABEL: Record<TicketStatus, string> = {
   in_progress: 'In progress',
   resolved: 'Resolved',
   closed: 'Closed',
+};
+
+const PRIORITY_LABEL: Record<TicketPriority, string> = {
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+  urgent: 'Urgent',
 };
 
 const FILTERS: { value: TicketStatus | 'all'; label: string }[] = [
@@ -79,6 +87,12 @@ function TicketDetailDialog({ ticketId, onClose }: { ticketId: string; onClose: 
               </span>
               <span>{new Date(ticket.created_at).toLocaleString()}</span>
             </div>
+            {ticket.category === 'maintenance' && (
+              <div className="text-xs text-muted-foreground">
+                Maintenance · {PRIORITY_LABEL[ticket.priority]}
+                {ticket.unit_label ? ` · ${ticket.unit_label}` : ''}
+              </div>
+            )}
             <p className="text-sm">{ticket.description}</p>
 
             <div className="flex items-center gap-2 border-t pt-3">
@@ -148,7 +162,7 @@ export default function TechSupportDashboard() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Support tickets</h1>
+      <PageHeader title="Support tickets" />
 
       <div className="flex gap-2 overflow-x-auto">
         {FILTERS.map((f) => (
@@ -180,10 +194,16 @@ export default function TechSupportDashboard() {
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{t.subject}</span>
                   <span className="text-xs text-muted-foreground">
-                    {t.created_by_name} · {t.created_by_role} · {new Date(t.created_at).toLocaleDateString()}
+                    {t.created_by_name} · {t.created_by_role} · {t.unit_label ? `${t.unit_label} · ` : ''}
+                    {new Date(t.created_at).toLocaleDateString()}
                   </span>
                 </span>
-                <Badge variant={STATUS_VARIANT[t.status]}>{STATUS_LABEL[t.status]}</Badge>
+                <span className="flex items-center gap-1.5">
+                  {t.category === 'maintenance' && (
+                    <Badge variant="secondary">{`Maintenance · ${PRIORITY_LABEL[t.priority]}`}</Badge>
+                  )}
+                  <Badge variant={STATUS_VARIANT[t.status]}>{STATUS_LABEL[t.status]}</Badge>
+                </span>
               </button>
             </li>
           ))}

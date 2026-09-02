@@ -10,9 +10,13 @@ const keys = {
   ticket: (id: string) => ['support', 'tickets', id] as const,
 };
 
+// WR-01 (03-REVIEW.md): the rejected value from axiosInstance is the
+// normalized ApiError shape ({ message, statusCode, details }), not a raw
+// AxiosError — it has no `.response` property. Read the message the
+// interceptor already computed instead.
 function errorMessage(err: unknown, fallback: string): string {
-  const anyErr = err as { response?: { data?: { detail?: string } } };
-  return anyErr?.response?.data?.detail || fallback;
+  const anyErr = err as { message?: string };
+  return anyErr?.message || fallback;
 }
 
 export const useTickets = (status?: TicketStatus) =>
