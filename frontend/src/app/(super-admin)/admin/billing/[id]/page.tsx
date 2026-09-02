@@ -73,6 +73,11 @@ export default function AdminBillingDetailPage() {
     resolver: zodResolver(overrideSchema),
     defaultValues: { plan_id: NO_CHANGE, status: NO_CHANGE, reason: '' },
   });
+  // react-hook-form's watch() returns a function that cannot be memoized
+  // safely, so React Compiler skips auto-memoizing this component — a
+  // known, accepted library-level limitation (not a bug), same pattern as
+  // my-tickets-page.tsx's form.watch('category').
+  // eslint-disable-next-line react-hooks/incompatible-library
   const reasonValue = overrideForm.watch('reason');
   const statusValue = overrideForm.watch('status');
   const isDestructiveStatus = statusValue === 'suspended' || statusValue === 'cancelled';
