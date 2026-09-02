@@ -118,6 +118,10 @@ export const rentalApi = {
     const res = await axios.post<Tenancy>('/tenancies/', payload);
     return res.data;
   },
+  updateTenancy: async (id: string, payload: Record<string, unknown>): Promise<Tenancy> => {
+    const res = await axios.patch<Tenancy>(`/tenancies/${id}/`, payload);
+    return res.data;
+  },
   terminateTenancy: async (id: string, moveOutDate?: string): Promise<Tenancy> => {
     const res = await axios.post<Tenancy>(`/tenancies/${id}/terminate/`, {
       move_out_date: moveOutDate,
