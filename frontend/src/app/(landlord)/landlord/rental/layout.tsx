@@ -24,6 +24,7 @@ const NAV = [
   { href: '/landlord/rental/tenancies', label: 'Tenancies', icon: FileText },
   { href: '/landlord/rental/rent', label: 'Rent', icon: Wallet },
   { href: '/landlord/rental/payments', label: 'Payments', icon: CreditCard },
+  { href: '/landlord/rental/billing', label: 'Billing & Payout', icon: CreditCard },
   { href: '/landlord/rental/support', label: 'Support', icon: LifeBuoy },
 ];
 

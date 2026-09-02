@@ -1,14 +1,23 @@
 import { axiosInstance as axios } from '@/lib/api/client';
-import type { SubscriptionPlan } from '../types';
+import type { OrganizationSubscription, SubscriptionPlan } from '../types';
 
 /**
  * RumiaRent billing API client. `listPlans` targets the public plan catalog
  * (AllowAny, no auth required) — see Backend/billing/views.py
  * SubscriptionPlanListView.
+ *
+ * `getMySubscription` 404s when the caller's organization has never
+ * subscribed — see MyOrganizationSubscriptionView.get. That is a valid,
+ * expected state, not a bug — callers must handle it as "no subscription
+ * yet", not as an error.
  */
 export const billingApi = {
   listPlans: async (): Promise<SubscriptionPlan[]> => {
     const res = await axios.get<SubscriptionPlan[]>('/billing/plans/');
+    return res.data;
+  },
+  getMySubscription: async (): Promise<OrganizationSubscription> => {
+    const res = await axios.get<OrganizationSubscription>('/billing/my-subscription/');
     return res.data;
   },
 };
