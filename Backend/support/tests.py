@@ -330,3 +330,101 @@ class MaintenanceTicketUnitScopingTests(TestCase):
     def test_staff_role_never_blocked_by_unit_scoping(self):
         resp = self._post_ticket(self.tech_support, self.other_unit)
         self.assertEqual(resp.status_code, 201)
+
+    # --- 05-08: caretaker/landlord read-visibility widening (CARE-02/WR-03) ---
+
+    def test_caretaker_sees_tenant_raised_ticket_on_assigned_unit(self):
+        ticket = SupportTicket.objects.create(
+            created_by=self.tenant_user, organization=self.org, category='maintenance',
+            unit=self.unit_a1, priority='high', subject='Broken tap', description='Needs fixing.',
+        )
+        self.client.force_authenticate(user=self.caretaker)
+
+        list_resp = self.client.get('/api/v1/support/tickets/')
+        self.assertEqual(list_resp.status_code, 200)
+        self.assertIn(str(ticket.id), [str(row['id']) for row in list_resp.data])
+
+        detail_resp = self.client.get(f'/api/v1/support/tickets/{ticket.id}/')
+        self.assertEqual(detail_resp.status_code, 200)
+        self.assertEqual(detail_resp.data['subject'], 'Broken tap')
+
+    def test_caretaker_does_not_see_ticket_on_unassigned_property(self):
+        ticket = SupportTicket.objects.create(
+            created_by=self.landlord, organization=self.org, category='maintenance',
+            unit=self.unit_a2, priority='medium', subject='Leaky roof', description='Needs fixing.',
+        )
+        self.client.force_authenticate(user=self.caretaker)
+
+        list_resp = self.client.get('/api/v1/support/tickets/')
+        self.assertEqual(list_resp.status_code, 200)
+        self.assertNotIn(str(ticket.id), [str(row['id']) for row in list_resp.data])
+
+        detail_resp = self.client.get(f'/api/v1/support/tickets/{ticket.id}/')
+        self.assertEqual(detail_resp.status_code, 404)
+
+    def test_tenant_still_only_sees_own_tickets_after_visibility_widening(self):
+        SupportTicket.objects.create(
+            created_by=self.caretaker, organization=self.org, category='maintenance',
+            unit=self.unit_a1, priority='medium', subject='Caretaker ticket', description='desc',
+        )
+        SupportTicket.objects.create(
+            created_by=self.landlord, organization=self.org, category='maintenance',
+            unit=self.unit_a1, priority='medium', subject='Landlord ticket', description='desc',
+        )
+        self.client.force_authenticate(user=self.tenant_user)
+        resp = self.client.get('/api/v1/support/tickets/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data), 0)
+
+    def test_landlord_sees_ticket_raised_by_tenant_on_own_property(self):
+        ticket = SupportTicket.objects.create(
+            created_by=self.tenant_user, organization=self.org, unit=self.unit_a1,
+            category='maintenance', priority='medium', subject='Broken tap', description='desc',
+        )
+        self.client.force_authenticate(user=self.landlord)
+
+        list_resp = self.client.get('/api/v1/support/tickets/')
+        self.assertEqual(list_resp.status_code, 200)
+        self.assertIn(str(ticket.id), [str(row['id']) for row in list_resp.data])
+
+        detail_resp = self.client.get(f'/api/v1/support/tickets/{ticket.id}/')
+        self.assertEqual(detail_resp.status_code, 200)
+
+    def test_landlord_does_not_see_ticket_in_other_organization(self):
+        ticket = SupportTicket.objects.create(
+            created_by=self.other_landlord, organization=self.other_org, unit=self.other_unit,
+            category='maintenance', priority='medium', subject='Other org ticket', description='desc',
+        )
+        self.client.force_authenticate(user=self.landlord)
+
+        list_resp = self.client.get('/api/v1/support/tickets/')
+        self.assertEqual(list_resp.status_code, 200)
+        self.assertNotIn(str(ticket.id), [str(row['id']) for row in list_resp.data])
+
+        detail_resp = self.client.get(f'/api/v1/support/tickets/{ticket.id}/')
+        self.assertEqual(detail_resp.status_code, 404)
+
+    def test_staff_still_sees_all_tickets_after_visibility_widening(self):
+        ticket_1 = SupportTicket.objects.create(
+            created_by=self.tenant_user, organization=self.org, unit=self.unit_a1,
+            category='maintenance', priority='medium', subject='Ticket 1', description='desc',
+        )
+        ticket_2 = SupportTicket.objects.create(
+            created_by=self.other_landlord, organization=self.other_org, unit=self.other_unit,
+            category='maintenance', priority='medium', subject='Ticket 2', description='desc',
+        )
+        self.client.force_authenticate(user=self.tech_support)
+        resp = self.client.get('/api/v1/support/tickets/')
+        self.assertEqual(resp.status_code, 200)
+        ids = [str(row['id']) for row in resp.data]
+        self.assertIn(str(ticket_1.id), ids)
+        self.assertIn(str(ticket_2.id), ids)
+
+    def test_caretaker_cannot_reply_to_ticket_they_did_not_create(self):
+        ticket = SupportTicket.objects.create(
+            created_by=self.tenant_user, organization=self.org, unit=self.unit_a1,
+            category='maintenance', priority='medium', subject='Broken tap', description='desc',
+        )
+        self.client.force_authenticate(user=self.caretaker)
+        resp = self.client.post(f'/api/v1/support/tickets/{ticket.id}/messages/', {'message': 'On it'})
+        self.assertEqual(resp.status_code, 404)
