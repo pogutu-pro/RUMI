@@ -165,6 +165,12 @@ export function MyTicketsPage() {
     defaultValues: EMPTY_TICKET_FORM,
   });
 
+  // react-hook-form's watch() returns a function that cannot be memoized
+  // safely, so React Compiler skips auto-memoizing this component — a known,
+  // accepted library-level limitation (not a bug), and this file's only use
+  // of the pattern (see 05-PATTERNS.md: no existing analog for conditional
+  // form fields prior to this).
+  // eslint-disable-next-line react-hooks/incompatible-library
   const category = form.watch('category');
 
   // Unit choices sourced from the tenant's own tenancies (already
