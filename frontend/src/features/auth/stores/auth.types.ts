@@ -66,9 +66,11 @@ export interface AuthActions {
   updateUser: (updates: Partial<User>) => void;
   
   /**
-   * Re-hydrates the store with full user and profile data
+   * Re-hydrates the store with full user and profile data. `profile` is
+   * nullable because the backend legitimately returns no role-specific
+   * profile payload for most roles (see FullUserProfileSerializer.get_profile).
    */
-  rehydrate: (user: User, profile: UserProfile) => void;
+  rehydrate: (user: User, profile: UserProfile | null) => void;
   
   /**
    * Sets error state

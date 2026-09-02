@@ -267,16 +267,48 @@ export function useProfile() {
   });
 
   const { data } = query;
-  
+
   // Robust Synchronization
   React.useEffect(() => {
     if (!data) return;
 
-    if (data.profile && user) {
+    // GET /accounts/profile/ (UserProfileView.get -> FullUserProfileSerializer)
+    // returns the user's own fields FLAT at the top level (id/email/role/
+    // first_name/...) — there is no `data.user` wrapper. `data.profile` is a
+    // separate, role-specific extra that the backend currently only
+    // populates for 'student' accounts and is legitimately null for every
+    // other role (tenant/landlord/caretaker/tech_support/super_admin), so it
+    // must never gate whether we recover the store from 'checking'.
+    const flat = data as unknown as {
+      id?: string;
+      email?: string;
+      first_name?: string;
+      last_name?: string;
+      phone_number?: string;
+      profile_picture?: string;
+      role?: UserRole;
+      is_verified?: boolean;
+    };
+    if (!flat.id || !flat.email) return;
+
+    if (status === 'checking' || !user) {
+      // Re-hydrate the store if we were checking or lost user state on
+      // refresh (hard refresh / new tab / direct nav while JWT is valid).
+      rehydrate(
+        {
+          id: flat.id,
+          email: flat.email,
+          first_name: flat.first_name ?? '',
+          last_name: flat.last_name ?? '',
+          role: flat.role as UserRole,
+          is_verified: Boolean(flat.is_verified),
+          phone_number: flat.phone_number,
+          profile_picture: flat.profile_picture,
+        },
+        data.profile ?? null,
+      );
+    } else if (data.profile) {
         setProfile(data.profile);
-    } else if (data.profile && data.user && (status === 'checking' || !user)) {
-        // Re-hydrate the store if we were checking or lost user state on refresh
-        rehydrate(data.user, data.profile);
     }
   }, [data, setProfile, user, status, rehydrate]);
 
