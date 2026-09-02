@@ -212,6 +212,19 @@ export const useCreateTenancy = () => {
   });
 };
 
+export const useUpdateTenancy = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Record<string, unknown> }) =>
+      rentalApi.updateTenancy(id, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['rental', 'tenancies'] });
+      toast.success('Tenancy updated');
+    },
+    onError: (err) => toast.error(errorMessage(err, 'Could not update tenancy')),
+  });
+};
+
 export const useTerminateTenancy = () => {
   const qc = useQueryClient();
   return useMutation({

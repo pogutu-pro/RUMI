@@ -105,6 +105,7 @@ export interface Tenancy {
   rent_due_day: number;
   grace_period_days: number;
   status: TenancyStatus;
+  renewal_notes: string;
   notes: string;
   created_at: string;
   updated_at: string;

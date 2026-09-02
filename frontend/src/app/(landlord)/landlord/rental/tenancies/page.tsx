@@ -4,10 +4,11 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus } from 'lucide-react';
+import { Plus, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from '@/components/ui/dialog';
@@ -15,9 +16,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
-  useTenancies, useCreateTenancy, useTerminateTenancy, useUnits, useTenants,
+  useTenancies, useCreateTenancy, useUpdateTenancy, useTerminateTenancy, useUnits, useTenants,
 } from '@/features/rental/hooks/use-rental';
 import { PageHeader } from '@/components/dashboard/page-header';
+import type { Tenancy } from '@/features/rental/types';
 
 const tenancySchema = z.object({
   unit: z.string().min(1, 'Choose a unit'),
@@ -30,18 +32,47 @@ type TenancyFormValues = z.infer<typeof tenancySchema>;
 
 const EMPTY_FORM: TenancyFormValues = { unit: '', tenant: '', monthly_rent: '', start_date: '' };
 
+// Mirrors Backend/rumia_api/views.py TenancyDetailView.PATCHABLE_FIELDS exactly —
+// status is deliberately excluded; status transitions go through "Terminate" only.
+const tenancyEditSchema = z.object({
+  monthly_rent: z.coerce.number().positive('Monthly rent must be greater than 0'),
+  deposit: z.coerce.number().min(0, 'Deposit cannot be negative'),
+  rent_due_day: z.coerce.number().int().min(1, 'Must be between 1 and 28').max(28, 'Must be between 1 and 28'),
+  grace_period_days: z.coerce.number().int().min(0, 'Cannot be negative'),
+  end_date: z.string().optional(),
+  renewal_notes: z.string().max(1000, 'Max 1000 characters').optional(),
+  notes: z.string().max(1000, 'Max 1000 characters').optional(),
+});
+
+const EMPTY_EDIT_FORM = {
+  monthly_rent: 0,
+  deposit: 0,
+  rent_due_day: 1,
+  grace_period_days: 0,
+  end_date: '',
+  renewal_notes: '',
+  notes: '',
+};
+
 export default function TenanciesPage() {
   const { data: tenancies = [], isLoading } = useTenancies();
   const { data: units = [] } = useUnits();
   const { data: tenants = [] } = useTenants();
   const createTenancy = useCreateTenancy();
+  const updateTenancy = useUpdateTenancy();
   const terminateTenancy = useTerminateTenancy();
 
   const [open, setOpen] = React.useState(false);
+  const [editingTenancy, setEditingTenancy] = React.useState<Tenancy | null>(null);
 
   const form = useForm<TenancyFormValues>({
     resolver: zodResolver(tenancySchema),
     defaultValues: EMPTY_FORM,
+  });
+
+  const editForm = useForm<z.input<typeof tenancyEditSchema>, unknown, z.output<typeof tenancyEditSchema>>({
+    resolver: zodResolver(tenancyEditSchema),
+    defaultValues: EMPTY_EDIT_FORM,
   });
 
   const vacantUnits = units.filter((u) => u.status !== 'occupied');
@@ -54,6 +85,39 @@ export default function TenanciesPage() {
     });
     setOpen(false);
     form.reset(EMPTY_FORM);
+  });
+
+  const openEdit = (tenancy: Tenancy) => {
+    setEditingTenancy(tenancy);
+    editForm.reset({
+      monthly_rent: Number(tenancy.monthly_rent),
+      deposit: Number(tenancy.deposit),
+      rent_due_day: tenancy.rent_due_day,
+      grace_period_days: tenancy.grace_period_days,
+      end_date: tenancy.end_date ?? '',
+      renewal_notes: tenancy.renewal_notes ?? '',
+      notes: tenancy.notes ?? '',
+    });
+  };
+
+  const handleEdit = editForm.handleSubmit(async (values) => {
+    if (!editingTenancy) return;
+    const payload: Record<string, unknown> = {
+      monthly_rent: String(values.monthly_rent),
+      deposit: String(values.deposit),
+      rent_due_day: values.rent_due_day,
+      grace_period_days: values.grace_period_days,
+      renewal_notes: values.renewal_notes ?? '',
+      notes: values.notes ?? '',
+    };
+    if (values.end_date) payload.end_date = values.end_date;
+    try {
+      await updateTenancy.mutateAsync({ id: editingTenancy.id, payload });
+      setEditingTenancy(null);
+      editForm.reset(EMPTY_EDIT_FORM);
+    } catch {
+      // handled via updateTenancy.error / toast in the hook
+    }
   });
 
   return (
@@ -160,6 +224,114 @@ export default function TenanciesPage() {
         )}
       />
 
+      <Dialog open={!!editingTenancy} onOpenChange={(v) => { if (!v) setEditingTenancy(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit tenancy</DialogTitle>
+          </DialogHeader>
+          <Form {...editForm}>
+            <form onSubmit={handleEdit} className="space-y-3">
+              <FormField
+                control={editForm.control}
+                name="monthly_rent"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Monthly rent (KES)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" className="h-11" value={field.value as number} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="deposit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Deposit (KES)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" className="h-11" value={field.value as number} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="rent_due_day"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rent due day (1-28)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" className="h-11" value={field.value as number} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="grace_period_days"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Grace period (days)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" className="h-11" value={field.value as number} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="end_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End date</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="date" className="h-11" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="renewal_notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Renewal notes</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="submit" disabled={updateTenancy.isPending} className="rounded-full">
+                  Save changes
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : tenancies.length === 0 ? (
@@ -185,16 +357,27 @@ export default function TenanciesPage() {
                   <Badge variant={t.status === 'active' ? 'default' : 'secondary'}>{t.status}</Badge>
                 </TableCell>
                 <TableCell>
-                  {t.status === 'active' && (
+                  <div className="flex items-center gap-2">
                     <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={terminateTenancy.isPending}
-                      onClick={() => terminateTenancy.mutate({ id: t.id })}
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Edit tenancy"
+                      onClick={() => openEdit(t)}
                     >
-                      Terminate
+                      <Pencil className="h-4 w-4" />
                     </Button>
-                  )}
+                    {t.status === 'active' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={terminateTenancy.isPending}
+                        onClick={() => terminateTenancy.mutate({ id: t.id })}
+                      >
+                        Terminate
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
