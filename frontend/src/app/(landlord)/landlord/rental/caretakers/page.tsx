@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useCaretakers, useCreateCaretaker, useProperties } from '@/features/rental/hooks/use-rental';
 import { GateBanner } from '@/features/rental/components/gate-banner';
 import { isGateRejection } from '@/lib/api/gate';
+import { PageHeader } from '@/components/dashboard/page-header';
 
 const KENYAN_PHONE_REGEX = /^(\+254|0)[17]\d{8}$/;
 
@@ -77,120 +79,122 @@ export default function CaretakersPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Caretakers</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>Add caretaker</Button>
-          </DialogTrigger>
-          <DialogContent className="max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Add caretaker</DialogTitle>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={handleCreate} className="space-y-3">
-                <FormField
-                  control={form.control}
-                  name="full_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full name</FormLabel>
-                      <FormControl>
-                        <Input {...field} className="h-11" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="email" className="h-11" />
-                      </FormControl>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        They&apos;ll get an email to set up their password.
-                      </p>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="+254712345678" className="h-11" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+      <PageHeader
+        title="Caretakers"
+        action={(
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button leftIcon={<Plus className="h-4 w-4" />}>Add caretaker</Button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Add caretaker</DialogTitle>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={handleCreate} className="space-y-3">
+                  <FormField
+                    control={form.control}
+                    name="full_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full name</FormLabel>
+                        <FormControl>
+                          <Input {...field} className="h-11" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="email" className="h-11" />
+                        </FormControl>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          They&apos;ll get an email to set up their password.
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="+254712345678" className="h-11" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <div className="pt-2 border-t">
-                  <p className="mb-2 text-sm font-semibold">Emergency contact</p>
-                  <div className="space-y-3">
-                    <FormField
-                      control={form.control}
-                      name="emergency_contact_name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Full name</FormLabel>
-                          <FormControl>
-                            <Input {...field} className="h-11" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="emergency_contact_phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="+254712345678" className="h-11" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                {properties.length > 0 && (
                   <div className="pt-2 border-t">
-                    <p className="mb-2 text-sm font-semibold">Assign to properties</p>
-                    <div className="space-y-2">
-                      {properties.map((p) => (
-                        <label key={p.id} className="flex items-center gap-2 text-sm">
-                          <Checkbox
-                            checked={propertyIds.includes(p.id)}
-                            onCheckedChange={() => togglePropertyId(p.id)}
-                          />
-                          {p.name}
-                        </label>
-                      ))}
+                    <p className="mb-2 text-sm font-semibold">Emergency contact</p>
+                    <div className="space-y-3">
+                      <FormField
+                        control={form.control}
+                        name="emergency_contact_name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Full name</FormLabel>
+                            <FormControl>
+                              <Input {...field} className="h-11" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="emergency_contact_phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="+254712345678" className="h-11" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   </div>
-                )}
-                {gateError && <GateBanner gate={gateError} onDismiss={() => createCaretaker.reset()} />}
-                <DialogFooter>
-                  <Button type="submit" disabled={createCaretaker.isPending} className="rounded-full">
-                    Save
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-      </div>
+
+                  {properties.length > 0 && (
+                    <div className="pt-2 border-t">
+                      <p className="mb-2 text-sm font-semibold">Assign to properties</p>
+                      <div className="space-y-2">
+                        {properties.map((p) => (
+                          <label key={p.id} className="flex items-center gap-2 text-sm">
+                            <Checkbox
+                              checked={propertyIds.includes(p.id)}
+                              onCheckedChange={() => togglePropertyId(p.id)}
+                            />
+                            {p.name}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {gateError && <GateBanner gate={gateError} onDismiss={() => createCaretaker.reset()} />}
+                  <DialogFooter>
+                    <Button type="submit" disabled={createCaretaker.isPending} className="rounded-full">
+                      Save
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        )}
+      />
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
