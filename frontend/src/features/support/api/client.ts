@@ -1,5 +1,7 @@
 import { axiosInstance as axios } from '@/lib/api/client';
-import type { SupportTicket, SupportTicketDetail, TicketMessage, TicketStatus } from '../types/types';
+import type {
+  SupportTicket, SupportTicketDetail, TicketMessage, TicketStatus, TicketCategory, TicketPriority,
+} from '../types/types';
 
 export const supportApi = {
   listTickets: async (status?: TicketStatus): Promise<SupportTicket[]> => {
@@ -12,7 +14,9 @@ export const supportApi = {
     const res = await axios.get<SupportTicketDetail>(`/support/tickets/${id}/`);
     return res.data;
   },
-  createTicket: async (payload: { subject: string; description: string }): Promise<SupportTicket> => {
+  createTicket: async (
+    payload: { subject: string; description: string; category?: TicketCategory; unit?: string | null; priority?: TicketPriority },
+  ): Promise<SupportTicket> => {
     const res = await axios.post<SupportTicket>('/support/tickets/', payload);
     return res.data;
   },

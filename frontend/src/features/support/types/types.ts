@@ -1,4 +1,6 @@
 export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
+export type TicketCategory = 'general' | 'maintenance';
+export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface SupportTicket {
   id: string;
@@ -11,6 +13,10 @@ export interface SupportTicket {
   subject: string;
   description: string;
   status: TicketStatus;
+  category: TicketCategory;
+  unit: string | null;
+  unit_label: string | null;
+  priority: TicketPriority;
   created_at: string;
   updated_at: string;
 }
