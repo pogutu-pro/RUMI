@@ -23,8 +23,15 @@ from core.permissions.rumia import OrganizationScopedMixin, get_canonical_role
 from organizations.models import Organization
 from rent.providers.base import PaymentProviderError
 
-from .models import OrganizationSubscription, SubscriptionPlan
-from .serializers import OrganizationSubscriptionSerializer, SubscriptionPlanSerializer
+from .models import OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
+from .serializers import (
+    AdminOrganizationBillingDetailSerializer,
+    AdminOrganizationBillingListSerializer,
+    OrganizationSubscriptionSerializer,
+    SubscriptionPlanSerializer,
+)
+from .services.admin_override_service import AdminOverrideService
+from .services.gating_service import GatingService
 from .services.subscription_service import SubscriptionService
 
 MUTATING_ROLES = ('landlord', 'super_admin')
@@ -202,3 +209,138 @@ class SubscriptionSwitchPlanView(_BillingMutationView):
             return Response({'error': str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
 
         return Response(result, status=status.HTTP_200_OK)
+
+
+def _build_admin_billing_detail(organization: Organization) -> dict:
+    """
+    Shared payload builder for the admin detail GET and the override POST's
+    response — guarantees a post-override refresh returns the identical
+    shape as a plain detail fetch.
+    """
+    effective_plan = GatingService.get_effective_plan(organization)
+    last_charge = (
+        SubscriptionPayment.objects.filter(subscription__organization=organization)
+        .order_by('-initiated_at', '-id')
+        .first()
+    )
+    return {
+        'organization': organization,
+        'subscription': getattr(organization, 'subscription', None),
+        'effective_plan': effective_plan,
+        'payout': getattr(organization, 'payout_account', None),
+        'last_charge_event': last_charge,
+    }
+
+
+class AdminOrganizationBillingListView(APIView):
+    """
+    GET -> every organization's plan/status/payout inline (ADMIN-01 read,
+    ADMIN-02), super_admin only. Optionally filtered by ?search=<name
+    icontains>, ordered deterministically by name then id (stable tiebreak
+    on identical names).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        qs = Organization.objects.select_related(
+            'subscription__plan', 'payout_account'
+        ).order_by('name', 'id')
+
+        search = request.query_params.get('search')
+        if search:
+            qs = qs.filter(name__icontains=search)
+
+        rows = []
+        for org in qs:
+            subscription = getattr(org, 'subscription', None)
+            payout_account = getattr(org, 'payout_account', None)
+            rows.append({
+                'id': org.id,
+                'name': org.name,
+                'slug': org.slug,
+                'subscription_status': subscription.status if subscription else None,
+                'plan_name': subscription.plan.name if subscription else None,
+                'plan_slug': subscription.plan.slug if subscription else None,
+                'payout_status': payout_account.status if payout_account else 'not_started',
+            })
+
+        return Response(AdminOrganizationBillingListSerializer(rows, many=True).data)
+
+
+class AdminOrganizationBillingDetailView(APIView):
+    """
+    GET -> super_admin-only joined billing record for a single organization
+    (ADMIN-01 read, ADMIN-02): raw subscription fields, the GatingService-
+    computed effective plan, masked payout status, and the most-recent
+    SubscriptionPayment row as "last charge event".
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        if get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            organization = Organization.objects.select_related(
+                'subscription__plan', 'payout_account'
+            ).get(pk=pk)
+        except (Organization.DoesNotExist, ValueError, ValidationError):
+            return Response({'detail': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        payload = _build_admin_billing_detail(organization)
+        return Response(AdminOrganizationBillingDetailSerializer(payload).data)
+
+
+class AdminSubscriptionOverrideView(APIView):
+    """
+    POST -> super_admin-only manual override of an organization's
+    subscription plan and/or status, never via SubscriptionService, never
+    calling Paystack (D-05). Every override requires a non-empty `reason`
+    and is audit-logged (D-05a).
+
+    Deliberately does NOT subclass or call `_BillingMutationView`'s
+    landlord-permitting `_resolve_organization` — this endpoint is
+    super_admin-only, full stop.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            organization = Organization.objects.get(pk=pk)
+        except (Organization.DoesNotExist, ValueError, ValidationError):
+            return Response({'detail': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Explicit allow-list — never **request.data — so paystack_* /
+        # billing_mode / any other field can never reach the service layer.
+        reason = request.data.get('reason', '').strip()
+        plan_id = request.data.get('plan_id')
+        new_status = request.data.get('status')
+
+        plan = None
+        if plan_id is not None:
+            try:
+                plan = SubscriptionPlan.objects.get(id=plan_id, is_active=True)
+            except PLAN_LOOKUP_ERRORS:
+                return Response({'error': 'Invalid plan_id'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_status is not None and new_status not in dict(OrganizationSubscription.STATUS_CHOICES):
+            return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            AdminOverrideService.override_subscription(
+                organization, plan=plan, status=new_status, reason=reason, actor=request.user,
+            )
+        except ValueError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        payload = _build_admin_billing_detail(organization)
+        return Response(AdminOrganizationBillingDetailSerializer(payload).data)
