@@ -12,8 +12,10 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from accounts.models import CaretakerProfile
+from audit.models import AuditLog
 from billing.models import OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
 from billing.providers.paystack_billing import PaystackBillingClient
+from billing.services.admin_override_service import AdminOverrideService
 from billing.services.gating_service import GatingService
 from organizations.models import OrganizationMembership
 from properties.models import CaretakerPropertyAssignment, Property, RentalUnit
@@ -918,3 +920,197 @@ class AdminOrganizationBillingListViewTests(RumiaTestFixtures):
         response = client.get('/api/v1/billing/admin/organizations/')
 
         self.assertEqual(response.status_code, 403)
+
+
+class AdminOverrideServiceTests(RumiaTestFixtures):
+    """
+    Plan 06-03 Task 3 (RED) — AdminOverrideService.override_subscription()
+    behavior spec, tested at the service layer independent of the view.
+    """
+
+    def _seed_plans(self):
+        call_command('seed_subscription_plans')
+        return {p.slug: p for p in SubscriptionPlan.objects.all()}
+
+    def test_status_only_override_leaves_plan_unchanged_and_logs_audit(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plans['starter'], status='active',
+        )
+
+        result = AdminOverrideService.override_subscription(
+            org, status='suspended', reason='Manual bank transfer reconciliation', actor=admin,
+        )
+
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.plan_id, plans['starter'].id)
+        self.assertEqual(subscription.status, 'suspended')
+        self.assertEqual(result.id, subscription.id)
+
+        audit_entries = AuditLog.objects.filter(organization=org)
+        self.assertEqual(audit_entries.count(), 1)
+        entry = audit_entries.first()
+        self.assertEqual(entry.old_value, {'plan': 'starter', 'status': 'active'})
+        self.assertEqual(entry.new_value, {'plan': 'starter', 'status': 'suspended'})
+        self.assertEqual(entry.metadata['reason'], 'Manual bank transfer reconciliation')
+
+    def test_blank_reason_raises_before_any_db_write(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(organization=org, plan=plans['starter'], status='active')
+
+        before = AuditLog.objects.count()
+        with self.assertRaises(ValueError):
+            AdminOverrideService.override_subscription(org, status='suspended', reason='   ', actor=admin)
+        self.assertEqual(AuditLog.objects.count(), before)
+
+    def test_both_omitted_raises_before_any_db_write(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(organization=org, plan=plans['starter'], status='active')
+
+        before = AuditLog.objects.count()
+        with self.assertRaises(ValueError):
+            AdminOverrideService.override_subscription(org, reason='reconciling', actor=admin)
+        self.assertEqual(AuditLog.objects.count(), before)
+
+    def test_value_identical_override_still_succeeds_and_logs_audit(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(organization=org, plan=plans['starter'], status='active')
+
+        result = AdminOverrideService.override_subscription(
+            org, plan=plans['starter'], status='active', reason='Re-stamping record', actor=admin,
+        )
+
+        self.assertEqual(result.status, 'active')
+        entry = AuditLog.objects.filter(organization=org).first()
+        self.assertIsNotNone(entry)
+        self.assertEqual(entry.old_value, entry.new_value)
+
+
+class AdminSubscriptionOverrideViewTests(RumiaTestFixtures):
+    """Plan 06-03 Task 3 — POST /billing/admin/organizations/{id}/override/."""
+
+    def _seed_plans(self):
+        call_command('seed_subscription_plans')
+        return {p.slug: p for p in SubscriptionPlan.objects.all()}
+
+    def _url(self, org_id):
+        return f'/api/v1/billing/admin/organizations/{org_id}/override/'
+
+    def test_successful_status_only_override_creates_audit_log(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(organization=org, plan=plans['starter'], status='active')
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.post(self._url(org.id), {'status': 'suspended', 'reason': 'Support ticket #42'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['subscription']['status'], 'suspended')
+        self.assertEqual(AuditLog.objects.filter(organization=org).count(), 1)
+
+    def test_successful_plan_only_override(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(organization=org, plan=plans['starter'], status='active')
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.post(
+            self._url(org.id), {'plan_id': str(plans['pro'].id), 'reason': 'Comping customer'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['subscription']['plan'], str(plans['pro'].id))
+
+    def test_blank_reason_400(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(organization=org, plan=plans['starter'], status='active')
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.post(self._url(org.id), {'status': 'suspended', 'reason': ''})
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_both_omitted_400(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(organization=org, plan=plans['starter'], status='active')
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.post(self._url(org.id), {'reason': 'no fields given'})
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_landlord_gets_403(self):
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(organization=org, plan=plans['starter'], status='active')
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.post(self._url(org.id), {'status': 'suspended', 'reason': 'x'})
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_invalid_plan_id_400(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(organization=org, plan=plans['starter'], status='active')
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.post(
+            self._url(org.id), {'plan_id': '00000000-0000-0000-0000-000000000000', 'reason': 'x'},
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_invalid_status_400(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        OrganizationSubscription.objects.create(organization=org, plan=plans['starter'], status='active')
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.post(self._url(org.id), {'status': 'not-a-real-status', 'reason': 'x'})
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_override_ignores_paystack_and_billing_mode_fields_in_payload(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plans['starter'], status='active',
+            paystack_subscription_code='sub_original', billing_mode='auto',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.post(self._url(org.id), {
+            'status': 'suspended', 'reason': 'x',
+            'paystack_subscription_code': 'sub_HACKED', 'billing_mode': 'manual',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.paystack_subscription_code, 'sub_original')
+        self.assertEqual(subscription.billing_mode, 'auto')
