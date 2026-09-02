@@ -1,11 +1,15 @@
 'use client';
 
+import * as React from 'react';
+import type { ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DataTable } from '@/components/ui/data-table';
+import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
+import { ErrorState } from '@/components/ui/error-state';
 import { useTenancies, useRentBalance, usePayments, useInitiatePayment } from '@/features/rental/hooks/use-rental';
-import type { RentCharge } from '@/features/rental/types';
+import type { RentCharge, Payment } from '@/features/rental/types';
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = {
   success: 'default',
@@ -14,6 +18,8 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = 
   failed: 'destructive',
   reversed: 'destructive',
 };
+
+const PAGE_SIZE = 20;
 
 function formatKes(amount: string | number) {
   const n = Number(amount);
@@ -43,11 +49,44 @@ function heroStateFor(nextCharge: RentCharge | undefined, outstandingTotal: stri
   } as const;
 }
 
+const paymentColumns: ColumnDef<Payment>[] = [
+  {
+    accessorKey: 'paid_at',
+    header: 'Date',
+    cell: ({ row }) => {
+      const paidAt = row.original.paid_at;
+      return paidAt ? new Date(paidAt).toLocaleDateString() : '—';
+    },
+  },
+  {
+    accessorKey: 'amount',
+    header: 'Amount',
+    cell: ({ row }) => formatKes(row.original.amount),
+  },
+  {
+    accessorKey: 'status',
+    header: 'Status',
+    cell: ({ row }) => (
+      <Badge variant={STATUS_VARIANT[row.original.status] ?? 'secondary'}>{row.original.status}</Badge>
+    ),
+  },
+];
+
 export default function TenantRentalDashboard() {
-  const { data: tenancies = [] } = useTenancies();
-  const { data: balance } = useRentBalance();
-  const { data: payments = [] } = usePayments();
+  const {
+    data: tenancies = [],
+    isLoading: tenanciesLoading,
+    isError: tenanciesError,
+  } = useTenancies();
+  const {
+    data: balance,
+    isLoading: balanceLoading,
+    isError: balanceError,
+    refetch: refetchBalance,
+  } = useRentBalance();
+  const { data: payments = [], isLoading: paymentsLoading } = usePayments();
   const initiate = useInitiatePayment();
+  const [page, setPage] = React.useState(1);
 
   const activeTenancy = tenancies.find((t) => t.status === 'active') ?? tenancies[0];
   const nextCharge = (balance?.charges ?? [])
@@ -64,12 +103,22 @@ export default function TenantRentalDashboard() {
     }
   };
 
+  if (tenanciesError || balanceError) {
+    return <ErrorState onRetry={() => refetchBalance()} />;
+  }
+
+  if (tenanciesLoading || balanceLoading) {
+    return <LoadingSkeleton type="card" />;
+  }
+
   if (!activeTenancy) {
     return <p className="text-sm text-muted-foreground">No tenancy on file yet — contact your landlord.</p>;
   }
 
   const hero = heroStateFor(nextCharge, balance?.outstanding_total);
   const outstanding = Number(balance?.outstanding_total ?? '0');
+
+  const paginatedPayments = payments.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="space-y-6">
@@ -94,30 +143,62 @@ export default function TenantRentalDashboard() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Lease details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+            <div>
+              <dt className="text-xs text-muted-foreground">Unit</dt>
+              <dd className="text-sm font-medium">{activeTenancy.unit_number}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Status</dt>
+              <dd><Badge variant="secondary">{activeTenancy.status}</Badge></dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Start date</dt>
+              <dd className="text-sm font-medium">{activeTenancy.start_date}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">End date</dt>
+              <dd className="text-sm font-medium">{activeTenancy.end_date ?? 'Ongoing'}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Monthly rent</dt>
+              <dd className="text-sm font-medium">{formatKes(activeTenancy.monthly_rent)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Deposit</dt>
+              <dd className="text-sm font-medium">{formatKes(activeTenancy.deposit)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Rent due day</dt>
+              <dd className="text-sm font-medium">{`Day ${activeTenancy.rent_due_day} of each month`}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Grace period</dt>
+              <dd className="text-sm font-medium">{`${activeTenancy.grace_period_days} days`}</dd>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
+
       <div>
         <h2 className="mb-2 font-medium">Payment history</h2>
-        {payments.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No payments yet.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payments.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell>{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</TableCell>
-                  <TableCell>{formatKes(p.amount)}</TableCell>
-                  <TableCell><Badge variant={STATUS_VARIANT[p.status] ?? 'secondary'}>{p.status}</Badge></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <DataTable<Payment, unknown>
+          columns={paymentColumns}
+          data={paginatedPayments}
+          isLoading={paymentsLoading}
+          totalItems={payments.length}
+          pageSize={PAGE_SIZE}
+          currentPage={page}
+          onPageChange={setPage}
+          onPageSizeChange={() => {}}
+          emptyStateTitle="No payments yet"
+          emptyStateDescription="Once you make a payment, it'll show up here with a full receipt trail."
+        />
       </div>
     </div>
   );
