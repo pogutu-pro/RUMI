@@ -30,6 +30,7 @@ from .serializers import (
     OrganizationSubscriptionSerializer,
     SubscriptionPlanSerializer,
 )
+from .services.admin_override_service import AdminOverrideService
 from .services.gating_service import GatingService
 from .services.subscription_service import SubscriptionService
 
@@ -290,6 +291,56 @@ class AdminOrganizationBillingDetailView(APIView):
             ).get(pk=pk)
         except (Organization.DoesNotExist, ValueError, ValidationError):
             return Response({'detail': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        payload = _build_admin_billing_detail(organization)
+        return Response(AdminOrganizationBillingDetailSerializer(payload).data)
+
+
+class AdminSubscriptionOverrideView(APIView):
+    """
+    POST -> super_admin-only manual override of an organization's
+    subscription plan and/or status, never via SubscriptionService, never
+    calling Paystack (D-05). Every override requires a non-empty `reason`
+    and is audit-logged (D-05a).
+
+    Deliberately does NOT subclass or call `_BillingMutationView`'s
+    landlord-permitting `_resolve_organization` — this endpoint is
+    super_admin-only, full stop.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            organization = Organization.objects.get(pk=pk)
+        except (Organization.DoesNotExist, ValueError, ValidationError):
+            return Response({'detail': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Explicit allow-list — never **request.data — so paystack_* /
+        # billing_mode / any other field can never reach the service layer.
+        reason = request.data.get('reason', '').strip()
+        plan_id = request.data.get('plan_id')
+        new_status = request.data.get('status')
+
+        plan = None
+        if plan_id is not None:
+            try:
+                plan = SubscriptionPlan.objects.get(id=plan_id, is_active=True)
+            except PLAN_LOOKUP_ERRORS:
+                return Response({'error': 'Invalid plan_id'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_status is not None and new_status not in dict(OrganizationSubscription.STATUS_CHOICES):
+            return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            AdminOverrideService.override_subscription(
+                organization, plan=plan, status=new_status, reason=reason, actor=request.user,
+            )
+        except ValueError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         payload = _build_admin_billing_detail(organization)
         return Response(AdminOrganizationBillingDetailSerializer(payload).data)

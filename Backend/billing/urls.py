@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     AdminOrganizationBillingDetailView,
     AdminOrganizationBillingListView,
+    AdminSubscriptionOverrideView,
     MyOrganizationSubscriptionView,
     SubscriptionPlanListView,
     SubscriptionSubscribeView,
@@ -26,5 +27,10 @@ urlpatterns = [
         'admin/organizations/<uuid:pk>/',
         AdminOrganizationBillingDetailView.as_view(),
         name='billing-admin-organization-detail',
+    ),
+    path(
+        'admin/organizations/<uuid:pk>/override/',
+        AdminSubscriptionOverrideView.as_view(),
+        name='billing-admin-organization-override',
     ),
 ]

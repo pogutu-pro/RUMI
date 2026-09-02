@@ -1031,7 +1031,7 @@ class AdminSubscriptionOverrideViewTests(RumiaTestFixtures):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['subscription']['plan'], str(plans['pro'].id))
+        self.assertEqual(response.data['subscription']['plan'], plans['pro'].id)
 
     def test_blank_reason_400(self):
         plans = self._seed_plans()
