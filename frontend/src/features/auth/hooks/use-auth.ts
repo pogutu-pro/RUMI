@@ -72,16 +72,19 @@ export function useAuth() {
     logout,
     setProfile: storeSetProfile,
     uploadPhoto: async (file: File) => {
+        // POST /accounts/profile/picture/ (ProfilePictureUploadView.post)
+        // returns a FLAT { message, profile_picture_url } shape — there is
+        // no nested `user` key, so a previous implementation that reached
+        // into a `.user` sub-object crashed on every real upload.
         const response = await authApi.uploadProfilePicture(file);
-        console.log('Backend response:', response); // Debug log
-        
+
         // Update user state with new avatar URL using updateUser
         const updateUser = useAuthStore.getState().updateUser;
         updateUser({
-            avatar: response.user.profile_picture,
-            profile_picture: response.user.profile_picture 
+            avatar: response.profile_picture_url,
+            profile_picture: response.profile_picture_url
         });
-        
+
         // Invalidate queries to refresh data
         queryClient.invalidateQueries({ queryKey: ['profile'] });
         queryClient.invalidateQueries({ queryKey: ['user'] });
