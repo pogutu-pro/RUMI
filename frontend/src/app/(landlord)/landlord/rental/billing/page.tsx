@@ -4,10 +4,22 @@ import { PageHeader } from '@/components/dashboard/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusPill, type StatusPillProps } from '@/components/ui/status-pill';
 import { PriceDisplay } from '@/components/ui/price-display';
-import { useMySubscription } from '@/features/billing/hooks/use-subscription';
+import { Button } from '@/components/ui/button';
+import { ErrorState } from '@/components/ui/error-state';
+import {
+  useMySubscription,
+  useSubscribe,
+  useSwitchPlan,
+} from '@/features/billing/hooks/use-subscription';
+import { usePlans } from '@/features/billing/hooks/use-plans';
 import { usePayoutStatus } from '@/features/payout/hooks/use-payout';
 import type { OrganizationSubscription } from '@/features/billing/types';
 import type { PayoutStatus } from '@/features/payout/types';
+
+// Mirrors SubscriptionService.ACTIVE_STATUSES (Backend/billing/services/subscription_service.py)
+// exactly — only a subscription in one of these statuses is excluded from "reactivation"
+// (i.e. shown "Switch to X" / "Current plan" instead of "Subscribe to X").
+const ACTIVE_STATUSES: OrganizationSubscription['status'][] = ['active', 'past_due'];
 
 const SUBSCRIPTION_STATUS_VARIANT: Record<
   OrganizationSubscription['status'],
@@ -35,9 +47,18 @@ export default function BillingPayoutPage() {
   const { data: subscription, isLoading: subscriptionLoading, error: subscriptionError } =
     useMySubscription();
   const { data: payout, isLoading: payoutLoading } = usePayoutStatus();
+  const { data: plans, isLoading: plansLoading, isError: plansError, refetch: refetchPlans } =
+    usePlans();
+  const subscribeMutation = useSubscribe();
+  const switchPlanMutation = useSwitchPlan();
 
   const subscriptionNotFound =
     (subscriptionError as { statusCode?: number } | undefined)?.statusCode === 404;
+
+  // A landlord with no subscription, or one whose subscription isn't in
+  // ACTIVE_STATUSES (pending/suspended/cancelled), is eligible for a fresh
+  // "Subscribe to X" — mirrors SubscriptionService.subscribe()'s own guard.
+  const isReactivatable = !subscription || !ACTIVE_STATUSES.includes(subscription.status);
 
   return (
     <div className="space-y-6">
@@ -96,6 +117,80 @@ export default function BillingPayoutPage() {
           )}
         </CardContent>
       </Card>
+
+      {plansLoading && (
+        <div className="grid gap-6 sm:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="skeleton h-64 rounded-3xl" />
+          ))}
+        </div>
+      )}
+
+      {!plansLoading && plansError && (
+        <ErrorState
+          title="Couldn't load pricing"
+          message="We're having trouble reaching pricing right now. Try again in a moment."
+          onRetry={() => refetchPlans()}
+        />
+      )}
+
+      {!plansLoading && !plansError && plans && plans.length > 0 && (
+        <div className="grid gap-6 sm:grid-cols-3">
+          {plans.map((plan) => {
+            const isCurrentPlan = !isReactivatable && subscription?.plan === plan.id;
+            const isSwitchable = !isReactivatable && subscription?.plan !== plan.id;
+            const isSubscribingThisPlan =
+              subscribeMutation.isPending && subscribeMutation.variables?.planId === plan.id;
+            const isSwitchingThisPlan =
+              switchPlanMutation.isPending && switchPlanMutation.variables === plan.id;
+
+            return (
+              <div
+                key={plan.id}
+                className={`rounded-3xl border p-8 ${
+                  isCurrentPlan
+                    ? 'border-primary bg-white shadow-xl'
+                    : 'border-gray-100 bg-white shadow-sm'
+                }`}
+              >
+                <h3 className="text-2xl font-semibold text-gray-900">{plan.name}</h3>
+                <div className="mt-2 flex items-baseline gap-1">
+                  <PriceDisplay amount={plan.price} size="lg" />
+                  <span className="text-sm text-muted-foreground">/month</span>
+                </div>
+
+                <div className="mt-6">
+                  {isCurrentPlan ? (
+                    <StatusPill status="success">Current plan</StatusPill>
+                  ) : isSwitchable ? (
+                    <Button
+                      type="button"
+                      className="w-full"
+                      disabled={isSwitchingThisPlan}
+                      isLoading={isSwitchingThisPlan}
+                      onClick={() => switchPlanMutation.mutate(plan.id)}
+                    >
+                      Switch to {plan.name}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      className="w-full"
+                      disabled={isSubscribingThisPlan}
+                      isLoading={isSubscribingThisPlan}
+                      onClick={() =>
+                        subscribeMutation.mutate({ planId: plan.id, billingMode: 'auto' })
+                      }
+                    >
+                      Subscribe to {plan.name}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
