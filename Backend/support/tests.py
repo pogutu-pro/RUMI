@@ -330,3 +330,34 @@ class MaintenanceTicketUnitScopingTests(TestCase):
     def test_staff_role_never_blocked_by_unit_scoping(self):
         resp = self._post_ticket(self.tech_support, self.other_unit)
         self.assertEqual(resp.status_code, 201)
+
+    # --- 05-08: caretaker/landlord read-visibility widening (CARE-02/WR-03) ---
+
+    def test_caretaker_sees_tenant_raised_ticket_on_assigned_unit(self):
+        ticket = SupportTicket.objects.create(
+            created_by=self.tenant_user, organization=self.org, category='maintenance',
+            unit=self.unit_a1, priority='high', subject='Broken tap', description='Needs fixing.',
+        )
+        self.client.force_authenticate(user=self.caretaker)
+
+        list_resp = self.client.get('/api/v1/support/tickets/')
+        self.assertEqual(list_resp.status_code, 200)
+        self.assertIn(str(ticket.id), [str(row['id']) for row in list_resp.data])
+
+        detail_resp = self.client.get(f'/api/v1/support/tickets/{ticket.id}/')
+        self.assertEqual(detail_resp.status_code, 200)
+        self.assertEqual(detail_resp.data['subject'], 'Broken tap')
+
+    def test_caretaker_does_not_see_ticket_on_unassigned_property(self):
+        ticket = SupportTicket.objects.create(
+            created_by=self.landlord, organization=self.org, category='maintenance',
+            unit=self.unit_a2, priority='medium', subject='Leaky roof', description='Needs fixing.',
+        )
+        self.client.force_authenticate(user=self.caretaker)
+
+        list_resp = self.client.get('/api/v1/support/tickets/')
+        self.assertEqual(list_resp.status_code, 200)
+        self.assertNotIn(str(ticket.id), [str(row['id']) for row in list_resp.data])
+
+        detail_resp = self.client.get(f'/api/v1/support/tickets/{ticket.id}/')
+        self.assertEqual(detail_resp.status_code, 404)

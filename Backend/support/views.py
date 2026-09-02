@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -84,6 +85,70 @@ def _user_can_access_unit(user, unit_id) -> bool:
     return False
 
 
+def _non_staff_ticket_visibility(user, role) -> Q:
+    """
+    Shared list-endpoint visibility rule for non-staff roles (CARE-02/WR-03).
+
+    Always includes the caller's own tickets. Caretakers additionally see
+    tickets on units belonging to a property they hold an active
+    `CaretakerPropertyAssignment` for; landlords additionally see tickets on
+    units belonging to an organization they own. Any other role (tenant, or
+    unrecognized) gets no additional branch.
+
+    Mirror of `_user_can_view_ticket` below (per-instance version used by the
+    detail endpoint) — if you change one, check the other so the list and
+    detail endpoints cannot silently drift apart.
+    """
+    q = Q(created_by=user)
+
+    if role == 'caretaker':
+        q |= Q(
+            unit__parent_property__caretaker_assignments__caretaker_profile__user=user,
+            unit__parent_property__caretaker_assignments__is_active=True,
+        )
+    elif role == 'landlord':
+        q |= Q(unit__organization__owner=user)
+
+    return q
+
+
+def _user_can_view_ticket(user, ticket) -> bool:
+    """
+    Shared detail-endpoint visibility rule for non-staff roles (CARE-02/WR-03).
+
+    Per-instance mirror of `_non_staff_ticket_visibility` above — a ticket
+    visible in the list must always be openable here, so both checks encode
+    the identical three-branch rule (staff / own / assignment-or-ownership).
+    If you change one, check the other.
+    """
+    role = get_canonical_role(user)
+
+    if _is_staff_role(role):
+        return True
+
+    if ticket.created_by_id == user.id:
+        return True
+
+    if ticket.unit_id is None:
+        return False
+
+    if role == 'caretaker':
+        try:
+            return user.caretaker_profile.property_assignments.filter(
+                is_active=True,
+                property_assignment_id=ticket.unit.parent_property_id,
+            ).exists()
+        except Exception:
+            return False
+
+    if role == 'landlord':
+        return Organization.objects.filter(
+            id=ticket.unit.organization_id, owner=user,
+        ).exists()
+
+    return False
+
+
 class SupportTicketListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -92,7 +157,7 @@ class SupportTicketListCreateView(APIView):
         qs = SupportTicket.objects.select_related('created_by', 'assigned_to', 'unit', 'unit__parent_property')
 
         if not _is_staff_role(role):
-            qs = qs.filter(created_by=request.user)
+            qs = qs.filter(_non_staff_ticket_visibility(request.user, role)).distinct()
 
         status_filter = request.query_params.get('status')
         if status_filter:
@@ -144,8 +209,7 @@ class SupportTicketDetailView(APIView):
             ).prefetch_related('messages__author'),
             pk=pk,
         )
-        role = get_canonical_role(request.user)
-        if not _is_staff_role(role) and ticket.created_by_id != request.user.id:
+        if not _user_can_view_ticket(request.user, ticket):
             return None
         return ticket
 
