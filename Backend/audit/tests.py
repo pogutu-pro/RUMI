@@ -13,6 +13,10 @@ from django.test import TestCase, override_settings
 from audit.models import AuditLog
 from billing.models import OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
 from billing.services.webhook import handle_billing_event
+from organizations.models import PayoutAccount
+from organizations.services.payout_service import PayoutService
+from rent.providers.base import AccountResolveResult, SubaccountResult
+from rent.providers.paystack import PaystackProvider
 from rumia_api.tests import RumiaTestFixtures
 
 
@@ -182,3 +186,80 @@ class SubscriptionWebhookAuditTests(RumiaTestFixtures):
                 'old_value': entry.old_value, 'new_value': entry.new_value, 'metadata': entry.metadata,
             })
             self.assertNotIn(secret, blob)
+
+
+def _mock_resolve_success(account_name='John Kamau'):
+    return AccountResolveResult(success=True, account_name=account_name)
+
+
+def _mock_subaccount_success(code='ACCT_audit_test'):
+    return SubaccountResult(success=True, subaccount_code=code)
+
+
+class PayoutAuditTests(RumiaTestFixtures):
+    """D-01: payout status transitions are audit-logged with the acting
+    landlord as actor, and never leak the full bank account number."""
+
+    def test_submit_for_new_org_logs_both_transitions_with_landlord_actor(self):
+        user, profile, org = self.create_landlord_with_org(email='payout-audit-1@test.com')
+        raw_account_number = '1234567890'
+
+        with patch.object(PaystackProvider, 'resolve_account', return_value=_mock_resolve_success()), \
+                patch.object(PaystackProvider, 'create_subaccount', return_value=_mock_subaccount_success()):
+            payout_account = PayoutService.submit_bank_details(
+                org, bank_name='Equity Bank', bank_account_number=raw_account_number,
+                bank_code='068', actor=user,
+            )
+
+        self.assertEqual(payout_account.status, 'active')
+
+        pending_entries = AuditLog.objects.filter(action='payout_pending_verification')
+        activated_entries = AuditLog.objects.filter(action='payout_activated')
+        self.assertEqual(pending_entries.count(), 1)
+        self.assertEqual(activated_entries.count(), 1)
+        self.assertEqual(pending_entries.first().actor_id, user.id)
+        self.assertEqual(activated_entries.first().actor_id, user.id)
+
+    def test_resubmitting_identical_details_while_active_creates_no_new_rows(self):
+        user, profile, org = self.create_landlord_with_org(email='payout-audit-2@test.com')
+        raw_account_number = '1234567890'
+
+        with patch.object(PaystackProvider, 'resolve_account', return_value=_mock_resolve_success()), \
+                patch.object(PaystackProvider, 'create_subaccount', return_value=_mock_subaccount_success()):
+            PayoutService.submit_bank_details(
+                org, bank_name='Equity Bank', bank_account_number=raw_account_number,
+                bank_code='068', actor=user,
+            )
+
+        count_after_first_submit = AuditLog.objects.count()
+
+        with patch.object(PaystackProvider, 'resolve_account') as mock_resolve, \
+                patch.object(PaystackProvider, 'create_subaccount') as mock_create:
+            payout_account = PayoutService.submit_bank_details(
+                org, bank_name='Equity Bank', bank_account_number=raw_account_number,
+                bank_code='068', actor=user,
+            )
+
+        self.assertEqual(payout_account.status, 'active')
+        mock_resolve.assert_not_called()
+        mock_create.assert_not_called()
+        self.assertEqual(AuditLog.objects.count(), count_after_first_submit)
+
+    def test_no_full_bank_account_number_in_any_payout_audit_row(self):
+        user, profile, org = self.create_landlord_with_org(email='payout-audit-3@test.com')
+        raw_account_number = '9988776655'
+
+        with patch.object(PaystackProvider, 'resolve_account', return_value=_mock_resolve_success()), \
+                patch.object(PaystackProvider, 'create_subaccount', return_value=_mock_subaccount_success()):
+            PayoutService.submit_bank_details(
+                org, bank_name='Equity Bank', bank_account_number=raw_account_number,
+                bank_code='068', actor=user,
+            )
+
+        for entry in AuditLog.objects.filter(
+            action__in=['payout_pending_verification', 'payout_activated'],
+        ):
+            blob = json.dumps({
+                'old_value': entry.old_value, 'new_value': entry.new_value, 'metadata': entry.metadata,
+            })
+            self.assertNotIn(raw_account_number, blob)
