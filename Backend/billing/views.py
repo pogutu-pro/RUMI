@@ -321,7 +321,7 @@ class AdminSubscriptionOverrideView(APIView):
 
         # Explicit allow-list — never **request.data — so paystack_* /
         # billing_mode / any other field can never reach the service layer.
-        reason = request.data.get('reason', '').strip()
+        reason = (request.data.get('reason') or '').strip()
         plan_id = request.data.get('plan_id')
         new_status = request.data.get('status')
 
