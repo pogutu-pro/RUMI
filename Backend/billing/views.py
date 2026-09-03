@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from django.core.exceptions import ValidationError
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -254,8 +255,11 @@ class AdminOrganizationBillingListView(APIView):
         if search:
             qs = qs.filter(name__icontains=search)
 
+        paginator = PageNumberPagination()
+        page = paginator.paginate_queryset(qs, request, view=self)
+
         rows = []
-        for org in qs:
+        for org in page:
             subscription = getattr(org, 'subscription', None)
             payout_account = getattr(org, 'payout_account', None)
             rows.append({
@@ -268,7 +272,9 @@ class AdminOrganizationBillingListView(APIView):
                 'payout_status': payout_account.status if payout_account else 'not_started',
             })
 
-        return Response(AdminOrganizationBillingListSerializer(rows, many=True).data)
+        return paginator.get_paginated_response(
+            AdminOrganizationBillingListSerializer(rows, many=True).data
+        )
 
 
 class AdminOrganizationBillingDetailView(APIView):
