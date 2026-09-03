@@ -39,6 +39,7 @@ export function useOverrideSubscription() {
       adminBillingApi.overrideSubscription(id, payload),
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ['admin-billing', 'detail', id] });
+      qc.invalidateQueries({ queryKey: ['admin-billing', 'list'] });
       toast.success('Override applied');
     },
     onError: (err) => toast.error(errorMessage(err, 'Could not apply override')),

@@ -78,13 +78,17 @@ export default function TenanciesPage() {
   const vacantUnits = units.filter((u) => u.status !== 'occupied');
 
   const handleCreate = form.handleSubmit(async (values) => {
-    await createTenancy.mutateAsync({
-      ...values,
-      status: 'active',
-      start_date: values.start_date || new Date().toISOString().slice(0, 10),
-    });
-    setOpen(false);
-    form.reset(EMPTY_FORM);
+    try {
+      await createTenancy.mutateAsync({
+        ...values,
+        status: 'active',
+        start_date: values.start_date || new Date().toISOString().slice(0, 10),
+      });
+      setOpen(false);
+      form.reset(EMPTY_FORM);
+    } catch {
+      // handled via createTenancy.error / toast in the hook
+    }
   });
 
   const openEdit = (tenancy: Tenancy) => {
