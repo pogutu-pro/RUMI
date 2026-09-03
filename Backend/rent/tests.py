@@ -353,3 +353,62 @@ class PaystackKeyEnvValidationTests(TestCase):
         self.assertEqual(status.status, ProviderStatus.MISCONFIGURED)
         self.assertNotIn('sk_live_supersecretvalue', status.message)
         self.assertNotIn('pk_test_anotherpublicvalue', status.message)
+
+
+class PaystackKeyCheckTests(TestCase):
+    """
+    HARD-04/D-05: django.core.checks system check built on the same
+    get_config_status() validated by PaystackKeyEnvValidationTests above.
+    """
+
+    @override_settings(PAYSTACK_ENV='test', PAYSTACK_SECRET_KEY='sk_live_abc123')
+    def test_misconfigured_returns_single_error_with_expected_id(self):
+        from rent.checks import check_paystack_key_env_match
+
+        errors = check_paystack_key_env_match(None)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].id, 'rent.E001')
+
+    @override_settings(PAYSTACK_ENV='test', PAYSTACK_SECRET_KEY='sk_test_abc123')
+    def test_available_returns_empty_list(self):
+        from rent.checks import check_paystack_key_env_match
+
+        errors = check_paystack_key_env_match(None)
+
+        self.assertEqual(errors, [])
+
+    @override_settings(PAYSTACK_SECRET_KEY='')
+    def test_not_configured_returns_empty_list(self):
+        from rent.checks import check_paystack_key_env_match
+
+        errors = check_paystack_key_env_match(None)
+
+        self.assertEqual(errors, [])
+
+    @override_settings(PAYSTACK_ENV='test', PAYSTACK_SECRET_KEY='sk_test_abc123')
+    def test_unexpected_exception_returns_error_never_empty_list(self):
+        from rent.checks import check_paystack_key_env_match
+
+        with patch(
+            'rent.providers.paystack.PaystackProvider.get_config_status',
+            side_effect=RuntimeError('boom'),
+        ):
+            errors = check_paystack_key_env_match(None)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].id, 'rent.E002')
+
+    @override_settings(
+        PAYSTACK_ENV='test',
+        PAYSTACK_SECRET_KEY='sk_live_supersecretvalue',
+        PAYSTACK_PUBLIC_KEY='pk_test_anotherpublicvalue',
+    )
+    def test_error_msg_never_contains_raw_key_values(self):
+        from rent.checks import check_paystack_key_env_match
+
+        errors = check_paystack_key_env_match(None)
+
+        self.assertEqual(len(errors), 1)
+        self.assertNotIn('sk_live_supersecretvalue', errors[0].msg)
+        self.assertNotIn('pk_test_anotherpublicvalue', errors[0].msg)
