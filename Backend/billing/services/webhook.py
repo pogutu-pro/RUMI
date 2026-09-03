@@ -180,6 +180,8 @@ def _handle_charge_success(data: dict) -> dict:
     now = timezone.now()
     today = now.date()
 
+    old_payment_status = payment.status
+
     payment.status = 'success'
     payment.paid_at = now
     payment.paystack_reference = data.get('reference', '') or ''
@@ -202,7 +204,7 @@ def _handle_charge_success(data: dict) -> dict:
         'subscription_payment_recorded',
         organization=subscription.organization,
         entity=payment,
-        old_value={'status': 'pending'},
+        old_value={'status': old_payment_status},
         new_value={'status': payment.status, 'amount': str(payment.amount)},
         metadata={
             'source': 'webhook', 'event_type': 'charge.success',

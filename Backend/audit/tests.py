@@ -77,6 +77,27 @@ class SubscriptionWebhookAuditTests(RumiaTestFixtures):
         self.assertEqual(entry.entity_type, 'SubscriptionPayment')
         self.assertEqual(entry.entity_id, str(payment.pk))
 
+    def test_charge_success_on_previously_failed_payment_logs_true_prior_status(self):
+        user, profile, org = self.create_landlord_with_org(email='audit-charge-retry@test.com')
+        plan = _make_plan('audit-charge-retry')
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plan, status='pending', billing_mode='auto',
+        )
+        payment = SubscriptionPayment.objects.create(
+            subscription=subscription, amount=plan.price,
+            internal_reference='SUB-AUDIT-CHARGE-RETRY-1', status='failed',
+        )
+
+        result = handle_billing_event({
+            'event': 'charge.success',
+            'data': {'id': 'evt_audit_charge_retry_1', 'reference': 'SUB-AUDIT-CHARGE-RETRY-1', 'status': 'success'},
+        })
+
+        self.assertEqual(result['status'], 'processed')
+        entry = AuditLog.objects.filter(action='subscription_payment_recorded').latest('created_at')
+        self.assertEqual(entry.old_value, {'status': 'failed'})
+        self.assertEqual(entry.new_value['status'], 'success')
+
     def test_invoice_payment_failed_logs_new_status_past_due(self):
         user, profile, org = self.create_landlord_with_org(email='audit-invoice@test.com')
         plan = _make_plan('audit-invoice')
