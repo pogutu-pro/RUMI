@@ -36,6 +36,34 @@ class PaystackProvider(BasePaymentProvider):
                 message='PAYSTACK_SECRET_KEY is not set',
                 required_env_vars=['PAYSTACK_SECRET_KEY'],
             )
+
+        # HARD-04/D-04: cheap prefix-match validation — never a live Paystack
+        # API call. Confirms the deployed secret (and, if set, public) key
+        # prefix actually matches the declared PAYSTACK_ENV, so a test key
+        # accidentally deployed to a "live" environment (or vice versa) is
+        # caught before PaymentService.initiate ever calls Paystack.
+        env = getattr(settings, 'PAYSTACK_ENV', 'test') or 'test'
+        public = getattr(settings, 'PAYSTACK_PUBLIC_KEY', '') or ''
+        expected_secret_prefix = 'sk_live_' if env == 'live' else 'sk_test_'
+        if not secret.startswith(expected_secret_prefix):
+            return ProviderConfigStatus(
+                provider=self.provider_id,
+                status=ProviderStatus.MISCONFIGURED,
+                message=f'PAYSTACK_SECRET_KEY prefix does not match PAYSTACK_ENV={env}',
+            )
+        if public:
+            secret_is_live = secret.startswith('sk_live_')
+            public_is_live = public.startswith('pk_live_')
+            if secret_is_live != public_is_live:
+                return ProviderConfigStatus(
+                    provider=self.provider_id,
+                    status=ProviderStatus.MISCONFIGURED,
+                    message=(
+                        'PAYSTACK_SECRET_KEY and PAYSTACK_PUBLIC_KEY are from '
+                        'different environments (test/live mismatch)'
+                    ),
+                )
+
         return ProviderConfigStatus(
             provider=self.provider_id,
             status=ProviderStatus.AVAILABLE,

@@ -250,6 +250,7 @@ AFRICASTALKING_API_KEY = os.getenv('AFRICASTALKING_API_KEY')
 PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
 PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
 PAYSTACK_WEBHOOK_SECRET = os.getenv('PAYSTACK_WEBHOOK_SECRET')
+PAYSTACK_ENV = os.getenv('PAYSTACK_ENV', 'test')  # 'test' or 'live'
 
 # Billing Configuration — days a past_due subscription (failed renewal) has
 # before billing.tasks.process_grace_period_expirations suspends it.

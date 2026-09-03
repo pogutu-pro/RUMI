@@ -27,6 +27,7 @@ class ProviderStatus(str, Enum):
     AVAILABLE = 'available'
     NOT_CONFIGURED = 'not_configured'
     DISABLED = 'disabled'
+    MISCONFIGURED = 'misconfigured'
 
 
 @dataclass
