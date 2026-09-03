@@ -250,6 +250,7 @@ AFRICASTALKING_API_KEY = os.getenv('AFRICASTALKING_API_KEY')
 PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
 PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
 PAYSTACK_WEBHOOK_SECRET = os.getenv('PAYSTACK_WEBHOOK_SECRET')
+PAYSTACK_ENV = os.getenv('PAYSTACK_ENV', 'test')  # 'test' or 'live'
 
 # Billing Configuration — days a past_due subscription (failed renewal) has
 # before billing.tasks.process_grace_period_expirations suspends it.
@@ -474,6 +475,11 @@ API_CACHE_EXCLUDE_PATHS = [
     '/metrics/',
     '/swagger/',
     '/redoc/',
+    # HARD-04/D-05: /health/ must always reflect live state — a cached
+    # response would silently mask a Paystack key misconfiguration (or its
+    # fix) for up to API_CACHE_TIMEOUT, defeating the endpoint's entire
+    # "ongoing post-deploy visibility" purpose.
+    '/health/',
 ]
 SLOW_REQUEST_THRESHOLD = 2.0  # seconds
 MEMORY_THRESHOLD = 100 * 1024 * 1024  # 100MB

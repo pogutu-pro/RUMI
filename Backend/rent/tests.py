@@ -11,11 +11,13 @@ stale-status re-checks (T-02-05/T-02-06/T-02-09).
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
-from django.test import override_settings
+from django.test import TestCase, override_settings
 
 from organizations.models import PayoutAccount
 from properties.models import CaretakerPropertyAssignment
 from rent.models import Payment
+from rent.providers.base import ProviderStatus
+from rent.providers.paystack import PaystackProvider
 from rent.services.payment_service import PaymentService
 from rumia_api.tests import RumiaTestFixtures
 
@@ -35,7 +37,7 @@ def _make_payment(org, tenant, tenancy=None, prop=None, unit=None, ref='REF-1'):
     )
 
 
-@override_settings(PAYSTACK_SECRET_KEY='test_secret_key')
+@override_settings(PAYSTACK_SECRET_KEY='sk_test_1234567890abcdef')
 class SplitPaymentRoutingTests(RumiaTestFixtures):
     def setUp(self):
         self.user, self.profile, self.org = self.create_landlord_with_org()
@@ -110,7 +112,7 @@ class SplitPaymentRoutingTests(RumiaTestFixtures):
         self.assertEqual(result.status, 'success')
 
 
-@override_settings(PAYSTACK_SECRET_KEY='test_secret_key')
+@override_settings(PAYSTACK_SECRET_KEY='sk_test_1234567890abcdef')
 class PayoutBlockedNotificationTests(RumiaTestFixtures):
     def setUp(self):
         self.user, self.profile, self.org = self.create_landlord_with_org()
@@ -223,7 +225,7 @@ class PayoutBlockedNotificationTests(RumiaTestFixtures):
         self.assertIsNotNone(payout_account.last_payout_blocked_notified_at)
 
 
-@override_settings(PAYSTACK_SECRET_KEY='test_secret_key')
+@override_settings(PAYSTACK_SECRET_KEY='sk_test_1234567890abcdef')
 class FailClosedOnExceptionTests(RumiaTestFixtures):
     def setUp(self):
         self.user, self.profile, self.org = self.create_landlord_with_org()
@@ -264,7 +266,7 @@ class FailClosedOnExceptionTests(RumiaTestFixtures):
         self.assertEqual(payment.status, 'failed')
 
 
-@override_settings(PAYSTACK_SECRET_KEY='test_secret_key')
+@override_settings(PAYSTACK_SECRET_KEY='sk_test_1234567890abcdef')
 class StaleStatusReCheckTests(RumiaTestFixtures):
     def setUp(self):
         self.user, self.profile, self.org = self.create_landlord_with_org()
@@ -304,3 +306,109 @@ class StaleStatusReCheckTests(RumiaTestFixtures):
         mock_post.assert_called_once()  # only the first (successful) call happened
         payment2.refresh_from_db()
         self.assertEqual(payment2.status, 'failed')
+
+
+class PaystackKeyEnvValidationTests(TestCase):
+    """
+    HARD-04/D-04: PaystackProvider.get_config_status() prefix/env
+    validation. No fixtures needed — pure settings-driven behavior.
+    """
+
+    @override_settings(PAYSTACK_ENV='test', PAYSTACK_SECRET_KEY='sk_test_abc123')
+    def test_matching_test_env_and_secret_prefix_is_available(self):
+        status = PaystackProvider().get_config_status()
+        self.assertEqual(status.status, ProviderStatus.AVAILABLE)
+
+    @override_settings(PAYSTACK_ENV='test', PAYSTACK_SECRET_KEY='sk_live_abc123')
+    def test_live_secret_in_test_env_is_misconfigured(self):
+        status = PaystackProvider().get_config_status()
+        self.assertEqual(status.status, ProviderStatus.MISCONFIGURED)
+
+    @override_settings(PAYSTACK_ENV='live', PAYSTACK_SECRET_KEY='sk_test_abc123')
+    def test_test_secret_in_live_env_is_misconfigured(self):
+        status = PaystackProvider().get_config_status()
+        self.assertEqual(status.status, ProviderStatus.MISCONFIGURED)
+
+    @override_settings(
+        PAYSTACK_ENV='test',
+        PAYSTACK_SECRET_KEY='sk_test_abc123',
+        PAYSTACK_PUBLIC_KEY='pk_live_xyz789',
+    )
+    def test_secret_and_public_prefix_disagreement_is_misconfigured(self):
+        status = PaystackProvider().get_config_status()
+        self.assertEqual(status.status, ProviderStatus.MISCONFIGURED)
+
+    @override_settings(PAYSTACK_SECRET_KEY='')
+    def test_unset_secret_key_is_not_configured(self):
+        status = PaystackProvider().get_config_status()
+        self.assertEqual(status.status, ProviderStatus.NOT_CONFIGURED)
+
+    @override_settings(
+        PAYSTACK_ENV='test',
+        PAYSTACK_SECRET_KEY='sk_live_supersecretvalue',
+        PAYSTACK_PUBLIC_KEY='pk_test_anotherpublicvalue',
+    )
+    def test_misconfigured_message_never_contains_raw_key_values(self):
+        status = PaystackProvider().get_config_status()
+        self.assertEqual(status.status, ProviderStatus.MISCONFIGURED)
+        self.assertNotIn('sk_live_supersecretvalue', status.message)
+        self.assertNotIn('pk_test_anotherpublicvalue', status.message)
+
+
+class PaystackKeyCheckTests(TestCase):
+    """
+    HARD-04/D-05: django.core.checks system check built on the same
+    get_config_status() validated by PaystackKeyEnvValidationTests above.
+    """
+
+    @override_settings(PAYSTACK_ENV='test', PAYSTACK_SECRET_KEY='sk_live_abc123')
+    def test_misconfigured_returns_single_error_with_expected_id(self):
+        from rent.checks import check_paystack_key_env_match
+
+        errors = check_paystack_key_env_match(None)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].id, 'rent.E001')
+
+    @override_settings(PAYSTACK_ENV='test', PAYSTACK_SECRET_KEY='sk_test_abc123')
+    def test_available_returns_empty_list(self):
+        from rent.checks import check_paystack_key_env_match
+
+        errors = check_paystack_key_env_match(None)
+
+        self.assertEqual(errors, [])
+
+    @override_settings(PAYSTACK_SECRET_KEY='')
+    def test_not_configured_returns_empty_list(self):
+        from rent.checks import check_paystack_key_env_match
+
+        errors = check_paystack_key_env_match(None)
+
+        self.assertEqual(errors, [])
+
+    @override_settings(PAYSTACK_ENV='test', PAYSTACK_SECRET_KEY='sk_test_abc123')
+    def test_unexpected_exception_returns_error_never_empty_list(self):
+        from rent.checks import check_paystack_key_env_match
+
+        with patch(
+            'rent.providers.paystack.PaystackProvider.get_config_status',
+            side_effect=RuntimeError('boom'),
+        ):
+            errors = check_paystack_key_env_match(None)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].id, 'rent.E002')
+
+    @override_settings(
+        PAYSTACK_ENV='test',
+        PAYSTACK_SECRET_KEY='sk_live_supersecretvalue',
+        PAYSTACK_PUBLIC_KEY='pk_test_anotherpublicvalue',
+    )
+    def test_error_msg_never_contains_raw_key_values(self):
+        from rent.checks import check_paystack_key_env_match
+
+        errors = check_paystack_key_env_match(None)
+
+        self.assertEqual(len(errors), 1)
+        self.assertNotIn('sk_live_supersecretvalue', errors[0].msg)
+        self.assertNotIn('pk_test_anotherpublicvalue', errors[0].msg)
