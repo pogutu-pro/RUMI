@@ -226,6 +226,73 @@ class HandleBillingEventTests(RumiaTestFixtures):
         self.assertEqual(payment.status, 'success')
         self.assertEqual(subscription.status, 'active')
 
+    def test_duplicate_invoice_payment_failed_processes_state_transition_only_once(self):
+        user, profile, org = self.create_landlord_with_org()
+        plan = _make_plan('starter-dup-invoice')
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plan, status='active', billing_mode='auto',
+            paystack_subscription_code='SUB_CODE_DUP_INVOICE',
+        )
+        original_save = OrganizationSubscription.save
+        payload = {
+            'event': 'invoice.payment_failed',
+            'data': {
+                'id': 'evt_dup_invoice_1',
+                'subscription': {'subscription_code': 'SUB_CODE_DUP_INVOICE'},
+            },
+        }
+
+        with patch.object(OrganizationSubscription, 'save', autospec=True) as mock_save:
+            mock_save.side_effect = original_save
+
+            first = handle_billing_event(payload)
+            second = handle_billing_event(payload)
+
+        self.assertEqual(first['status'], 'processed')
+        self.assertEqual(second['status'], 'already_processed')
+        self.assertEqual(mock_save.call_count, 1)
+        self.assertEqual(
+            SubscriptionWebhookEvent.objects.filter(
+                event_type='invoice.payment_failed', paystack_object_id='evt_dup_invoice_1',
+            ).count(),
+            1,
+        )
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.status, 'past_due')
+        self.assertIsNotNone(subscription.grace_period_ends_at)
+
+    def test_duplicate_subscription_disable_processes_state_transition_only_once(self):
+        user, profile, org = self.create_landlord_with_org()
+        plan = _make_plan('starter-dup-disable')
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plan, status='active', billing_mode='auto',
+            paystack_subscription_code='SUB_CODE_DUP_DISABLE',
+        )
+        original_save = OrganizationSubscription.save
+        payload = {
+            'event': 'subscription.disable',
+            'data': {'id': 'evt_dup_disable_1', 'subscription_code': 'SUB_CODE_DUP_DISABLE'},
+        }
+
+        with patch.object(OrganizationSubscription, 'save', autospec=True) as mock_save:
+            mock_save.side_effect = original_save
+
+            first = handle_billing_event(payload)
+            second = handle_billing_event(payload)
+
+        self.assertEqual(first['status'], 'processed')
+        self.assertEqual(second['status'], 'already_processed')
+        self.assertEqual(mock_save.call_count, 1)
+        self.assertEqual(
+            SubscriptionWebhookEvent.objects.filter(
+                event_type='subscription.disable', paystack_object_id='evt_dup_disable_1',
+            ).count(),
+            1,
+        )
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.status, 'cancelled')
+        self.assertIsNotNone(subscription.cancelled_at)
+
 
 @override_settings(PAYSTACK_WEBHOOK_SECRET='test_secret_key')
 class DispatchFromPaystackWebhookTests(RumiaTestFixtures):
