@@ -110,7 +110,7 @@ class PayoutAccountView(APIView):
 
         try:
             payout_account = PayoutService.submit_bank_details(
-                organization, **input_serializer.validated_data,
+                organization, actor=request.user, **input_serializer.validated_data,
             )
         except PaymentProviderError as exc:
             return Response({'error': str(exc)}, status=status.HTTP_502_BAD_GATEWAY)

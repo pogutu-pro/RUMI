@@ -26,6 +26,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
+from audit.models import log_audit
 from billing.models import OrganizationSubscription, SubscriptionPayment, SubscriptionWebhookEvent
 
 logger = logging.getLogger(__name__)
@@ -136,12 +137,27 @@ def _handle_subscription_create(data: dict) -> dict:
         # No unambiguous match — never guess which organization this belongs to.
         return {'status': 'unmatched'}
 
+    old_status = subscription.status
     subscription.paystack_subscription_code = subscription_code
     subscription.paystack_email_token = data.get('email_token', '') or ''
     subscription.status = 'active'
     subscription.save(update_fields=[
         'paystack_subscription_code', 'paystack_email_token', 'status', 'updated_at',
     ])
+    log_audit(
+        'subscription_activated',
+        organization=subscription.organization,
+        entity=subscription,
+        old_value={'status': old_status},
+        new_value={
+            'status': subscription.status,
+            'paystack_subscription_code': subscription.paystack_subscription_code,
+        },
+        metadata={
+            'source': 'webhook', 'event_type': 'subscription.create',
+            'paystack_object_id': data.get('id', ''),
+        },
+    )
     return {'status': 'processed', 'event': 'subscription.create'}
 
 
@@ -182,6 +198,17 @@ def _handle_charge_success(data: dict) -> dict:
         'current_period_start', 'current_period_end', 'grace_period_ends_at',
         'status', 'last_payment_at', 'last_payment_amount', 'updated_at',
     ])
+    log_audit(
+        'subscription_payment_recorded',
+        organization=subscription.organization,
+        entity=payment,
+        old_value={'status': 'pending'},
+        new_value={'status': payment.status, 'amount': str(payment.amount)},
+        metadata={
+            'source': 'webhook', 'event_type': 'charge.success',
+            'paystack_object_id': data.get('id', ''), 'subscription_id': str(subscription.id),
+        },
+    )
     return {'status': 'processed', 'event': 'charge.success'}
 
 
@@ -235,10 +262,25 @@ def _handle_invoice_payment_failed(data: dict) -> dict:
     if subscription is None:
         return {'status': 'ignored'}
 
+    old_status = subscription.status
     grace_days = getattr(settings, 'BILLING_GRACE_PERIOD_DAYS', 7)
     subscription.status = 'past_due'
     subscription.grace_period_ends_at = timezone.now() + timedelta(days=grace_days)
     subscription.save(update_fields=['status', 'grace_period_ends_at', 'updated_at'])
+    log_audit(
+        'subscription_payment_failed',
+        organization=subscription.organization,
+        entity=subscription,
+        old_value={'status': old_status},
+        new_value={
+            'status': subscription.status,
+            'grace_period_ends_at': subscription.grace_period_ends_at.isoformat(),
+        },
+        metadata={
+            'source': 'webhook', 'event_type': 'invoice.payment_failed',
+            'paystack_object_id': data.get('id', ''),
+        },
+    )
     return {'status': 'processed', 'event': 'invoice.payment_failed'}
 
 
@@ -254,7 +296,20 @@ def _handle_subscription_disable(data: dict) -> dict:
     if subscription is None:
         return {'status': 'ignored'}
 
+    old_status = subscription.status
     subscription.status = 'cancelled'
     subscription.cancelled_at = timezone.now()
     subscription.save(update_fields=['status', 'cancelled_at', 'updated_at'])
+    log_audit(
+        'subscription_disabled',
+        organization=subscription.organization,
+        entity=subscription,
+        old_value={'status': old_status},
+        new_value={'status': subscription.status},
+        metadata={
+            'source': 'webhook', 'event_type': 'subscription.disable',
+            'paystack_object_id': data.get('id', ''),
+            'paystack_subscription_code': subscription_code,
+        },
+    )
     return {'status': 'processed', 'event': 'subscription.disable'}

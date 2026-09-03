@@ -33,6 +33,12 @@ class AuditLog(models.Model):
         ('reminder_sent', 'Reminder Sent'),
         ('permission_changed', 'Permission Changed'),
         ('inspection_completed', 'Inspection Completed'),
+        ('payout_pending_verification', 'Payout Pending Verification'),
+        ('payout_activated', 'Payout Activated'),
+        ('subscription_activated', 'Subscription Activated'),
+        ('subscription_payment_recorded', 'Subscription Payment Recorded'),
+        ('subscription_payment_failed', 'Subscription Payment Failed'),
+        ('subscription_disabled', 'Subscription Disabled'),
         ('other', 'Other'),
     ]
 
