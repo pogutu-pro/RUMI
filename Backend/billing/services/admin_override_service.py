@@ -11,6 +11,8 @@ is audit-logged with a mandatory reason (D-05a).
 """
 from __future__ import annotations
 
+from django.db import transaction
+
 from audit.models import log_audit
 
 from ..models import OrganizationSubscription
@@ -33,44 +35,54 @@ class AdminOverrideService:
         if plan is None and status is None:
             raise ValueError('At least one of plan or status must be provided')
 
-        defaults = {}
-        if plan is not None:
-            defaults['plan'] = plan
-        defaults['status'] = status if status is not None else 'pending'
+        with transaction.atomic():
+            if plan is None:
+                existing = OrganizationSubscription.objects.filter(
+                    organization=organization,
+                ).first()
+                if existing is None:
+                    raise ValueError(
+                        'plan is required when the organization has no existing subscription'
+                    )
 
-        subscription, created = OrganizationSubscription.objects.get_or_create(
-            organization=organization, defaults=defaults,
-        )
-
-        old_value = {
-            'plan': subscription.plan.slug if subscription.plan_id else None,
-            'status': subscription.status,
-        }
-
-        update_fields = []
-        if not created:
+            defaults = {}
             if plan is not None:
-                subscription.plan = plan
-                update_fields.append('plan')
-            if status is not None:
-                subscription.status = status
-                update_fields.append('status')
-            if update_fields:
-                subscription.save(update_fields=update_fields)
+                defaults['plan'] = plan
+            defaults['status'] = status if status is not None else 'pending'
 
-        new_value = {
-            'plan': subscription.plan.slug if subscription.plan_id else None,
-            'status': subscription.status,
-        }
+            subscription, created = OrganizationSubscription.objects.get_or_create(
+                organization=organization, defaults=defaults,
+            )
 
-        log_audit(
-            'other',
-            actor=actor,
-            organization=organization,
-            entity=subscription,
-            old_value=old_value,
-            new_value=new_value,
-            metadata={'reason': reason, 'override_type': 'subscription'},
-        )
+            old_value = {
+                'plan': subscription.plan.slug if subscription.plan_id else None,
+                'status': subscription.status,
+            }
+
+            update_fields = []
+            if not created:
+                if plan is not None:
+                    subscription.plan = plan
+                    update_fields.append('plan')
+                if status is not None:
+                    subscription.status = status
+                    update_fields.append('status')
+                if update_fields:
+                    subscription.save(update_fields=update_fields)
+
+            new_value = {
+                'plan': subscription.plan.slug if subscription.plan_id else None,
+                'status': subscription.status,
+            }
+
+            log_audit(
+                'other',
+                actor=actor,
+                organization=organization,
+                entity=subscription,
+                old_value=old_value,
+                new_value=new_value,
+                metadata={'reason': reason, 'override_type': 'subscription'},
+            )
 
         return subscription
