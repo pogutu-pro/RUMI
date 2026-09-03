@@ -865,7 +865,7 @@ class AdminOrganizationBillingListViewTests(RumiaTestFixtures):
         response = client.get('/api/v1/billing/admin/organizations/')
 
         self.assertEqual(response.status_code, 200)
-        rows_by_id = {row['id']: row for row in response.data}
+        rows_by_id = {row['id']: row for row in response.data['results']}
         self.assertEqual(rows_by_id[str(org_a.id)]['plan_slug'], 'pro')
         self.assertEqual(rows_by_id[str(org_a.id)]['subscription_status'], 'active')
         self.assertEqual(rows_by_id[str(org_a.id)]['payout_status'], 'active')
@@ -887,7 +887,7 @@ class AdminOrganizationBillingListViewTests(RumiaTestFixtures):
         response = client.get('/api/v1/billing/admin/organizations/', {'search': 'green'})
 
         self.assertEqual(response.status_code, 200)
-        names = {row['name'] for row in response.data}
+        names = {row['name'] for row in response.data['results']}
         self.assertEqual(names, {'Greenview Holdings'})
 
     def test_ordering_is_deterministic_by_name_then_id(self):
@@ -907,7 +907,7 @@ class AdminOrganizationBillingListViewTests(RumiaTestFixtures):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            [row['id'] for row in response.data],
+            [row['id'] for row in response.data['results']],
             [str(i) for i in expected_order],
         )
 
@@ -920,6 +920,22 @@ class AdminOrganizationBillingListViewTests(RumiaTestFixtures):
         response = client.get('/api/v1/billing/admin/organizations/')
 
         self.assertEqual(response.status_code, 403)
+
+    def test_list_is_paginated(self):
+        self._seed_plans()
+        admin = self.create_super_admin()
+        self.create_landlord_with_org(email='landlord-a@test.com')
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/organizations/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('count', response.data)
+        self.assertIn('next', response.data)
+        self.assertIn('previous', response.data)
+        self.assertIn('results', response.data)
+        self.assertIsInstance(response.data['results'], list)
 
 
 class AdminOverrideServiceTests(RumiaTestFixtures):
@@ -993,6 +1009,25 @@ class AdminOverrideServiceTests(RumiaTestFixtures):
         self.assertIsNotNone(entry)
         self.assertEqual(entry.old_value, entry.new_value)
 
+    def test_status_only_override_with_no_existing_subscription_raises_cleanly(self):
+        """
+        Regression guard (code review CR-01): a status-only override (no
+        plan) for an organization with no OrganizationSubscription row —
+        the normal state for an org still inside its 30-day no-subscription
+        trial — must raise ValueError, not an unhandled IntegrityError from
+        get_or_create's defaults omitting the non-nullable plan FK.
+        """
+        self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        self.assertFalse(OrganizationSubscription.objects.filter(organization=org).exists())
+
+        before = AuditLog.objects.count()
+        with self.assertRaises(ValueError):
+            AdminOverrideService.override_subscription(org, status='suspended', reason='Trial abuse', actor=admin)
+        self.assertFalse(OrganizationSubscription.objects.filter(organization=org).exists())
+        self.assertEqual(AuditLog.objects.count(), before)
+
 
 class AdminSubscriptionOverrideViewTests(RumiaTestFixtures):
     """Plan 06-03 Task 3 — POST /billing/admin/organizations/{id}/override/."""
@@ -1056,6 +1091,26 @@ class AdminSubscriptionOverrideViewTests(RumiaTestFixtures):
         response = client.post(self._url(org.id), {'reason': 'no fields given'})
 
         self.assertEqual(response.status_code, 400)
+
+    def test_status_only_override_with_no_existing_subscription_returns_400(self):
+        """
+        Regression guard (code review CR-01): previously an unhandled
+        IntegrityError (500) — must now be a clean 400, not a crash, since
+        this is directly reachable from the shipped override dialog (Plan
+        left at "No change") for any org still inside its no-subscription
+        trial period.
+        """
+        self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        self.assertFalse(OrganizationSubscription.objects.filter(organization=org).exists())
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.post(self._url(org.id), {'status': 'suspended', 'reason': 'Trial abuse'})
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(OrganizationSubscription.objects.filter(organization=org).exists())
 
     def test_landlord_gets_403(self):
         plans = self._seed_plans()

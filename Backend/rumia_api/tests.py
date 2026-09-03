@@ -595,6 +595,30 @@ class TenancyApiTests(RumiaTestFixtures):
         response = client.post(f'/api/v1/tenancies/{tenancy.id}/terminate/', {}, format='json')
         self.assertEqual(response.status_code, 403)
 
+    def test_patch_tenancy_persists_renewal_notes(self):
+        """
+        Regression guard (06-01 / code review WR-05): renewal_notes was
+        previously listed in TenancyDetailView.PATCHABLE_FIELDS but missing
+        from TenancySerializer.Meta.fields, so PATCHing it silently no-opped.
+        """
+        user_l, _, org = self.create_landlord_with_org()
+        prop, unit = self.create_property_with_unit(org)
+        _, tenant = self.create_tenant(org)
+        tenancy = self.create_tenancy(org, prop, unit, tenant, status='active')
+
+        client = APIClient()
+        client.force_authenticate(user=user_l)
+        response = client.patch(
+            f'/api/v1/tenancies/{tenancy.id}/',
+            {'renewal_notes': 'Renewing for 12 more months'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['renewal_notes'], 'Renewing for 12 more months')
+        tenancy.refresh_from_db()
+        self.assertEqual(tenancy.renewal_notes, 'Renewing for 12 more months')
+
 
 class RentGenerationTests(RumiaTestFixtures):
     def test_generates_one_charge_for_current_period(self):
