@@ -475,6 +475,11 @@ API_CACHE_EXCLUDE_PATHS = [
     '/metrics/',
     '/swagger/',
     '/redoc/',
+    # HARD-04/D-05: /health/ must always reflect live state — a cached
+    # response would silently mask a Paystack key misconfiguration (or its
+    # fix) for up to API_CACHE_TIMEOUT, defeating the endpoint's entire
+    # "ongoing post-deploy visibility" purpose.
+    '/health/',
 ]
 SLOW_REQUEST_THRESHOLD = 2.0  # seconds
 MEMORY_THRESHOLD = 100 * 1024 * 1024  # 100MB

@@ -21,7 +21,7 @@ def health_check(request):
             cursor.execute("SELECT 1")
             db_status = "healthy"
         db_response_time = time.time()
-        
+
         # Check Redis connection
         if REDIS_AVAILABLE:
             try:
@@ -32,19 +32,36 @@ def health_check(request):
                 redis_status = f"unhealthy: {str(e)}"
         else:
             redis_status = "not_available"
-        
+
+        # Check Paystack key/env configuration (HARD-04/D-05) — same
+        # get_config_status() check used by rent.checks' blocking system
+        # check, surfaced here as a second, ongoing post-deploy visibility
+        # layer in case the blocking check is ever bypassed or a key
+        # rotation happens without a redeploy.
+        from rent.providers.base import ProviderStatus
+        from rent.providers.paystack import PaystackProvider
+
+        paystack_config = PaystackProvider().get_config_status()
+        paystack_status = (
+            "healthy" if paystack_config.status == ProviderStatus.AVAILABLE else "unhealthy"
+        )
+        paystack_service = {"status": paystack_status}
+        if paystack_status == "unhealthy":
+            paystack_service["detail"] = paystack_config.message
+
         # Check system resources
         cpu_percent = psutil.cpu_percent(interval=1)
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage('/')
-        
+
         health_data = {
             "status": "healthy",
             "timestamp": time.time(),
             "services": {
                 "database": {"status": db_status},
                 "redis": {"status": redis_status},
-                "celery": {"status": "healthy" if redis_status == "healthy" else "unhealthy"}
+                "celery": {"status": "healthy" if redis_status == "healthy" else "unhealthy"},
+                "paystack": paystack_service,
             },
             "system": {
                 "cpu_usage_percent": cpu_percent,
@@ -53,9 +70,13 @@ def health_check(request):
             },
             "version": "1.0.0"
         }
-        
+
+        if paystack_status == "unhealthy":
+            health_data["status"] = "unhealthy"
+            return JsonResponse(health_data, status=503)
+
         return JsonResponse(health_data)
-        
+
     except Exception as e:
         error_data = {
             "status": "unhealthy",
