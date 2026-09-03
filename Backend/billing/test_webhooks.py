@@ -191,7 +191,7 @@ class HandleBillingEventTests(RumiaTestFixtures):
         self.assertEqual(subscription.status, 'active')
 
 
-@override_settings(PAYSTACK_SECRET_KEY='test_secret_key')
+@override_settings(PAYSTACK_WEBHOOK_SECRET='test_secret_key')
 class DispatchFromPaystackWebhookTests(RumiaTestFixtures):
     """
     Task 2 — the single physical Paystack webhook URL must correctly route

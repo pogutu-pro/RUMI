@@ -810,7 +810,7 @@ class PaystackWebhookView(APIView):
         import hashlib
         import hmac as hmac_module
 
-        secret = (getattr(settings, 'PAYSTACK_SECRET_KEY', '') or '').encode()
+        secret = (getattr(settings, 'PAYSTACK_WEBHOOK_SECRET', '') or '').encode()
         signature = request.headers.get('x-paystack-signature', '')
 
         if not secret or not signature:

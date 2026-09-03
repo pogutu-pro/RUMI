@@ -21,6 +21,7 @@ from rest_framework.test import APIClient
 from django.core import mail
 
 from accounts.models import CaretakerProfile, LandlordProfile, PasswordResetToken, StudentProfile
+from audit.models import AuditLog
 from organizations.models import Organization, OrganizationMembership, PayoutAccount
 from properties.models import Property, RentalUnit, Tenancy, CaretakerPropertyAssignment
 from rent.models import Payment, PaymentAllocation, RentCharge
@@ -741,7 +742,7 @@ class PaystackFlowTests(RumiaTestFixtures):
         sig = hmac.new(secret.encode(), body, hashlib.sha512).hexdigest()
         return body, sig
 
-    @override_settings(PAYSTACK_SECRET_KEY='test_secret_key')
+    @override_settings(PAYSTACK_WEBHOOK_SECRET='test_secret_key')
     def test_webhook_rejects_invalid_signature(self):
         org, tenant_user, tenant, tenancy = self._tenancy_with_tenant()
         payment = Payment.objects.create(
@@ -759,7 +760,7 @@ class PaystackFlowTests(RumiaTestFixtures):
         payment.refresh_from_db()
         self.assertEqual(payment.status, 'processing')
 
-    @override_settings(PAYSTACK_SECRET_KEY='test_secret_key')
+    @override_settings(PAYSTACK_WEBHOOK_SECRET='test_secret_key')
     @patch.object(PaystackProvider, 'verify_payment')
     def test_webhook_valid_signature_allocates_payment(self, mock_verify):
         org, tenant_user, tenant, tenancy = self._tenancy_with_tenant()
@@ -788,7 +789,7 @@ class PaystackFlowTests(RumiaTestFixtures):
         self.assertEqual(charge.status, 'paid')
         self.assertEqual(PaymentAllocation.objects.filter(payment=payment).count(), 1)
 
-    @override_settings(PAYSTACK_SECRET_KEY='test_secret_key')
+    @override_settings(PAYSTACK_WEBHOOK_SECRET='test_secret_key')
     @patch.object(PaystackProvider, 'verify_payment')
     def test_duplicate_webhook_does_not_double_allocate(self, mock_verify):
         org, tenant_user, tenant, tenancy = self._tenancy_with_tenant()
@@ -816,6 +817,25 @@ class PaystackFlowTests(RumiaTestFixtures):
         self.assertEqual(PaymentAllocation.objects.filter(payment=payment).count(), 1)
         charge.refresh_from_db()
         self.assertEqual(charge.amount_paid, Decimal('22000.00'))
+
+    @override_settings(PAYSTACK_WEBHOOK_SECRET='test_secret_key')
+    def test_webhook_rejects_missing_signature_header(self):
+        org, tenant_user, tenant, tenancy = self._tenancy_with_tenant()
+        payment = Payment.objects.create(
+            organization=org, tenancy=tenancy, tenant=tenant, parent_property=tenancy.parent_property,
+            unit=tenancy.unit, amount=Decimal('22000.00'), payment_method='paystack', provider='paystack',
+            internal_reference='RUMIA-WEBHOOK-NO-SIG', status='processing',
+        )
+        body, _ = self._webhook_body_and_signature('test_secret_key', payment.internal_reference, 2200000)
+        client = APIClient()
+        response = client.generic(
+            'POST', '/api/v1/rent/payments/webhook/paystack/', data=body,
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, 'processing')
+        self.assertEqual(AuditLog.objects.count(), 0)
 
 
 class SecurityAccessTests(RumiaTestFixtures):
