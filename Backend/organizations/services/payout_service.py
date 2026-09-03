@@ -14,6 +14,7 @@ from decimal import Decimal
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from audit.models import log_audit
 from organizations.models import PayoutAccount
 from rent.providers.base import PaymentProviderError
 from rent.providers.paystack import PaystackProvider
@@ -29,6 +30,7 @@ class PayoutService:
         bank_name: str,
         bank_account_number: str,
         bank_code: str,
+        actor=None,
     ) -> PayoutAccount:
         """
         Submit (or edit) bank details for `organization`'s PayoutAccount.
@@ -78,6 +80,7 @@ class PayoutService:
             existing_subaccount_code = (
                 payout_account.paystack_subaccount_code if is_edit_of_active else None
             )
+            old_status = payout_account.status
 
             # Commit the "intent" before any external call — mirrors
             # SubscriptionService.switch_plan's disable-before-initiate
@@ -90,6 +93,18 @@ class PayoutService:
             payout_account.save(update_fields=[
                 'bank_name', 'bank_account_number', 'bank_code', 'status', 'updated_at',
             ])
+            # Deliberately omit bank_account_number from every log_audit call
+            # in this file (prohibition: no full account number in the
+            # audit trail).
+            log_audit(
+                'payout_pending_verification',
+                actor=actor,
+                organization=organization,
+                entity=payout_account,
+                old_value={'status': old_status},
+                new_value={'status': 'pending_verification'},
+                metadata={'bank_code': bank_code},
+            )
 
         provider = PaystackProvider()
 
@@ -144,5 +159,14 @@ class PayoutService:
             payout_account.save(update_fields=[
                 'paystack_subaccount_code', 'account_name', 'status', 'last_verified_at', 'updated_at',
             ])
+            log_audit(
+                'payout_activated',
+                actor=actor,
+                organization=organization,
+                entity=payout_account,
+                old_value={'status': 'pending_verification'},
+                new_value={'status': 'active'},
+                metadata={'paystack_subaccount_code': payout_account.paystack_subaccount_code},
+            )
 
         return payout_account
