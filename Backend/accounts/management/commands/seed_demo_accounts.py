@@ -228,7 +228,16 @@ class Command(BaseCommand):
     def _get_or_reset_super_admin(self):
         """Super admin needs is_staff/is_superuser set — create_superuser
         handles that on first creation; on re-run just re-assert the flags
-        and reset the password."""
+        and reset the password.
+
+        BUG FIXED: create_superuser's own defaults (UserManager, accounts/
+        models.py) cover is_staff/is_superuser/role/is_verified but NOT
+        onboarding_stage, which then falls through to the model field's
+        default ('REGISTERED') on first creation only — re-running the
+        command masked this, since the re-run branch below always set it
+        correctly, making a *freshly seeded* super_admin the one broken
+        case. onboarding_stage is now set unconditionally after either
+        branch so a first-time run is no longer silently incomplete."""
         user = User.objects.filter(email=SUPER_ADMIN_EMAIL).first()
         if user is None:
             user = User.objects.create_superuser(
@@ -244,8 +253,9 @@ class Command(BaseCommand):
             user.is_staff = True
             user.is_superuser = True
             user.is_verified = True
-            user.onboarding_stage = 'COMPLETED'
             user.save()
+        user.onboarding_stage = 'COMPLETED'
+        user.save(update_fields=['onboarding_stage'])
         return user
 
     def _print_credentials_table(self):
