@@ -150,7 +150,7 @@ export default function Error({ error, reset }: ErrorProps) {
 
           <div className="border-t border-border bg-muted/30 px-8 py-4">
             <p className="text-center text-xs text-muted-foreground">
-              🔒 Your data is safe. We have logged this error and will
+              Your data is safe. We have logged this error and will
               investigate.
             </p>
           </div>

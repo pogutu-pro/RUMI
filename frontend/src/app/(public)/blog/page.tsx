@@ -263,7 +263,7 @@ export default function BlogPage() {
                       </Badge>
                       {featured.hasVideo && (
                         <Badge variant="outline" className="text-sm font-medium text-blue-600 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
-                          📹 Video
+                          Video
                         </Badge>
                       )}
                     </div>
@@ -326,7 +326,7 @@ export default function BlogPage() {
                             </span>
                             {post.hasVideo && (
                               <Badge variant="outline" className="text-xs font-medium text-blue-600 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
-                                📹 Video
+                                Video
                               </Badge>
                             )}
                           </div>

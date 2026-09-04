@@ -31,24 +31,24 @@ class Command(BaseCommand):
         try:
             # Run database optimizations
             run_database_optimization()
-            self.stdout.write(self.style.SUCCESS('✓ Database optimization completed'))
+            self.stdout.write(self.style.SUCCESS('Database optimization completed'))
             
             # Warm cache if requested
             if options['warm_cache']:
                 self.stdout.write('Warming cache...')
                 
                 cache_warmer.warm_popular_hostels()
-                self.stdout.write(self.style.SUCCESS('✓ Popular hostels cached'))
+                self.stdout.write(self.style.SUCCESS('Popular hostels cached'))
                 
                 cache_warmer.warm_user_dashboards()
-                self.stdout.write(self.style.SUCCESS('✓ User dashboards cached'))
+                self.stdout.write(self.style.SUCCESS('User dashboards cached'))
                 
                 cache_warmer.warm_payment_stats()
-                self.stdout.write(self.style.SUCCESS('✓ Payment statistics cached'))
+                self.stdout.write(self.style.SUCCESS('Payment statistics cached'))
                 
-                self.stdout.write(self.style.SUCCESS('✓ Cache warming completed'))
+                self.stdout.write(self.style.SUCCESS('Cache warming completed'))
             
-            self.stdout.write(self.style.SUCCESS('🚀 All optimizations completed successfully!'))
+            self.stdout.write(self.style.SUCCESS('All optimizations completed successfully!'))
             
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'Optimization failed: {e}'))

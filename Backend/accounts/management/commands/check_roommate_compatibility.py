@@ -47,7 +47,7 @@ class Command(BaseCommand):
         )
     
     def handle(self, *args, **options):
-        self.stdout.write("🚀 Testing Roommate Compatibility Scoring System")
+        self.stdout.write("Testing Roommate Compatibility Scoring System")
         self.stdout.write("=" * 60)
         
         # Test specific pair
@@ -69,7 +69,7 @@ class Command(BaseCommand):
     
     def test_pair_compatibility(self, student1_id: int, student2_id: int):
         """Test compatibility between two specific students"""
-        self.stdout.write(f"\n👥 Testing compatibility between Student {student1_id} and Student {student2_id}")
+        self.stdout.write(f"\nTesting compatibility between Student {student1_id} and Student {student2_id}")
         
         try:
             student1 = StudentProfile.objects.get(id=student1_id)
@@ -77,12 +77,12 @@ class Command(BaseCommand):
             
             result = scorer.calculate_compatibility_score(student1, student2)
             
-            self.stdout.write(f"\n📊 Compatibility Results:")
+            self.stdout.write(f"\nCompatibility Results:")
             self.stdout.write(f"   Final Score: {result['final_score']}/100")
             self.stdout.write(f"   Student 1: {student1.user.get_full_name()}")
             self.stdout.write(f"   Student 2: {student2.user.get_full_name()}")
             
-            self.stdout.write(f"\n🔍 Component Breakdown:")
+            self.stdout.write(f"\nComponent Breakdown:")
             for component, score in result['component_scores'].items():
                 weight = result['weights_used'][component]
                 if score is not None:
@@ -91,11 +91,11 @@ class Command(BaseCommand):
                     self.stdout.write(f"   {component}: No data (weight: {weight}%)")
             
         except StudentProfile.DoesNotExist as e:
-            self.stdout.write(self.style.ERROR(f"❌ Student not found: {e}"))
+            self.stdout.write(self.style.ERROR(f"Student not found: {e}"))
     
     def test_top_matches(self, student_id: int, limit: int):
         """Test finding top matches for a student"""
-        self.stdout.write(f"\n🎯 Finding top {limit} matches for Student {student_id}")
+        self.stdout.write(f"\nFinding top {limit} matches for Student {student_id}")
         
         try:
             target_student = StudentProfile.objects.get(id=student_id)
@@ -103,7 +103,7 @@ class Command(BaseCommand):
             
             matches = scorer.find_top_matches(target_student, candidates, limit)
             
-            self.stdout.write(f"\n🏆 Top {len(matches)} Matches for {target_student.user.get_full_name()}:")
+            self.stdout.write(f"\nTop {len(matches)} Matches for {target_student.user.get_full_name()}:")
             
             for i, match in enumerate(matches, 1):
                 self.stdout.write(f"\n{i}. {match['student_name']} (ID: {match['student_id']})")
@@ -122,11 +122,11 @@ class Command(BaseCommand):
                         self.stdout.write(f"     - {component}: {score:.1f}/100")
             
         except StudentProfile.DoesNotExist:
-            self.stdout.write(self.style.ERROR(f"❌ Student {student_id} not found"))
+            self.stdout.write(self.style.ERROR(f"Student {student_id} not found"))
     
     def test_random_sample(self, sample_size: int):
         """Test with random sample of students"""
-        self.stdout.write(f"\n🎲 Testing with random sample of {sample_size} students")
+        self.stdout.write(f"\nTesting with random sample of {sample_size} students")
         
         # Get students with lifestyle preferences
         students_with_data = StudentProfile.objects.filter(
@@ -137,20 +137,20 @@ class Command(BaseCommand):
         if students_with_data.count() < sample_size:
             self.stdout.write(
                 self.style.WARNING(
-                    f"⚠️  Only {students_with_data.count()} students with lifestyle preferences found"
+                    f"Only {students_with_data.count()} students with lifestyle preferences found"
                 )
             )
             sample_size = students_with_data.count()
         
         if sample_size == 0:
-            self.stdout.write(self.style.ERROR("❌ No students with lifestyle preferences found"))
+            self.stdout.write(self.style.ERROR("No students with lifestyle preferences found"))
             return
         
         # Sample students
         import random
         sampled_students = random.sample(list(students_with_data), min(sample_size, len(students_with_data)))
         
-        self.stdout.write(f"\n📋 Sample Students:")
+        self.stdout.write(f"\nSample Students:")
         for student in sampled_students:
             self.stdout.write(f"   - {student.user.get_full_name()} (ID: {student.id})")
             self.stdout.write(f"     Course: {student.course or 'Not specified'}")
@@ -159,7 +159,7 @@ class Command(BaseCommand):
             self.stdout.write(f"     Lifestyle prefs: {list(prefs.keys())}")
         
         # Test all pairwise combinations
-        self.stdout.write(f"\n🔗 Pairwise Compatibility Tests:")
+        self.stdout.write(f"\nPairwise Compatibility Tests:")
         
         for i, student1 in enumerate(sampled_students):
             for j, student2 in enumerate(sampled_students[i+1:], i+1):
@@ -182,7 +182,7 @@ class Command(BaseCommand):
     
     def show_system_info(self):
         """Show system statistics and information"""
-        self.stdout.write("\n📈 System Information:")
+        self.stdout.write("\nSystem Information:")
         
         total_students = StudentProfile.objects.count()
         students_with_lifestyle = StudentProfile.objects.filter(
@@ -201,10 +201,10 @@ class Command(BaseCommand):
         ).exclude(lifestyle_preferences={}).first()
         
         if sample_prefs and sample_prefs.lifestyle_preferences:
-            self.stdout.write(f"\n🔑 Sample lifestyle preference keys:")
+            self.stdout.write(f"\nSample lifestyle preference keys:")
             for key in list(sample_prefs.lifestyle_preferences.keys())[:10]:
                 self.stdout.write(f"   - {key}")
         
-        self.stdout.write(f"\n⚖️  Scoring Weights:")
+        self.stdout.write(f"\nScoring Weights:")
         for component, weight in scorer.weights.items():
             self.stdout.write(f"   - {component}: {weight}%")

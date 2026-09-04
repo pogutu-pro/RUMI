@@ -31,7 +31,7 @@ class Command(BaseCommand):
         self.create_statistics()
         self.create_additional_sample_data()
 
-        self.stdout.write(self.style.SUCCESS('✓ Sample data seeding complete!'))
+        self.stdout.write(self.style.SUCCESS('Sample data seeding complete!'))
 
     def create_amenities(self):
         """Create hostel amenities"""
@@ -57,7 +57,7 @@ class Command(BaseCommand):
                 }
             )
 
-        self.stdout.write(self.style.SUCCESS('✓ Created hostel amenities'))
+        self.stdout.write(self.style.SUCCESS('Created hostel amenities'))
 
     def create_hostels_and_rooms(self):
         """Create sample hostels and rooms"""
@@ -139,7 +139,7 @@ class Command(BaseCommand):
                 # Create rooms
                 self.create_rooms_for_hostel(hostel, total_rooms, available_rooms)
 
-                self.stdout.write(self.style.SUCCESS(f'✓ Created hostel: {hostel.name}'))
+                self.stdout.write(self.style.SUCCESS(f'Created hostel: {hostel.name}'))
 
     def create_rooms_for_hostel(self, hostel, total_rooms, available_rooms):
         """Create rooms for a hostel"""
@@ -215,7 +215,7 @@ class Command(BaseCommand):
         # self.create_blog_posts()
         # self.create_testimonials()
 
-        self.stdout.write(self.style.SUCCESS('✓ Created additional sample data (basic)'))
+        self.stdout.write(self.style.SUCCESS('Created additional sample data (basic)'))
 
     def create_faqs(self):
         """Create sample FAQs"""
@@ -252,7 +252,7 @@ class Command(BaseCommand):
                 defaults=faq_data
             )
 
-        self.stdout.write(self.style.SUCCESS('✓ Created sample FAQs'))
+        self.stdout.write(self.style.SUCCESS('Created sample FAQs'))
 
     def create_team_members(self):
         """Create team member profiles"""
@@ -282,7 +282,7 @@ class Command(BaseCommand):
                 defaults=member_data
             )
 
-        self.stdout.write(self.style.SUCCESS('✓ Created team members'))
+        self.stdout.write(self.style.SUCCESS('Created team members'))
 
     def create_otp_tokens(self):
         """Create sample OTP verification tokens"""
@@ -302,7 +302,7 @@ class Command(BaseCommand):
                 'attempts': 0
             }
         )
-        self.stdout.write(self.style.SUCCESS('✓ Created OTP tokens'))
+        self.stdout.write(self.style.SUCCESS('Created OTP tokens'))
 
     def create_password_reset_tokens(self):
         """Create sample password reset tokens"""
@@ -320,7 +320,7 @@ class Command(BaseCommand):
                 'is_used': False
             }
         )
-        self.stdout.write(self.style.SUCCESS('✓ Created password reset tokens'))
+        self.stdout.write(self.style.SUCCESS('Created password reset tokens'))
 
     def create_user_activity_logs(self):
         """Create sample user activity logs"""
@@ -345,7 +345,7 @@ class Command(BaseCommand):
                 user_agent='Test Browser',
                 metadata={'test': True}
             )
-        self.stdout.write(self.style.SUCCESS('✓ Created user activity logs'))
+        self.stdout.write(self.style.SUCCESS('Created user activity logs'))
 
     def create_bookings(self):
         """Create sample room bookings"""
@@ -369,7 +369,7 @@ class Command(BaseCommand):
                     'special_requests': 'Near window preferred'
                 }
             )
-            self.stdout.write(self.style.SUCCESS('✓ Created room bookings'))
+            self.stdout.write(self.style.SUCCESS('Created room bookings'))
 
     def create_transactions(self):
         """Create sample payment transactions"""
@@ -394,7 +394,7 @@ class Command(BaseCommand):
                     'metadata': {'test_transaction': True}
                 }
             )
-            self.stdout.write(self.style.SUCCESS('✓ Created payment transactions'))
+            self.stdout.write(self.style.SUCCESS('Created payment transactions'))
 
     def create_notifications(self):
         """Create sample notifications"""
@@ -421,7 +421,7 @@ class Command(BaseCommand):
                     'metadata': {'test': True}
                 }
             )
-        self.stdout.write(self.style.SUCCESS('✓ Created notifications'))
+        self.stdout.write(self.style.SUCCESS('Created notifications'))
 
     def create_notification_preferences(self):
         """Create sample notification preferences"""
@@ -443,7 +443,7 @@ class Command(BaseCommand):
                 'marketing_emails': False
             }
         )
-        self.stdout.write(self.style.SUCCESS('✓ Created notification preferences'))
+        self.stdout.write(self.style.SUCCESS('Created notification preferences'))
 
     def create_blog_posts(self):
         """Create sample blog posts"""
@@ -479,7 +479,7 @@ class Command(BaseCommand):
                 slug=post_data['slug'],
                 defaults=post_data
             )
-        self.stdout.write(self.style.SUCCESS('✓ Created blog posts'))
+        self.stdout.write(self.style.SUCCESS('Created blog posts'))
 
     def create_testimonials(self):
         """Create sample testimonials"""
@@ -509,7 +509,7 @@ class Command(BaseCommand):
                 name=testimonial_data['name'],
                 defaults=testimonial_data
             )
-        self.stdout.write(self.style.SUCCESS('✓ Created testimonials'))
+        self.stdout.write(self.style.SUCCESS('Created testimonials'))
 
     def create_email_templates(self):
         """Create sample email templates"""
@@ -550,7 +550,7 @@ class Command(BaseCommand):
                 name=template_data['name'],
                 defaults=template_data
             )
-        self.stdout.write(self.style.SUCCESS('✓ Created email templates'))
+        self.stdout.write(self.style.SUCCESS('Created email templates'))
 
     def create_sms_templates(self):
         """Create sample SMS templates"""
@@ -572,7 +572,7 @@ class Command(BaseCommand):
                 name=template_data['name'],
                 defaults=template_data
             )
-        self.stdout.write(self.style.SUCCESS('✓ Created SMS templates'))
+        self.stdout.write(self.style.SUCCESS('Created SMS templates'))
 
     def create_sample_pages(self):
         """Create sample CMS pages"""
@@ -611,7 +611,7 @@ class Command(BaseCommand):
                 slug=page_data['slug'],
                 defaults=page_data
             )
-        self.stdout.write(self.style.SUCCESS('✓ Created sample pages'))
+        self.stdout.write(self.style.SUCCESS('Created sample pages'))
 
     def create_contact_inquiries(self):
         """Create sample contact inquiries"""
@@ -640,7 +640,7 @@ class Command(BaseCommand):
                 subject=inquiry_data['subject'],
                 defaults=inquiry_data
             )
-        self.stdout.write(self.style.SUCCESS('✓ Created contact inquiries'))
+        self.stdout.write(self.style.SUCCESS('Created contact inquiries'))
 
     def create_newsletter_subscriptions(self):
         """Create sample newsletter subscriptions"""
@@ -670,7 +670,7 @@ class Command(BaseCommand):
                 email=sub_data['email'],
                 defaults=sub_data
             )
-        self.stdout.write(self.style.SUCCESS('✓ Created newsletter subscriptions'))
+        self.stdout.write(self.style.SUCCESS('Created newsletter subscriptions'))
 
     def create_statistics(self):
         """Create platform statistics"""
@@ -693,4 +693,4 @@ class Command(BaseCommand):
                 }
             )
 
-        self.stdout.write(self.style.SUCCESS('✓ Created platform statistics'))
+        self.stdout.write(self.style.SUCCESS('Created platform statistics'))

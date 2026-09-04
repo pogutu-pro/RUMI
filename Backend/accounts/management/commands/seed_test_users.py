@@ -145,7 +145,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("\n=== DRY RUN MODE ==="))
             self.stdout.write("No database changes will be made.\n")
         
-        self.stdout.write(self.style.SUCCESS(f"\n🚀 Seeding test users for {self.env.upper()} environment\n"))
+        self.stdout.write(self.style.SUCCESS(f"\nSeeding test users for {self.env.upper()} environment\n"))
         
         try:
             with transaction.atomic():
@@ -182,15 +182,15 @@ class Command(BaseCommand):
                     raise DryRunRollback()
                     
         except DryRunRollback:
-            self.stdout.write(self.style.WARNING("\n✓ Dry run complete - no changes made"))
+            self.stdout.write(self.style.WARNING("\nDry run complete - no changes made"))
             return
         
         self._display_credentials()
-        self.stdout.write(self.style.SUCCESS("\n✅ Seeding complete!"))
+        self.stdout.write(self.style.SUCCESS("\nSeeding complete!"))
 
     def _create_users(self):
         """Create base user accounts for each role"""
-        self.stdout.write("\n📋 Creating users...")
+        self.stdout.write("\nCreating users...")
         self.users = {}
         
         for user_data in TEST_USERS:
@@ -214,11 +214,11 @@ class Command(BaseCommand):
             self.created_objects["users"].append(email)
             
             status = "Created" if created else "Updated"
-            self.stdout.write(self.style.SUCCESS(f"  ✓ {status}: {user.get_full_name()} ({user.role})"))
+            self.stdout.write(self.style.SUCCESS(f"{status}: {user.get_full_name()} ({user.role})"))
 
     def _create_profiles(self):
         """Create role-specific profile data"""
-        self.stdout.write("\n📋 Creating profiles...")
+        self.stdout.write("\nCreating profiles...")
         
         # Student Profile
         student = self.users.get("student")
@@ -247,7 +247,7 @@ class Command(BaseCommand):
                     defaults=profile_data
                 )
                 self.created_objects["profiles"].append(f"StudentProfile:{student.email}")
-                self.stdout.write(self.style.SUCCESS(f"  ✓ StudentProfile: {student.get_full_name()}"))
+                self.stdout.write(self.style.SUCCESS(f"StudentProfile: {student.get_full_name()}"))
         
         # Landlord Profile
         landlord = self.users.get("landlord")
@@ -276,11 +276,11 @@ class Command(BaseCommand):
                 )
                 self.landlord_profile = profile
                 self.created_objects["profiles"].append(f"LandlordProfile:{landlord.email}")
-                self.stdout.write(self.style.SUCCESS(f"  ✓ LandlordProfile: {landlord.get_full_name()}"))
+                self.stdout.write(self.style.SUCCESS(f"LandlordProfile: {landlord.get_full_name()}"))
 
     def _create_supporting_data(self):
         """Create hostels, rooms, and beds"""
-        self.stdout.write("\n📋 Creating hostels, rooms, and beds...")
+        self.stdout.write("\nCreating hostels, rooms, and beds...")
         
         if self.dry_run:
             self.stdout.write("  [DRY] Would create: Test Hostel Kilimani")
@@ -289,7 +289,7 @@ class Command(BaseCommand):
             return
         
         if not hasattr(self, "landlord_profile"):
-            self.stdout.write(self.style.WARNING("  ⚠ Skipping hostels - no landlord profile"))
+            self.stdout.write(self.style.WARNING("Skipping hostels - no landlord profile"))
             return
         
         # Create hostel
@@ -319,7 +319,7 @@ class Command(BaseCommand):
         )
         self.hostel = hostel
         self.created_objects["hostels"].append(hostel.name)
-        self.stdout.write(self.style.SUCCESS(f"  ✓ Hostel: {hostel.name}"))
+        self.stdout.write(self.style.SUCCESS(f"Hostel: {hostel.name}"))
         
         # Create rooms
         self.rooms = []
@@ -341,7 +341,7 @@ class Command(BaseCommand):
             )
             self.rooms.append(room)
             self.created_objects["rooms"].append(f"{hostel.name} - {room_num}")
-            self.stdout.write(self.style.SUCCESS(f"  ✓ Room: {room.room_number}"))
+            self.stdout.write(self.style.SUCCESS(f"Room: {room.room_number}"))
         
         # Create beds for each room
         self.beds = []
@@ -361,7 +361,7 @@ class Command(BaseCommand):
                 self.beds.append(bed)
                 self.created_objects["beds"].append(full_code)
         
-        self.stdout.write(self.style.SUCCESS(f"  ✓ Created {len(self.beds)} beds"))
+        self.stdout.write(self.style.SUCCESS(f"Created {len(self.beds)} beds"))
         
         # Create caretaker profile linked to hostel
         caretaker = self.users.get("caretaker")
@@ -382,11 +382,11 @@ class Command(BaseCommand):
                 }
             )
             self.created_objects["profiles"].append(f"CaretakerProfile:{caretaker.email}")
-            self.stdout.write(self.style.SUCCESS(f"  ✓ CaretakerProfile: {caretaker.get_full_name()}"))
+            self.stdout.write(self.style.SUCCESS(f"CaretakerProfile: {caretaker.get_full_name()}"))
 
     def _create_student_booking(self):
         """Create booking for student"""
-        self.stdout.write("\n📋 Creating student booking...")
+        self.stdout.write("\nCreating student booking...")
         
         if self.dry_run:
             self.stdout.write("  [DRY] Would create booking: BK-TEST-2026-001")
@@ -394,7 +394,7 @@ class Command(BaseCommand):
         
         student = self.users.get("student")
         if not student or not hasattr(self, "rooms") or not self.rooms:
-            self.stdout.write(self.style.WARNING("  ⚠ Skipping booking - missing student or rooms"))
+            self.stdout.write(self.style.WARNING("Skipping booking - missing student or rooms"))
             return
         
         student_profile = student.student_profile
@@ -419,7 +419,7 @@ class Command(BaseCommand):
         )
         self.booking = booking
         self.created_objects["bookings"].append(booking.booking_reference)
-        self.stdout.write(self.style.SUCCESS(f"  ✓ Booking: {booking.booking_reference}"))
+        self.stdout.write(self.style.SUCCESS(f"Booking: {booking.booking_reference}"))
         
         # Create bed occupancy
         if self.beds:
@@ -434,15 +434,15 @@ class Command(BaseCommand):
                     "daily_subscription_rate": Decimal("10.00"),
                 }
             )
-            self.stdout.write(self.style.SUCCESS(f"  ✓ BedOccupancy: {bed.full_code}"))
+            self.stdout.write(self.style.SUCCESS(f"BedOccupancy: {bed.full_code}"))
 
     def _create_payment_config(self):
         """Paystack is configured via environment variables — no DB seed needed."""
-        self.stdout.write("\n📋 Payment gateway: Paystack (configured via env vars, no DB seed required)")
+        self.stdout.write("\nPayment gateway: Paystack (configured via env vars, no DB seed required)")
 
     def _generate_summary(self):
         """Generate fixtures/test_users_summary.json"""
-        self.stdout.write("\n📋 Generating summary JSON...")
+        self.stdout.write("\nGenerating summary JSON...")
         
         summary = {
             "seed_metadata": SEED_METADATA,
@@ -469,11 +469,11 @@ class Command(BaseCommand):
         with open(summary_path, "w") as f:
             json.dump(summary, f, indent=2, default=str)
         
-        self.stdout.write(self.style.SUCCESS(f"  ✓ Summary: {summary_path}"))
+        self.stdout.write(self.style.SUCCESS(f"Summary: {summary_path}"))
 
     def _remove_test_data(self):
         """Remove all records with test_seeded_by=rumia_ide metadata"""
-        self.stdout.write(self.style.WARNING("\n🗑️  Removing test data with marker: test_seeded_by=rumia_ide\n"))
+        self.stdout.write(self.style.WARNING("\nRemoving test data with marker: test_seeded_by=rumia_ide\n"))
         
         removed = {
             "users": 0,
@@ -486,12 +486,12 @@ class Command(BaseCommand):
         test_emails = [u["email"] for u in TEST_USERS]
         users_deleted, _ = User.objects.filter(email__in=test_emails).delete()
         removed["users"] = users_deleted
-        self.stdout.write(f"  ✓ Deleted {users_deleted} test users")
+        self.stdout.write(f"Deleted {users_deleted} test users")
         
         # Remove test hostel
         hostels_deleted, _ = Hostel.objects.filter(name="Test Hostel Kilimani").delete()
         removed["hostels"] = hostels_deleted
-        self.stdout.write(f"  ✓ Deleted {hostels_deleted} test hostels (cascades rooms, beds, bookings)")
+        self.stdout.write(f"Deleted {hostels_deleted} test hostels (cascades rooms, beds, bookings)")
         
         removed["payment_configs"] = 0  # Paystack: no DB payment config to remove
         
@@ -499,9 +499,9 @@ class Command(BaseCommand):
         summary_path = Path(settings.BASE_DIR) / "fixtures" / "test_users_summary.json"
         if summary_path.exists():
             summary_path.unlink()
-            self.stdout.write("  ✓ Deleted fixtures/test_users_summary.json")
+            self.stdout.write("Deleted fixtures/test_users_summary.json")
         
-        self.stdout.write(self.style.SUCCESS("\n✅ Test data removal complete!"))
+        self.stdout.write(self.style.SUCCESS("\nTest data removal complete!"))
 
     def _display_credentials(self):
         """Display login credentials for test users"""
@@ -512,10 +512,10 @@ class Command(BaseCommand):
             role_display = user_data["role"].replace("_", " ").title()
             self.stdout.write(
                 f"{role_display}:\n"
-                f"  📧 {user_data['email']}\n"
+                f"{user_data['email']}\n"
             )
         
-        self.stdout.write("\n🔗 Dashboard URLs:")
+        self.stdout.write("\nDashboard URLs:")
         self.stdout.write("  Student/Landlord: http://localhost:3000/dashboard")
         self.stdout.write("  Caretaker: http://localhost:3000/caretaker/dashboard")
         self.stdout.write("  Admin: http://localhost:3000/admin/dashboard")

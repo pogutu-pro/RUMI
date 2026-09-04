@@ -225,7 +225,7 @@ export function VerifyEmailForm({
       )}
 
       <p className="mt-6 text-center text-xs text-gray-500">
-        🔒 Your verification code is secure and one-time use
+        Your verification code is secure and one-time use
       </p>
     </motion.form>
   );

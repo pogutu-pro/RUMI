@@ -136,7 +136,7 @@ export function cn(...inputs: Parameters<typeof Function.prototype['call']>): st
   
   if (!validation.isValid && process.env.NODE_ENV === 'development') {
     console.warn(
-      `🎨 Theme Violation Detected:\n` +
+      `Theme Violation Detected:\n` +
       `  Violations: ${validation.violations.join(', ')}\n` +
       `  Suggestions: ${validation.suggestions.join(', ')}\n` +
       `  Please use semantic tokens from themes.css`

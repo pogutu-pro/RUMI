@@ -20,15 +20,15 @@ from accounts.ml.compatibility_scorer import calculate_roommate_compatibility, f
 
 def test_compatibility_system():
     """Test the roommate compatibility scoring system"""
-    print("🚀 Testing Roommate Compatibility Scoring System")
+    print("Testing Roommate Compatibility Scoring System")
     print("=" * 60)
     
     # Check if we have students
     total_students = StudentProfile.objects.count()
-    print(f"📊 Total students in database: {total_students}")
+    print(f"Total students in database: {total_students}")
     
     if total_students == 0:
-        print("❌ No students found. Please seed the database first.")
+        print("No students found. Please seed the database first.")
         return
     
     # Get students with lifestyle preferences
@@ -36,14 +36,14 @@ def test_compatibility_system():
         lifestyle_preferences__isnull=False
     ).exclude(lifestyle_preferences={})
     
-    print(f"📋 Students with lifestyle preferences: {students_with_prefs.count()}")
+    print(f"Students with lifestyle preferences: {students_with_prefs.count()}")
     
     if students_with_prefs.count() < 2:
-        print("⚠️  Need at least 2 students with lifestyle preferences for testing")
+        print("Need at least 2 students with lifestyle preferences for testing")
         return
     
     # Test 1: Pairwise compatibility
-    print("\n👥 Test 1: Pairwise Compatibility")
+    print("\nTest 1: Pairwise Compatibility")
     print("-" * 40)
     
     student1 = students_with_prefs.first()
@@ -65,10 +65,10 @@ def test_compatibility_system():
                 print(f"  {component}: No data (weight: {weight*100:.0f}%)")
         
     except Exception as e:
-        print(f"❌ Error in pairwise compatibility: {e}")
+        print(f"Error in pairwise compatibility: {e}")
     
     # Test 2: Top matches
-    print("\n🎯 Test 2: Top Matches")
+    print("\nTest 2: Top Matches")
     print("-" * 40)
     
     try:
@@ -94,10 +94,10 @@ def test_compatibility_system():
             print()
         
     except Exception as e:
-        print(f"❌ Error in top matches: {e}")
+        print(f"Error in top matches: {e}")
     
     # Test 3: Sample lifestyle preferences
-    print("\n🔍 Test 3: Sample Lifestyle Preferences")
+    print("\nTest 3: Sample Lifestyle Preferences")
     print("-" * 40)
     
     sample_student = students_with_prefs.first()
@@ -107,7 +107,7 @@ def test_compatibility_system():
     for key, value in list(prefs.items())[:10]:  # Show first 10 keys
         print(f"  {key}: {type(value).__name__} = {value}")
     
-    print("\n✅ Testing completed!")
+    print("\nTesting completed!")
 
 if __name__ == "__main__":
     test_compatibility_system()

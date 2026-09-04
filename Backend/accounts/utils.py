@@ -332,10 +332,10 @@ def create_branded_email_html(subject, plain_message, recipient_name=None):
                     </div>
 
                     <div class="social-links">
-                        <a href="#">📘 Facebook</a>
-                        <a href="#">🐦 Twitter</a>
-                        <a href="#">📷 Instagram</a>
-                        <a href="#">💼 LinkedIn</a>
+                        <a href="#"> Facebook</a>
+                        <a href="#"> Twitter</a>
+                        <a href="#"> Instagram</a>
+                        <a href="#"> LinkedIn</a>
                     </div>
 
                     <p style="margin-top: 20px; font-size: 12px; color: #adb5bd;">

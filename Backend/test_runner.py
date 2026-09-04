@@ -4,20 +4,20 @@ import os
 
 def run_command(command, cwd=None):
     """Run a shell command and handle errors."""
-    print(f"🚀 Running: {' '.join(command)}")
+    print(f"Running: {''.join(command)}")
     try:
         result = subprocess.run(command, cwd=cwd, check=True)
         return result.returncode == 0
     except subprocess.CalledProcessError as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
         return False
     except FileNotFoundError as e:
-        print(f"❌ Command not found: {e}")
+        print(f"Command not found: {e}")
         return False
 
 def test_backend():
     """Run backend and database tests."""
-    print("\n🐘 Preparing Backend & Database Tests...\n")
+    print("\nPreparing Backend & Database Tests...\n")
     # Project root is the parent directory of Backend
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     
@@ -30,7 +30,7 @@ def test_backend():
 
 def test_frontend():
     """Run frontend tests."""
-    print("\n⚛️  Preparing Frontend Tests...\n")
+    print("\nPreparing Frontend Tests...\n")
     # Project root is the parent directory of Backend
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     frontend_dir = os.path.join(project_root, "frontend")
@@ -39,7 +39,7 @@ def test_frontend():
     try:
         subprocess.run(["pnpm", "--version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except:
-        print("📦 pnpm not found. Please install it first.")
+        print("pnpm not found. Please install it first.")
         return False
 
     # Run frontend test runner
@@ -61,7 +61,7 @@ def main():
     elif choice == "frontend":
         success = test_frontend()
     else:
-        print(f"❌ Unknown option: {choice}")
+        print(f"Unknown option: {choice}")
         print("Use 'backend' or 'frontend'")
         sys.exit(1)
 
