@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/features/auth';
-import { getAccessToken, setUserRole } from '@/lib/auth/token';
+import { hasSessionHint, setUserRole } from '@/lib/auth/token';
 import { useAuthStore } from '../stores/auth.store';
 import { UserRole, LoginPayload } from '../stores/auth.types';
 import {
@@ -282,8 +282,13 @@ export function useProfile() {
       const response = await authApi.getProfile();
       return response;
     },
-    // Only fetch if we have a token
-    enabled: !!getAccessToken(),
+    // Must NOT gate on getAccessToken(): rumi_access_token is httponly=True
+    // and so invisible to JS, making that check always false after a page
+    // load. That left this query permanently disabled on a hard refresh, so
+    // nothing ever rehydrated the store out of 'checking' and the dashboard
+    // hung on "Loading…". The request itself authenticates via the httpOnly
+    // cookie (axios withCredentials: true -> CookieJWTAuthentication).
+    enabled: hasSessionHint(),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, devtools } from 'zustand/middleware';
 import { AuthSlice, LoginPayload, AuthStatus, UserRole } from './auth.types';
-import { getAccessToken, setTokens, clearTokens, setOnboardingStage, setUserRole } from '@/lib/auth/token';
+import { getAccessToken, hasSessionHint, setTokens, clearTokens, setOnboardingStage, setUserRole } from '@/lib/auth/token';
 
 export const useAuthStore = create<AuthSlice>()(
   devtools(
@@ -41,7 +41,15 @@ export const useAuthStore = create<AuthSlice>()(
         },
 
         hydrate: () => {
-          const token = getAccessToken();
+          // Must use hasSessionHint(), NOT getAccessToken(): rumi_access_token
+          // is httponly=True and therefore permanently invisible to JS, so
+          // getAccessToken() returns null on every page load even mid-session.
+          // Gating on it made a hard refresh wipe the store to
+          // 'unauthenticated' while middleware.ts (which reads cookies
+          // server-side, where httpOnly does not apply) still saw a valid
+          // session — the client redirected to /login, middleware bounced it
+          // straight back, and the dashboard hung on "Loading…" forever.
+          const hasSession = hasSessionHint();
           const { user, status } = get();
 
           // A live authenticated session already in memory must never be
@@ -51,12 +59,12 @@ export const useAuthStore = create<AuthSlice>()(
           // from a session that's already correctly established.
           if (status === 'authenticated' && user) return;
 
-          if (token) {
-            if (user) {
-              set({ status: 'authenticated', accessToken: token });
-            } else {
-              set({ status: 'checking', accessToken: token });
-            }
+          if (hasSession) {
+            // 'checking' (not 'authenticated') even when a persisted user
+            // exists: the role cookie is only a hint, so useProfile() must
+            // confirm against the server before we trust it. A 401 there
+            // trips the axios interceptor's handleLogout().
+            set({ status: 'checking' });
           } else {
             set({ status: 'unauthenticated', accessToken: null, user: null, profile: null });
           }

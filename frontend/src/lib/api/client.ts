@@ -9,6 +9,7 @@ import { useAuthStore } from '@/features/auth';
 import {
   getAccessToken,
   getRefreshToken,
+  hasSessionHint,
   setTokens,
   clearTokens,
 } from '@/lib/auth/token';
@@ -85,7 +86,7 @@ axiosInstance.interceptors.request.use(
 
     // Debug logging for non-GET requests in development
     if (process.env.NODE_ENV === 'development' && config.method !== 'get') {
-      console.groupCollapsed(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+      console.groupCollapsed(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
       console.log('Payload:', config.data);
       console.log('Headers:', config.headers);
       console.groupEnd();
@@ -95,7 +96,7 @@ axiosInstance.interceptors.request.use(
   },
   (error) => {
     if (process.env.NODE_ENV === 'development') {
-      console.error('❌ Request Error:', error);
+      console.error('Request Error:', error);
     }
     return Promise.reject(error);
   }
@@ -254,7 +255,10 @@ export const apiClient = {
   delete: axiosInstance.delete,
   patch: axiosInstance.patch,
   
-  isAuthenticated: () => !!getAccessToken(),
+  // hasSessionHint(), not getAccessToken(): the access-token cookie is
+  // httponly=True and invisible to JS, so getAccessToken() is always null
+  // after a page load and this would report "logged out" mid-session.
+  isAuthenticated: () => hasSessionHint(),
 };
 
 export default apiClient;

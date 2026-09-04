@@ -49,6 +49,30 @@ export function getAccessToken(): string | null {
   return readCookie(ACCESS_TOKEN_COOKIE);
 }
 
+/**
+ * Whether a session appears to exist, from the browser's point of view.
+ *
+ * `getAccessToken()` CANNOT be used for this. The backend sets
+ * rumi_access_token with httponly=True (UserLoginView in
+ * Backend/accounts/views.py), and an httpOnly cookie is invisible to
+ * JavaScript for both read and write — `document.cookie` never contains it,
+ * so getAccessToken() always returns null after any page load, even while a
+ * perfectly valid session is in flight. Gating hydration or query-enablement
+ * on it makes a hard refresh look logged-out to the client while the
+ * server-side middleware still sees the cookie and considers the user logged
+ * in — the two disagree and the app deadlocks on a "Loading…" screen.
+ *
+ * rumi_user_role is the right signal: it is deliberately set httponly=False
+ * ("Frontend needs access to role"), written on every login by both the
+ * backend and setUserRole(), and cleared on logout by both clearTokens() and
+ * the backend's delete_cookie(). It is a hint only — the server remains the
+ * authority, and the actual auth for API calls rides the httpOnly cookie via
+ * axios `withCredentials: true`.
+ */
+export function hasSessionHint(): boolean {
+  return readCookie(ROLE_COOKIE) !== null;
+}
+
 export function getRefreshToken(): string | null {
   return readCookie(REFRESH_TOKEN_COOKIE);
 }
