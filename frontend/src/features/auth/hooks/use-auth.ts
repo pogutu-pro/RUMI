@@ -51,7 +51,25 @@ export function useAuth() {
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  const logout = React.useCallback(() => {
+  const logout = React.useCallback(async () => {
+    // Must actually call POST /accounts/logout/ before clearing client
+    // state: rumi_access_token/rumi_refresh_token are set httponly=True by
+    // the backend at login, so clearTokens() (a client-side document.cookie
+    // delete inside storeLogout()) can never remove them -- httpOnly cookies
+    // are invisible to JS for both read and write. Only the backend's
+    // response.delete_cookie() (UserLogoutView) can actually clear them;
+    // skipping this call left the stale token cookie valid and visible to
+    // middleware.ts's server-side isAuthenticated check even after
+    // "logout", while the JS-clearable role/onboarding cookies went empty --
+    // that mismatch trapped the user at a blank /onboarding page with no
+    // way back to /login. Network failures must never block logout itself,
+    // so client state is always cleared regardless of the API call's result.
+    try {
+      await authApi.logout();
+    } catch {
+      // Best-effort server-side cookie/token cleanup; proceed with client
+      // logout either way so the user is never stuck unable to log out.
+    }
     storeLogout();
     queryClient.removeQueries(); // Clear all server state
     queryClient.clear(); // Clear cache

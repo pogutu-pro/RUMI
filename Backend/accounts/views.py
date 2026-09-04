@@ -641,9 +641,26 @@ class UserLogoutView(APIView):
             ip_address=get_client_ip(request)
         )
 
-        return Response({
+        response = Response({
             'message': 'Logged out successfully'
         }, status=status.HTTP_200_OK)
+
+        # rumi_access_token/rumi_refresh_token are set httponly=True at login
+        # (UserLoginView), so frontend/src/lib/auth/token.ts's clearTokens()
+        # (a client-side document.cookie delete) can never remove them --
+        # httpOnly cookies are invisible to JS entirely, for both read and
+        # write. Without deleting them here, they stay valid and visible to
+        # middleware.ts's server-side isAuthenticated check after "logout",
+        # while the JS-clearable role/onboarding cookies correctly go empty --
+        # that mismatch traps the user at a blank /onboarding page they can
+        # never navigate away from. path/domain/samesite must match what
+        # UserLoginView.post() used when setting them, or the browser treats
+        # this as a different cookie and the delete silently no-ops.
+        response.delete_cookie('rumi_access_token', path='/', domain=None, samesite='Strict')
+        response.delete_cookie('rumi_refresh_token', path='/', domain=None, samesite='Strict')
+        response.delete_cookie('rumi_user_role', path='/', domain=None, samesite='Strict')
+
+        return response
 
 
 @swagger_auto_schema(

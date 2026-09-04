@@ -28,16 +28,46 @@ interface OnboardingFormProps {
   role: 'student' | 'landlord' | 'caretaker' | string;
 }
 
+// Only landlords have a real multi-step onboarding wizard in this product
+// (ROADMAP.md ONBD-01/02 scoped onboarding to landlords only). The
+// university/course-enrollment form below is legacy 'student' content from
+// the old hostel-booking product — 'tenant' (the canonical rental-tenant
+// role, see accounts/models.py User.ROLE_CHOICES) must NOT be routed into
+// it, since none of those fields apply to a rental tenant. Phase 5 already
+// shipped a complete tenant dashboard (TEN-01/02/03) with no onboarding
+// step, so tenant/caretaker/tech_support/super_admin all redirect straight
+// to their dashboard instead of a dead-end "Unknown Role" page — none of
+// them have anything left to fill in here.
+const DASHBOARD_BY_ROLE: Record<string, string> = {
+  landlord: '/landlord/rental',
+  tenant: '/tenant/rental',
+  caretaker: '/caretaker/rental',
+  tech_support: '/tech-support/dashboard',
+  tech_support_admin: '/tech-support/dashboard',
+  super_admin: '/landlord/rental',
+};
+
 export function OnboardingForm({ role }: OnboardingFormProps) {
+  const isStudentLikeRole = role === 'student';
   const { finalizeOnboarding, user } = useAuth();
   const { data: onboardingStatus, isLoading: isLoadingStatus } = useOnboardingStatus();
   const saveDraftMutation = useSaveOnboardingDraft();
   const advanceStageMutation = useAdvanceOnboardingStage();
-  
+
   const { toast } = useToast();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isFinalizing, setIsFinalizing] = useState(false);
+
+  // No onboarding wizard exists for this role — redirect to its dashboard
+  // rather than rendering a dead end. Declared unconditionally (rules of
+  // hooks); the redirect only fires when neither the student-like nor the
+  // landlord wizard below applies.
+  useEffect(() => {
+    if (!isStudentLikeRole && role !== 'landlord') {
+      router.replace(DASHBOARD_BY_ROLE[role] ?? '/tenant/rental');
+    }
+  }, [isStudentLikeRole, role, router]);
 
   // Student Form
   const studentForm = useForm<StudentOnboardingFormData>({
@@ -73,7 +103,7 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
   // Sync draft data to form
   useEffect(() => {
     if (onboardingStatus?.draft_data) {
-      if (role === 'student') {
+      if (isStudentLikeRole) {
         studentForm.reset({
           ...studentForm.getValues(),
           ...onboardingStatus.draft_data
@@ -88,10 +118,10 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
     
     // Auto-detect step based on status if needed, 
     // but for now we let users start at 1 or use local state
-  }, [onboardingStatus, role, studentForm, landlordForm]);
+  }, [onboardingStatus, isStudentLikeRole, studentForm, landlordForm]);
 
   const handleNextStep = async (fields: string[]) => {
-    const form = role === 'student' ? studentForm : landlordForm;
+    const form = isStudentLikeRole ? studentForm : landlordForm;
     const isValid = await form.trigger(fields as any);
     
     if (isValid) {
@@ -131,7 +161,7 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
         variant: "default",
       });
       
-      router.push(role === 'student' ? '/tenant/rental' : '/landlord/rental');
+      router.push(isStudentLikeRole ? '/tenant/rental' : '/landlord/rental');
     } catch (error: any) {
       toast({
         title: "Finalization Failed",
@@ -152,7 +182,7 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
     );
   }
 
-  if (role === 'student') {
+  if (isStudentLikeRole) {
     return (
       <div className="space-y-6">
         {/* Step Indicator */}
@@ -369,5 +399,11 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
     return <LandlordOnboardingWizard />;
   }
 
-  return <div>Unknown Role</div>;
+  // Redirect effect above handles navigation for every other role — this is
+  // the brief frame while that fires.
+  return (
+    <div className="flex flex-col items-center justify-center p-12">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  );
 }
