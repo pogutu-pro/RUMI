@@ -211,8 +211,8 @@ class ContactInfoView(APIView):
     def get(self, request):
         """Return contact information"""
         return Response({
-            'email': 'info@rumiarent.co.ke',
-            'support_email': 'info@rumiarent.co.ke',
+            'email': 'info@rumiarent.com',
+            'support_email': 'info@rumiarent.com',
             'phone': '+254 700 000 000',
             'whatsapp': '+254 700 000 000',
             'address': {

@@ -40,7 +40,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || 'https://rumiarent.co.ke',
+    process.env.NEXT_PUBLIC_APP_URL || 'https://rumiarent.com',
   ),
   title: {
     default: 'RumiaRent: Rental Management for Kenyan Landlords',
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     'tenant management software',
     'property management for agents',
   ],
-  authors: [{ name: 'Stratnovo', url: 'https://rumiarent.co.ke/about' }],
+  authors: [{ name: 'Stratnovo', url: 'https://rumiarent.com/about' }],
   creator: 'Stratnovo',
   publisher: 'Stratnovo',
   formatDetection: { email: false, address: false, telephone: false },
@@ -131,7 +131,7 @@ export default function RootLayout({
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'RumiaRent',
-    url: process.env.NEXT_PUBLIC_APP_URL || 'https://rumiarent.co.ke',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'https://rumiarent.com',
     logo: `${process.env.NEXT_PUBLIC_APP_URL}/images/logo/logo.svg`,
     description:
       'Rental management platform helping Kenyan landlords and agents manage properties, tenants, and rent collection.',
@@ -144,7 +144,7 @@ export default function RootLayout({
       '@type': 'ContactPoint',
       telephone: '+254-757-901596',
       contactType: 'customer service',
-      email: 'info@rumiarent.co.ke',
+      email: 'info@rumiarent.com',
       availableLanguage: ['en', 'sw'],
     },
     sameAs: [

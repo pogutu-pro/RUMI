@@ -33,7 +33,7 @@ def send_inquiry_confirmation_email(inquiry_id, reference_number):
 
         Best regards,
         RumiaRent Support Team
-        info@rumiarent.co.ke
+        info@rumiarent.com
         """
 
         send_branded_email(
@@ -78,7 +78,7 @@ def notify_admin_new_inquiry(inquiry_id):
         """
 
         # Send to admin email
-        admin_email = getattr(settings, 'ADMIN_EMAIL', 'admin@rumiarent.co.ke')
+        admin_email = getattr(settings, 'ADMIN_EMAIL', 'admin@rumiarent.com')
         send_branded_email(
             subject=subject,
             message=message,

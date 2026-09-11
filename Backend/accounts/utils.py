@@ -327,7 +327,7 @@ def create_branded_email_html(subject, plain_message, recipient_name=None):
 
                     <div class="contact-info">
                         <strong>RUMI Platform</strong><br>
-                        Email: info@rumiarent.co.ke | Phone: +254 700 000 000<br>
+                        Email: info@rumiarent.com | Phone: +254 700 000 000<br>
                         Nairobi, Kenya
                     </div>
 
