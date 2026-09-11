@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     title: 'RumiaRent - Rental Management for Kenyan Landlords',
     description:
       'Properties, units, tenants, rent, and payments in one simple place. Know who owes you, get paid via Paystack or cash, and see what needs attention.',
-    url: 'https://rumiarent.co.ke',
+    url: 'https://rumiarent.com',
     siteName: 'RumiaRent',
     images: [
       {

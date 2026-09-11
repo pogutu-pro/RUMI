@@ -89,10 +89,10 @@ export default function ContactPage() {
                     <div>
                       <h3 className="mb-1 font-semibold text-gray-900">Email</h3>
                       <a
-                        href="mailto:info@rumiarent.co.ke"
+                        href="mailto:info@rumiarent.com"
                         className="text-gray-600 hover:text-primary transition-colors"
                       >
-                        info@rumiarent.co.ke
+                        info@rumiarent.com
                       </a>
                     </div>
                   </div>

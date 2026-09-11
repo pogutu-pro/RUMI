@@ -1,0 +1,48 @@
+# Oracle Cloud production overrides. Use ONLY on the Oracle server:
+#
+#   docker compose -f docker-compose.prod.yml -f docker-compose.oracle.yml up -d --build
+#
+# Kept in a separate file on purpose: the legacy VPS auto-deploys
+# docker-compose.prod.yml on every push to main and runs its own nginx on
+# ports 80/443 for other sites. Adding Caddy to the base file would make it
+# fight nginx for those ports there.
+
+services:
+  backend:
+    # Reached only through Caddy on the internal Docker network.
+    ports: !reset []
+
+  frontend:
+    build:
+      args:
+        NEXT_PUBLIC_API_URL: https://rumiarent.com/api/v1
+    environment:
+      - NEXT_PUBLIC_API_URL=https://rumiarent.com/api/v1
+      # Next.js standalone binds to $HOSTNAME, which Docker sets to the
+      # container ID; bind to all interfaces so Caddy can reach it.
+      - HOSTNAME=0.0.0.0
+    ports: !reset []
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: rumi-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Same volume the backend writes uploads to, read-only here.
+      - rumi-media:/srv/media:ro
+      # Persists issued certificates across restarts — without this, every
+      # restart would request new ones and quickly hit Let's Encrypt limits.
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  caddy-data:
+  caddy-config:

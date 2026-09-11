@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://rumiarent.co.ke',
+    url: 'https://rumiarent.com',
     siteName: 'RumiaRent',
     title: 'RumiaRent - Rental Management for Kenyan Landlords',
     description:

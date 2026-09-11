@@ -120,10 +120,10 @@ export default function TermsPage() {
                   If you have any questions about these Terms of Service, please
                   contact us at{' '}
                   <a
-                    href="mailto:info@rumiarent.co.ke"
+                    href="mailto:info@rumiarent.com"
                     className="text-primary hover:text-primary/80 underline"
                   >
-                    info@rumiarent.co.ke
+                    info@rumiarent.com
                   </a>
                   .
                 </p>

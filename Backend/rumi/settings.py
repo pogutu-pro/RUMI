@@ -207,7 +207,7 @@ SIMPLE_JWT = {
 }
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,https://rumiarent.co.ke').split(',')
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,https://rumiarent.com').split(',')
 
 # Add common dev ports only in development
 if DEBUG:
@@ -254,7 +254,7 @@ EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 MAILTRAP_API_TOKEN = os.getenv('MAILTRAP_API_TOKEN', '')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@rumiarent.co.ke')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@rumiarent.com')
 
 # SMS Configuration (Africa's Talking)
 AFRICASTALKING_USERNAME = os.getenv('AFRICASTALKING_USERNAME', 'sandbox')
@@ -290,10 +290,11 @@ BILLING_PENDING_CHECKOUT_TTL_MINUTES = int(os.getenv('BILLING_PENDING_CHECKOUT_T
 BILLING_AUTO_RENEWAL_BUFFER_DAYS = int(os.getenv('BILLING_AUTO_RENEWAL_BUFFER_DAYS', '3'))
 
 # Webhook URLs (must include /api/v1/ and trailing slash)
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rumiarent.co.ke').rstrip('/')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rumiarent.com').rstrip('/')
 # BACKEND_API_URL is used for all webhook callback URLs (Paystack, etc.)
-# Must point to the Django backend server — never the Next.js frontend domain.
-BACKEND_API_URL = os.getenv('BACKEND_API_URL', 'https://api.rumiarent.co.ke').rstrip('/')
+# Must reach the Django backend, not Next.js. In production that is the main
+# domain: the Caddy proxy (Caddyfile) routes /api/* on rumiarent.com to Django.
+BACKEND_API_URL = os.getenv('BACKEND_API_URL', 'https://rumiarent.com').rstrip('/')
 
 # Platform Fee Configuration (UPDATED v2.0)
 # Student pays 2% service fee, Landlord receives full rent
