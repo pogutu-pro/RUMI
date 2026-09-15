@@ -74,7 +74,7 @@ export const PublicHeader = React.memo(function PublicHeader({
             >
               <div className="relative h-16 w-16 xs:h-20 xs:w-20 overflow-hidden rounded-lg transition-transform group-hover:scale-105">
                 <Image
-                  src="/images/logo/logo.svg"
+                  src="/images/logo/logo.png"
                   alt="RumiaRent Logo"
                   width={80}
                   height={80}
