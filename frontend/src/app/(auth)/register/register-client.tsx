@@ -26,7 +26,7 @@ export function RegisterClientPage() {
             icon={
               <Link href="/">
                 <Image
-                  src="/images/logo/logo.svg"
+                  src="/images/logo/logo.png"
                   alt="RumiaRent"
                   width={32}
                   height={32}

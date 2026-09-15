@@ -62,7 +62,7 @@ export const Footer = React.memo(function Footer() {
                 className="inline-flex items-center space-x-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950 rounded-xl transition-all hover:opacity-90"
               >
                 <Image
-                  src="/images/logo/logo.svg"
+                  src="/images/logo/logo.png"
                   alt="RumiaRent Logo"
                   width={56}
                   height={56}

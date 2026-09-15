@@ -132,7 +132,7 @@ export default function RootLayout({
     '@type': 'Organization',
     name: 'RumiaRent',
     url: process.env.NEXT_PUBLIC_APP_URL || 'https://rumiarent.co.ke',
-    logo: `${process.env.NEXT_PUBLIC_APP_URL}/images/logo/logo.svg`,
+    logo: `${process.env.NEXT_PUBLIC_APP_URL}/images/logo/logo.png`,
     description:
       'Rental management platform helping Kenyan landlords and agents manage properties, tenants, and rent collection.',
     address: {
