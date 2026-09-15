@@ -1,7 +1,9 @@
 import { cn } from '@/lib/utils/cn';
 
 /**
- * "RumiaRent" wordmark. Static, single brand color (text-primary).
+ * "RumiaRent" wordmark — "Rumia" in the brand green (text-primary), "Rent"
+ * in the foreground color, matching the logo artwork. `text-foreground`
+ * (not a hardcoded black) so it still reads correctly in dark mode.
  */
 
 interface RumiaAnimatedLogoProps {
@@ -23,14 +25,15 @@ export function RumiaAnimatedLogo({
   return (
     <div
       className={cn(
-        'inline-flex items-baseline font-black tracking-tight text-primary',
+        'inline-flex items-baseline font-black tracking-tight',
         sizeClasses[size],
         className,
       )}
       role="img"
       aria-label="RumiaRent"
     >
-      RumiaRent
+      <span className="text-primary">Rumia</span>
+      <span className="text-foreground">Rent</span>
     </div>
   );
 }
