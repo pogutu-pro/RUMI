@@ -55,7 +55,7 @@ export default function LoginPage() {
                 aria-hidden
               />
               <AlertDescription className="text-primary font-bold">
-                Email verified — you can now sign in.
+                Email verified. You can now sign in.
               </AlertDescription>
             </Alert>
           )}

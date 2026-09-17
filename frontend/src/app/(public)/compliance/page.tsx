@@ -51,7 +51,7 @@ export default function CompliancePage() {
                 <ul className="ml-6 list-disc space-y-2">
                   <li>All traffic to RumiaRent is encrypted in transit (HTTPS).</li>
                   <li>
-                    Access is role-based — landlords, caretakers, and tenants only see the data their
+                    Access is role-based: landlords, caretakers, and tenants only see the data their
                     role allows.
                   </li>
                   <li>

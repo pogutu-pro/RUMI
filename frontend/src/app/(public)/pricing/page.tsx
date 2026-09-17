@@ -81,7 +81,7 @@ export default function PricingPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Billing Model</p>
-                <p className="text-sm text-gray-600">Billed monthly per selected plan — flat pricing, no per-unit metering.</p>
+                <p className="text-sm text-gray-600">Billed monthly per selected plan: flat pricing, no per-unit metering.</p>
               </div>
               <div>
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Multiple properties</p>

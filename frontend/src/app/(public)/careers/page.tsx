@@ -17,7 +17,7 @@ export default function CareersPage() {
           <h1 className="text-5xl font-bold text-primary mb-6">Careers</h1>
           <p className="text-xl text-gray-600 mb-4">
             RumiaRent builds rental-management software for Kenyan landlords, caretakers, and
-            tenants — properties, tenancies, rent, and payments, all in one place.
+            tenants: properties, tenancies, rent, and payments, all in one place.
           </p>
           <p className="text-xl text-gray-600">
             We&apos;re not actively hiring for any open roles right now, but we&apos;d love to hear
