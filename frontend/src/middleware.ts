@@ -48,6 +48,12 @@ const PUBLIC_ROUTES = new Set([
   '/privacy',
   '/terms',
   '/faq',
+  '/how-it-works',
+  '/careers',
+  '/help-center',
+  '/guides',
+  '/cookies',
+  '/compliance',
 ]);
 
 const AUTH_ROUTES = new Set([
