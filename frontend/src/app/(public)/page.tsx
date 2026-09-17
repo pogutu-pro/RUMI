@@ -17,9 +17,9 @@ import {
   KeyRound,
 } from 'lucide-react';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
-import { WordSwitcher } from '@/components/animations/word-switcher';
 import { FadeIn, FadeInStagger, FadeInItem } from '@/components/animations/fade-in';
 import { PricingTeaser } from './_components/pricing-teaser';
+import { HeroSection } from './_components/hero-section';
 
 export const metadata: Metadata = {
   title: 'RumiaRent - Rental Management for Kenyan Landlords',
@@ -124,66 +124,7 @@ const TRUST_POINTS = [
 export default function HomePage() {
   return (
     <main className="flex flex-col bg-white text-gray-900 font-sans">
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-white pt-24 pb-20 lg:pt-32 lg:pb-28">
-        <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-4xl text-center">
-            <FadeIn direction="down" duration={0.4}>
-              <Badge
-                variant="outline"
-                className="mb-8 inline-flex rounded-full border-primary/20 bg-primary/5 px-4 py-1.5 font-semibold tracking-wide text-primary"
-              >
-                Built for Kenyan landlords and agents
-              </Badge>
-            </FadeIn>
-
-            <FadeIn delay={0.1}>
-              <h1 className="mb-8 text-5xl font-bold leading-[1.1] tracking-tight text-gray-900 sm:text-6xl lg:text-7xl">
-                Rental management,
-                <span className="mt-2 block text-primary">
-                  <WordSwitcher
-                    words={['without the spreadsheet', 'without the chaos', 'without the guesswork']}
-                    className="min-w-[1em]"
-                  />
-                </span>
-              </h1>
-            </FadeIn>
-
-            <FadeIn delay={0.2}>
-              <p className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-gray-500 lg:text-xl">
-                Properties, units, tenants, rent, and payments, all in one simple place.
-                Know who owes you, get paid, and move on with your day.
-              </p>
-            </FadeIn>
-
-            <FadeIn delay={0.3}>
-              <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Link href={`${AUTH_ROUTES.REGISTER}?role=landlord`} prefetch>
-                  <Button
-                    size="lg"
-                    className="h-14 rounded-full bg-gray-900 px-8 text-lg font-medium text-white shadow-sm transition-transform hover:scale-[1.02] hover:bg-gray-800 active:scale-95"
-                  >
-                    Start managing your properties
-                  </Button>
-                </Link>
-                <Link href="/how-it-works" prefetch>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="h-14 rounded-full border-gray-200 bg-gray-50/50 px-8 text-lg font-medium text-gray-600 transition-transform hover:scale-[1.02] hover:bg-gray-100 active:scale-95"
-                  >
-                    See how it works
-                  </Button>
-                </Link>
-              </div>
-            </FadeIn>
-          </div>
-        </div>
-
-        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-          <div className="absolute left-1/2 top-1/3 h-[700px] w-[700px] -translate-x-1/2 rounded-full bg-primary/[0.04] blur-[140px] motion-safe:animate-pulse motion-safe:[animation-duration:6s]" />
-        </div>
-      </section>
+      <HeroSection />
 
       {/* Outcome pillars */}
       <section className="bg-gray-50/60 py-20 lg:py-28">
