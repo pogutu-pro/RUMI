@@ -22,6 +22,13 @@ urlpatterns = [
     path('blog/', views.BlogListView.as_view(), name='blog_list'),
     path('blog/<slug:slug>/', views.BlogDetailView.as_view(), name='blog_detail'),
 
+    # Blog admin — tech_support/tech_support_admin/super_admin only, see
+    # _is_blog_staff_role in views.py. Every post regardless of publish
+    # status; distinct from the public, published-only endpoints above.
+    path('admin/blog/', views.AdminBlogPostListCreateView.as_view(), name='admin_blog_list_create'),
+    path('admin/blog/upload-cover/', views.AdminBlogCoverUploadView.as_view(), name='admin_blog_upload_cover'),
+    path('admin/blog/<int:pk>/', views.AdminBlogPostDetailView.as_view(), name='admin_blog_detail'),
+
     # Newsletter
     path('newsletter/subscribe/', views.NewsletterSubscribeView.as_view(), name='newsletter_subscribe'),
     path('newsletter/verify/', views.NewsletterVerifyView.as_view(), name='newsletter_verify'),

@@ -7,6 +7,7 @@ from django.db import models
 from django.utils import timezone
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
@@ -447,6 +448,240 @@ class BlogDetailView(APIView):
             'view_count': post.view_count,
             'related_posts': related_data
         }, status=status.HTTP_200_OK)
+
+
+def _is_blog_staff_role(role):
+    """Same three roles the support-ticket queue is scoped to (support/views.py
+    _is_staff_role) — tech support owns blog content the same way it owns
+    tickets, not a separate permission concept."""
+    return role in ('tech_support', 'tech_support_admin', 'super_admin')
+
+
+def _blog_post_admin_data(post):
+    """Full representation, including draft-only fields the public
+    BlogListView/BlogDetailView never expose (is_published, meta_*)."""
+    return {
+        'id': post.id,
+        'title': post.title,
+        'slug': post.slug,
+        'excerpt': post.excerpt,
+        'content': post.content,
+        'featured_image': post.featured_image,
+        'author': {
+            'id': post.author_id,
+            'name': post.author.get_full_name(),
+        },
+        'category': post.category,
+        'tags': post.tags or [],
+        'meta_title': post.meta_title,
+        'meta_description': post.meta_description,
+        'is_published': post.is_published,
+        'is_featured': post.is_featured,
+        'read_time_minutes': post.read_time_minutes,
+        'view_count': post.view_count,
+        'published_at': post.published_at,
+        'created_at': post.created_at,
+        'updated_at': post.updated_at,
+    }
+
+
+def _unique_blog_slug(title, exclude_pk=None):
+    from django.utils.text import slugify
+    base = slugify(title)[:190] or 'post'
+    slug = base
+    n = 2
+    qs = BlogPost.objects.filter(slug=slug)
+    if exclude_pk:
+        qs = qs.exclude(pk=exclude_pk)
+    while qs.exists():
+        slug = f'{base}-{n}'
+        n += 1
+        qs = BlogPost.objects.filter(slug=slug)
+        if exclude_pk:
+            qs = qs.exclude(pk=exclude_pk)
+    return slug
+
+
+class AdminBlogPostListCreateView(APIView):
+    """Tech support's own blog queue — every post regardless of publish
+    status, unlike the public BlogListView which only ever shows published
+    ones."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from core.permissions.rumia import get_canonical_role
+        role = get_canonical_role(request.user)
+        if not _is_blog_staff_role(role):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        qs = BlogPost.objects.select_related('author').order_by('-created_at')
+
+        is_published = request.query_params.get('is_published')
+        if is_published is not None:
+            qs = qs.filter(is_published=is_published.lower() == 'true')
+
+        category = request.query_params.get('category')
+        if category:
+            qs = qs.filter(category=category)
+
+        search = request.query_params.get('search')
+        if search:
+            qs = qs.filter(title__icontains=search)
+
+        return Response([_blog_post_admin_data(p) for p in qs[:200]], status=status.HTTP_200_OK)
+
+    def post(self, request):
+        from core.permissions.rumia import get_canonical_role
+        role = get_canonical_role(request.user)
+        if not _is_blog_staff_role(role):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        title = (request.data.get('title') or '').strip()
+        content = (request.data.get('content') or '').strip()
+        category = request.data.get('category')
+
+        if not title:
+            return Response({'detail': 'Title is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not content:
+            return Response({'detail': 'Content is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if category not in dict(BlogPost.CATEGORY_CHOICES):
+            return Response({'detail': 'Invalid category.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        tags = request.data.get('tags') or []
+        if not isinstance(tags, list):
+            return Response({'detail': 'tags must be a list.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        is_published = bool(request.data.get('is_published', False))
+
+        post = BlogPost.objects.create(
+            title=title,
+            slug=_unique_blog_slug(title),
+            excerpt=(request.data.get('excerpt') or '').strip() or None,
+            content=content,
+            featured_image=(request.data.get('featured_image') or '').strip() or None,
+            author=request.user,
+            category=category,
+            tags=tags,
+            meta_title=(request.data.get('meta_title') or '').strip() or None,
+            meta_description=(request.data.get('meta_description') or '').strip() or None,
+            is_published=is_published,
+            is_featured=bool(request.data.get('is_featured', False)),
+            read_time_minutes=request.data.get('read_time_minutes') or None,
+            published_at=timezone.now() if is_published else None,
+        )
+        return Response(_blog_post_admin_data(post), status=status.HTTP_201_CREATED)
+
+
+class AdminBlogPostDetailView(APIView):
+    """Edit/publish/delete a single post — draft or published."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _get_post_or_403(self, request, pk):
+        from core.permissions.rumia import get_canonical_role
+        role = get_canonical_role(request.user)
+        if not _is_blog_staff_role(role):
+            return None, Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            return BlogPost.objects.select_related('author').get(pk=pk), None
+        except BlogPost.DoesNotExist:
+            return None, Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    def get(self, request, pk):
+        post, error = self._get_post_or_403(request, pk)
+        if error:
+            return error
+        return Response(_blog_post_admin_data(post), status=status.HTTP_200_OK)
+
+    def patch(self, request, pk):
+        post, error = self._get_post_or_403(request, pk)
+        if error:
+            return error
+
+        data = request.data
+        if 'title' in data:
+            title = (data.get('title') or '').strip()
+            if not title:
+                return Response({'detail': 'Title cannot be empty.'}, status=status.HTTP_400_BAD_REQUEST)
+            if title != post.title:
+                post.title = title
+                post.slug = _unique_blog_slug(title, exclude_pk=post.pk)
+        if 'content' in data:
+            content = (data.get('content') or '').strip()
+            if not content:
+                return Response({'detail': 'Content cannot be empty.'}, status=status.HTTP_400_BAD_REQUEST)
+            post.content = content
+        if 'excerpt' in data:
+            post.excerpt = (data.get('excerpt') or '').strip() or None
+        if 'featured_image' in data:
+            post.featured_image = (data.get('featured_image') or '').strip() or None
+        if 'category' in data:
+            if data.get('category') not in dict(BlogPost.CATEGORY_CHOICES):
+                return Response({'detail': 'Invalid category.'}, status=status.HTTP_400_BAD_REQUEST)
+            post.category = data.get('category')
+        if 'tags' in data:
+            tags = data.get('tags') or []
+            if not isinstance(tags, list):
+                return Response({'detail': 'tags must be a list.'}, status=status.HTTP_400_BAD_REQUEST)
+            post.tags = tags
+        if 'meta_title' in data:
+            post.meta_title = (data.get('meta_title') or '').strip() or None
+        if 'meta_description' in data:
+            post.meta_description = (data.get('meta_description') or '').strip() or None
+        if 'is_featured' in data:
+            post.is_featured = bool(data.get('is_featured'))
+        if 'read_time_minutes' in data:
+            post.read_time_minutes = data.get('read_time_minutes') or None
+        if 'is_published' in data:
+            new_is_published = bool(data.get('is_published'))
+            if new_is_published and not post.is_published:
+                post.published_at = timezone.now()
+            post.is_published = new_is_published
+
+        post.save()
+        return Response(_blog_post_admin_data(post), status=status.HTTP_200_OK)
+
+    def delete(self, request, pk):
+        post, error = self._get_post_or_403(request, pk)
+        if error:
+            return error
+        post.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AdminBlogCoverUploadView(APIView):
+    """Cover-image upload for a blog post — mirrors
+    accounts.views.ProfilePictureUploadView's storage pattern (works with
+    either local disk or S3, per USE_S3)."""
+
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        from core.permissions.rumia import get_canonical_role
+        from django.core.files.storage import default_storage
+        role = get_canonical_role(request.user)
+        if not _is_blog_staff_role(role):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        file_obj = request.FILES.get('file')
+        if not file_obj:
+            return Response({'detail': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        allowed_types = ['image/jpeg', 'image/png', 'image/webp']
+        if file_obj.content_type not in allowed_types:
+            return Response(
+                {'detail': 'Invalid file type. Only JPEG, PNG, and WebP allowed.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if file_obj.size > 5 * 1024 * 1024:
+            return Response({'detail': 'File too large. Maximum size is 5MB.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        file_extension = file_obj.name.split('.')[-1]
+        filename = f'blog_covers/{uuid.uuid4().hex}.{file_extension}'
+        default_storage.save(filename, file_obj)
+        return Response({'featured_image': default_storage.url(filename)}, status=status.HTTP_201_CREATED)
 
 
 class NewsletterSubscribeView(APIView):
