@@ -7,13 +7,13 @@ import type { Route } from 'next';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import {
   Loader2,
   Lock,
   CheckCircle2,
   XCircle,
   Shield,
-  Key,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -102,6 +102,9 @@ export default function ResetPasswordPage() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full"
       >
+        <Link href="/" className="mb-6 flex justify-center">
+          <Image src="/images/logo/logo.png" alt="RumiaRent" width={40} height={40} />
+        </Link>
         <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6 border border-gray-100">
           <div className="flex justify-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
@@ -145,6 +148,9 @@ export default function ResetPasswordPage() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full"
       >
+        <Link href="/" className="mb-6 flex justify-center">
+          <Image src="/images/logo/logo.png" alt="RumiaRent" width={40} height={40} />
+        </Link>
         <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6 border border-gray-100">
           <div className="flex justify-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -188,7 +194,11 @@ export default function ResetPasswordPage() {
       <AuthCard
         title="Reset your password"
         description="Enter a new password for your account"
-        icon={<Key className="w-8 h-8 text-gray-600" />}
+        icon={
+          <Link href="/">
+            <Image src="/images/logo/logo.png" alt="RumiaRent" width={32} height={32} />
+          </Link>
+        }
       >
         <form
           onSubmit={onSubmit}

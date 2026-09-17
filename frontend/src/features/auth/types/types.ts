@@ -130,6 +130,7 @@ export interface PermissionsResponse {
 
 export interface MessageResponse {
     message: string;
+    retry_after_seconds?: number;
 }
 
 export interface RefreshTokenRequest {

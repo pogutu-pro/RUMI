@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
@@ -21,6 +22,14 @@ import { AUTH_ROUTES } from '@/lib/constants/routes';
 export default function ForgotPasswordPage() {
   const [emailSent, setEmailSent] = React.useState<string | null>(null);
   const [resendSuccess, setResendSuccess] = React.useState(false);
+  // Seconds left before another request can be sent. Previously there was
+  // no cooldown at all: once the mutation resolved (usually well under a
+  // second), the button was immediately clickable again, so a user could
+  // just keep clicking "Resend" and queue an unbounded number of emails.
+  // The backend now enforces this too (accounts/views.py
+  // PasswordResetRequestView), so this is UI feedback for a real limit,
+  // not just a client-side nicety.
+  const [cooldown, setCooldown] = React.useState(0);
   const forgotPassword = useForgotPassword();
 
   const {
@@ -34,22 +43,56 @@ export default function ForgotPasswordPage() {
 
   const loading = forgotPassword.isPending || isSubmitting;
   const hasError = Boolean(forgotPassword.error);
+  const canSubmit = !loading && cooldown === 0;
+
+  React.useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown((seconds) => (seconds <= 1 ? 0 : seconds - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
+  // A successful request always starts the cooldown (the backend sends
+  // retry_after_seconds on every 200; 60s is just a defensive fallback).
+  const startCooldown = (seconds: number | undefined) => {
+    setCooldown(typeof seconds === 'number' && seconds > 0 ? seconds : 60);
+  };
+
+  // An error only starts a cooldown when it's actually the 429 rate-limit
+  // response carrying one — a genuine failure (network blip, 500) must NOT
+  // block the user from retrying immediately.
+  const startCooldownFromError = (error: unknown) => {
+    const retryAfter = (
+      error as { response?: { data?: { retry_after_seconds?: number } } }
+    )?.response?.data?.retry_after_seconds;
+    if (typeof retryAfter === 'number' && retryAfter > 0) {
+      setCooldown(retryAfter);
+    }
+  };
 
   const onSubmit = handleSubmit((data) => {
+    if (!canSubmit) return;
     forgotPassword.mutate(data, {
-      onSuccess: () => {
+      onSuccess: (response) => {
         setEmailSent(data.email);
         setResendSuccess(false);
+        startCooldown(response.retry_after_seconds);
       },
+      onError: startCooldownFromError,
     });
   });
 
   const handleResend = () => {
-    if (!emailSent) return;
+    if (!emailSent || !canSubmit) return;
     forgotPassword.mutate(
       { email: emailSent },
       {
-        onSuccess: () => setResendSuccess(true),
+        onSuccess: (response) => {
+          setResendSuccess(true);
+          startCooldown(response.retry_after_seconds);
+        },
+        onError: startCooldownFromError,
       },
     );
   };
@@ -61,6 +104,9 @@ export default function ForgotPasswordPage() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full"
       >
+        <Link href="/" className="mb-6 flex justify-center">
+          <Image src="/images/logo/logo.png" alt="RumiaRent" width={40} height={40} />
+        </Link>
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-8 space-y-6">
           <div className="flex justify-center">
             <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
@@ -96,7 +142,7 @@ export default function ForgotPasswordPage() {
             <Button
               variant="outline"
               className="w-full"
-              disabled={loading}
+              disabled={!canSubmit}
               onClick={handleResend}
             >
               {loading ? (
@@ -104,6 +150,8 @@ export default function ForgotPasswordPage() {
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Resending...
                 </>
+              ) : cooldown > 0 ? (
+                `Resend in ${cooldown}s`
               ) : (
                 'Resend reset link'
               )}
@@ -134,6 +182,9 @@ export default function ForgotPasswordPage() {
       animate={{ opacity: 1, y: 0 }}
       className="w-full"
     >
+      <Link href="/" className="mb-6 flex justify-center">
+        <Image src="/images/logo/logo.png" alt="RumiaRent" width={40} height={40} />
+      </Link>
       <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-8 space-y-6">
         <header className="text-center space-y-2">
           <div className="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center">
@@ -185,12 +236,14 @@ export default function ForgotPasswordPage() {
             )}
           </div>
 
-          <Button disabled={loading} className="w-full h-11">
+          <Button disabled={!canSubmit} className="w-full h-11">
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Sending instructions...
               </>
+            ) : cooldown > 0 ? (
+              `Try again in ${cooldown}s`
             ) : (
               'Send reset instructions'
             )}
