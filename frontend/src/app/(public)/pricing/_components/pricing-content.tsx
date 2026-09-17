@@ -19,6 +19,14 @@ const FAQS = [
     q: 'Can I switch plans?',
     a: 'Yes. Upgrade or downgrade from your dashboard at any time; billing adjusts on your next invoice.',
   },
+  {
+    q: 'Do you support M-Pesa and bank payments?',
+    a: 'Yes. Payments run through Paystack, which covers M-Pesa, bank transfers, and cards, so tenants can pay however is easiest for them.',
+  },
+  {
+    q: 'What happens after my 30-day trial?',
+    a: "You'll be prompted to choose a plan before your trial ends, and we'll send a reminder in advance. No card is required to start, so there's no surprise charge.",
+  },
 ];
 
 function formatFeatureKey(key: string): string {
