@@ -4,6 +4,7 @@ Tests for accounts app - authentication, profiles, and permissions.
 
 from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from rest_framework.test import APIClient
 from accounts.models import StudentProfile, LandlordProfile
 
@@ -226,6 +227,12 @@ class PasswordResetTests(TestCase):
     """Test password reset flow."""
 
     def setUp(self):
+        # The reset-cooldown cache key is per-email, not per-test — Django
+        # resets the DB between tests via transactions but does NOT reset
+        # the cache, so a cooldown set by one test method (e.g. requesting
+        # a reset for 'reset@test.com') would otherwise bleed into the next
+        # one that reuses the same email.
+        cache.clear()
         self.client = APIClient()
         self.user = User.objects.create_user(
             email='reset@test.com', password='OldPass123!',
@@ -247,6 +254,42 @@ class PasswordResetTests(TestCase):
         )
         # Should still return 200 to prevent email enumeration
         self.assertIn(response.status_code, [200, 400, 404])
+
+    def test_password_reset_second_request_is_rate_limited(self):
+        """A second request for the same email, before the cooldown window
+        elapses, must be rejected — regression test for the "resend" button
+        having no cooldown at all (any number of clicks each queued a fresh
+        email)."""
+        first = self.client.post(
+            '/api/v1/accounts/password/reset/',
+            {'email': 'reset@test.com'}, format='json',
+        )
+        self.assertEqual(first.status_code, 200)
+        self.assertIn('retry_after_seconds', first.data)
+
+        second = self.client.post(
+            '/api/v1/accounts/password/reset/',
+            {'email': 'reset@test.com'}, format='json',
+        )
+        self.assertEqual(second.status_code, 429)
+        self.assertIn('retry_after_seconds', second.data)
+        self.assertGreater(second.data['retry_after_seconds'], 0)
+
+    def test_password_reset_cooldown_applies_to_nonexistent_email_too(self):
+        """The cooldown must apply even when the email has no account —
+        otherwise a rate-limited response only for real accounts would leak
+        which emails exist."""
+        first = self.client.post(
+            '/api/v1/accounts/password/reset/',
+            {'email': 'nobody-cooldown@test.com'}, format='json',
+        )
+        self.assertEqual(first.status_code, 200)
+
+        second = self.client.post(
+            '/api/v1/accounts/password/reset/',
+            {'email': 'nobody-cooldown@test.com'}, format='json',
+        )
+        self.assertEqual(second.status_code, 429)
 
     def test_check_email_availability(self):
         response = self.client.post(
