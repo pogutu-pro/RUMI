@@ -25,6 +25,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from accounts.models import CaretakerProfile, LandlordProfile
+from accounts.utils import generate_strong_password
 from organizations.models import Organization, OrganizationMembership, PayoutAccount
 from properties.models import CaretakerPropertyAssignment, Property, RentalUnit, Tenancy
 from rent.models import RentCharge
@@ -32,8 +33,11 @@ from tenants.models import EscalationPolicy, TenantProfile
 
 User = get_user_model()
 
-# Fixed demo credentials — hardcoded on purpose, never read from
-# environment or settings, so the printed table is always accurate.
+# Fixed demo credentials — hardcoded on purpose (never read from environment
+# or settings) so the printed table is always accurate for local dev, where
+# this fixed, memorable password is genuinely fine. --password overrides it
+# for anywhere that isn't local dev (see add_arguments) — this file's known
+# password must never be used on a reachable-from-the-internet environment.
 TEST_PASSWORD = 'Test@Rumia2026'
 
 LANDLORD_EMAIL = 'landlord@demo.rumiarent.co.ke'
@@ -46,7 +50,25 @@ SUPER_ADMIN_EMAIL = 'superadmin@demo.rumiarent.co.ke'
 class Command(BaseCommand):
     help = "Seed one loggable-in demo account per role, with connected domain data (idempotent)."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--password',
+            default=None,
+            help=(
+                "Override the fixed local-dev demo password. Required in "
+                "practice anywhere reachable from the internet — the "
+                "hardcoded TEST_PASSWORD in this file is public (it's in "
+                "the repo). Pass --password random to have one generated "
+                "and printed instead of choosing one yourself."
+            ),
+        )
+
     def handle(self, *args, **options):
+        password = options.get('password')
+        if password == 'random':
+            password = generate_strong_password(16)
+        self.password = password or TEST_PASSWORD
+
         with transaction.atomic():
             # 1. Subscription plans first — gate-checked endpoints (GatingService)
             # fall back to this catalog for any org with no OrganizationSubscription.
@@ -218,7 +240,7 @@ class Command(BaseCommand):
                 'onboarding_stage': 'COMPLETED',
             },
         )
-        user.set_password(TEST_PASSWORD)
+        user.set_password(self.password)
         user.role = role
         user.is_verified = True
         user.onboarding_stage = 'COMPLETED'
@@ -242,13 +264,13 @@ class Command(BaseCommand):
         if user is None:
             user = User.objects.create_superuser(
                 email=SUPER_ADMIN_EMAIL,
-                password=TEST_PASSWORD,
+                password=self.password,
                 first_name='Demo',
                 last_name='SuperAdmin',
                 phone_number='+254766666666',
             )
         else:
-            user.set_password(TEST_PASSWORD)
+            user.set_password(self.password)
             user.role = 'super_admin'
             user.is_staff = True
             user.is_superuser = True
@@ -273,5 +295,5 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('-' * len(header)))
         for role, email in rows:
             self.stdout.write(
-                self.style.SUCCESS(f"{role:<14} {email:<40} {TEST_PASSWORD}")
+                self.style.SUCCESS(f"{role:<14} {email:<40} {self.password}")
             )
