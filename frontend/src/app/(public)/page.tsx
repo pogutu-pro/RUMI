@@ -12,11 +12,16 @@ import {
   ShieldCheck,
   Zap,
   LayoutGrid,
+  Landmark,
+  Headset,
+  MessageCircle,
+  Lock,
+  FileCheck2,
+  KeyRound,
 } from 'lucide-react';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 import { WordSwitcher } from '@/components/animations/word-switcher';
 import { PricingTeaser } from './_components/pricing-teaser';
-import { TestimonialsSection } from '@/features/public/components/testimonials-section';
 
 export const metadata: Metadata = {
   title: 'RumiaRent - Rental Management for Kenyan Landlords',
@@ -82,6 +87,47 @@ const STEPS = [
   { title: 'Add a property', desc: 'Name, address, and its units. Done in minutes.' },
   { title: 'Attach a tenant', desc: 'A tenant, a unit, a rent amount, a start date.' },
   { title: 'Track and collect', desc: 'Rent charges appear on schedule. Payments update balances instantly.' },
+];
+
+const PLATFORM_FEATURES = [
+  {
+    icon: Landmark,
+    title: 'Bank, M-Pesa, and card payments',
+    desc: 'Tenants pay however suits them, via Paystack: cards, bank transfers, and M-Pesa. It settles straight into your account, automatically matched to the right unit.',
+  },
+  {
+    icon: Receipt,
+    title: 'Automated invoicing and billing',
+    desc: 'Rent charges are generated on schedule, every month, for every unit. No manual invoices, no spreadsheet, no forgetting a tenant.',
+  },
+  {
+    icon: MessageCircle,
+    title: 'Built-in communication module',
+    desc: 'Automated SMS rent reminders and payment confirmations go out the moment they matter, so you are not the one sending them.',
+  },
+  {
+    icon: Headset,
+    title: 'Dedicated customer support',
+    desc: 'Real people who understand rental management in Kenya, ready when a tenant or a payment needs a human.',
+  },
+];
+
+const TRUST_POINTS = [
+  {
+    icon: KeyRound,
+    title: 'Role-based access',
+    desc: 'Landlords, caretakers, and tenants each see only what their role allows. No one gets more access than their job needs.',
+  },
+  {
+    icon: Lock,
+    title: 'Your data, kept separate',
+    desc: 'Every account is isolated. Your properties, tenants, and payments are never visible to another landlord on the platform.',
+  },
+  {
+    icon: FileCheck2,
+    title: 'A full audit trail',
+    desc: 'Every payment, every change, every action is logged, so you always know what happened and when.',
+  },
 ];
 
 export default function HomePage() {
@@ -188,6 +234,40 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Everything connected */}
+      <section className="bg-white py-20 lg:py-28">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto mb-14 max-w-2xl text-center">
+            <Badge
+              variant="outline"
+              className="mb-6 inline-flex rounded-full border-primary/20 bg-primary/5 px-4 py-1.5 font-semibold tracking-wide text-primary"
+            >
+              ONE PLATFORM
+            </Badge>
+            <h2 className="mb-4 text-3xl font-bold text-gray-900 lg:text-4xl">
+              Everything connected, out of the box
+            </h2>
+            <p className="text-lg text-gray-600">
+              Payments, invoicing, communication, and support, all built in, not bolted on.
+            </p>
+          </div>
+          <div className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-2">
+            {PLATFORM_FEATURES.map(({ icon: Icon, title, desc }) => (
+              <div
+                key={title}
+                className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+              >
+                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+                  <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
+                </div>
+                <h3 className="mb-2 text-lg font-bold text-gray-900">{title}</h3>
+                <p className="text-sm leading-relaxed text-gray-600">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Landlords + Tenants, side by side */}
       <section className="py-20 lg:py-28">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -245,6 +325,34 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Trust & security */}
+      <section className="bg-gray-50/60 py-20 lg:py-28">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto mb-14 max-w-2xl text-center">
+            <h2 className="mb-4 text-3xl font-bold text-gray-900 lg:text-4xl">
+              Built to be trusted with your rent money
+            </h2>
+            <p className="text-lg text-gray-600">
+              Role-based access, data isolation, and a full audit trail, on every account.
+            </p>
+          </div>
+          <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-3">
+            {TRUST_POINTS.map(({ icon: Icon, title, desc }) => (
+              <div
+                key={title}
+                className="rounded-3xl bg-white p-8 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+              >
+                <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+                  <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
+                </div>
+                <h3 className="mb-2 text-lg font-bold text-gray-900">{title}</h3>
+                <p className="text-sm leading-relaxed text-gray-600">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Three steps */}
       <section className="bg-gray-50/60 py-20 lg:py-28">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -266,7 +374,37 @@ export default function HomePage() {
         </div>
       </section>
 
-      <TestimonialsSection />
+      {/* Talk to us */}
+      <section className="bg-white py-20 lg:py-28">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl rounded-[2rem] border border-gray-100 bg-white p-10 text-center shadow-sm sm:p-14">
+            <h2 className="mb-4 text-3xl font-bold text-gray-900 lg:text-4xl">Want to see it live first?</h2>
+            <p className="mb-8 text-lg text-gray-600">
+              Book a short walkthrough, or message us on WhatsApp, whichever is faster for you.
+            </p>
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link href="/contact" prefetch>
+                <Button
+                  size="lg"
+                  className="h-14 rounded-full bg-gray-900 px-8 text-lg font-medium text-white hover:bg-gray-800"
+                >
+                  Book a Demo
+                </Button>
+              </Link>
+              <a href="https://wa.me/254700000000" target="_blank" rel="noopener noreferrer">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-14 rounded-full border-gray-200 bg-gray-50/50 px-8 text-lg font-medium text-gray-600 hover:bg-gray-100"
+                >
+                  <MessageCircle className="mr-2 h-5 w-5" aria-hidden="true" />
+                  Chat on WhatsApp
+                </Button>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Pricing teaser */}
       <section className="py-20 lg:py-28">
