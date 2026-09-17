@@ -34,11 +34,11 @@ export default function CookiePolicyPage() {
                 </p>
                 <ul className="ml-6 list-disc space-y-2">
                   <li>
-                    <span className="font-semibold">Session cookies</span> — keep you signed in
+                    <span className="font-semibold">Session cookies</span>, which keep you signed in
                     between page loads, so you are not asked to log in on every visit.
                   </li>
                   <li>
-                    <span className="font-semibold">Role cookie</span> — remembers whether you are
+                    <span className="font-semibold">Role cookie</span>, which remembers whether you are
                     signed in as a landlord, caretaker, or tenant, so the site shows the right
                     dashboard.
                   </li>
@@ -48,7 +48,7 @@ export default function CookiePolicyPage() {
               <section>
                 <h2 className="mb-4 text-2xl font-bold text-gray-900">2. Why We Use Them</h2>
                 <p className="leading-relaxed">
-                  These cookies exist only to make the product work — keeping you logged in
+                  These cookies exist only to make the product work: keeping you logged in
                   securely and routing you to the right part of the platform. They are not used to
                   build an advertising profile of you, and we don&apos;t sell or share them with
                   third parties.

@@ -123,7 +123,7 @@ export default function VerifyPhonePage() {
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-bold text-gray-900">Phone verified</h1>
             <p className="text-gray-600">
-              You&apos;re all set — redirecting to your dashboard.
+              You&apos;re all set. Redirecting to your dashboard.
             </p>
           </div>
 
