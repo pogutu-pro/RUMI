@@ -32,7 +32,7 @@
     --muted-foreground: 240 4% 45%;
 
     /* --- Brand & Actions --- */
-    --primary: 154 85% 30%; /* Balanced Emerald - WCAG AA compliant on white */
+    --primary: 159 90% 26%; /* Matches the logo green (sampled #027F53), still WCAG AA on white */
     --primary-foreground: 0 0% 100%;
     --secondary: 240 5% 96%;
     --secondary-foreground: 240 6% 10%;
@@ -42,7 +42,7 @@
     /* --- Status Colors --- */
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --success: 154 85% 30%;
+    --success: 159 90% 26%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 240 10% 4%;
@@ -52,12 +52,12 @@
     /* --- UI Components --- */
     --border: 240 6% 90%;
     --input: 240 6% 90%;
-    --ring: 154 85% 30%;
+    --ring: 159 90% 26%;
     
     --radius: 0.5rem;
 
     /* --- Visualization --- */
-    --chart-1: 154 85% 30%;
+    --chart-1: 159 90% 26%;
     --chart-2: 214 95% 45%;
     --chart-3: 262 83% 58%;
     --chart-4: 38 92% 50%;
