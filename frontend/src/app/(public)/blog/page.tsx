@@ -19,7 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 type BlogCategory =
   | 'all'
-  | 'students'
+  | 'tenants'
   | 'landlords'
   | 'caretakers'
   | 'product'
@@ -58,18 +58,18 @@ interface ApiBlogPost {
 
 function transformApiPost(apiPost: ApiBlogPost): BlogPost {
   const categoryMap: Record<string, BlogCategory> = {
-    'student_stories': 'students',
+    'student_stories': 'tenants',
     'landlord_tips': 'landlords',
-    'housing_guides': 'students',
+    'housing_guides': 'tenants',
     'company_news': 'product',
     'product_updates': 'product',
     'marketplace_highlights': 'product',
   };
 
   const audienceLabels: Record<string, string> = {
-    'student_stories': 'For Students',
+    'student_stories': 'For Tenants',
     'landlord_tips': 'For Landlords',
-    'housing_guides': 'For Students',
+    'housing_guides': 'For Tenants',
     'company_news': 'News',
     'product_updates': 'Updates',
     'marketplace_highlights': 'Featured',
@@ -91,7 +91,7 @@ function transformApiPost(apiPost: ApiBlogPost): BlogPost {
 
 const filters: { id: BlogCategory; label: string }[] = [
   { id: 'all', label: 'All' },
-  { id: 'students', label: 'Students' },
+  { id: 'tenants', label: 'Tenants' },
   { id: 'landlords', label: 'Landlords' },
   { id: 'caretakers', label: 'Caretakers' },
   { id: 'product', label: 'Updates' },
@@ -200,11 +200,11 @@ export default function BlogPage() {
             <h1 className="mb-5 text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl leading-tight">
               Insights for better
               <br />
-              campus living.
+              rental living.
             </h1>
             <p className="mb-6 text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-              Guides, stories, and updates for students, landlords, and
-              caretakers building safer, better managed hostels.
+              Guides, stories, and updates for tenants, landlords, and
+              caretakers building safer, better managed rentals.
             </p>
             <div className="flex flex-wrap justify-center gap-4 text-base text-muted-foreground">
               <div className="inline-flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-full">
