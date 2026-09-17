@@ -96,6 +96,33 @@ def reset_login_rate_limit(email):
     cache.delete(cache_key)
 
 
+PASSWORD_RESET_COOLDOWN_SECONDS = 60
+
+
+def check_password_reset_cooldown(email):
+    """
+    Return the remaining cooldown in seconds if a password reset was
+    recently requested for this email (0 if not rate limited). Applied
+    unconditionally to both existing and non-existing emails by the caller,
+    so the cooldown itself never leaks whether an account exists — without
+    this, a user could spam-click "resend" indefinitely and email-bomb any
+    address.
+    """
+    cache_key = f"password_reset_cooldown:{email}"
+    expires_at = cache.get(cache_key)
+    if expires_at is None:
+        return 0
+    remaining = expires_at - timezone.now().timestamp()
+    return max(0, int(remaining))
+
+
+def set_password_reset_cooldown(email):
+    """Start the cooldown window for this email's next reset request."""
+    cache_key = f"password_reset_cooldown:{email}"
+    expires_at = timezone.now().timestamp() + PASSWORD_RESET_COOLDOWN_SECONDS
+    cache.set(cache_key, expires_at, timeout=PASSWORD_RESET_COOLDOWN_SECONDS)
+
+
 def check_otp_rate_limit(email):
     """
     Limit OTP requests to 3 per 15 minutes

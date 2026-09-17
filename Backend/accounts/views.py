@@ -45,7 +45,9 @@ from .utils import (
     generate_6_digit_otp, generate_strong_password, validate_password_strength,
     is_disposable_email, check_login_rate_limit, log_failed_login_attempt,
     reset_login_rate_limit, check_otp_rate_limit, get_client_ip,
-    detect_device_type, detect_browser, create_paystack_subaccount
+    detect_device_type, detect_browser, create_paystack_subaccount,
+    check_password_reset_cooldown, set_password_reset_cooldown,
+    PASSWORD_RESET_COOLDOWN_SECONDS,
 )
 
 
@@ -681,6 +683,16 @@ class PasswordResetRequestView(APIView):
 
         email = serializer.validated_data['email']
 
+        # Checked before anything else, on the raw email — a user spamming
+        # "resend" (or a script hitting this endpoint directly) had no limit
+        # at all before this: every click queued a fresh Celery email task.
+        remaining = check_password_reset_cooldown(email)
+        if remaining > 0:
+            return Response({
+                'error': 'Please wait before requesting another reset link.',
+                'retry_after_seconds': remaining,
+            }, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
         # Always return success (security best practice)
         try:
             user = User.objects.get(email=email)
@@ -709,9 +721,15 @@ class PasswordResetRequestView(APIView):
         except User.DoesNotExist:
             pass  # Don't reveal if user exists
 
+        # Set unconditionally (existing-user and non-existing-user branches
+        # alike) so the cooldown itself never becomes a side channel that
+        # reveals whether the email has an account.
+        set_password_reset_cooldown(email)
+
         return Response({
             'message': 'Password reset link sent to your email',
-            'expires_in_hours': 24
+            'expires_in_hours': 24,
+            'retry_after_seconds': PASSWORD_RESET_COOLDOWN_SECONDS,
         }, status=status.HTTP_200_OK)
 
 
