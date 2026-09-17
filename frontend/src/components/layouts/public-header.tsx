@@ -20,7 +20,7 @@ const LOGIN_HREF = AUTH_ROUTES.LOGIN;
 interface PublicHeaderProps {
   user?: {
     name: string;
-    role: 'student' | 'landlord' | 'admin';
+    role: 'tenant' | 'landlord' | 'admin';
     image?: string;
   } | null;
   onSignOut?: () => Promise<void>;

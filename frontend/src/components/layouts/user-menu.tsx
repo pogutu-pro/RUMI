@@ -27,7 +27,7 @@ import { sanitizeInput, sanitizeImageUrl } from '@/lib/utils/security';
 
 interface UserMenuProps {
   userName: string;
-  userRole: 'student' | 'landlord' | 'admin';
+  userRole: 'tenant' | 'landlord' | 'admin';
   userImage?: string;
   onSignOut: () => Promise<void>;
 }
@@ -69,7 +69,7 @@ export const UserMenu = React.memo(function UserMenu({
         },
       ];
     }
-    if (userRole === 'student') {
+    if (userRole === 'tenant') {
       return [
         {
           label: 'My Bookings',

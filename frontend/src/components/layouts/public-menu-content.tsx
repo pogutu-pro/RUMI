@@ -23,7 +23,7 @@ interface PublicMenuContentProps {
   onClose?: () => void;
   user?: {
     name: string;
-    role: 'student' | 'landlord' | 'admin';
+    role: 'tenant' | 'landlord' | 'admin';
     image?: string;
   } | null;
   onSignOut?: () => Promise<void>;

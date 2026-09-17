@@ -20,7 +20,7 @@ import { use } from 'react';
 
 type BlogCategory =
   | 'all'
-  | 'students'
+  | 'tenants'
   | 'landlords'
   | 'caretakers'
   | 'product'
@@ -66,18 +66,18 @@ interface ApiBlogPost {
 
 function transformApiPost(apiPost: ApiBlogPost): BlogPost {
   const categoryMap: Record<string, BlogCategory> = {
-    'student_stories': 'students',
+    'student_stories': 'tenants',
     'landlord_tips': 'landlords',
-    'housing_guides': 'students',
+    'housing_guides': 'tenants',
     'company_news': 'product',
     'product_updates': 'product',
     'marketplace_highlights': 'product',
   };
 
   const audienceLabels: Record<string, string> = {
-    'student_stories': 'For Students',
+    'student_stories': 'For Tenants',
     'landlord_tips': 'For Landlords',
-    'housing_guides': 'For Students',
+    'housing_guides': 'For Tenants',
     'company_news': 'News',
     'product_updates': 'Updates',
     'marketplace_highlights': 'Featured',
