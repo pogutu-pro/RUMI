@@ -4,12 +4,14 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
-import { ChevronsLeft, ChevronsRight, Menu } from 'lucide-react';
+import { ChevronsLeft, ChevronsRight, LogOut, Menu } from 'lucide-react';
 import { useAuth } from '@/features/auth';
 import { UserRole } from '@/features/auth/stores/auth.types';
 import { UnifiedThemeProvider } from '@/components/providers/unified-theme-provider';
 import { useUiStore } from '@/stores/ui.store';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getUserInitials } from '@/lib/utils/user';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
@@ -82,6 +84,66 @@ function NavLinks({
         );
       })}
     </nav>
+  );
+}
+
+/**
+ * Pinned to the bottom-left of the sidebar: who is signed in, and the one-click
+ * way out. Collapses to a lone logout icon when the sidebar is collapsed.
+ */
+function SidebarFooter({
+  name,
+  email,
+  photoUrl,
+  collapsed,
+  onLogout,
+}: {
+  name: string;
+  email: string;
+  photoUrl: string | null;
+  collapsed: boolean;
+  onLogout: () => void;
+}) {
+  const logoutButton = (
+    <button
+      type="button"
+      onClick={onLogout}
+      aria-label="Log out"
+      className={cn(
+        'flex items-center gap-2 rounded-xl text-sm font-medium text-destructive transition-colors hover:bg-destructive/10',
+        collapsed ? 'h-10 w-10 justify-center' : 'w-full px-3 py-2.5',
+      )}
+    >
+      <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
+      {!collapsed && <span>Log out</span>}
+    </button>
+  );
+
+  return (
+    <div className={cn('mt-auto space-y-2 border-t p-3', collapsed && 'flex flex-col items-center')}>
+      {!collapsed && (
+        <div className="flex items-center gap-3 px-1 py-1">
+          <Avatar className="h-9 w-9 shrink-0">
+            {photoUrl && <AvatarImage src={photoUrl} alt={name} />}
+            <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
+              {getUserInitials(name) || 'U'}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-foreground">{name}</p>
+            <p className="truncate text-xs text-muted-foreground">{email}</p>
+          </div>
+        </div>
+      )}
+      {collapsed ? (
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>{logoutButton}</TooltipTrigger>
+          <TooltipContent side="right">Log out</TooltipContent>
+        </Tooltip>
+      ) : (
+        logoutButton
+      )}
+    </div>
   );
 }
 
@@ -167,6 +229,8 @@ export function DashboardShell({
               <div className="flex-1 overflow-y-auto py-2">
                 <NavLinks nav={nav} collapsed={collapsed} pathname={pathname} />
               </div>
+
+              <SidebarFooter name={name} email={email} photoUrl={photoUrl} collapsed={collapsed} onLogout={logout} />
             </aside>
           )}
 
@@ -197,6 +261,7 @@ export function DashboardShell({
                   <div className="flex-1 overflow-y-auto py-2">
                     <NavLinks nav={nav} collapsed={false} pathname={pathname} onNavigate={() => setMobileNavOpen(false)} />
                   </div>
+                  <SidebarFooter name={name} email={email} photoUrl={photoUrl} collapsed={false} onLogout={logout} />
                 </SheetContent>
               </Sheet>
             </>
