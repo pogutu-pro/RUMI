@@ -44,7 +44,7 @@ const DASHBOARD_BY_ROLE: Record<string, string> = {
   caretaker: '/caretaker/rental',
   tech_support: '/tech-support/dashboard',
   tech_support_admin: '/tech-support/dashboard',
-  super_admin: '/admin/billing',
+  super_admin: '/platform/billing',
 };
 
 export function OnboardingForm({ role }: OnboardingFormProps) {

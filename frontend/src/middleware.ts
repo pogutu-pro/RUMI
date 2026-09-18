@@ -75,7 +75,7 @@ const ROLE_RESTRICTED_PATHS: Record<string, UserRole[]> = {
   '/roommates': ['student', 'tenant'],
   '/tenants': ['landlord'],
   '/properties': ['landlord', 'caretaker'],
-  '/admin': ['super_admin'],
+  '/platform': ['super_admin'],
   '/tech-support': ['tech_support', 'tech_support_admin'],
 };
 
@@ -96,7 +96,7 @@ function getDashboardUrl(role?: UserRole): string {
     case 'landlord':
       return '/landlord/rental';
     case 'super_admin':
-      return '/admin/billing';
+      return '/platform/billing';
     case 'caretaker':
       return '/caretaker/rental';
     case 'tech_support':

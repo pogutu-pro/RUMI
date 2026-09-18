@@ -3,9 +3,9 @@ import * as React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import AdminBillingListPage from '@/app/(super-admin)/admin/billing/page';
-import AdminBillingDetailPage from '@/app/(super-admin)/admin/billing/[id]/page';
-import AdminLayout from '@/app/(super-admin)/admin/layout';
+import AdminBillingListPage from '@/app/(super-admin)/platform/billing/page';
+import AdminBillingDetailPage from '@/app/(super-admin)/platform/billing/[id]/page';
+import AdminLayout from '@/app/(super-admin)/platform/layout';
 import { adminBillingApi } from '@/features/admin-billing/api/admin-billing';
 import { UserRole } from '@/features/auth/stores/auth.types';
 import type { AdminBillingDetail } from '@/features/admin-billing/types';
