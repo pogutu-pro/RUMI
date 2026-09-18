@@ -138,7 +138,7 @@ export default function AdminOverviewPage() {
                 <span className="text-muted-foreground">All time</span>
                 <span className="font-semibold text-foreground">{data?.total_support_tickets ?? 0}</span>
               </div>
-              <Link href="/tech-support/dashboard" className="inline-block text-sm text-primary underline">
+              <Link href="/platform/support" className="inline-block text-sm text-primary underline">
                 View ticket queue →
               </Link>
             </CardContent>
