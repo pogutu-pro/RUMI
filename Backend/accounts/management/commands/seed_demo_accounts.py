@@ -15,7 +15,7 @@ Does NOT touch, import from, or depend on the pre-existing broken
 seed_test_users.py command in this same directory.
 """
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -28,7 +28,7 @@ from accounts.models import CaretakerProfile, LandlordProfile
 from accounts.utils import generate_strong_password
 from organizations.models import Organization, OrganizationMembership, PayoutAccount
 from properties.models import CaretakerPropertyAssignment, Property, RentalUnit, Tenancy
-from rent.models import RentCharge
+from rent.models import Payment, PaymentAllocation, RentCharge
 from tenants.models import EscalationPolicy, TenantProfile
 
 User = get_user_model()
@@ -194,22 +194,57 @@ class Command(BaseCommand):
                     status='active',
                 )
 
+            # Paid-up, not owing — a demo account that greets every reviewer
+            # with "you owe rent" undermines the whole point of a rent
+            # platform being trustworthy. Last month and this month are both
+            # fully paid, so the tenant dashboard shows the confident
+            # "you're paid up" state with real payment history to browse,
+            # not a manufactured overdue balance.
             today = timezone.now().date()
-            RentCharge.objects.get_or_create(
-                organization=org,
-                tenancy=tenancy,
-                parent_property=prop,
-                unit=unit,
-                tenant=tenant_profile,
-                period_start=today.replace(day=1),
-                period_end=today.replace(day=28),
-                due_date=today.replace(day=5),
-                defaults={
-                    'amount_due': Decimal('22000.00'),
-                    'amount_paid': Decimal('0.00'),
-                    'status': 'due',
-                },
-            )
+            last_month_start = (today.replace(day=1) - timedelta(days=1)).replace(day=1)
+            for period_start in (last_month_start, today.replace(day=1)):
+                period_end = period_start.replace(day=28)
+                due_date = period_start.replace(day=5)
+                charge, _ = RentCharge.objects.get_or_create(
+                    organization=org,
+                    tenancy=tenancy,
+                    parent_property=prop,
+                    unit=unit,
+                    tenant=tenant_profile,
+                    period_start=period_start,
+                    period_end=period_end,
+                    due_date=due_date,
+                    defaults={
+                        'amount_due': Decimal('22000.00'),
+                        'amount_paid': Decimal('0.00'),
+                        'status': 'due',
+                    },
+                )
+                if charge.status != 'paid':
+                    payment, _ = Payment.objects.get_or_create(
+                        internal_reference=f'DEMO-RENT-{tenancy.id}-{period_start.isoformat()}',
+                        defaults={
+                            'organization': org,
+                            'tenancy': tenancy,
+                            'tenant': tenant_profile,
+                            'parent_property': prop,
+                            'unit': unit,
+                            'amount': charge.amount_due,
+                            'currency': 'KES',
+                            'payment_method': 'paystack',
+                            'provider': 'paystack',
+                            'provider_reference': f'DEMO-PSK-{tenancy.id}-{period_start.isoformat()}',
+                            'status': 'success',
+                            'paid_at': timezone.make_aware(datetime.combine(due_date, datetime.min.time())),
+                        },
+                    )
+                    PaymentAllocation.objects.get_or_create(
+                        payment=payment,
+                        rent_charge=charge,
+                        defaults={'amount': charge.amount_due},
+                    )
+                    charge.recalculate_status()
+                    charge.save()
 
             # 9. Tech support — no organization or supporting data.
             self._get_or_reset_user(

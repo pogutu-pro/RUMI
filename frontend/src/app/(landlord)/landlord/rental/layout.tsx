@@ -10,6 +10,7 @@ import {
   CreditCard,
   LifeBuoy,
   HardHat,
+  Settings,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth';
 import { UserRole } from '@/features/auth/stores/auth.types';
@@ -26,6 +27,7 @@ const NAV = [
   { href: '/landlord/rental/payments', label: 'Payments', icon: CreditCard },
   { href: '/landlord/rental/billing', label: 'Billing & Payout', icon: CreditCard },
   { href: '/landlord/rental/support', label: 'Support', icon: LifeBuoy },
+  { href: '/landlord/rental/settings', label: 'Settings', icon: Settings },
 ];
 
 /**
@@ -41,6 +43,7 @@ export default function RentalLandlordLayout({ children }: { children: React.Rea
     <DashboardShell
       allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]}
       nav={NAV}
+      settingsHref="/landlord/rental/settings"
       bannerSlot={!isSuperAdmin ? <PayoutPendingBanner /> : null}
     >
       {children}
