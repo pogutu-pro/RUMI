@@ -147,13 +147,6 @@ export default function RootLayout({
       email: 'info@rumiarent.com',
       availableLanguage: ['en', 'sw'],
     },
-    sameAs: [
-      'https://twitter.com/rumiplatform',
-      'https://facebook.com/rumiplatform',
-      'https://tiktok.com/rumiplatform',
-      'https://instagram.com/rumiplatform',
-      'https://linkedin.com/company/rumi-platform',
-    ],
   };
 
   return (

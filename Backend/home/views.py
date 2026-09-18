@@ -222,12 +222,6 @@ class ContactInfoView(APIView):
                 'country': 'Kenya',
                 'postal_code': '00100'
             },
-            'social_media': {
-                'facebook': 'https://facebook.com/rumikenya',
-                'twitter': 'https://twitter.com/rumikenya',
-                'instagram': 'https://instagram.com/rumikenya',
-                'linkedin': 'https://linkedin.com/company/rumikenya'
-            },
             'office_hours': {
                 'weekdays': '8:00 AM - 6:00 PM EAT',
                 'saturday': '9:00 AM - 2:00 PM EAT',
