@@ -373,8 +373,8 @@ export default function TenantRentalDashboard() {
                 {activeTenancy.status.replace('_', ' ')}
               </span>
             </DetailRow>
-            <DetailRow label="Start date">{formatDate(activeTenancy.start_date)}</DetailRow>
-            <DetailRow label="End date">
+            <DetailRow label="Lease starts">{formatDate(activeTenancy.start_date)}</DetailRow>
+            <DetailRow label="Lease ends">
               {activeTenancy.end_date ? formatDate(activeTenancy.end_date) : 'Ongoing'}
             </DetailRow>
           </dl>
