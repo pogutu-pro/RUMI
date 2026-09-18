@@ -3,7 +3,7 @@ import * as React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import AdminBillingListPage from '@/app/(super-admin)/platform/billing/page';
+import AdminOrganizationsPage from '@/app/(super-admin)/platform/organizations/page';
 import AdminBillingDetailPage from '@/app/(super-admin)/platform/billing/[id]/page';
 import AdminLayout from '@/app/(super-admin)/platform/layout';
 import { adminBillingApi } from '@/features/admin-billing/api/admin-billing';
@@ -123,7 +123,7 @@ function renderWithClient(ui: React.ReactElement) {
   return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
 
-describe('AdminBillingListPage — search wiring', () => {
+describe('AdminOrganizationsPage — search wiring', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockedListOrganizations.mockResolvedValue([]);
@@ -131,7 +131,7 @@ describe('AdminBillingListPage — search wiring', () => {
 
   it('debounces the SearchInput 300ms then calls adminBillingApi.listOrganizations with the typed search string', async () => {
     jest.useFakeTimers();
-    renderWithClient(<AdminBillingListPage />);
+    renderWithClient(<AdminOrganizationsPage />);
 
     const input = screen.getByPlaceholderText('Search by organization name…');
     fireEvent.change(input, { target: { value: 'Acme' } });

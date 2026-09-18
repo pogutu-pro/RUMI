@@ -76,7 +76,7 @@ const ROLE_RESTRICTED_PATHS: Record<string, UserRole[]> = {
   '/tenants': ['landlord'],
   '/properties': ['landlord', 'caretaker'],
   '/platform': ['super_admin'],
-  '/tech-support': ['tech_support', 'tech_support_admin'],
+  '/tech-support': ['tech_support', 'tech_support_admin', 'super_admin'],
 };
 
 function isPublicPath(pathname: string): boolean {
