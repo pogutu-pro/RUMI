@@ -9,10 +9,10 @@ import { StatusPill, type StatusPillProps } from '@/components/ui/status-pill';
 import { PriceDisplay } from '@/components/ui/price-display';
 import { ErrorState } from '@/components/ui/error-state';
 import { Button } from '@/components/ui/button';
+import { FormDialogActions, FormRow } from '@/components/ui/form-layout';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
-} from '@/components/ui/dialog';
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PageHeader } from '@/components/dashboard/page-header';
@@ -156,9 +156,12 @@ export default function AdminBillingDetailPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Override {organization.name}&apos;s subscription</DialogTitle>
+              <DialogDescription>
+                Manually change this organization&apos;s plan or status. Leave a field on &quot;No change&quot; to keep it as it is.
+              </DialogDescription>
             </DialogHeader>
             <Form {...overrideForm}>
-              <form onSubmit={handleOverride} className="space-y-3">
+              <form onSubmit={handleOverride} className="space-y-5">
                 <FormField
                   control={overrideForm.control}
                   name="plan_id"
@@ -167,7 +170,7 @@ export default function AdminBillingDetailPage() {
                       <FormLabel>Plan</FormLabel>
                       <Select value={field.value} onValueChange={field.onChange}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="h-11">
                             <SelectValue />
                           </SelectTrigger>
                         </FormControl>
@@ -191,7 +194,7 @@ export default function AdminBillingDetailPage() {
                       <FormLabel>Status</FormLabel>
                       <Select value={field.value} onValueChange={field.onChange}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="h-11">
                             <SelectValue />
                           </SelectTrigger>
                         </FormControl>
@@ -228,15 +231,11 @@ export default function AdminBillingDetailPage() {
                   This directly changes the organization&apos;s billing record without charging or refunding via
                   Paystack. This action is logged and cannot be undone.
                 </p>
-                <DialogFooter>
-                  <Button
-                    type="submit"
-                    disabled={!reasonValue?.trim() || overrideMutation.isPending}
-                    className="rounded-full"
-                  >
-                    Apply override
-                  </Button>
-                </DialogFooter>
+                <FormDialogActions
+                  submitLabel="Apply override"
+                  isPending={overrideMutation.isPending}
+                  disabled={!reasonValue?.trim()}
+                />
               </form>
             </Form>
           </DialogContent>

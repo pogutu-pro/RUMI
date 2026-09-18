@@ -126,7 +126,7 @@ export function LoginForm({
       {step === 'email' ? (
         <div className="space-y-4">
           <div className="text-center mb-8 border-b-2 border-primary/10 pb-4">
-            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter">Identity Check</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Identity Check</h2>
           </div>
 
           <FormField
@@ -136,7 +136,7 @@ export function LoginForm({
             autoComplete="email"
             error={errors.email?.message}
             required
-            className="h-12 text-base rounded-none border-2 focus:border-primary"
+            className="h-12 text-base"
             aria-invalid={!!errors.email}
             {...register('email')}
           />
@@ -144,7 +144,7 @@ export function LoginForm({
           <Button
             type="button"
             onClick={handleContinue}
-            className="w-full h-12 text-base font-black bg-primary hover:bg-primary/90 text-white rounded-none uppercase tracking-widest"
+            className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 text-white"
             disabled={isCheckingEmail}
           >
             {isCheckingEmail ? (
@@ -160,7 +160,7 @@ export function LoginForm({
           {showRegisterLink && (
             <div className="text-center mt-4">
               <p className="text-sm text-gray-600">
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <Link
                   href={AUTH_ROUTES.REGISTER}
                   className="font-semibold text-primary hover:text-primary/80 transition-colors"

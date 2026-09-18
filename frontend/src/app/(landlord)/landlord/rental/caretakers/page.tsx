@@ -6,12 +6,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { FormDialogActions, FormRow, FormSection } from '@/components/ui/form-layout';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
-} from '@/components/ui/dialog';
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useCaretakers, useCreateCaretaker, useProperties } from '@/features/rental/hooks/use-rental';
@@ -86,12 +86,15 @@ export default function CaretakersPage() {
             <DialogTrigger asChild>
               <Button leftIcon={<Plus className="h-4 w-4" />}>Add caretaker</Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[85vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-xl">
               <DialogHeader>
                 <DialogTitle>Add caretaker</DialogTitle>
+                <DialogDescription>
+                  Give a caretaker access to manage the properties you choose. They&apos;ll be emailed a link to set their password.
+                </DialogDescription>
               </DialogHeader>
               <Form {...form}>
-                <form onSubmit={handleCreate} className="space-y-3">
+                <form onSubmit={handleCreate} className="space-y-5">
                   <FormField
                     control={form.control}
                     name="full_name"
@@ -99,12 +102,13 @@ export default function CaretakersPage() {
                       <FormItem>
                         <FormLabel>Full name</FormLabel>
                         <FormControl>
-                          <Input {...field} className="h-11" />
+                          <Input {...field} placeholder="e.g. Peter Otieno" className="h-11" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  <FormRow>
                   <FormField
                     control={form.control}
                     name="email"
@@ -112,11 +116,8 @@ export default function CaretakersPage() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input {...field} type="email" className="h-11" />
+                          <Input {...field} type="email" placeholder="name@example.com" className="h-11" />
                         </FormControl>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          They&apos;ll get an email to set up their password.
-                        </p>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -128,16 +129,16 @@ export default function CaretakersPage() {
                       <FormItem>
                         <FormLabel>Phone</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="+254712345678" className="h-11" />
+                          <Input {...field} type="tel" placeholder="0712 345 678" className="h-11" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  </FormRow>
 
-                  <div className="pt-2 border-t">
-                    <p className="mb-2 text-sm font-semibold">Emergency contact</p>
-                    <div className="space-y-3">
+                  <FormSection title="Emergency contact" description="Who we call if the caretaker can&apos;t be reached.">
+                    <FormRow>
                       <FormField
                         control={form.control}
                         name="emergency_contact_name"
@@ -158,21 +159,20 @@ export default function CaretakersPage() {
                           <FormItem>
                             <FormLabel>Phone</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="+254712345678" className="h-11" />
+                              <Input {...field} placeholder="0712 345 678" className="h-11" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                    </div>
-                  </div>
+                    </FormRow>
+                  </FormSection>
 
                   {properties.length > 0 && (
-                    <div className="pt-2 border-t">
-                      <p className="mb-2 text-sm font-semibold">Assign to properties</p>
+                    <FormSection title="Assign to properties" description="They can only see and manage the properties you tick.">
                       <div className="space-y-2">
                         {properties.map((p) => (
-                          <label key={p.id} className="flex items-center gap-2 text-sm">
+                          <label key={p.id} className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40">
                             <Checkbox
                               checked={propertyIds.includes(p.id)}
                               onCheckedChange={() => togglePropertyId(p.id)}
@@ -181,14 +181,10 @@ export default function CaretakersPage() {
                           </label>
                         ))}
                       </div>
-                    </div>
+                    </FormSection>
                   )}
                   {gateError && <GateBanner gate={gateError} onDismiss={() => createCaretaker.reset()} />}
-                  <DialogFooter>
-                    <Button type="submit" disabled={createCaretaker.isPending} className="rounded-full">
-                      Save
-                    </Button>
-                  </DialogFooter>
+                  <FormDialogActions submitLabel="Save" isPending={createCaretaker.isPending} />
                 </form>
               </Form>
             </DialogContent>

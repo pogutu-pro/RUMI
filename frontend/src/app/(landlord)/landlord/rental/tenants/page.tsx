@@ -6,12 +6,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { FormDialogActions, FormRow, FormSection } from '@/components/ui/form-layout';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
-} from '@/components/ui/dialog';
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useTenants, useCreateTenant } from '@/features/rental/hooks/use-rental';
@@ -80,12 +80,15 @@ export default function TenantsPage() {
             <DialogTrigger asChild>
               <Button leftIcon={<Plus className="h-4 w-4" />}>Add tenant</Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[85vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-xl">
               <DialogHeader>
                 <DialogTitle>Add tenant</DialogTitle>
+                <DialogDescription>
+                  Add a tenant to your records. You can attach them to a unit afterwards.
+                </DialogDescription>
               </DialogHeader>
               <Form {...form}>
-                <form onSubmit={handleCreate} className="space-y-3">
+                <form onSubmit={handleCreate} className="space-y-5">
                   <FormField
                     control={form.control}
                     name="full_name"
@@ -93,12 +96,13 @@ export default function TenantsPage() {
                       <FormItem>
                         <FormLabel>Full name</FormLabel>
                         <FormControl>
-                          <Input className="h-11" {...field} />
+                          <Input className="h-11" placeholder="e.g. Jane Wanjiku" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  <FormRow>
                   <FormField
                     control={form.control}
                     name="phone"
@@ -106,7 +110,7 @@ export default function TenantsPage() {
                       <FormItem>
                         <FormLabel>Phone</FormLabel>
                         <FormControl>
-                          <Input className="h-11" {...field} />
+                          <Input className="h-11" type="tel" placeholder="0712 345 678" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -119,19 +123,19 @@ export default function TenantsPage() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input className="h-11" type="email" {...field} />
+                          <Input className="h-11" type="email" placeholder="name@example.com" {...field} />
                         </FormControl>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          They&apos;ll get an email to set up their password once attached to a unit.
-                        </p>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  </FormRow>
+                  <p className="-mt-2 text-xs leading-relaxed text-muted-foreground">
+                    They&apos;ll get an email to set up their password once attached to a unit.
+                  </p>
 
-                  <div className="pt-2 border-t">
-                    <p className="mb-2 text-sm font-medium">Next of kin (optional)</p>
-                    <div className="space-y-3">
+                  <FormSection title="Next of kin (optional)" description="Someone we can reach in an emergency.">
+                    <div className="space-y-5">
                       <FormField
                         control={form.control}
                         name="nok_full_name"
@@ -145,6 +149,7 @@ export default function TenantsPage() {
                           </FormItem>
                         )}
                       />
+                      <FormRow>
                       <FormField
                         control={form.control}
                         name="nok_relationship"
@@ -171,11 +176,12 @@ export default function TenantsPage() {
                           </FormItem>
                         )}
                       />
+                      </FormRow>
                       <FormField
                         control={form.control}
                         name="nok_authorized"
                         render={({ field }) => (
-                          <FormItem className="flex items-start gap-2">
+                          <FormItem className="flex items-start gap-3 space-y-0 rounded-lg bg-muted/40 p-3">
                             <FormControl>
                               <Checkbox
                                 checked={field.value}
@@ -183,7 +189,7 @@ export default function TenantsPage() {
                                 className="mt-0.5"
                               />
                             </FormControl>
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-xs leading-relaxed text-muted-foreground">
                               Contact this person about rent if the tenant falls behind and can&apos;t be
                               reached. Off by default; only used with this consent.
                             </span>
@@ -191,13 +197,9 @@ export default function TenantsPage() {
                         )}
                       />
                     </div>
-                  </div>
+                  </FormSection>
 
-                  <DialogFooter>
-                    <Button type="submit" disabled={createTenant.isPending}>
-                      Save
-                    </Button>
-                  </DialogFooter>
+                  <FormDialogActions submitLabel="Save" isPending={createTenant.isPending} />
                 </form>
               </Form>
             </DialogContent>

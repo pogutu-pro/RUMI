@@ -111,7 +111,7 @@ export function VerifyEmailForm({
         animate={{ opacity: 1, y: 0 }}
         className="text-center space-y-6 py-4"
       >
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+        <div className="w-16 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
           <CheckCircle2 className="w-8 h-8 text-green-600" />
         </div>
 

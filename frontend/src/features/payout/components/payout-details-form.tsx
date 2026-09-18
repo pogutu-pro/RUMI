@@ -85,7 +85,7 @@ export function PayoutDetailsForm({
           name="bank_code"
           render={() => (
             <FormItem>
-              <FormLabel className="font-semibold">Bank</FormLabel>
+              <FormLabel>Bank</FormLabel>
               <FormControl>
                 <Controller
                   control={form.control}
@@ -136,7 +136,7 @@ export function PayoutDetailsForm({
           name="bank_account_number"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-semibold">Account number</FormLabel>
+              <FormLabel>Account number</FormLabel>
               <FormControl>
                 <Input {...field} inputMode="numeric" className="h-11" disabled={banksUnavailable} />
               </FormControl>

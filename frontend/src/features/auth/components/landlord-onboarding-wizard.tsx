@@ -152,7 +152,7 @@ function OrgStep({
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="font-semibold">Organization name</FormLabel>
+                <FormLabel>Organization name</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
@@ -168,7 +168,7 @@ function OrgStep({
             type="submit"
             variant="charcoal"
             size="lg"
-            className="h-14 w-full rounded-full"
+            className="h-11 w-full rounded-full"
             isLoading={createOrganization.isPending}
           >
             Continue to Property Setup
@@ -228,7 +228,7 @@ function PropertyStep({
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="font-semibold">Property name</FormLabel>
+                <FormLabel>Property name</FormLabel>
                 <FormControl>
                   <Input {...field} className="h-11" />
                 </FormControl>
@@ -241,7 +241,7 @@ function PropertyStep({
             name="address"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="font-semibold">Address</FormLabel>
+                <FormLabel>Address</FormLabel>
                 <FormControl>
                   <Input {...field} className="h-11" />
                 </FormControl>
@@ -254,7 +254,7 @@ function PropertyStep({
             name="city"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="font-semibold">City</FormLabel>
+                <FormLabel>City</FormLabel>
                 <FormControl>
                   <Input {...field} className="h-11" />
                 </FormControl>
@@ -266,7 +266,7 @@ function PropertyStep({
             type="submit"
             variant="charcoal"
             size="lg"
-            className="h-14 w-full rounded-full"
+            className="h-11 w-full rounded-full"
             isLoading={createProperty.isPending}
           >
             Continue to Payout Details
@@ -415,7 +415,7 @@ function TierStep({ onBack }: { onBack: () => void }) {
         type="button"
         variant="charcoal"
         size="lg"
-        className="mt-8 h-14 w-full rounded-full"
+        className="mt-8 h-11 w-full rounded-full"
         disabled={!selectedSlug || completeMutation.isPending}
         isLoading={completeMutation.isPending}
         onClick={handleComplete}

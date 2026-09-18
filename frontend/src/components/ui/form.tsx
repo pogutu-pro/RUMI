@@ -55,7 +55,7 @@ const FormItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
     const id = React.useId();
     return (
       <FormItemContext.Provider value={{ id }}>
-        <div ref={ref} className={cn('space-y-2', className)} {...props} />
+        <div ref={ref} className={cn('space-y-1.5', className)} {...props} />
       </FormItemContext.Provider>
     );
   },
@@ -67,7 +67,18 @@ const FormLabel = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof Label>
 >(({ className, ...props }, ref) => {
   const { error, formItemId } = useFormField();
-  return <Label ref={ref} className={cn(error && 'text-destructive', className)} htmlFor={formItemId} {...props} />;
+  return (
+    <Label
+      ref={ref}
+      className={cn(
+        'block text-sm font-medium leading-none text-foreground',
+        error && 'text-destructive',
+        className,
+      )}
+      htmlFor={formItemId}
+      {...props}
+    />
+  );
 });
 FormLabel.displayName = 'FormLabel';
 
@@ -92,7 +103,7 @@ const FormDescription = React.forwardRef<
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => {
   const { formDescriptionId } = useFormField();
-  return <p ref={ref} id={formDescriptionId} className={cn('text-sm text-muted-foreground', className)} {...props} />;
+  return <p ref={ref} id={formDescriptionId} className={cn('text-xs leading-relaxed text-muted-foreground', className)} {...props} />;
 });
 FormDescription.displayName = 'FormDescription';
 
@@ -100,8 +111,9 @@ const FormMessage = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<
   ({ className, children, ...props }, ref) => {
     const { error, formMessageId } = useFormField();
     const body = error ? String(error?.message) : children;
+    if (!body) return null;
     return (
-      <p ref={ref} id={formMessageId} className={cn('text-sm font-medium text-destructive', className)} {...props}>
+      <p ref={ref} id={formMessageId} className={cn('text-xs font-medium text-destructive', className)} {...props}>
         {body}
       </p>
     );

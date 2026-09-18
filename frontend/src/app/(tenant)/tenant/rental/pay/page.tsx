@@ -67,10 +67,10 @@ export default function TenantPayRentPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-xl space-y-6 lg:mx-0">
       <PageHeader title="Pay Rent" description="Pay what's due, or pay ahead of time." />
 
-      <Card className="rounded-2xl">
+      <Card className="rounded-2xl shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">
             {activeTenancy.property_name} · {activeTenancy.unit_number}
@@ -81,13 +81,13 @@ export default function TenantPayRentPage() {
               : `Rent is up to date · ${formatKes(activeTenancy.monthly_rent)}/month`}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5">
           <RadioGroup value={option} onValueChange={(v) => setOption(v as PayOption)} className="space-y-3">
             <label
               htmlFor="pay-full"
-              className="flex cursor-pointer items-center justify-between rounded-xl border p-4 has-[button[data-state=checked]]:border-primary has-[button[data-state=checked]]:bg-primary/5"
+              className="flex cursor-pointer flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border p-4 transition-colors hover:bg-muted/40 has-[button[data-state=checked]]:border-primary has-[button[data-state=checked]]:bg-primary/5"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <RadioGroupItem value="full" id="pay-full" />
                 <div>
                   <p className="text-sm font-medium text-foreground">Pay full amount</p>
@@ -96,12 +96,12 @@ export default function TenantPayRentPage() {
                   </p>
                 </div>
               </div>
-              <p className="text-sm font-semibold text-foreground">{formatKes(fullAmount)}</p>
+              <p className="pl-7 text-sm font-semibold text-foreground sm:pl-0">{formatKes(fullAmount)}</p>
             </label>
 
             <label
               htmlFor="pay-custom"
-              className="flex cursor-pointer flex-col gap-3 rounded-xl border p-4 has-[button[data-state=checked]]:border-primary has-[button[data-state=checked]]:bg-primary/5"
+              className="flex cursor-pointer flex-col gap-3 rounded-xl border p-4 transition-colors hover:bg-muted/40 has-[button[data-state=checked]]:border-primary has-[button[data-state=checked]]:bg-primary/5"
             >
               <div className="flex items-center gap-3">
                 <RadioGroupItem value="custom" id="pay-custom" />
@@ -111,28 +111,35 @@ export default function TenantPayRentPage() {
                 </div>
               </div>
               {option === 'custom' && (
-                <div className="pl-7">
-                  <Label htmlFor="custom-amount" className="sr-only">Amount (KES)</Label>
+                <div className="space-y-1.5 pl-7">
+                  <Label htmlFor="custom-amount" className="text-sm font-medium">Amount (KES)</Label>
                   <Input
                     id="custom-amount"
                     type="number"
+                    inputMode="numeric"
                     min="1"
                     step="1"
-                    placeholder="Enter amount in KES"
+                    placeholder="e.g. 5000"
                     value={customAmount}
                     onChange={(e) => setCustomAmount(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
-                    className="h-11 max-w-xs"
+                    className="h-11 w-full sm:max-w-xs"
                   />
                 </div>
               )}
             </label>
           </RadioGroup>
 
+          <div className="flex items-center justify-between border-t pt-5 text-sm">
+            <span className="text-muted-foreground">You will pay</span>
+            <span className="text-base font-semibold text-foreground">{canPay ? formatKes(amount) : 'KES 0'}</span>
+          </div>
+
           <Button
             onClick={handlePay}
+            isLoading={initiate.isPending}
             disabled={initiate.isPending || !canPay}
-            className="w-full rounded-xl"
+            className="h-11 w-full"
           >
             Pay Rent
           </Button>

@@ -80,7 +80,7 @@ export function PasswordSetupModal({ open, onOpenChange }: PasswordSetupModalPro
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-semibold">New Password</FormLabel>
+                  <FormLabel>New Password</FormLabel>
                   <FormControl>
                     <PasswordInput
                       {...field}
@@ -98,7 +98,7 @@ export function PasswordSetupModal({ open, onOpenChange }: PasswordSetupModalPro
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-semibold">Confirm Password</FormLabel>
+                  <FormLabel>Confirm Password</FormLabel>
                   <FormControl>
                     <PasswordInput
                       {...field}

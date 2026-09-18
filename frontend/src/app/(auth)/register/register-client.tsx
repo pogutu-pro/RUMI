@@ -35,8 +35,8 @@ export function RegisterClientPage() {
                 />
               </Link>
             }
-            title={<span className="font-black text-3xl tracking-tight">Create your RumiaRent account</span>}
-            description={<span className="text-gray-500 font-bold uppercase tracking-wider text-xs">For landlords and agents. Your tenants will be added by you, not through sign up.</span>}
+            title={<span className="font-semibold text-3xl tracking-tight">Create your RumiaRent account</span>}
+            description={<span className="text-gray-500 font-bold text-xs">For landlords and agents. Your tenants will be added by you, not through sign up.</span>}
           >
             <div className="space-y-8">
               <LandlordRegisterForm />
@@ -45,7 +45,7 @@ export function RegisterClientPage() {
                 Already have an account?{' '}
                 <Link
                   href={AUTH_ROUTES.LOGIN}
-                  className="text-primary hover:text-primary/80 transition-colors uppercase tracking-widest text-xs"
+                  className="text-primary hover:text-primary/80 transition-colors text-xs"
                 >
                   Sign in
                 </Link>
