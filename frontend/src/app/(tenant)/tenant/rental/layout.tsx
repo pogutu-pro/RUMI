@@ -1,12 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import { LayoutDashboard, LifeBuoy, Settings } from 'lucide-react';
+import { CreditCard, LayoutDashboard, LifeBuoy, Settings } from 'lucide-react';
 import { UserRole } from '@/features/auth/stores/auth.types';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 
 const TENANT_NAV = [
   { href: '/tenant/rental', label: 'My Rental', icon: LayoutDashboard },
+  { href: '/tenant/rental/pay', label: 'Pay Rent', icon: CreditCard },
   { href: '/tenant/rental/support', label: 'Support', icon: LifeBuoy },
   { href: '/tenant/rental/settings', label: 'Settings', icon: Settings },
 ];
