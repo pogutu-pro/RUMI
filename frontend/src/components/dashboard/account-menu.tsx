@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { LogOut, Settings } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,11 +16,13 @@ import { getUserInitials } from '@/lib/utils/user';
 export function AccountMenu({
   name,
   email,
+  photoUrl,
   settingsHref,
   onLogout,
 }: {
   name: string;
   email: string;
+  photoUrl?: string | null;
   settingsHref: string;
   onLogout: () => void;
 }) {
@@ -32,6 +34,7 @@ export function AccountMenu({
           className="flex h-9 w-9 items-center justify-center rounded-full transition-opacity hover:opacity-80"
         >
           <Avatar className="h-9 w-9">
+            {photoUrl && <AvatarImage src={photoUrl} alt={name} />}
             <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
               {getUserInitials(name) || 'U'}
             </AvatarFallback>

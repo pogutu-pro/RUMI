@@ -133,6 +133,7 @@ export function DashboardShell({
   const name = user ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || user.email : '';
   const firstName = user?.first_name?.trim() || name;
   const email = user?.email ?? '';
+  const photoUrl = user?.profile_picture ?? null;
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
 
   return (
@@ -183,7 +184,7 @@ export function DashboardShell({
                 <span className="text-base font-semibold text-foreground">RumiaRent</span>
                 <div className="ml-auto flex items-center gap-1">
                   <NotificationBell />
-                  <AccountMenu name={name} email={email} settingsHref={settingsHref} onLogout={logout} />
+                  <AccountMenu name={name} email={email} photoUrl={photoUrl} settingsHref={settingsHref} onLogout={logout} />
                 </div>
               </header>
               <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
@@ -207,7 +208,7 @@ export function DashboardShell({
                 <p className="truncate text-sm font-medium text-foreground">Welcome back, {firstName}</p>
                 <div className="flex items-center gap-1">
                   <NotificationBell />
-                  <AccountMenu name={name} email={email} settingsHref={settingsHref} onLogout={logout} />
+                  <AccountMenu name={name} email={email} photoUrl={photoUrl} settingsHref={settingsHref} onLogout={logout} />
                 </div>
               </header>
             )}
