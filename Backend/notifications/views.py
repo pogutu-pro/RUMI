@@ -471,9 +471,13 @@ class NotificationPreferencesView(APIView):
                 'error': 'Failed to update preferences'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Update allowed fields
+        # Update allowed fields. sms_enabled is deliberately excluded — SMS
+        # rent reminders are how RumiaRent gets a tenant's attention when
+        # email goes unread, and letting a tenant silently opt out defeats
+        # the point of the reminder for both them and their landlord. The
+        # field is still readable (always true) but not settable here.
         allowed_fields = [
-            'email_enabled', 'sms_enabled', 'marketing_emails',
+            'email_enabled', 'marketing_emails',
             'booking_updates', 'marketplace_updates', 'roommate_updates'
         ]
 
@@ -482,6 +486,10 @@ class NotificationPreferencesView(APIView):
             if field in request.data:
                 setattr(prefs, field, request.data[field])
                 updated = True
+
+        if not prefs.sms_enabled:
+            prefs.sms_enabled = True
+            updated = True
 
         if updated:
             prefs.save()

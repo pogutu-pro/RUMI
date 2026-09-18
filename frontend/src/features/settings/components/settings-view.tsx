@@ -188,13 +188,9 @@ function NotificationsTab() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium">SMS</p>
-            <p className="text-xs text-muted-foreground">Rent reminders by text message</p>
+            <p className="text-xs text-muted-foreground">Rent reminders by text message — always on</p>
           </div>
-          <Switch
-            checked={data?.sms_enabled ?? true}
-            onCheckedChange={(checked) => update.mutate({ sms_enabled: checked })}
-            disabled={update.isPending}
-          />
+          <Switch checked disabled />
         </div>
       </CardContent>
     </Card>

@@ -26,14 +26,17 @@ function formatKes(amount: string | number) {
   return `KES ${n.toLocaleString('en-KE', { maximumFractionDigits: 0 })}`;
 }
 
+/**
+ * The colored "action needed" hero only makes sense when there's actually
+ * something to pay — showing a loud "You're paid up" success banner as a
+ * standing fixture whenever nothing happens to be due yet reads as a
+ * meaningless celebration, not information. Returns null when there's
+ * nothing due, and the caller renders a quiet status line instead.
+ */
 function heroStateFor(nextCharge: RentCharge | undefined, outstandingTotal: string | undefined) {
   const outstanding = Number(outstandingTotal ?? '0');
   if (!nextCharge || outstanding <= 0) {
-    return {
-      tone: 'border-success/30 bg-success/5',
-      label: 'text-success',
-      badge: "You're paid up",
-    } as const;
+    return null;
   }
   if (nextCharge.status === 'overdue') {
     return {
@@ -122,26 +125,35 @@ export default function TenantRentalDashboard() {
 
   return (
     <div className="space-y-6">
-      <Card className={`rounded-2xl border-2 ${hero.tone}`}>
-        <CardContent className="space-y-4 pt-6">
-          <div className="flex items-center justify-between">
-            <span className={`text-xs font-semibold uppercase tracking-wide ${hero.label}`}>{hero.badge}</span>
-            <span className="text-xs text-muted-foreground">
-              {activeTenancy.unit_number}
-              {nextCharge && ` · due ${nextCharge.due_date}`}
-            </span>
-          </div>
-          <p className="text-3xl font-semibold">
-            {outstanding > 0 ? formatKes(outstanding) : formatKes(activeTenancy.monthly_rent)}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {outstanding > 0 ? 'Outstanding balance' : `Monthly rent · next charge not due yet`}
-          </p>
-          <Button onClick={handlePay} disabled={initiate.isPending} className="w-full rounded-xl">
-            Pay with Paystack
-          </Button>
-        </CardContent>
-      </Card>
+      {hero ? (
+        <Card className={`rounded-2xl border-2 ${hero.tone}`}>
+          <CardContent className="space-y-4 pt-6">
+            <div className="flex items-center justify-between">
+              <span className={`text-xs font-semibold uppercase tracking-wide ${hero.label}`}>{hero.badge}</span>
+              <span className="text-xs text-muted-foreground">
+                {activeTenancy.unit_number}
+                {nextCharge && ` · due ${nextCharge.due_date}`}
+              </span>
+            </div>
+            <p className="text-3xl font-semibold">{formatKes(outstanding)}</p>
+            <p className="text-sm text-muted-foreground">Outstanding balance</p>
+            <Button onClick={handlePay} disabled={initiate.isPending} className="w-full rounded-xl">
+              Pay with Paystack
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="rounded-2xl">
+          <CardContent className="flex items-center justify-between pt-6">
+            <div>
+              <p className="text-sm font-medium text-foreground">Rent is up to date</p>
+              <p className="text-xs text-muted-foreground">
+                {activeTenancy.unit_number} · {formatKes(activeTenancy.monthly_rent)}/month
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -176,10 +188,6 @@ export default function TenantRentalDashboard() {
             <div>
               <dt className="text-xs text-muted-foreground">Rent due day</dt>
               <dd className="text-sm font-medium">{`Day ${activeTenancy.rent_due_day} of each month`}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Grace period</dt>
-              <dd className="text-sm font-medium">{`${activeTenancy.grace_period_days} days`}</dd>
             </div>
           </dl>
         </CardContent>
