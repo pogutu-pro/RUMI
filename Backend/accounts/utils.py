@@ -229,8 +229,14 @@ def create_branded_email_html(subject, plain_message, recipient_name=None):
     paragraphs = [p.strip() for p in plain_message.split('\n\n') if p.strip()]
     body_html = ''.join(render_paragraph(p) for p in paragraphs)
 
+    # Most message bodies already open with their own "Hi <name>," — adding a
+    # second one from the wrapper printed the greeting twice.
+    already_greeted = bool(paragraphs) and paragraphs[0].lower().startswith(
+        ('hi ', 'hi,', 'hello', 'dear ', 'hey ')
+    )
+
     greeting = ''
-    if recipient_name:
+    if recipient_name and not already_greeted:
         greeting = (
             f'<p style="margin:0 0 16px 0;font-size:18px;font-weight:600;color:#111827;">'
             f'Hi {html_lib.escape(recipient_name)},</p>'
