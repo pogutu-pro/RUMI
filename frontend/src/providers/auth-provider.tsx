@@ -38,7 +38,7 @@ const ROLE_REDIRECTS: Record<string, string> = {
   [UserRole.TENANT]: '/tenant/rental',
   [UserRole.LANDLORD]: '/landlord/rental',
   [UserRole.CARETAKER]: '/caretaker/rental',
-  [UserRole.SUPER_ADMIN]: '/admin/billing',
+  [UserRole.SUPER_ADMIN]: '/platform/billing',
   [UserRole.TECH_SUPPORT_ADMIN]: '/tech-support/dashboard',
   'tech_support': '/tech-support/dashboard',
 };

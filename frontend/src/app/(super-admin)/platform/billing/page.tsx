@@ -152,7 +152,7 @@ export default function AdminBillingListPage() {
                   </StatusPill>
                 </TableCell>
                 <TableCell>
-                  <Link href={`/admin/billing/${row.id}`} className="text-primary underline">
+                  <Link href={`/platform/billing/${row.id}`} className="text-primary underline">
                     View
                   </Link>
                 </TableCell>

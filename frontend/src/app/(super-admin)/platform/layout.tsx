@@ -5,7 +5,7 @@ import { CreditCard } from 'lucide-react';
 import { UserRole } from '@/features/auth/stores/auth.types';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 
-const ADMIN_NAV = [{ href: '/admin/billing', label: 'Billing', icon: CreditCard }];
+const ADMIN_NAV = [{ href: '/platform/billing', label: 'Billing', icon: CreditCard }];
 
 /**
  * Super-admin's own dashboard shell — billing overview across every
