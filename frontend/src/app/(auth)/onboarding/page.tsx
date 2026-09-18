@@ -27,7 +27,7 @@ export default function OnboardingPage() {
           description={
             <div className="space-y-1">
               <p className="text-gray-900 font-bold">Finish setting up your {user.role} account</p>
-              <p className="text-xs text-gray-500 font-bold">We need a few more details to verified your identity</p>
+              <p className="text-xs text-gray-500">We need a few more details to verify your identity</p>
             </div>
           }
         >

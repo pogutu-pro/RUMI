@@ -35,8 +35,8 @@ export default function LoginPage() {
              />
            </Link>
         }
-        title={<span className="font-semibold text-3xl tracking-tight">Welcome to RumiaRent</span>}
-        description={<span className="text-gray-500 font-bold text-xs">Sign in to your account</span>}
+        title={<span className="font-semibold text-2xl tracking-tight sm:text-3xl">Welcome to RumiaRent</span>}
+        description={<span className="text-sm text-gray-500">Sign in to your account</span>}
       >
         <div className="space-y-4">
           {sessionExpired && (

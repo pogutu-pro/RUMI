@@ -135,7 +135,7 @@ export function LandlordRegisterForm() {
           {...register('confirm_password')}
         />
 
-        <div className="text-xs text-center text-gray-500 font-bold">
+        <div className="text-xs text-center text-gray-500 leading-relaxed">
           By selecting <strong>Create landlord account</strong>, I agree to the{' '}
           <Link
             href="/terms"

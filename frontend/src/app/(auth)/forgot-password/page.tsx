@@ -102,15 +102,15 @@ export default function ForgotPasswordPage() {
       <motion.section
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full"
+        className="mx-auto w-full max-w-md"
       >
         <Link href="/" className="mb-6 flex justify-center">
           <Image src="/images/logo/logo.png" alt="RumiaRent" width={40} height={40} />
         </Link>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-8 space-y-6">
+        <div className="bg-white rounded-2xl border border-border/70 shadow-sm p-6 sm:p-8 space-y-6">
           <div className="flex justify-center">
-            <div className="w-16 h-12 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle2 className="w-9 h-9 text-green-600" />
+            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+              <CheckCircle2 className="w-7 h-7 text-primary" />
             </div>
           </div>
 
@@ -122,9 +122,9 @@ export default function ForgotPasswordPage() {
             <p className="font-medium text-gray-900">{emailSent}</p>
           </header>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
-            <h3 className="font-medium text-blue-900">Next steps</h3>
-            <ol className="list-decimal list-inside text-sm text-blue-800 space-y-1">
+          <div className="bg-muted/50 border border-border rounded-xl p-4 space-y-2">
+            <h3 className="text-sm font-semibold text-foreground">Next steps</h3>
+            <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-1">
               <li>Check your email (and spam folder)</li>
               <li>Open the reset link</li>
               <li>Create your new password</li>
@@ -134,7 +134,7 @@ export default function ForgotPasswordPage() {
 
           <div className="space-y-4">
             {resendSuccess && (
-              <p className="text-center text-sm text-green-600">
+              <p className="text-center text-sm text-primary">
                 Reset link resent successfully
               </p>
             )}
@@ -161,7 +161,7 @@ export default function ForgotPasswordPage() {
           <div className="pt-4 border-t text-center">
             <Link
               href={AUTH_ROUTES.LOGIN}
-              className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+              className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to login
@@ -180,15 +180,15 @@ export default function ForgotPasswordPage() {
     <motion.section
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full"
+      className="mx-auto w-full max-w-md"
     >
       <Link href="/" className="mb-6 flex justify-center">
         <Image src="/images/logo/logo.png" alt="RumiaRent" width={40} height={40} />
       </Link>
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-8 space-y-6">
+      <div className="bg-white rounded-2xl border border-border/70 shadow-sm p-6 sm:p-8 space-y-6">
         <header className="text-center space-y-2">
-          <div className="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center">
-            <Mail className="w-6 h-6 text-blue-600" />
+          <div className="w-12 h-12 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+            <Mail className="w-6 h-6 text-primary" />
           </div>
           <h1 className="text-2xl font-semibold text-gray-900">
             Forgot your password?
@@ -224,7 +224,7 @@ export default function ForgotPasswordPage() {
                 placeholder="you@example.com"
                 disabled={loading}
                 className={cn(
-                  'pl-10 transition-all',
+                  'h-11 pl-10 transition-all',
                   errors.email && 'border-red-500 focus-visible:ring-red-500',
                 )}
                 {...register('email')}
@@ -253,7 +253,7 @@ export default function ForgotPasswordPage() {
         <div className="pt-4 border-t text-center">
           <Link
             href={AUTH_ROUTES.LOGIN}
-            className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to login
