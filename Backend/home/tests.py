@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
@@ -130,3 +132,97 @@ class AdminBlogTests(TestCase):
         response = self.tech_client.delete(f'/api/v1/home/admin/blog/{post.id}/')
         self.assertEqual(response.status_code, 204)
         self.assertFalse(BlogPost.objects.filter(id=post.id).exists())
+
+
+@override_settings(
+    CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    ENABLE_RATE_LIMITING=False,
+)
+class AdminBlogCacheInvalidationTests(TestCase):
+    """APIResponseCacheMiddleware caches the public blog endpoints for up to
+    5 minutes with no awareness of the underlying data — without explicit
+    invalidation, publishing/editing/deleting a post would silently keep
+    serving a stale cached response. Verified by asserting
+    _invalidate_public_blog_cache is called exactly when the public-facing
+    result actually changes, not by asserting on real cache-backend state
+    (home.views.api_cache is a module-level singleton bound at Django
+    startup, before this class's CACHES override takes effect — same
+    class of issue as RateLimitMiddleware's cache_manager)."""
+
+    def setUp(self):
+        self.tech_support = User.objects.create_user(
+            email='tech2@test.com', password='Pass123!',
+            first_name='Tech', last_name='Support', role='tech_support',
+            is_verified=True,
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(self.tech_support)
+
+    @patch('home.views._invalidate_public_blog_cache')
+    def test_publishing_on_create_invalidates(self, mock_invalidate):
+        response = self.client.post('/api/v1/home/admin/blog/', {
+            'title': 'Published on create', 'content': 'x', 'category': 'company_news',
+            'is_published': True,
+        }, format='json')
+        mock_invalidate.assert_called_once_with(slug=response.data['slug'])
+
+    @patch('home.views._invalidate_public_blog_cache')
+    def test_saving_as_draft_on_create_does_not_invalidate(self, mock_invalidate):
+        self.client.post('/api/v1/home/admin/blog/', {
+            'title': 'Still a draft', 'content': 'x', 'category': 'company_news',
+        }, format='json')
+        mock_invalidate.assert_not_called()
+
+    @patch('home.views._invalidate_public_blog_cache')
+    def test_publishing_a_draft_via_patch_invalidates(self, mock_invalidate):
+        post = BlogPost.objects.create(
+            title='Draft to publish', slug='draft-to-publish', content='x',
+            author=self.tech_support, category='company_news', is_published=False,
+        )
+        self.client.patch(f'/api/v1/home/admin/blog/{post.id}/', {'is_published': True}, format='json')
+        mock_invalidate.assert_called_once_with(slug='draft-to-publish', old_slug='draft-to-publish')
+
+    @patch('home.views._invalidate_public_blog_cache')
+    def test_editing_content_of_a_still_draft_post_does_not_invalidate(self, mock_invalidate):
+        post = BlogPost.objects.create(
+            title='Still draft', slug='still-draft', content='x',
+            author=self.tech_support, category='company_news', is_published=False,
+        )
+        self.client.patch(f'/api/v1/home/admin/blog/{post.id}/', {'content': 'edited'}, format='json')
+        mock_invalidate.assert_not_called()
+
+    @patch('home.views._invalidate_public_blog_cache')
+    def test_editing_title_of_published_post_invalidates_both_old_and_new_slug(self, mock_invalidate):
+        post = BlogPost.objects.create(
+            title='Original Title', slug='original-title', content='x',
+            author=self.tech_support, category='company_news', is_published=True,
+        )
+        self.client.patch(f'/api/v1/home/admin/blog/{post.id}/', {'title': 'New Title'}, format='json')
+        mock_invalidate.assert_called_once_with(slug='new-title', old_slug='original-title')
+
+    @patch('home.views._invalidate_public_blog_cache')
+    def test_unpublishing_invalidates(self, mock_invalidate):
+        post = BlogPost.objects.create(
+            title='Was live', slug='was-live', content='x',
+            author=self.tech_support, category='company_news', is_published=True,
+        )
+        self.client.patch(f'/api/v1/home/admin/blog/{post.id}/', {'is_published': False}, format='json')
+        mock_invalidate.assert_called_once_with(slug='was-live', old_slug='was-live')
+
+    @patch('home.views._invalidate_public_blog_cache')
+    def test_deleting_published_post_invalidates(self, mock_invalidate):
+        post = BlogPost.objects.create(
+            title='To delete', slug='to-delete', content='x',
+            author=self.tech_support, category='company_news', is_published=True,
+        )
+        self.client.delete(f'/api/v1/home/admin/blog/{post.id}/')
+        mock_invalidate.assert_called_once_with(slug='to-delete')
+
+    @patch('home.views._invalidate_public_blog_cache')
+    def test_deleting_draft_post_does_not_invalidate(self, mock_invalidate):
+        post = BlogPost.objects.create(
+            title='Draft to delete', slug='draft-to-delete', content='x',
+            author=self.tech_support, category='company_news', is_published=False,
+        )
+        self.client.delete(f'/api/v1/home/admin/blog/{post.id}/')
+        mock_invalidate.assert_not_called()
