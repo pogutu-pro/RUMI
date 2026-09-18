@@ -108,12 +108,19 @@ export default function BlogPage() {
       try {
         setLoading(true);
         const response = await getBlogPosts({ limit: 20 });
-        // Handle different possible API response structures
-         
+        // Handle different possible API response structures. The real one
+        // — BlogListView in Backend/home/views.py — returns
+        // {total_posts, posts}, a hand-rolled shape, not DRF's standard
+        // {count, results} pagination envelope. Checking only `data` and
+        // `results` (never `posts`) meant this branch never matched
+        // anything real: the list silently rendered empty regardless of
+        // how many posts were actually published.
         const responseAny = response as any;
         let postsData: ApiBlogPost[] = [];
         if (Array.isArray(responseAny)) {
           postsData = responseAny;
+        } else if (responseAny?.posts && Array.isArray(responseAny.posts)) {
+          postsData = responseAny.posts;
         } else if (responseAny?.data && Array.isArray(responseAny.data)) {
           postsData = responseAny.data;
         } else if (responseAny?.results && Array.isArray(responseAny.results)) {

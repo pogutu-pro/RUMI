@@ -128,10 +128,14 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
         const allPosts = await getBlogPosts({ limit: 10 });
         // Handle different possible API response structures
          
+        // Same shape as the list page (blog/page.tsx) — the real response
+        // is {total_posts, posts}, not {data: [...]} or {results: [...]}.
         const allPostsAny = allPosts as any;
         let allPostsData: ApiBlogPost[] = [];
         if (Array.isArray(allPostsAny)) {
           allPostsData = allPostsAny;
+        } else if (allPostsAny?.posts && Array.isArray(allPostsAny.posts)) {
+          allPostsData = allPostsAny.posts;
         } else if (allPostsAny?.data && Array.isArray(allPostsAny.data)) {
           allPostsData = allPostsAny.data;
         } else if (allPostsAny?.results && Array.isArray(allPostsAny.results)) {
