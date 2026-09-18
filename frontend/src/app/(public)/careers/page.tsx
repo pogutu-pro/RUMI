@@ -31,8 +31,14 @@ export default function CareersPage() {
         <div className="container mx-auto max-w-2xl">
           <div className="border border-gray-100 bg-gray-50 p-10 rounded-3xl text-center">
             <h2 className="font-bold text-primary text-3xl mb-3">Get in touch</h2>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-lg text-gray-600 mb-2">
               If you&apos;d like to introduce yourself, reach out and tell us a bit about what you do.
+            </p>
+            <p className="text-lg text-gray-600 mb-8">
+              Email us at{' '}
+              <a href="mailto:info@rumiarent.com" className="text-primary font-medium underline">
+                info@rumiarent.com
+              </a>
             </p>
             <Link href="/contact">
               <Button className="rounded-full px-10 h-14 text-lg font-medium">Contact Us</Button>
