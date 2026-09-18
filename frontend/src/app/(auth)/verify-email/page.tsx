@@ -70,6 +70,19 @@ export default function VerifyEmailPage() {
     });
   };
 
+  // Submit the moment the sixth digit lands (typed or pasted) instead of
+  // making the user find the button. A wrong code is cleared so they can
+  // retype straight away; without an email there is nothing to check against,
+  // so the manual button and email field remain.
+  const handleComplete = (code: string) => {
+    const email = getValues('email') || emailFromQuery;
+    if (!email || verifyHook.isPending) return;
+    verifyHook.mutate(
+      { otp: code, email, token: tokenFromQuery },
+      { onError: () => setValue('otp', '') },
+    );
+  };
+
   const handleResend = async () => {
     if (resendCooldown > 0 || resendHook.isPending) return;
     try {
@@ -161,6 +174,8 @@ export default function VerifyEmailPage() {
             render={({ field }) => (
               <OTPInput
                 length={6}
+                autoFocus
+                onComplete={handleComplete}
                 value={field.value}
                 onChange={(value: string) => {
                   field.onChange(value);
