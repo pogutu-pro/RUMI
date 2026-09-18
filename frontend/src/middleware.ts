@@ -96,7 +96,7 @@ function getDashboardUrl(role?: UserRole): string {
     case 'landlord':
       return '/landlord/rental';
     case 'super_admin':
-      return '/platform/billing';
+      return '/platform/overview';
     case 'caretaker':
       return '/caretaker/rental';
     case 'tech_support':

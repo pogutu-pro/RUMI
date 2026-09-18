@@ -24,6 +24,13 @@ export function useAdminRevenueSummary() {
   });
 }
 
+export function useAdminPlatformOverview() {
+  return useQuery({
+    queryKey: ['admin-billing', 'overview'],
+    queryFn: adminBillingApi.getPlatformOverview,
+  });
+}
+
 export function useAdminBillingList(search: string) {
   return useQuery({
     queryKey: ['admin-billing', 'list', search],

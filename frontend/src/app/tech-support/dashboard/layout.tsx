@@ -11,13 +11,17 @@ const TECH_SUPPORT_NAV = [
 ];
 
 /** Tech support's own dashboard — ticket queue across every organization,
- * plus authoring the public RumiaRent blog (home/models.py:BlogPost). */
+ * plus authoring the public RumiaRent blog (home/models.py:BlogPost).
+ * super_admin is also allowed here (from the platform shell's Support link)
+ * — showOrgSwitcher is off because neither page here reads the
+ * landlord-scoped selected-org store the switcher writes to. */
 export default function TechSupportLayout({ children }: { children: React.ReactNode }) {
   return (
     <DashboardShell
       allowedRoles={[UserRole.TECH_SUPPORT, UserRole.TECH_SUPPORT_ADMIN, UserRole.SUPER_ADMIN]}
       nav={TECH_SUPPORT_NAV}
       maxWidth="max-w-4xl"
+      showOrgSwitcher={false}
     >
       {children}
     </DashboardShell>

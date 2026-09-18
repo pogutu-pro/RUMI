@@ -13,8 +13,9 @@ explicit `organization_id` to act on behalf of that organization.
 """
 from __future__ import annotations
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db.models import Sum
+from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from rest_framework import status
@@ -26,6 +27,7 @@ from rest_framework.views import APIView
 from core.permissions.rumia import OrganizationScopedMixin, get_canonical_role
 from organizations.models import Organization
 from rent.providers.base import PaymentProviderError
+from support.models import SupportTicket
 
 from .models import OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
 from .serializers import (
@@ -410,4 +412,55 @@ class AdminRevenueSummaryView(APIView):
                 {'month': row['month'].date().isoformat(), 'total': row['total']}
                 for row in monthly
             ],
+        })
+
+
+class AdminPlatformOverviewView(APIView):
+    """
+    GET -> single-call platform snapshot for the super-admin Overview page:
+    every user broken down by role, every organization, open support
+    tickets, and the same revenue figures AdminRevenueSummaryView computes
+    (kept in sync here rather than making the frontend fire two requests
+    for one landing page).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        User = get_user_model()
+        role_counts = dict(
+            User.objects.values_list('role').annotate(count=Count('id')).order_by()
+        )
+        total_users = sum(role_counts.values())
+
+        successful_payments = SubscriptionPayment.objects.filter(status='success')
+        total_revenue = successful_payments.aggregate(total=Sum('amount'))['total'] or 0
+
+        now = timezone.now()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        revenue_this_month = successful_payments.filter(
+            paid_at__gte=month_start
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        active_subscriptions = OrganizationSubscription.objects.filter(status='active')
+        mrr = sum((sub.plan.price for sub in active_subscriptions.select_related('plan')), start=0)
+
+        ticket_counts = dict(
+            SupportTicket.objects.values_list('status').annotate(count=Count('id')).order_by()
+        )
+        open_tickets = ticket_counts.get('open', 0) + ticket_counts.get('in_progress', 0)
+
+        return Response({
+            'total_users': total_users,
+            'users_by_role': role_counts,
+            'total_organizations': Organization.objects.count(),
+            'total_revenue': total_revenue,
+            'revenue_this_month': revenue_this_month,
+            'mrr': mrr,
+            'paying_organizations': active_subscriptions.count(),
+            'open_support_tickets': open_tickets,
+            'total_support_tickets': sum(ticket_counts.values()),
         })
