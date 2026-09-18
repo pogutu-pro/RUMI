@@ -214,13 +214,9 @@ class ContactInfoView(APIView):
         return Response({
             'email': 'info@rumiarent.co.ke',
             'support_email': 'info@rumiarent.co.ke',
-            'phone': '+254 700 000 000',
-            'whatsapp': '+254 700 000 000',
             'address': {
-                'street': '123 University Way',
                 'city': 'Nairobi',
                 'country': 'Kenya',
-                'postal_code': '00100'
             },
             'office_hours': {
                 'weekdays': '8:00 AM - 6:00 PM EAT',

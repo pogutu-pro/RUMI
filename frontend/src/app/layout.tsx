@@ -142,7 +142,6 @@ export default function RootLayout({
     },
     contactPoint: {
       '@type': 'ContactPoint',
-      telephone: '+254-757-901596',
       contactType: 'customer service',
       email: 'info@rumiarent.co.ke',
       availableLanguage: ['en', 'sw'],
