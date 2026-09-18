@@ -103,14 +103,23 @@ export const uploadProfileImage = async (
   const formData = new FormData();
   formData.append('image', file);
 
+  // NOTE: this component (AvatarUpload, via useUploadProfileImage) isn't
+  // rendered on any page right now — dead code, not the tenant photo-
+  // upload bug that was actually reported. Also worth knowing if this
+  // ever gets wired up: '/accounts/profile/upload-image/' has no matching
+  // URL in Backend/accounts/urls.py at all — the real, working endpoint is
+  // '/accounts/profile/picture/' (ProfilePictureUploadView), used by
+  // features/auth/api/auth.ts's uploadProfilePicture instead. Left as-is
+  // rather than rewiring unreachable code.
+  //
+  // Content-Type: undefined, not a hardcoded 'multipart/form-data' string
+  // — see the identical fix + comment in features/auth/api/auth.ts's
+  // uploadProfilePicture for why (no boundary= param breaks Django's
+  // multipart parser).
   const response = await apiClient.axios.post<ApiResponse<{ url: string }>>(
     '/api/v1/accounts/profile/upload-image/',
     formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    }
+    { headers: { 'Content-Type': undefined } }
   );
   return response.data;
 };

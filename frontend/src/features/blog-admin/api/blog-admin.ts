@@ -24,10 +24,15 @@ export const blogAdminApi = {
   uploadCover: async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
+    // Content-Type: undefined, not a hardcoded 'multipart/form-data' string
+    // — that string has no boundary= parameter, which breaks Django's
+    // multipart parser (request.FILES ends up empty). undefined removes
+    // the axios instance's default 'application/json' header for this
+    // call so the browser sets Content-Type itself, boundary included.
     const res = await axios.post<{ featured_image: string }>(
       '/home/admin/blog/upload-cover/',
       formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } },
+      { headers: { 'Content-Type': undefined } },
     );
     return res.data.featured_image;
   },
