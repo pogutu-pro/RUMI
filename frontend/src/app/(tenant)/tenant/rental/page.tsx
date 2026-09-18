@@ -131,7 +131,7 @@ export default function TenantRentalDashboard() {
             <div className="flex items-center justify-between">
               <span className={`text-xs font-semibold uppercase tracking-wide ${hero.label}`}>{hero.badge}</span>
               <span className="text-xs text-muted-foreground">
-                {activeTenancy.unit_number}
+                {activeTenancy.property_name} · {activeTenancy.unit_number}
                 {nextCharge && ` · due ${nextCharge.due_date}`}
               </span>
             </div>
@@ -148,7 +148,7 @@ export default function TenantRentalDashboard() {
             <div>
               <p className="text-sm font-medium text-foreground">Rent is up to date</p>
               <p className="text-xs text-muted-foreground">
-                {activeTenancy.unit_number} · {formatKes(activeTenancy.monthly_rent)}/month
+                {activeTenancy.property_name} · {activeTenancy.unit_number} · {formatKes(activeTenancy.monthly_rent)}/month
               </p>
             </div>
           </CardContent>
@@ -161,6 +161,10 @@ export default function TenantRentalDashboard() {
         </CardHeader>
         <CardContent>
           <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+            <div>
+              <dt className="text-xs text-muted-foreground">Property</dt>
+              <dd className="text-sm font-medium">{activeTenancy.property_name}</dd>
+            </div>
             <div>
               <dt className="text-xs text-muted-foreground">Unit</dt>
               <dd className="text-sm font-medium">{activeTenancy.unit_number}</dd>

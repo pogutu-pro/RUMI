@@ -58,6 +58,7 @@ class RentalUnitSerializer(serializers.ModelSerializer):
 class TenancySerializer(serializers.ModelSerializer):
     tenant_name = serializers.CharField(source='tenant.full_name', read_only=True)
     unit_number = serializers.CharField(source='unit.unit_number', read_only=True)
+    property_name = serializers.CharField(source='parent_property.name', read_only=True)
     property = serializers.PrimaryKeyRelatedField(
         source='parent_property', read_only=True
     )
@@ -66,7 +67,7 @@ class TenancySerializer(serializers.ModelSerializer):
         model = Tenancy
         fields = [
             'id', 'organization', 'property', 'unit', 'tenant',
-            'tenant_name', 'unit_number',
+            'tenant_name', 'unit_number', 'property_name',
             'start_date', 'end_date', 'move_in_date', 'move_out_date',
             'monthly_rent', 'deposit', 'rent_due_day', 'grace_period_days',
             'status', 'renewal_notes', 'notes', 'created_at', 'updated_at',
