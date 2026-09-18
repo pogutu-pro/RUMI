@@ -492,3 +492,79 @@ class BrandedEmailDeliveryTests(TestCase):
         send_password_reset_email(user.id, str(token.token))
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ['reset-me@example.com'])
+
+
+class BrandedEmailTemplateTests(TestCase):
+    """The email layout is customer-facing: right brand, right colours, a logo
+    URL that actually exists, no leftover copy from the old student product."""
+
+    def _render(self, message='Hello there', name='Sam', subject='Subject'):
+        from accounts.utils import create_branded_email_html
+        return create_branded_email_html(subject, message, name)
+
+    def test_uses_rumiarent_brand_colour_and_public_logo(self):
+        html = self._render()
+        self.assertIn('#027F53', html)
+        self.assertIn('https://rumiarent.com/images/logo/logo.png', html)
+        self.assertIn('RumiaRent', html)
+
+    def test_no_leftover_old_brand_or_student_copy(self):
+        html = self._render().lower()
+        for stale in ('student', 'accommodation', '667eea', '764ba2', 'rumi.co.ke',
+                      '+254 700 000 000', 'valued member', 'rumi platform'):
+            self.assertNotIn(stale, html)
+
+    def test_user_supplied_text_is_html_escaped(self):
+        html = self._render(message='<script>alert(1)</script>', name='<b>x</b>')
+        self.assertNotIn('<script>', html)
+        self.assertIn('&lt;script&gt;', html)
+        self.assertNotIn('<b>x</b>', html)
+
+    def test_bare_urls_become_clickable_links(self):
+        html = self._render(message='Reset here:\n\nhttps://rumiarent.com/reset-password?token=abc')
+        self.assertIn('<a href="https://rumiarent.com/reset-password?token=abc"', html)
+
+    def test_year_in_footer_is_current(self):
+        self.assertIn(str(timezone.now().year), self._render())
+
+
+@override_settings(
+    CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
+    DEFAULT_FROM_EMAIL='RumiaRent <noreply@rumiarent.com>',
+    FRONTEND_URL='https://rumiarent.com',
+)
+class TransactionalEmailContentTests(TestCase):
+    """Links in transactional emails must point at the live site, and copy
+    must describe RumiaRent — these used to say rumi.co.ke / 'book hostels' /
+    'connect with other students'."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email='content@example.com', password='Pass123!',
+            first_name='Jo', last_name='Kim', role='landlord', is_verified=True,
+        )
+
+    def _only_email_html(self):
+        from django.core import mail
+        self.assertEqual(len(mail.outbox), 1)
+        return mail.outbox[0].body
+
+    def test_password_reset_link_points_at_live_site(self):
+        from accounts.models import PasswordResetToken
+        from accounts.tasks import send_password_reset_email
+        token = PasswordResetToken.objects.create(
+            user=self.user, expires_at=timezone.now() + timezone.timedelta(hours=1),
+        )
+        send_password_reset_email(self.user.id, str(token.token))
+        html = self._only_email_html()
+        self.assertIn(f'https://rumiarent.com/reset-password?token={token.token}', html)
+        self.assertNotIn('rumi.co.ke', html)
+
+    def test_welcome_email_describes_rumiarent_not_the_old_product(self):
+        from accounts.tasks import send_welcome_email
+        send_welcome_email(self.user.id)
+        html = self._only_email_html().lower()
+        self.assertIn('https://rumiarent.com/dashboard', html)
+        for stale in ('student', 'hostel', 'rumi.co.ke'):
+            self.assertNotIn(stale, html)

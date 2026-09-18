@@ -74,7 +74,7 @@ def notify_admin_new_inquiry(inquiry_id):
 
         Please respond within 24 hours.
 
-        Admin Panel: https://rumi.co.ke/admin/home/contactinquiry/{inquiry.id}/change/
+        Admin Panel: {settings.FRONTEND_URL}/admin/home/contactinquiry/{inquiry.id}/change/
         """
 
         # Send to admin email
@@ -100,7 +100,7 @@ def send_newsletter_verification_email(subscription_id, verification_token):
     try:
         subscription = Newsletter.objects.get(id=subscription_id)
 
-        verification_link = f"https://rumi.co.ke/newsletter/verify?token={verification_token}"
+        verification_link = f"{settings.FRONTEND_URL}/newsletter/verify?token={verification_token}"
 
         subject = 'Verify Your RumiaRent Newsletter Subscription'
         message = f"""
@@ -116,10 +116,9 @@ def send_newsletter_verification_email(subscription_id, verification_token):
         If you didn't subscribe to our newsletter, please ignore this email.
 
         Stay updated with:
-        - New hostel listings near your university
-        - Student accommodation tips
-        - Platform updates and features
-        - Exclusive student deals
+        - Rental management tips for landlords and agents
+        - New features and platform updates
+        - Product news from RumiaRent
 
         Best regards,
         RumiaRent Team
