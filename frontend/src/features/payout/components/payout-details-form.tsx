@@ -1,28 +1,45 @@
 'use client';
 
 import * as React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
   wizardPayoutSchema,
   type WizardPayoutFormData,
 } from '@/lib/validations/auth.schema';
-import { usePayoutStatus, useSubmitPayoutDetails } from '@/features/payout/hooks/use-payout';
+import { usePayoutStatus, useSubmitPayoutDetails, useBankList } from '@/features/payout/hooks/use-payout';
 
 /**
- * The bank-details form — same schema/hook the landlord onboarding wizard's
- * PayoutStep uses (features/auth/components/landlord-onboarding-wizard.tsx),
- * extracted so it's reachable from the dashboard too, not only once during
- * onboarding. Before this, an organization created without going through
- * the wizard (or one that skipped this step) had no way to ever submit
- * bank details again — the Billing & Payout page only ever displayed
- * payout *status*, never gave a way to change it.
+ * The bank-details form — used both from the dashboard (Billing & Payout
+ * page) and from the landlord onboarding wizard's PayoutStep
+ * (features/auth/components/landlord-onboarding-wizard.tsx), one
+ * implementation instead of two forked copies.
+ *
+ * Bank is a live Paystack dropdown (GET /organizations/payout/banks/), not
+ * a free-text "bank code" field a landlord would have no way to know —
+ * selecting a bank sets both bank_name and bank_code together from the
+ * same Paystack entry, so they can never mismatch.
  */
-export function PayoutDetailsForm({ onSuccess }: { onSuccess?: () => void }) {
+interface PayoutDetailsFormProps {
+  onSuccess?: () => void;
+  submitLabel?: string;
+  fullWidthButton?: boolean;
+}
+
+export function PayoutDetailsForm({
+  onSuccess,
+  submitLabel = 'Save bank details',
+  fullWidthButton = false,
+}: PayoutDetailsFormProps) {
   const { data: payoutStatus } = usePayoutStatus();
+  const { data: bankList, isLoading: banksLoading } = useBankList();
   const submitPayout = useSubmitPayoutDetails();
   const [showBankError, setShowBankError] = React.useState(false);
 
@@ -57,18 +74,59 @@ export function PayoutDetailsForm({ onSuccess }: { onSuccess?: () => void }) {
     }
   };
 
+  const banks = bankList?.banks ?? [];
+  const banksUnavailable = !banksLoading && banks.length === 0;
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         <FormField
           control={form.control}
-          name="bank_name"
-          render={({ field }) => (
+          name="bank_code"
+          render={() => (
             <FormItem>
-              <FormLabel className="font-semibold">Bank name</FormLabel>
+              <FormLabel className="font-semibold">Bank</FormLabel>
               <FormControl>
-                <Input {...field} className="h-11" placeholder="e.g. KCB Bank" />
+                <Controller
+                  control={form.control}
+                  name="bank_code"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={(code) => {
+                        const bank = banks.find((b) => b.code === code);
+                        field.onChange(code);
+                        if (bank) form.setValue('bank_name', bank.name);
+                      }}
+                      disabled={banksLoading || banksUnavailable}
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue
+                          placeholder={
+                            banksLoading
+                              ? 'Loading banks…'
+                              : banksUnavailable
+                                ? 'Bank list unavailable right now'
+                                : 'Select your bank'
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {banks.map((bank) => (
+                          <SelectItem key={bank.code} value={bank.code}>
+                            {bank.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </FormControl>
+              {banksUnavailable && (
+                <p className="text-xs text-muted-foreground">
+                  {bankList?.detail || 'Bank selection is unavailable right now — check back soon.'}
+                </p>
+              )}
               <FormMessage />
             </FormItem>
           )}
@@ -80,25 +138,8 @@ export function PayoutDetailsForm({ onSuccess }: { onSuccess?: () => void }) {
             <FormItem>
               <FormLabel className="font-semibold">Account number</FormLabel>
               <FormControl>
-                <Input {...field} inputMode="numeric" className="h-11" />
+                <Input {...field} inputMode="numeric" className="h-11" disabled={banksUnavailable} />
               </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="bank_code"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-semibold">Bank code</FormLabel>
-              <FormControl>
-                <Input {...field} className="h-11" placeholder="e.g. 01" />
-              </FormControl>
-              <p className="text-xs text-muted-foreground">
-                Paystack&apos;s settlement bank code — check your bank&apos;s Paystack listing if
-                you&apos;re not sure.
-              </p>
               <FormMessage />
             </FormItem>
           )}
@@ -114,10 +155,13 @@ export function PayoutDetailsForm({ onSuccess }: { onSuccess?: () => void }) {
         <Button
           type="submit"
           variant="charcoal"
-          className="h-11 rounded-full px-8"
+          size={fullWidthButton ? 'lg' : 'default'}
+          className={fullWidthButton ? 'h-14 w-full rounded-full' : 'h-11 rounded-full px-8'}
+          disabled={banksUnavailable}
           isLoading={submitPayout.isPending}
         >
-          Save bank details
+          {banksLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {submitLabel}
         </Button>
       </form>
     </Form>

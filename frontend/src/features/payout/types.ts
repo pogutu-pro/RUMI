@@ -22,3 +22,14 @@ export interface SubmitPayoutDetailsPayload {
   bank_account_number: string;
   bank_code: string;
 }
+
+/** Mirrors PayoutBankListView's response (Backend/organizations/views.py). */
+export interface BankOption {
+  name: string;
+  code: string;
+}
+
+export interface BankListResponse {
+  banks: BankOption[];
+  detail: string | null;
+}

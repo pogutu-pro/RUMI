@@ -110,6 +110,60 @@ class PayoutAccountTracerTests(RumiaTestFixtures):
         self.assertFalse(PayoutAccount.objects.filter(organization=org).exists())
 
 
+class PayoutBankListViewTests(RumiaTestFixtures):
+    """GET /organizations/payout/banks/ — live bank list from Paystack."""
+
+    def test_landlord_gets_bank_list(self):
+        user, profile, org = self.create_landlord_with_org()
+        fake_banks = [{'name': 'Equity Bank', 'code': '068'}, {'name': 'KCB Bank', 'code': '01'}]
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        with patch.object(PaystackProvider, 'list_banks', return_value=(fake_banks, None)):
+            response = client.get('/api/v1/organizations/payout/banks/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['banks'], fake_banks)
+        self.assertIsNone(response.data['detail'])
+
+    def test_unconfigured_paystack_returns_empty_list_not_error(self):
+        """Paystack not yet approved/configured must not read as a hard
+        failure — it's an expected state, so still 200, empty list, with a
+        message the frontend can show."""
+        user, profile, org = self.create_landlord_with_org()
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        with patch.object(
+            PaystackProvider, 'list_banks',
+            return_value=([], 'PAYSTACK_SECRET_KEY is not set'),
+        ):
+            response = client.get('/api/v1/organizations/payout/banks/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['banks'], [])
+        self.assertEqual(response.data['detail'], 'PAYSTACK_SECRET_KEY is not set')
+
+    def test_tenant_gets_403(self):
+        user, profile, org = self.create_landlord_with_org()
+        tenant_user, _ = self.create_tenant(org)
+
+        client = APIClient()
+        client.force_authenticate(user=tenant_user)
+        response = client.get('/api/v1/organizations/payout/banks/')
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_super_admin_can_list_banks_too(self):
+        admin = self.create_super_admin()
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        with patch.object(PaystackProvider, 'list_banks', return_value=([], None)):
+            response = client.get('/api/v1/organizations/payout/banks/')
+
+        self.assertEqual(response.status_code, 200)
+
+
 class PayoutServiceEditResetTests(RumiaTestFixtures):
     """Task 2: D-09 edit-reset flow — re-verification when bank details change on an active account."""
 
