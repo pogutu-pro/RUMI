@@ -125,14 +125,10 @@ export function LoginForm({
 
       {step === 'email' ? (
         <div className="space-y-4">
-          <div className="text-center mb-8 border-b-2 border-primary/10 pb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Identity Check</h2>
-          </div>
-
           <FormField
             label="Email"
             type="email"
-            placeholder="enter your email"
+            placeholder="you@example.com"
             autoComplete="email"
             error={errors.email?.message}
             required

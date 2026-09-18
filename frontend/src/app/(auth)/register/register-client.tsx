@@ -36,7 +36,7 @@ export function RegisterClientPage() {
               </Link>
             }
             title={<span className="font-semibold text-3xl tracking-tight">Create your RumiaRent account</span>}
-            description={<span className="text-gray-500 font-bold text-xs">For landlords and agents. Your tenants will be added by you, not through sign up.</span>}
+            description={<span className="text-sm text-gray-500">For landlords and agents. Your tenants will be added by you, not through sign up.</span>}
           >
             <div className="space-y-8">
               <LandlordRegisterForm />

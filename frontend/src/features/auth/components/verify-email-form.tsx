@@ -111,7 +111,7 @@ export function VerifyEmailForm({
         animate={{ opacity: 1, y: 0 }}
         className="text-center space-y-6 py-4"
       >
-        <div className="w-16 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+        <div className="h-14 w-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
           <CheckCircle2 className="w-8 h-8 text-green-600" />
         </div>
 
@@ -176,8 +176,8 @@ export function VerifyEmailForm({
         )}
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-        <p className="text-sm text-blue-800">
+      <div className="bg-muted/50 border border-border rounded-xl p-4 text-center">
+        <p className="text-sm text-muted-foreground">
           The code will expire in{' '}
           <span className="font-semibold">10 minutes</span>
         </p>
@@ -206,7 +206,7 @@ export function VerifyEmailForm({
           variant="ghost"
           onClick={handleResend}
           disabled={isPending || resendCooldown > 0 || resendPending}
-          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+          className="text-blue-600 hover:text-muted-foreground hover:bg-blue-50"
         >
           <RefreshCw className="mr-2 h-4 w-4" />
           {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
