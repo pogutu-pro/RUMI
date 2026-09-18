@@ -1,5 +1,10 @@
 import { axiosInstance as axios } from '@/lib/api/client';
-import type { AdminBillingDetail, AdminBillingListRow, AdminOverridePayload } from '../types';
+import type {
+  AdminBillingDetail,
+  AdminBillingListRow,
+  AdminOverridePayload,
+  AdminRevenueSummary,
+} from '../types';
 
 /** Shape of a DRF PageNumberPagination response envelope. */
 interface PaginatedResponse<T> {
@@ -17,6 +22,10 @@ interface PaginatedResponse<T> {
  * with a plain array.
  */
 export const adminBillingApi = {
+  getRevenueSummary: async (): Promise<AdminRevenueSummary> => {
+    const res = await axios.get<AdminRevenueSummary>('/billing/admin/revenue/');
+    return res.data;
+  },
   listOrganizations: async (search?: string): Promise<AdminBillingListRow[]> => {
     const res = await axios.get<PaginatedResponse<AdminBillingListRow>>('/billing/admin/organizations/', {
       params: search ? { search } : undefined,

@@ -17,6 +17,13 @@ function errorMessage(err: unknown, fallback: string): string {
  * SearchInput's debounce trigger a backend-filtered refetch (?search=...)
  * rather than a client-side filter of already-loaded rows.
  */
+export function useAdminRevenueSummary() {
+  return useQuery({
+    queryKey: ['admin-billing', 'revenue'],
+    queryFn: adminBillingApi.getRevenueSummary,
+  });
+}
+
 export function useAdminBillingList(search: string) {
   return useQuery({
     queryKey: ['admin-billing', 'list', search],

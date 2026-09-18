@@ -5,6 +5,17 @@
  */
 import type { OrganizationSubscription, SubscriptionPlan } from '@/features/billing/types';
 
+/** Mirrors AdminRevenueSummaryView's response (Backend/billing/views.py) —
+ * real numbers from the SubscriptionPayment ledger, never estimated. */
+export interface AdminRevenueSummary {
+  total_revenue: string;
+  revenue_this_month: string;
+  mrr: string;
+  active_subscriptions_count: number;
+  total_successful_payments: number;
+  monthly_revenue: { month: string; total: string }[];
+}
+
 /** Flat summary row for the super-admin organization list (ADMIN-01/ADMIN-02). */
 export interface AdminBillingListRow {
   id: string;
