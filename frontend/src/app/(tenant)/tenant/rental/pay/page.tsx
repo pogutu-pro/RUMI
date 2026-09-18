@@ -67,7 +67,7 @@ export default function TenantPayRentPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-xl space-y-6 lg:mx-0">
+    <div className="mx-auto w-full max-w-xl space-y-6">
       <PageHeader title="Pay Rent" description="Pay what's due, or pay ahead of time." />
 
       <Card className="rounded-2xl shadow-sm">

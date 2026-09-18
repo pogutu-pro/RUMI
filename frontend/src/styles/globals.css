@@ -19,6 +19,10 @@
     /* Enable smooth scrolling */
     scroll-behavior: smooth;
 
+    /* Off-screen animated elements (FadeIn slides in from the side) must not
+       widen the layout viewport on phones and foldables. */
+    overflow-x: clip;
+
     /* Better text selection */
     -webkit-tap-highlight-color: transparent;
 
