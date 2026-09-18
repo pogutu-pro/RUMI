@@ -226,3 +226,31 @@ class AdminBlogCacheInvalidationTests(TestCase):
         )
         self.client.delete(f'/api/v1/home/admin/blog/{post.id}/')
         mock_invalidate.assert_not_called()
+
+
+@override_settings(
+    CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    ENABLE_RATE_LIMITING=False,
+)
+class ContactInfoNoInventedDetailsTests(TestCase):
+    """The public contact API used to publish a placeholder phone/WhatsApp
+    number, a made-up street address, and guessed social handles — real
+    visitors could call or click them."""
+
+    def setUp(self):
+        # APIResponseCacheMiddleware caches anonymous GETs in a module-level
+        # cache that ignores override_settings(CACHES=...), so a response
+        # cached by an earlier run would otherwise be asserted on here.
+        from rumi.cache_utils import api_cache
+        cm = api_cache.cache_manager
+        cm.delete(cm.get_cache_key('api', '/api/v1/home/contact/info/', 'GET'))
+
+    def test_only_real_contact_details_are_published(self):
+        response = APIClient().get('/api/v1/home/contact/info/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        for invented in ('phone', 'whatsapp', 'social_media'):
+            self.assertNotIn(invented, data)
+        self.assertTrue(data['email'].startswith('info@rumiarent.'))
+        self.assertNotIn('street', data['address'])
+        self.assertNotIn('postal_code', data['address'])

@@ -304,16 +304,6 @@ export default function HomePage() {
                     Book a Demo
                   </Button>
                 </Link>
-                <a href="https://wa.me/254700000000" target="_blank" rel="noopener noreferrer">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="h-14 rounded-full border-gray-200 bg-gray-50/50 px-8 text-lg font-medium text-gray-600 transition-transform hover:scale-[1.02] hover:bg-gray-100 active:scale-95"
-                  >
-                    <MessageCircle className="mr-2 h-5 w-5" aria-hidden="true" />
-                    Chat on WhatsApp
-                  </Button>
-                </a>
               </div>
             </div>
           </FadeIn>

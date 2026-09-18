@@ -29,7 +29,7 @@ def send_inquiry_confirmation_email(inquiry_id, reference_number):
         {inquiry.message}
 
         We typically respond within 24 hours during business days.
-        For urgent matters, please call us at +254 700 000 000.
+        For urgent matters, reply to this email or write to info@rumiarent.com.
 
         Best regards,
         RumiaRent Support Team

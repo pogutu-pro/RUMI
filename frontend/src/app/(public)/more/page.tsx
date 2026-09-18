@@ -8,7 +8,6 @@ import {
   Shield,
   Briefcase,
   Download,
-  Phone,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -111,13 +110,6 @@ export default function MorePage() {
               icon={<Mail className="h-6 w-6 text-primary" />}
               title="Contact Us"
               description="Get in touch with our support team"
-            />
-            <MenuItem
-              href="tel:+254700000000"
-              icon={<Phone className="h-6 w-6 text-primary" />}
-              title="Call Us"
-              description="Speak to our customer service"
-              external
             />
             <MenuItem
               href="/blog"

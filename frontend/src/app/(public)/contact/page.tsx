@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import { Mail, MapPin, Send } from 'lucide-react';
 import { submitContactForm } from '@/lib/api/public';
 
 export default function ContactPage() {
@@ -98,28 +98,12 @@ export default function ContactPage() {
                   </div>
                   <div className="flex items-start gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                      <Phone className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="mb-1 font-semibold text-gray-900">Phone</h3>
-                      <a
-                        href="tel:+254700000000"
-                        className="text-gray-600 hover:text-primary transition-colors"
-                      >
-                        +254 700 000 000
-                      </a>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                       <MapPin className="h-6 w-6 text-primary" />
                     </div>
                     <div>
                       <h3 className="mb-1 font-semibold text-gray-900">Address</h3>
                       <p className="text-gray-600">
                         Nairobi, Kenya
-                        <br />
-                        East kenya
                       </p>
                     </div>
                   </div>
