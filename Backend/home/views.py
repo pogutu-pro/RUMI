@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from .models import Page, TeamMember, ContactInquiry, FAQ, BlogPost, Newsletter, Testimonial, Statistics
+from rumi.cache_utils import api_cache
 
 
 
@@ -502,6 +503,32 @@ def _unique_blog_slug(title, exclude_pk=None):
     return slug
 
 
+def _invalidate_public_blog_cache(slug=None, old_slug=None):
+    """
+    APIResponseCacheMiddleware (rumi/middleware.py) caches every anonymous
+    GET for up to 5 minutes, keyed on request.path alone (no query string,
+    no awareness of the underlying data) — it has no way to know a blog
+    post was just created/published/edited/deleted, so without this, a
+    newly published post — or an edit, or an unpublish/delete — would
+    silently keep serving the old cached response for up to 5 minutes.
+
+    Reconstructs the exact same cache key the middleware computes
+    (rumi.cache_utils.APIResponseCache.cache_api_response with
+    endpoint=request.path, method='GET') and deletes it directly, rather
+    than a pattern match — the middleware's keys are MD5 hashes with no
+    human-readable substring to pattern-match against.
+    """
+    keys_to_clear = ['/api/v1/home/blog/']
+    if slug:
+        keys_to_clear.append(f'/api/v1/home/blog/{slug}/')
+    if old_slug and old_slug != slug:
+        keys_to_clear.append(f'/api/v1/home/blog/{old_slug}/')
+
+    for path in keys_to_clear:
+        cache_key = api_cache.cache_manager.get_cache_key('api', path, 'GET')
+        api_cache.cache_manager.delete(cache_key)
+
+
 class AdminBlogPostListCreateView(APIView):
     """Tech support's own blog queue — every post regardless of publish
     status, unlike the public BlogListView which only ever shows published
@@ -570,6 +597,8 @@ class AdminBlogPostListCreateView(APIView):
             read_time_minutes=request.data.get('read_time_minutes') or None,
             published_at=timezone.now() if is_published else None,
         )
+        if is_published:
+            _invalidate_public_blog_cache(slug=post.slug)
         return Response(_blog_post_admin_data(post), status=status.HTTP_201_CREATED)
 
 
@@ -598,6 +627,9 @@ class AdminBlogPostDetailView(APIView):
         post, error = self._get_post_or_403(request, pk)
         if error:
             return error
+
+        was_published = post.is_published
+        old_slug = post.slug
 
         data = request.data
         if 'title' in data:
@@ -640,13 +672,23 @@ class AdminBlogPostDetailView(APIView):
             post.is_published = new_is_published
 
         post.save()
+
+        # Only matters if the post was ever visible publicly — a pure draft
+        # edit (never published, still not published) was never cached.
+        if was_published or post.is_published:
+            _invalidate_public_blog_cache(slug=post.slug, old_slug=old_slug)
+
         return Response(_blog_post_admin_data(post), status=status.HTTP_200_OK)
 
     def delete(self, request, pk):
         post, error = self._get_post_or_403(request, pk)
         if error:
             return error
+        was_published = post.is_published
+        slug = post.slug
         post.delete()
+        if was_published:
+            _invalidate_public_blog_cache(slug=slug)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
