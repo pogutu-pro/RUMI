@@ -40,11 +40,11 @@ User = get_user_model()
 # password must never be used on a reachable-from-the-internet environment.
 TEST_PASSWORD = 'Test@Rumia2026'
 
-LANDLORD_EMAIL = 'landlord@demo.rumiarent.co.ke'
-CARETAKER_EMAIL = 'caretaker@demo.rumiarent.co.ke'
-TENANT_EMAIL = 'tenant@demo.rumiarent.co.ke'
-TECH_SUPPORT_EMAIL = 'techsupport@demo.rumiarent.co.ke'
-SUPER_ADMIN_EMAIL = 'superadmin@demo.rumiarent.co.ke'
+LANDLORD_EMAIL = 'landlord@demo.rumiarent.com'
+CARETAKER_EMAIL = 'caretaker@demo.rumiarent.com'
+TENANT_EMAIL = 'tenant@demo.rumiarent.com'
+TECH_SUPPORT_EMAIL = 'techsupport@demo.rumiarent.com'
+SUPER_ADMIN_EMAIL = 'superadmin@demo.rumiarent.com'
 
 
 class Command(BaseCommand):
