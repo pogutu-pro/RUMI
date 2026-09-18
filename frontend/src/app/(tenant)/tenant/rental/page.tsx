@@ -1,79 +1,286 @@
 'use client';
 
 import * as React from 'react';
-import type { ColumnDef } from '@tanstack/react-table';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import Link from 'next/link';
+import { format, parseISO } from 'date-fns';
+import {
+  AlertCircle,
+  ArrowRight,
+  Building2,
+  CalendarClock,
+  CalendarDays,
+  CheckCircle2,
+  DoorOpen,
+  Receipt,
+  ShieldCheck,
+  Wallet,
+} from 'lucide-react';
+import { buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { DataTable } from '@/components/ui/data-table';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { ErrorState } from '@/components/ui/error-state';
-import { useTenancies, useRentBalance, usePayments, useInitiatePayment } from '@/features/rental/hooks/use-rental';
-import type { RentCharge, Payment } from '@/features/rental/types';
+import { PageHeader } from '@/components/dashboard/page-header';
+import { cn } from '@/lib/utils/cn';
+import { useTenancies, useRentBalance, usePayments } from '@/features/rental/hooks/use-rental';
+import type { Payment, RentCharge, Tenancy } from '@/features/rental/types';
 
-const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = {
-  success: 'default',
-  pending: 'secondary',
-  processing: 'secondary',
-  failed: 'destructive',
-  reversed: 'destructive',
-};
-
-const PAGE_SIZE = 20;
+const PAY_HREF = '/tenant/rental/pay';
+const HISTORY_PAGE_SIZE = 8;
 
 function formatKes(amount: string | number) {
   const n = Number(amount);
   return `KES ${n.toLocaleString('en-KE', { maximumFractionDigits: 0 })}`;
 }
 
-/**
- * The colored "action needed" hero only makes sense when there's actually
- * something to pay — showing a loud "You're paid up" success banner as a
- * standing fixture whenever nothing happens to be due yet reads as a
- * meaningless celebration, not information. Returns null when there's
- * nothing due, and the caller renders a quiet status line instead.
- */
-function heroStateFor(nextCharge: RentCharge | undefined, outstandingTotal: string | undefined) {
-  const outstanding = Number(outstandingTotal ?? '0');
-  if (!nextCharge || outstanding <= 0) {
-    return null;
-  }
-  if (nextCharge.status === 'overdue') {
-    return {
-      tone: 'border-destructive/30 bg-destructive/5',
-      label: 'text-destructive',
-      badge: 'Overdue',
-    } as const;
-  }
-  return {
-    tone: 'border-warning/30 bg-warning/5',
-    label: 'text-warning',
-    badge: 'Due',
-  } as const;
+function formatDate(value: string | null | undefined, fallback = '—') {
+  if (!value) return fallback;
+  const date = parseISO(value);
+  return Number.isNaN(date.getTime()) ? fallback : format(date, 'd MMM yyyy');
 }
 
-const paymentColumns: ColumnDef<Payment>[] = [
-  {
-    accessorKey: 'paid_at',
-    header: 'Date',
-    cell: ({ row }) => {
-      const paidAt = row.original.paid_at;
-      return paidAt ? new Date(paidAt).toLocaleDateString() : '—';
-    },
+function ordinal(n: number) {
+  const rem = n % 100;
+  if (rem >= 11 && rem <= 13) return `${n}th`;
+  return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
+}
+
+/** The next calendar date the rent falls due, clamped for short months. */
+function nextDueDate(dueDay: number, from = new Date()) {
+  const build = (year: number, month: number) => {
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    return new Date(year, month, Math.min(dueDay, lastDay));
+  };
+  const today = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const thisMonth = build(from.getFullYear(), from.getMonth());
+  return thisMonth >= today ? thisMonth : build(from.getFullYear(), from.getMonth() + 1);
+}
+
+type Tone = 'ok' | 'due' | 'overdue';
+
+const TONE_STYLES: Record<Tone, { card: string; pill: string; muted: string }> = {
+  ok: {
+    card: 'bg-gradient-to-br from-primary to-emerald-700 text-primary-foreground',
+    pill: 'bg-white/15 text-white',
+    muted: 'text-white/75',
   },
-  {
-    accessorKey: 'amount',
-    header: 'Amount',
-    cell: ({ row }) => formatKes(row.original.amount),
+  due: {
+    card: 'bg-gradient-to-br from-amber-500 to-orange-600 text-white',
+    pill: 'bg-white/20 text-white',
+    muted: 'text-white/80',
   },
-  {
-    accessorKey: 'status',
-    header: 'Status',
-    cell: ({ row }) => (
-      <Badge variant={STATUS_VARIANT[row.original.status] ?? 'secondary'}>{row.original.status}</Badge>
-    ),
+  overdue: {
+    card: 'bg-gradient-to-br from-red-600 to-rose-700 text-white',
+    pill: 'bg-white/20 text-white',
+    muted: 'text-white/80',
   },
-];
+};
+
+function RentHero({
+  tenancy,
+  nextCharge,
+  outstanding,
+}: {
+  tenancy: Tenancy;
+  nextCharge: RentCharge | undefined;
+  outstanding: number;
+}) {
+  const owing = outstanding > 0 && !!nextCharge;
+  const tone: Tone = !owing ? 'ok' : nextCharge?.status === 'overdue' ? 'overdue' : 'due';
+  const styles = TONE_STYLES[tone];
+  const upcoming = nextDueDate(tenancy.rent_due_day);
+
+  const PillIcon = tone === 'ok' ? CheckCircle2 : AlertCircle;
+  const pillText = tone === 'ok' ? 'Rent is up to date' : tone === 'overdue' ? 'Rent overdue' : 'Rent due';
+
+  return (
+    <section className={cn('relative overflow-hidden rounded-3xl p-6 shadow-lg sm:p-8', styles.card)}>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-20 right-24 h-48 w-48 rounded-full bg-black/10 blur-2xl"
+      />
+
+      <div className="relative flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-4">
+          <span
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',
+              styles.pill,
+            )}
+          >
+            <PillIcon className="h-3.5 w-3.5" aria-hidden="true" />
+            {pillText}
+          </span>
+
+          <div>
+            <p className={cn('text-sm', styles.muted)}>{owing ? 'Outstanding balance' : 'Monthly rent'}</p>
+            <p className="mt-1 text-4xl font-semibold tracking-tight sm:text-5xl">
+              {formatKes(owing ? outstanding : tenancy.monthly_rent)}
+            </p>
+          </div>
+
+          <p className={cn('flex flex-wrap items-center gap-x-2 gap-y-1 text-sm', styles.muted)}>
+            <span className="inline-flex items-center gap-1.5">
+              <Building2 className="h-4 w-4" aria-hidden="true" />
+              {tenancy.property_name}
+            </span>
+            <span aria-hidden="true">·</span>
+            <span className="inline-flex items-center gap-1.5">
+              <DoorOpen className="h-4 w-4" aria-hidden="true" />
+              Unit {tenancy.unit_number}
+            </span>
+            <span aria-hidden="true">·</span>
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarClock className="h-4 w-4" aria-hidden="true" />
+              {owing && nextCharge
+                ? `Due ${formatDate(nextCharge.due_date)}`
+                : `Next rent due ${format(upcoming, 'd MMM yyyy')}`}
+            </span>
+          </p>
+        </div>
+
+        <Link
+          href={PAY_HREF}
+          className={cn(
+            buttonVariants({ size: 'lg' }),
+            'h-12 shrink-0 gap-2 rounded-xl bg-white px-6 text-base font-semibold text-foreground shadow-md hover:bg-white/90',
+          )}
+        >
+          {owing ? 'Pay now' : 'Pay in advance'}
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function StatTile({
+  icon: Icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <div className="rounded-2xl border bg-background p-4 shadow-sm">
+      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <Icon className="h-4 w-4" />
+      </div>
+      <p className="mt-3 text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mt-0.5 text-lg font-semibold tracking-tight text-foreground">{value}</p>
+      {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-3">
+      <dt className="text-sm text-muted-foreground">{label}</dt>
+      <dd className="text-right text-sm font-medium text-foreground">{children}</dd>
+    </div>
+  );
+}
+
+const PAYMENT_STATUS: Record<string, { label: string; className: string }> = {
+  success: { label: 'Paid', className: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' },
+  pending: { label: 'Pending', className: 'bg-amber-50 text-amber-700 ring-amber-600/20' },
+  processing: { label: 'Processing', className: 'bg-amber-50 text-amber-700 ring-amber-600/20' },
+  failed: { label: 'Not completed', className: 'bg-red-50 text-red-700 ring-red-600/20' },
+  reversed: { label: 'Reversed', className: 'bg-slate-100 text-slate-700 ring-slate-500/20' },
+};
+
+function PaymentStatusPill({ status }: { status: string }) {
+  const meta = PAYMENT_STATUS[status] ?? { label: status, className: 'bg-slate-100 text-slate-700 ring-slate-500/20' };
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset',
+        meta.className,
+      )}
+    >
+      {meta.label}
+    </span>
+  );
+}
+
+function PaymentHistory({ payments, isLoading }: { payments: Payment[]; isLoading: boolean }) {
+  const [visible, setVisible] = React.useState(HISTORY_PAGE_SIZE);
+  const shown = payments.slice(0, visible);
+
+  return (
+    <section className="rounded-2xl border bg-background shadow-sm">
+      <div className="flex items-center justify-between gap-3 border-b px-5 py-4">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">Payment history</h2>
+          <p className="text-xs text-muted-foreground">Every payment you have made or attempted</p>
+        </div>
+        {payments.length > 0 && <Badge variant="secondary">{payments.length}</Badge>}
+      </div>
+
+      {isLoading ? (
+        <p className="px-5 py-8 text-sm text-muted-foreground">Loading payments…</p>
+      ) : payments.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 px-5 py-12 text-center">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <Receipt className="h-5 w-5" />
+          </div>
+          <p className="text-sm font-medium text-foreground">No payments yet</p>
+          <p className="max-w-xs text-xs text-muted-foreground">
+            Once you pay rent, it will show up here with a full receipt trail.
+          </p>
+        </div>
+      ) : (
+        <>
+          <ul className="divide-y">
+            {shown.map((payment) => {
+              const succeeded = payment.status === 'success';
+              const when = payment.paid_at ?? payment.created_at;
+              return (
+                <li key={payment.id} className="flex items-center gap-4 px-5 py-3.5">
+                  <div
+                    className={cn(
+                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+                      succeeded ? 'bg-emerald-50 text-emerald-600' : 'bg-muted text-muted-foreground',
+                    )}
+                  >
+                    {succeeded ? <CheckCircle2 className="h-5 w-5" /> : <Wallet className="h-5 w-5" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">Rent payment</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(when)}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <p className="text-sm font-semibold text-foreground">{formatKes(payment.amount)}</p>
+                    <PaymentStatusPill status={payment.status} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {payments.length > visible && (
+            <div className="border-t px-5 py-3 text-center">
+              <button
+                type="button"
+                onClick={() => setVisible((n) => n + HISTORY_PAGE_SIZE)}
+                className="text-sm font-medium text-primary hover:text-primary/80"
+              >
+                Show more ({payments.length - visible} remaining)
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
 
 export default function TenantRentalDashboard() {
   const {
@@ -88,23 +295,12 @@ export default function TenantRentalDashboard() {
     refetch: refetchBalance,
   } = useRentBalance();
   const { data: payments = [], isLoading: paymentsLoading } = usePayments();
-  const initiate = useInitiatePayment();
-  const [page, setPage] = React.useState(1);
 
   const activeTenancy = tenancies.find((t) => t.status === 'active') ?? tenancies[0];
   const nextCharge = (balance?.charges ?? [])
     .filter((c) => c.status !== 'paid' && c.status !== 'waived')
     .slice()
     .sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
-
-  const handlePay = async () => {
-    if (!activeTenancy) return;
-    const amount = nextCharge?.outstanding ?? activeTenancy.monthly_rent;
-    const result = await initiate.mutateAsync({ tenancyId: activeTenancy.id, amount });
-    if (result.authorization_url) {
-      window.location.href = result.authorization_url;
-    }
-  };
 
   if (tenanciesError || balanceError) {
     return <ErrorState onRetry={() => refetchBalance()} />;
@@ -118,99 +314,53 @@ export default function TenantRentalDashboard() {
     return <p className="text-sm text-muted-foreground">No tenancy on file yet — contact your landlord.</p>;
   }
 
-  const hero = heroStateFor(nextCharge, balance?.outstanding_total);
   const outstanding = Number(balance?.outstanding_total ?? '0');
-
-  const paginatedPayments = payments.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="space-y-6">
-      {hero ? (
-        <Card className={`rounded-2xl border-2 ${hero.tone}`}>
-          <CardContent className="space-y-4 pt-6">
-            <div className="flex items-center justify-between">
-              <span className={`text-xs font-semibold uppercase tracking-wide ${hero.label}`}>{hero.badge}</span>
-              <span className="text-xs text-muted-foreground">
-                {activeTenancy.property_name} · {activeTenancy.unit_number}
-                {nextCharge && ` · due ${nextCharge.due_date}`}
-              </span>
-            </div>
-            <p className="text-3xl font-semibold">{formatKes(outstanding)}</p>
-            <p className="text-sm text-muted-foreground">Outstanding balance</p>
-            <Button onClick={handlePay} disabled={initiate.isPending} className="w-full rounded-xl">
-              Pay Rent
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="rounded-2xl">
-          <CardContent className="flex items-center justify-between pt-6">
-            <div>
-              <p className="text-sm font-medium text-foreground">Rent is up to date</p>
-              <p className="text-xs text-muted-foreground">
-                {activeTenancy.property_name} · {activeTenancy.unit_number} · {formatKes(activeTenancy.monthly_rent)}/month
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <PageHeader title="My rent" description="Your home, your rent and your payments in one place." />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Lease details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs text-muted-foreground">Property</dt>
-              <dd className="text-sm font-medium">{activeTenancy.property_name}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Unit</dt>
-              <dd className="text-sm font-medium">{activeTenancy.unit_number}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Status</dt>
-              <dd><Badge variant="secondary">{activeTenancy.status}</Badge></dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Start date</dt>
-              <dd className="text-sm font-medium">{activeTenancy.start_date}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">End date</dt>
-              <dd className="text-sm font-medium">{activeTenancy.end_date ?? 'Ongoing'}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Monthly rent</dt>
-              <dd className="text-sm font-medium">{formatKes(activeTenancy.monthly_rent)}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Deposit</dt>
-              <dd className="text-sm font-medium">{formatKes(activeTenancy.deposit)}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Rent due day</dt>
-              <dd className="text-sm font-medium">{`Day ${activeTenancy.rent_due_day} of each month`}</dd>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
+      <RentHero tenancy={activeTenancy} nextCharge={nextCharge} outstanding={outstanding} />
 
-      <div>
-        <h2 className="mb-2 font-medium">Payment history</h2>
-        <DataTable<Payment, unknown>
-          columns={paymentColumns}
-          data={paginatedPayments}
-          isLoading={paymentsLoading}
-          totalItems={payments.length}
-          pageSize={PAGE_SIZE}
-          currentPage={page}
-          onPageChange={setPage}
-          onPageSizeChange={() => {}}
-          emptyStateTitle="No payments yet"
-          emptyStateDescription="Once you make a payment, it'll show up here with a full receipt trail."
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile icon={Wallet} label="Monthly rent" value={formatKes(activeTenancy.monthly_rent)} />
+        <StatTile icon={ShieldCheck} label="Deposit held" value={formatKes(activeTenancy.deposit)} />
+        <StatTile
+          icon={CalendarClock}
+          label="Rent due"
+          value={`${ordinal(activeTenancy.rent_due_day)} of month`}
         />
+        <StatTile
+          icon={CalendarDays}
+          label="Lease ends"
+          value={activeTenancy.end_date ? formatDate(activeTenancy.end_date) : 'Ongoing'}
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-5">
+        <section className="rounded-2xl border bg-background shadow-sm lg:col-span-2">
+          <div className="border-b px-5 py-4">
+            <h2 className="text-base font-semibold text-foreground">Lease details</h2>
+            <p className="text-xs text-muted-foreground">The terms of your tenancy</p>
+          </div>
+          <dl className="divide-y px-5">
+            <DetailRow label="Property">{activeTenancy.property_name}</DetailRow>
+            <DetailRow label="Unit">{activeTenancy.unit_number}</DetailRow>
+            <DetailRow label="Status">
+              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium capitalize text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                {activeTenancy.status.replace('_', ' ')}
+              </span>
+            </DetailRow>
+            <DetailRow label="Start date">{formatDate(activeTenancy.start_date)}</DetailRow>
+            <DetailRow label="End date">
+              {activeTenancy.end_date ? formatDate(activeTenancy.end_date) : 'Ongoing'}
+            </DetailRow>
+          </dl>
+        </section>
+
+        <div className="lg:col-span-3">
+          <PaymentHistory payments={payments} isLoading={paymentsLoading} />
+        </div>
       </div>
     </div>
   );
