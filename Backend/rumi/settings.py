@@ -246,6 +246,10 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@rumiarent.co.ke')
 # SMS Configuration (Africa's Talking)
 AFRICASTALKING_USERNAME = os.getenv('AFRICASTALKING_USERNAME', 'sandbox')
 AFRICASTALKING_API_KEY = os.getenv('AFRICASTALKING_API_KEY')
+# Hard ceiling on SMS sent per calendar month (counter reset by
+# notifications.tasks.reset_sms_monthly_counter) — protects the prepaid
+# balance from a runaway loop. ~KES 0.80 per SMS.
+SMS_MONTHLY_LIMIT = int(os.getenv('SMS_MONTHLY_LIMIT', '500'))
 
 # Paystack Configuration
 PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
