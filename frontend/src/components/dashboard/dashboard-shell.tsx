@@ -206,7 +206,7 @@ export function DashboardShell({
           {isDesktop && (
             <aside
               className={cn(
-                'sticky top-0 flex h-screen shrink-0 flex-col border-r bg-background transition-all duration-200',
+                'sticky top-0 flex h-screen shrink-0 flex-col self-start border-r bg-background transition-all duration-200',
                 collapsed ? 'w-[76px]' : 'w-64',
               )}
             >
