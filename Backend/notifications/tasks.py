@@ -344,7 +344,7 @@ def send_notification_digest():
             context = {
                 'first_name': user.first_name,
                 'unread_count': unread_notifications.count(),
-                'login_url': 'https://rumi.co.ke/login'
+                'login_url': f'{settings.FRONTEND_URL}/login'
             }
 
             send_notification.delay(

@@ -56,12 +56,12 @@ def send_welcome_email(user_id):
 
         Welcome to RumiaRent! Your account has been successfully verified.
 
-        You can now:
-        - Browse and book hostels
-        - Connect with other students
-        - Access exclusive student deals
+        You can now sign in and:
+        - Manage your properties, units and tenants
+        - Collect rent securely with Paystack
+        - Send rent reminders by SMS and email
 
-        Start exploring: https://rumi.co.ke/dashboard
+        Sign in to get started: {settings.FRONTEND_URL}/dashboard
 
         Best regards,
         RumiaRent Team
@@ -160,7 +160,7 @@ def send_password_reset_email(user_id, reset_token):
     from .models import User
     try:
         user = User.objects.get(id=user_id)
-        reset_url = f"https://rumi.co.ke/reset-password?token={reset_token}"
+        reset_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
 
         subject = 'Reset Your RumiaRent Password'
         message = f"""
@@ -215,7 +215,7 @@ def send_caretaker_welcome_email(caretaker_id, temporary_password):
         Your temporary password: {temporary_password}
 
         Please log in and change your password immediately:
-        https://rumi.co.ke/login
+        {settings.FRONTEND_URL}/login
 
         You will be prompted to verify your email address.
 
@@ -326,11 +326,11 @@ def send_landlord_verification_email(landlord_id, approved, reason=None):
             Congratulations! Your landlord account has been approved.
 
             You can now:
-            - Manage your properties on RumiaRent
-            - Manage your properties
-            - Receive automated payments
+            - Manage your properties, units and tenants
+            - Collect rent securely with Paystack
+            - Receive payouts to your bank account
 
-            Start listing: https://rumi.co.ke/dashboard
+            Sign in to get started: {settings.FRONTEND_URL}/dashboard
 
             Best regards,
             RumiaRent Team
