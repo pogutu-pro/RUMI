@@ -138,7 +138,7 @@ export default function TenantRentalDashboard() {
             <p className="text-3xl font-semibold">{formatKes(outstanding)}</p>
             <p className="text-sm text-muted-foreground">Outstanding balance</p>
             <Button onClick={handlePay} disabled={initiate.isPending} className="w-full rounded-xl">
-              Pay with Paystack
+              Pay Rent
             </Button>
           </CardContent>
         </Card>
