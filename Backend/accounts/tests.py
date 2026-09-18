@@ -568,3 +568,15 @@ class TransactionalEmailContentTests(TestCase):
         self.assertIn('https://rumiarent.com/dashboard', html)
         for stale in ('student', 'hostel', 'rumi.co.ke'):
             self.assertNotIn(stale, html)
+
+
+class BrandedEmailGreetingTests(TestCase):
+    def test_greeting_is_not_duplicated_when_message_already_has_one(self):
+        from accounts.utils import create_branded_email_html
+        html = create_branded_email_html('S', 'Hi Joseph,\n\nYour code is 1.', 'Joseph')
+        self.assertEqual(html.count('Hi Joseph,'), 1)
+
+    def test_greeting_is_added_when_message_has_none(self):
+        from accounts.utils import create_branded_email_html
+        html = create_branded_email_html('S', 'Your code is 1.', 'Joseph')
+        self.assertEqual(html.count('Hi Joseph,'), 1)
