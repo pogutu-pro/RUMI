@@ -188,6 +188,44 @@ class PaystackProvider(BasePaymentProvider):
             raw_response=data,
         )
 
+    def list_banks(self, country: str = 'kenya') -> tuple[list[dict], str | None]:
+        """
+        Live bank list from Paystack — GET /bank?country=<country>, so
+        landlords select a real bank from a dropdown instead of typing a
+        settlement bank code by hand. Returns (banks, error_message);
+        banks is always a list (empty on any failure), error_message is
+        None only on success — callers check error_message, not truthiness
+        of an empty-but-successful list.
+
+        Not part of BasePaymentProvider's abstract interface — Paystack is
+        the sole payment processor (see CLAUDE.md constraints), so there's
+        no other implementation to keep this contract-compatible with.
+        """
+        config = self.get_config_status()
+        if config.status != ProviderStatus.AVAILABLE:
+            return [], config.message
+
+        try:
+            response = requests.get(
+                f'{self.API_BASE}/bank',
+                params={'country': country, 'currency': 'KES', 'perPage': 100},
+                headers=self._headers(),
+                timeout=30,
+            )
+            data = response.json()
+        except requests.RequestException as exc:
+            return [], f'Paystack bank list failed: {exc}'
+
+        if not data.get('status'):
+            return [], data.get('message', 'Could not fetch bank list')
+
+        banks = [
+            {'name': b.get('name', ''), 'code': b.get('code', '')}
+            for b in data.get('data', [])
+            if b.get('code')
+        ]
+        return banks, None
+
     def resolve_account(self, account_number: str, bank_code: str) -> AccountResolveResult:
         config = self.get_config_status()
         if config.status != ProviderStatus.AVAILABLE:

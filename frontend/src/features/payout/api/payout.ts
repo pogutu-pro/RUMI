@@ -1,5 +1,5 @@
 import { axiosInstance as axios } from '@/lib/api/client';
-import type { PayoutAccountStatus, SubmitPayoutDetailsPayload } from '../types';
+import type { BankListResponse, PayoutAccountStatus, SubmitPayoutDetailsPayload } from '../types';
 
 /**
  * RumiaRent payout API client. Endpoints return raw serialized data (no
@@ -10,6 +10,10 @@ import type { PayoutAccountStatus, SubmitPayoutDetailsPayload } from '../types';
  * PayoutAccount row exists yet — not an error (NOT_STARTED_RESPONSE).
  */
 export const payoutApi = {
+  listBanks: async (): Promise<BankListResponse> => {
+    const res = await axios.get<BankListResponse>('/organizations/payout/banks/');
+    return res.data;
+  },
   getStatus: async (): Promise<PayoutAccountStatus> => {
     const res = await axios.get<PayoutAccountStatus>('/organizations/payout/');
     return res.data;

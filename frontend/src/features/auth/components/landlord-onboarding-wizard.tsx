@@ -25,15 +25,14 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { useOnboardingStatus } from '@/features/auth/hooks/use-auth';
 import { useCreateOrganization, useCreateProperty } from '@/features/rental/hooks/use-rental';
-import { usePayoutStatus, useSubmitPayoutDetails } from '@/features/payout/hooks/use-payout';
+import { usePayoutStatus } from '@/features/payout/hooks/use-payout';
+import { PayoutDetailsForm } from '@/features/payout/components/payout-details-form';
 import { usePlans } from '@/features/billing/hooks/use-plans';
 import {
   wizardOrgSchema,
   wizardPropertySchema,
-  wizardPayoutSchema,
   type WizardOrgFormData,
   type WizardPropertyFormData,
-  type WizardPayoutFormData,
 } from '@/lib/validations/auth.schema';
 
 const WIZARD_STEPS = [
@@ -280,42 +279,6 @@ function PropertyStep({
 
 function PayoutStep({ onAdvance, onBack }: { onAdvance: () => void; onBack: () => void }) {
   const { data: payoutStatus } = usePayoutStatus();
-  const submitPayout = useSubmitPayoutDetails();
-  const [showBankError, setShowBankError] = useState(false);
-
-  const form = useForm<WizardPayoutFormData>({
-    resolver: zodResolver(wizardPayoutSchema),
-    defaultValues: { bank_name: '', bank_account_number: '', bank_code: '' },
-  });
-
-  // The raw bank_account_number is never returned by the backend once a
-  // submission exists, so it can never be re-populated into an editable
-  // field — only bank_name is safe to pre-fill; the masked number is shown
-  // as read-only context text below instead.
-  useEffect(() => {
-    if (payoutStatus && payoutStatus.status !== 'not_started' && payoutStatus.bank_name) {
-      form.setValue('bank_name', payoutStatus.bank_name);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [payoutStatus]);
-
-  const onSubmit = async (values: WizardPayoutFormData) => {
-    setShowBankError(false);
-    try {
-      // Advance on any resulting status (pending_verification or active) —
-      // the wizard never blocks completion on Paystack verification (D-04/D-05).
-      await submitPayout.mutateAsync(values);
-      onAdvance();
-    } catch (err) {
-      const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
-      if (statusCode === 502) {
-        setShowBankError(true);
-      }
-      // A toast has already fired via useSubmitPayoutDetails's onError for
-      // both 502 and generic-validation cases; the landlord stays on this
-      // step either way, with all prior org/property progress intact.
-    }
-  };
 
   return (
     <div className="rounded-3xl border border-gray-100 bg-white p-10 shadow-sm">
@@ -330,69 +293,15 @@ function PayoutStep({ onAdvance, onBack }: { onAdvance: () => void; onBack: () =
           Current: {payoutStatus.bank_account_number_masked}
         </p>
       )}
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="bank_name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="font-semibold">Bank name</FormLabel>
-                <FormControl>
-                  <Input {...field} className="h-11" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="bank_account_number"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="font-semibold">Account number</FormLabel>
-                <FormControl>
-                  <Input {...field} inputMode="numeric" className="h-11" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="bank_code"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="font-semibold">Bank code</FormLabel>
-                <FormControl>
-                  <Input {...field} className="h-11" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {showBankError && (
-            <div className="rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-              <p className="font-semibold">{"We couldn't verify those bank details"}</p>
-              <p>
-                Double-check the account number and bank, then try again. Your other onboarding
-                progress is saved.
-              </p>
-            </div>
-          )}
-
-          <Button
-            type="submit"
-            variant="charcoal"
-            size="lg"
-            className="h-14 w-full rounded-full"
-            isLoading={submitPayout.isPending}
-          >
-            Continue to Plan Selection
-          </Button>
-        </form>
-      </Form>
+      {/* Advances on any resulting status (pending_verification or active) —
+          the wizard never blocks completion on Paystack verification
+          (D-04/D-05); PayoutDetailsForm's onSuccess only fires once the
+          submission itself succeeds. */}
+      <PayoutDetailsForm
+        onSuccess={onAdvance}
+        submitLabel="Continue to Plan Selection"
+        fullWidthButton
+      />
     </div>
   );
 }
