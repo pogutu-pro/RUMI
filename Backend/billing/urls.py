@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     AdminOrganizationBillingDetailView,
     AdminOrganizationBillingListView,
+    AdminRevenueSummaryView,
     AdminSubscriptionOverrideView,
     MyOrganizationSubscriptionView,
     SubscriptionPlanListView,
@@ -18,6 +19,11 @@ urlpatterns = [
     # List route registered BEFORE the detail route so the resolver never
     # accidentally matches admin/organizations/<something>/ against the
     # bare list path (same ordering convention as properties/ in rumia_api/urls.py).
+    path(
+        'admin/revenue/',
+        AdminRevenueSummaryView.as_view(),
+        name='billing-admin-revenue',
+    ),
     path(
         'admin/organizations/',
         AdminOrganizationBillingListView.as_view(),

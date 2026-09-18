@@ -14,6 +14,9 @@ explicit `organization_id` to act on behalf of that organization.
 from __future__ import annotations
 
 from django.core.exceptions import ValidationError
+from django.db.models import Sum
+from django.db.models.functions import TruncMonth
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -350,3 +353,61 @@ class AdminSubscriptionOverrideView(APIView):
 
         payload = _build_admin_billing_detail(organization)
         return Response(AdminOrganizationBillingDetailSerializer(payload).data)
+
+
+class AdminRevenueSummaryView(APIView):
+    """
+    GET -> platform-wide revenue summary, super_admin only. Real numbers
+    from SubscriptionPayment (the actual payment ledger) and
+    OrganizationSubscription — never estimated or fabricated. Distinct from
+    AdminOrganizationBillingListView, which shows each org's own
+    status/payout, not what the *platform* has actually earned.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        successful_payments = SubscriptionPayment.objects.filter(status='success')
+
+        total_revenue = successful_payments.aggregate(total=Sum('amount'))['total'] or 0
+
+        now = timezone.now()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        revenue_this_month = successful_payments.filter(
+            paid_at__gte=month_start
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        # MRR: sum of the plan price for every currently-active subscription.
+        # All plans bill monthly today (SubscriptionPlan.interval defaults
+        # to 'monthly' and nothing else seeds a different interval), so this
+        # is a direct sum, not a normalized-to-monthly estimate.
+        active_subscriptions = OrganizationSubscription.objects.filter(
+            status='active'
+        ).select_related('plan')
+        mrr = sum((sub.plan.price for sub in active_subscriptions), start=0)
+
+        # Last 12 months of successful-payment revenue, oldest first — a
+        # simple trend, not a forecast.
+        twelve_months_ago = (month_start - timezone.timedelta(days=365)).replace(day=1)
+        monthly = (
+            successful_payments.filter(paid_at__gte=twelve_months_ago)
+            .annotate(month=TruncMonth('paid_at'))
+            .values('month')
+            .annotate(total=Sum('amount'))
+            .order_by('month')
+        )
+
+        return Response({
+            'total_revenue': total_revenue,
+            'revenue_this_month': revenue_this_month,
+            'mrr': mrr,
+            'active_subscriptions_count': active_subscriptions.count(),
+            'total_successful_payments': successful_payments.count(),
+            'monthly_revenue': [
+                {'month': row['month'].date().isoformat(), 'total': row['total']}
+                for row in monthly
+            ],
+        })

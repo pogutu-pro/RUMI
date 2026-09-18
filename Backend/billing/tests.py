@@ -938,6 +938,111 @@ class AdminOrganizationBillingListViewTests(RumiaTestFixtures):
         self.assertIsInstance(response.data['results'], list)
 
 
+class AdminRevenueSummaryViewTests(RumiaTestFixtures):
+    """Real numbers from SubscriptionPayment/OrganizationSubscription —
+    distinct from AdminOrganizationBillingListView, which shows each org's
+    own status, not what the platform has actually earned in total."""
+
+    def _seed_plans(self):
+        call_command('seed_subscription_plans')
+        return {p.slug: p for p in SubscriptionPlan.objects.all()}
+
+    def test_landlord_gets_403(self):
+        self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.get('/api/v1/billing/admin/revenue/')
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_only_successful_payments_count_toward_revenue(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plans['pro'], status='active',
+        )
+        SubscriptionPayment.objects.create(
+            subscription=subscription, amount=Decimal('7999.00'),
+            internal_reference='SUB-1', status='success', paid_at=timezone.now(),
+        )
+        SubscriptionPayment.objects.create(
+            subscription=subscription, amount=Decimal('7999.00'),
+            internal_reference='SUB-2', status='failed',
+        )
+        SubscriptionPayment.objects.create(
+            subscription=subscription, amount=Decimal('7999.00'),
+            internal_reference='SUB-3', status='pending',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/revenue/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Decimal(response.data['total_revenue']), Decimal('7999.00'))
+        self.assertEqual(response.data['total_successful_payments'], 1)
+
+    def test_mrr_sums_active_subscriptions_plan_price_only(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org_active = self.create_landlord_with_org(email='active@test.com')
+        OrganizationSubscription.objects.create(
+            organization=org_active, plan=plans['pro'], status='active',
+        )
+        _, _, org_cancelled = self.create_landlord_with_org(email='cancelled@test.com')
+        OrganizationSubscription.objects.create(
+            organization=org_cancelled, plan=plans['enterprise'], status='cancelled',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/revenue/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Decimal(response.data['mrr']), plans['pro'].price)
+        self.assertEqual(response.data['active_subscriptions_count'], 1)
+
+    def test_revenue_this_month_excludes_prior_months(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plans['starter'], status='active',
+        )
+        SubscriptionPayment.objects.create(
+            subscription=subscription, amount=Decimal('2999.00'),
+            internal_reference='SUB-THIS-MONTH', status='success', paid_at=timezone.now(),
+        )
+        SubscriptionPayment.objects.create(
+            subscription=subscription, amount=Decimal('2999.00'),
+            internal_reference='SUB-LAST-MONTH', status='success',
+            paid_at=timezone.now() - timedelta(days=45),
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/revenue/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Decimal(response.data['revenue_this_month']), Decimal('2999.00'))
+        self.assertEqual(Decimal(response.data['total_revenue']), Decimal('5998.00'))
+
+    def test_no_payments_returns_zero_not_error(self):
+        self._seed_plans()
+        admin = self.create_super_admin()
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/revenue/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Decimal(response.data['total_revenue']), Decimal('0'))
+        self.assertEqual(response.data['monthly_revenue'], [])
+
+
 class AdminOverrideServiceTests(RumiaTestFixtures):
     """
     Plan 06-03 Task 3 (RED) — AdminOverrideService.override_subscription()
