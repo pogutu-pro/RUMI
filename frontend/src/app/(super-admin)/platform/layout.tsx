@@ -1,25 +1,35 @@
 'use client';
 
 import * as React from 'react';
-import { CreditCard } from 'lucide-react';
+import { Building2, CreditCard, LifeBuoy, Users } from 'lucide-react';
 import { UserRole } from '@/features/auth/stores/auth.types';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 
-const ADMIN_NAV = [{ href: '/platform/billing', label: 'Billing', icon: CreditCard }];
+const ADMIN_NAV = [
+  { href: '/platform/organizations', label: 'Organizations', icon: Building2 },
+  { href: '/platform/users', label: 'Users', icon: Users },
+  { href: '/tech-support/dashboard', label: 'Support', icon: LifeBuoy },
+  { href: '/platform/billing', label: 'Billing', icon: CreditCard },
+];
 
 /**
- * Super-admin's own dashboard shell — billing overview across every
- * organization. Mirrors tech-support/dashboard/layout.tsx's shape exactly
- * (own top-level nav array, single entry).
+ * Super-admin's own dashboard shell — every organization, every user, the
+ * support-ticket queue (same view tech-support uses; super_admin is already
+ * in its allowedRoles), and revenue. Mirrors tech-support/dashboard/
+ * layout.tsx's shape (own top-level nav array).
  *
- * DashboardShell unconditionally renders OrganizationSwitcher for any
- * super_admin regardless of which shell mounts it — harmless, pre-existing
- * coupling (the switcher only writes to a Zustand store this feature never
- * reads); not suppressed here, out of this plan's scope.
+ * showOrgSwitcher is off here: OrganizationSwitcher writes to a
+ * landlord-scoped store that none of this shell's sections read — every
+ * section here is already platform-wide, not org-scoped.
  */
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <DashboardShell allowedRoles={[UserRole.SUPER_ADMIN]} nav={ADMIN_NAV} maxWidth="max-w-5xl">
+    <DashboardShell
+      allowedRoles={[UserRole.SUPER_ADMIN]}
+      nav={ADMIN_NAV}
+      maxWidth="max-w-5xl"
+      showOrgSwitcher={false}
+    >
       {children}
     </DashboardShell>
   );

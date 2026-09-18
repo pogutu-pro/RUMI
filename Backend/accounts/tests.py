@@ -306,3 +306,125 @@ class PasswordResetTests(TestCase):
             {'email': 'reset@test.com'}, format='json',
         )
         self.assertEqual(response.status_code, 200)
+
+
+@override_settings(
+    CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    ENABLE_RATE_LIMITING=False,
+)
+class UserManagementTests(TestCase):
+    """UserManagementView/UserDeactivateView/UserReactivateView — exposed
+    through the super-admin Users dashboard for the first time; previously
+    reachable but had zero test coverage."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.super_admin = User.objects.create_superuser(
+            email='superadmin@test.com', password='Pass123!',
+            first_name='Super', last_name='Admin',
+        )
+        self.tech_support = User.objects.create_user(
+            email='tech@test.com', password='Pass123!',
+            first_name='Tech', last_name='Support', role='tech_support',
+            is_verified=True,
+        )
+        self.landlord = User.objects.create_user(
+            email='landlord@test.com', password='Pass123!',
+            first_name='Land', last_name='Lord', role='landlord',
+            is_verified=True,
+        )
+        self.tenant = User.objects.create_user(
+            email='tenant@test.com', password='Pass123!',
+            first_name='Ten', last_name='Ant', role='tenant',
+            is_verified=True,
+        )
+
+    def test_tenant_cannot_list_users(self):
+        self.client.force_authenticate(self.tenant)
+        response = self.client.get('/api/v1/accounts/users/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_anonymous_cannot_list_users(self):
+        response = self.client.get('/api/v1/accounts/users/')
+        self.assertEqual(response.status_code, 401)
+
+    def test_super_admin_lists_all_users(self):
+        self.client.force_authenticate(self.super_admin)
+        response = self.client.get('/api/v1/accounts/users/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['total_users'], 4)
+
+    def test_tech_support_can_list_users(self):
+        self.client.force_authenticate(self.tech_support)
+        response = self.client.get('/api/v1/accounts/users/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_filter_by_role(self):
+        self.client.force_authenticate(self.super_admin)
+        response = self.client.get('/api/v1/accounts/users/', {'role': 'landlord'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['total_users'], 1)
+        self.assertEqual(response.data['users'][0]['email'], 'landlord@test.com')
+
+    def test_search_by_name_or_email(self):
+        self.client.force_authenticate(self.super_admin)
+        response = self.client.get('/api/v1/accounts/users/', {'search': 'tenant@test.com'})
+        self.assertEqual(response.data['total_users'], 1)
+
+    def test_tech_support_can_deactivate_user(self):
+        self.client.force_authenticate(self.tech_support)
+        response = self.client.put(
+            f'/api/v1/accounts/users/{self.tenant.id}/deactivate/',
+            {'reason': 'Fraudulent activity'}, format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.tenant.refresh_from_db()
+        self.assertFalse(self.tenant.is_active)
+
+    def test_deactivated_user_cannot_log_in(self):
+        self.client.force_authenticate(self.super_admin)
+        self.client.put(
+            f'/api/v1/accounts/users/{self.tenant.id}/deactivate/',
+            {'reason': 'Test'}, format='json',
+        )
+        self.client.force_authenticate(user=None)
+        response = self.client.post(
+            '/api/v1/accounts/login/',
+            {'email': 'tenant@test.com', 'password': 'Pass123!'}, format='json',
+        )
+        self.assertNotEqual(response.status_code, 200)
+
+    def test_tenant_cannot_deactivate_user(self):
+        self.client.force_authenticate(self.tenant)
+        response = self.client.put(
+            f'/api/v1/accounts/users/{self.landlord.id}/deactivate/',
+            {'reason': 'Test'}, format='json',
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_tech_support_cannot_reactivate_user(self):
+        # UserReactivateView is IsSuperAdmin-only, unlike deactivate which is
+        # IsAdminOrSuperAdmin — tech_support can lock an account but not
+        # unlock one.
+        self.tenant.is_active = False
+        self.tenant.save()
+        self.client.force_authenticate(self.tech_support)
+        response = self.client.put(f'/api/v1/accounts/users/{self.tenant.id}/reactivate/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_super_admin_can_reactivate_user(self):
+        self.tenant.is_active = False
+        self.tenant.save()
+        self.client.force_authenticate(self.super_admin)
+        response = self.client.put(f'/api/v1/accounts/users/{self.tenant.id}/reactivate/')
+        self.assertEqual(response.status_code, 200)
+        self.tenant.refresh_from_db()
+        self.assertTrue(self.tenant.is_active)
+
+    def test_deactivate_nonexistent_user_404s(self):
+        self.client.force_authenticate(self.super_admin)
+        response = self.client.put(
+            '/api/v1/accounts/users/999999/deactivate/',
+            {'reason': 'Test'}, format='json',
+        )
+        self.assertEqual(response.status_code, 404)

@@ -28,6 +28,11 @@ export interface DashboardShellProps {
   nav: DashboardShellNavItem[];
   maxWidth?: string;
   bannerSlot?: React.ReactNode;
+  /** OrganizationSwitcher writes to a landlord-scoped store (SelectedOrgStore)
+   * — meaningless in shells whose sections are already platform-wide, not
+   * org-scoped (e.g. the super-admin shell's own Users/Support sections).
+   * Defaults true so every existing caller keeps today's behavior. */
+  showOrgSwitcher?: boolean;
   children: React.ReactNode;
 }
 
@@ -131,7 +136,14 @@ function SidebarUserFooter({
  * authorization boundary is the backend RBAC in
  * `Backend/core/permissions/rumia.py`, unchanged by this component.
  */
-export function DashboardShell({ allowedRoles, nav, maxWidth, bannerSlot, children }: DashboardShellProps) {
+export function DashboardShell({
+  allowedRoles,
+  nav,
+  maxWidth,
+  bannerSlot,
+  showOrgSwitcher = true,
+  children,
+}: DashboardShellProps) {
   const { user, status, isAuthenticated, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -187,7 +199,7 @@ export function DashboardShell({ allowedRoles, nav, maxWidth, bannerSlot, childr
                 </button>
               </div>
 
-              {isSuperAdmin && <OrganizationSwitcher collapsed={collapsed} />}
+              {isSuperAdmin && showOrgSwitcher && <OrganizationSwitcher collapsed={collapsed} />}
 
               <div className="flex-1 overflow-y-auto py-2">
                 <NavLinks nav={nav} collapsed={collapsed} pathname={pathname} />
@@ -216,7 +228,7 @@ export function DashboardShell({ allowedRoles, nav, maxWidth, bannerSlot, childr
                   <div className="flex h-16 items-center px-4">
                     <span className="text-lg font-semibold text-foreground">RumiaRent</span>
                   </div>
-                  {isSuperAdmin && <OrganizationSwitcher collapsed={false} />}
+                  {isSuperAdmin && showOrgSwitcher && <OrganizationSwitcher collapsed={false} />}
                   <div className="flex-1 overflow-y-auto py-2">
                     <NavLinks nav={nav} collapsed={false} pathname={pathname} onNavigate={() => setMobileNavOpen(false)} />
                   </div>
