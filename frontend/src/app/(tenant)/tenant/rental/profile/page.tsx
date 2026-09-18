@@ -101,6 +101,7 @@ export default function TenantProfilePage() {
             onImageChange={handleImageChange}
             currentImageUrl={currentImageUrl}
             label="Profile photo"
+            className="max-w-36"
           />
 
           <Form {...form}>
