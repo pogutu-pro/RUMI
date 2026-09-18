@@ -92,12 +92,20 @@ export function ImageUpload({
 
         {preview || currentImageUrl ? (
           <div className="absolute inset-0 w-full h-full">
+            {/* unoptimized: a freshly-picked file's preview is a blob: URL
+                (only exists in this tab's memory — the Next.js server can
+                never fetch it to optimize), and an already-uploaded
+                currentImageUrl is served by Caddy straight from the
+                backend's media volume, not the Next.js server, so the
+                built-in optimizer 400s on that one too (same cause as the
+                blog cover image bug). */}
             <Image
               src={preview || currentImageUrl || ''}
               alt="Preview"
               fill
               className="object-cover rounded-xl"
               sizes="(max-width: 600px) 100vw, 50vw"
+              unoptimized
             />
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 rounded-xl">
               <Button

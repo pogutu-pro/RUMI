@@ -915,6 +915,7 @@ class UserProfileView(APIView):
 class ProfilePictureUploadView(APIView):
     """Upload profile picture"""
 
+    permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):

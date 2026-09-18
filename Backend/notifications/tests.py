@@ -118,9 +118,23 @@ class NotificationPreferenceTests(TestCase):
 
     def test_update_preferences(self):
         self.client.force_authenticate(user=self.user)
-        data = {'email_enabled': False, 'sms_enabled': False}
+        data = {'email_enabled': False}
         response = self.client.put(self.url, data, format='json')
         self.assertIn(response.status_code, [200, 204])
+        self.assertFalse(response.data['email_enabled'])
+
+    def test_sms_enabled_cannot_be_turned_off(self):
+        """SMS rent reminders are mandatory — the field is readable but not
+        settable through this endpoint, and any pre-existing False value is
+        self-healed back to True on the next update."""
+        self.client.force_authenticate(user=self.user)
+        response = self.client.put(self.url, {'sms_enabled': False}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data['sms_enabled'])
+
+        from .models import NotificationPreference
+        prefs = NotificationPreference.objects.get(user=self.user)
+        self.assertTrue(prefs.sms_enabled)
 
 
 @override_settings(
