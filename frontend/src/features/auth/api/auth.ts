@@ -191,14 +191,19 @@ async function uploadProfilePicture(
   const formData = new FormData();
   formData.append('file', file);
 
+  // Content-Type: undefined here on purpose, not omitted — the axios
+  // instance sets a default 'Content-Type: application/json' (lib/api/
+  // client.ts), and either that default OR a hardcoded
+  // 'multipart/form-data' string with no boundary= parameter breaks
+  // Django's multipart parser (it needs the boundary to split the body
+  // into parts) — request.FILES ends up empty and the upload silently
+  // 400s. Explicitly undefined removes the header for this one request so
+  // the browser sets Content-Type itself, which is the only way the
+  // boundary gets attached correctly for a FormData body.
   const res = await axios.post<{ message: string; profile_picture_url: string }>(
     '/accounts/profile/picture/',
     formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    },
+    { headers: { 'Content-Type': undefined } },
   );
   return res.data;
 }
