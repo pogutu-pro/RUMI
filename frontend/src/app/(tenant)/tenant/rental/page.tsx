@@ -6,6 +6,8 @@ import { format, parseISO } from 'date-fns';
 import {
   AlertCircle,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   Building2,
   CalendarClock,
   CalendarDays,
@@ -25,7 +27,7 @@ import { useTenancies, useRentBalance, usePayments } from '@/features/rental/hoo
 import type { Payment, RentCharge, Tenancy } from '@/features/rental/types';
 
 const PAY_HREF = '/tenant/rental/pay';
-const HISTORY_PAGE_SIZE = 8;
+const HISTORY_PAGE_SIZE = 5;
 
 function formatKes(amount: string | number) {
   const n = Number(amount);
@@ -212,8 +214,11 @@ function PaymentStatusPill({ status }: { status: string }) {
 }
 
 function PaymentHistory({ payments, isLoading }: { payments: Payment[]; isLoading: boolean }) {
-  const [visible, setVisible] = React.useState(HISTORY_PAGE_SIZE);
-  const shown = payments.slice(0, visible);
+  const [page, setPage] = React.useState(1);
+  const pageCount = Math.max(1, Math.ceil(payments.length / HISTORY_PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const start = (currentPage - 1) * HISTORY_PAGE_SIZE;
+  const shown = payments.slice(start, start + HISTORY_PAGE_SIZE);
 
   return (
     <section className="rounded-2xl border bg-background shadow-sm">
@@ -265,17 +270,34 @@ function PaymentHistory({ payments, isLoading }: { payments: Payment[]; isLoadin
               );
             })}
           </ul>
-          {payments.length > visible && (
-            <div className="border-t px-5 py-3 text-center">
+          <div className="flex items-center justify-between gap-3 border-t px-5 py-3">
+            <p className="text-xs text-muted-foreground">
+              {start + 1}–{start + shown.length} of {payments.length}
+            </p>
+            <div className="flex items-center gap-1">
+              <span className="mr-2 text-xs text-muted-foreground">
+                Page {currentPage} of {pageCount}
+              </span>
               <button
                 type="button"
-                onClick={() => setVisible((n) => n + HISTORY_PAGE_SIZE)}
-                className="text-sm font-medium text-primary hover:text-primary/80"
+                aria-label="Previous page"
+                disabled={currentPage === 1}
+                onClick={() => setPage(currentPage - 1)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
               >
-                Show more ({payments.length - visible} remaining)
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                aria-label="Next page"
+                disabled={currentPage === pageCount}
+                onClick={() => setPage(currentPage + 1)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+              >
+                <ChevronRight className="h-4 w-4" />
               </button>
             </div>
-          )}
+          </div>
         </>
       )}
     </section>
