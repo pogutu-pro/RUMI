@@ -324,7 +324,7 @@ export default function TenantRentalDashboard() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile icon={Wallet} label="Monthly rent" value={formatKes(activeTenancy.monthly_rent)} />
-        <StatTile icon={ShieldCheck} label="Deposit held" value={formatKes(activeTenancy.deposit)} />
+        <StatTile icon={ShieldCheck} label="Deposit" value={formatKes(activeTenancy.deposit)} />
         <StatTile
           icon={CalendarClock}
           label="Rent due"
