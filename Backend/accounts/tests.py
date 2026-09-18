@@ -5,6 +5,7 @@ Tests for accounts app - authentication, profiles, and permissions.
 from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.utils import timezone
 from rest_framework.test import APIClient
 from accounts.models import StudentProfile, LandlordProfile
 
@@ -451,3 +452,43 @@ class UserManagementTests(TestCase):
         page_one_ids = {u['user_id'] for u in page_one.data['users']}
         page_two_ids = {u['user_id'] for u in page_two.data['users']}
         self.assertEqual(page_one_ids & page_two_ids, set())
+
+
+@override_settings(
+    CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
+    DEFAULT_FROM_EMAIL='RumiaRent <noreply@rumiarent.com>',
+)
+class BrandedEmailDeliveryTests(TestCase):
+    """send_branded_email used to forward fail_silently into EmailMessage(),
+    which rejects it — every verification/reset email raised TypeError inside
+    a task that swallowed it, so the API said 'sent' and nothing left."""
+
+    def test_send_branded_email_accepts_fail_silently(self):
+        from django.core import mail
+        from accounts.utils import send_branded_email
+
+        sent = send_branded_email(
+            subject='Hello', message='Body text', from_email='noreply@rumiarent.com',
+            recipient_list=['someone@example.com'], recipient_name='Sam', fail_silently=False,
+        )
+        self.assertEqual(sent, 1)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['someone@example.com'])
+        self.assertEqual(mail.outbox[0].content_subtype, 'html')
+
+    def test_password_reset_task_actually_sends_an_email(self):
+        from django.core import mail
+        from accounts.models import PasswordResetToken
+        from accounts.tasks import send_password_reset_email
+
+        user = User.objects.create_user(
+            email='reset-me@example.com', password='Pass123!',
+            first_name='Reset', last_name='Me', role='landlord', is_verified=True,
+        )
+        token = PasswordResetToken.objects.create(
+            user=user, expires_at=timezone.now() + timezone.timedelta(hours=1),
+        )
+        send_password_reset_email(user.id, str(token.token))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['reset-me@example.com'])

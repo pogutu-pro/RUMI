@@ -385,6 +385,12 @@ def send_branded_email(subject, message, from_email, recipient_list, recipient_n
     """
     from django.core.mail import EmailMessage
 
+    # fail_silently is an argument to .send(), not to EmailMessage() — passing
+    # it through **kwargs into the constructor raised TypeError on every call,
+    # so no branded email (verification code, password reset, ...) was ever
+    # actually sent.
+    fail_silently = kwargs.pop('fail_silently', False)
+
     html_message = create_branded_email_html(subject, message, recipient_name)
 
     email = EmailMessage(
@@ -398,4 +404,4 @@ def send_branded_email(subject, message, from_email, recipient_list, recipient_n
     email.content_subtype = "html"  # Main content is HTML
     email.body = html_message  # Set HTML as main content
 
-    return email.send(fail_silently=kwargs.get('fail_silently', False))
+    return email.send(fail_silently=fail_silently)
