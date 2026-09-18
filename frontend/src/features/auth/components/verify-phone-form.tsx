@@ -229,7 +229,7 @@ export function VerifyPhoneForm({
           variant="ghost"
           onClick={handleResend}
           disabled={isPending || resendCooldown > 0 || resendPending}
-          className="text-blue-600 hover:text-muted-foreground hover:bg-blue-50"
+          className="text-primary hover:text-primary/80 hover:bg-primary/5"
         >
           <RefreshCw className="mr-2 h-4 w-4" />
           {resendCooldown > 0

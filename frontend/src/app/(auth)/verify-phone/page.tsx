@@ -223,7 +223,7 @@ export default function VerifyPhonePage() {
             variant="ghost"
             onClick={handleResend}
             disabled={loading || resendCooldown > 0 || resendHook?.isPending}
-            className="text-blue-600 hover:text-muted-foreground hover:bg-blue-50"
+            className="text-primary hover:text-primary/80 hover:bg-primary/5"
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             {resendCooldown > 0

@@ -95,7 +95,8 @@ async function logout(): Promise<void> {
  * Endpoint: POST /api/v1/accounts/verify-email/
  */
 async function verifyEmail(data: EmailVerificationRequest): Promise<void> {
-  await axios.post('/accounts/verify-email/', data);
+  // The backend serializer names the field `otp_code`; the form calls it `otp`.
+  await axios.post('/accounts/verify-email/', { email: data.email, otp_code: data.otp });
 }
 
 /**

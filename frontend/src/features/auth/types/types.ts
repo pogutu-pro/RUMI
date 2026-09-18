@@ -92,6 +92,7 @@ export interface ResetPasswordRequest {
 export interface VerifyEmailRequest {
   token: string;
   otp?: string;
+  email?: string;
 }
 
 

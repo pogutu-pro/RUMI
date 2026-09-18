@@ -9,6 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Mail, CheckCircle2, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { AuthCard } from '@/features/auth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { OTPInput } from '@/components/ui/otp-input';
@@ -32,6 +33,7 @@ export default function VerifyEmailPage() {
     setError,
     clearErrors,
     setValue,
+    getValues,
   } = useForm<VerifyEmailFormData>({
     resolver: zodResolver(verifyEmailSchema),
     defaultValues: { otp: '', email: emailFromQuery },
@@ -43,6 +45,13 @@ export default function VerifyEmailPage() {
   const resendHook = useResendVerification();
 
   const loading = verifyHook.isPending || resendHook.isPending;
+
+  // Verifying returns the user to sign in — they are not logged in yet.
+  React.useEffect(() => {
+    if (!verifyHook.isSuccess) return;
+    const id = window.setTimeout(() => router.push(AUTH_ROUTES.LOGIN as Route), 2000);
+    return () => window.clearTimeout(id);
+  }, [verifyHook.isSuccess, router]);
 
   React.useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -56,6 +65,7 @@ export default function VerifyEmailPage() {
   const onSubmit = (data: VerifyEmailFormData) => {
     verifyHook.mutate({
       ...data,
+      email: data.email || emailFromQuery,
       token: tokenFromQuery,
     });
   };
@@ -63,7 +73,7 @@ export default function VerifyEmailPage() {
   const handleResend = async () => {
     if (resendCooldown > 0 || resendHook.isPending) return;
     try {
-      const payload: ResendOtpRequest = { email: emailFromQuery };
+      const payload: ResendOtpRequest = { email: getValues('email') || emailFromQuery };
       await resendHook.mutateAsync(payload);
       setResendCooldown(60);
       clearErrors('otp');
@@ -89,7 +99,7 @@ export default function VerifyEmailPage() {
               Email verified!
             </h1>
             <p className="text-gray-600">
-              Your email has been verified. Redirecting to your dashboard…
+              Your email has been verified. Taking you to sign in…
             </p>
           </header>
 
@@ -115,6 +125,30 @@ export default function VerifyEmailPage() {
             <strong>{emailFromQuery || 'your email'}</strong>
           </AlertDescription>
         </Alert>
+
+        {!emailFromQuery && (
+          <div className="space-y-1.5">
+            <label htmlFor="verify-email-address" className="block text-sm font-medium text-gray-700">
+              Email address
+            </label>
+            <Controller
+              control={control}
+              name="email"
+              render={({ field }) => (
+                <Input
+                  id="verify-email-address"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  className="h-11"
+                  {...field}
+                  value={field.value ?? ''}
+                />
+              )}
+            />
+            {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
+          </div>
+        )}
 
         <div className="space-y-3">
           <label className="block text-sm font-medium text-gray-700 text-center">
@@ -148,7 +182,7 @@ export default function VerifyEmailPage() {
         <div className="bg-muted/50 border border-border rounded-xl p-4 text-center">
           <p className="text-sm text-muted-foreground">
             The code will expire in{' '}
-            <span className="font-semibold">10 minutes</span>
+            <span className="font-semibold">5 minutes</span>
           </p>
         </div>
 
@@ -170,7 +204,7 @@ export default function VerifyEmailPage() {
             variant="ghost"
             onClick={handleResend}
             disabled={loading || resendCooldown > 0}
-            className="text-blue-600 hover:text-muted-foreground hover:bg-blue-50"
+            className="text-primary hover:text-primary/80 hover:bg-primary/5"
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             {resendCooldown > 0
