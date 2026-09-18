@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { ArrowRight, Clock, Users, BookOpen, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ interface BlogPost {
   publishedAt: string;
   meta?: string;
   hasVideo?: boolean;
+  featuredImage?: string;
 }
 
 interface ApiBlogPost {
@@ -86,6 +88,7 @@ function transformApiPost(apiPost: ApiBlogPost): BlogPost {
     publishedAt: apiPost.published_at,
     meta: apiPost.tags.join(' • '),
     hasVideo: !!apiPost.video_url,
+    featuredImage: apiPost.featured_image,
   };
 }
 
@@ -260,6 +263,18 @@ export default function BlogPage() {
             <FadeIn className="mb-10">
               <Link href={`/blog/${featured.slug}`} className="block group">
                 <Card className="overflow-hidden border-border bg-card hover:border-primary/50 hover:shadow-lg transition-all duration-300 p-0">
+                  {featured.featuredImage && (
+                    <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
+                      <Image
+                        src={featured.featuredImage}
+                        alt={featured.title}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, 768px"
+                        priority
+                      />
+                    </div>
+                  )}
                   <div className="p-6 md:p-8">
                     <div className="flex flex-wrap items-center gap-3 mb-4">
                       <Badge className="bg-primary/10 text-primary border-primary/20 text-sm font-semibold px-3 py-1">
@@ -321,44 +336,59 @@ export default function BlogPage() {
                 {rest.map((post) => (
                   <FadeInItem key={post.slug}>
                     <Link href={`/blog/${post.slug}`} className="block group">
-                      <Card className="border-border bg-card hover:border-primary/50 hover:shadow-md transition-all duration-200">
-                        <CardHeader className="pb-2">
-                          <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <Badge variant="outline" className="text-sm font-medium">
-                              {post.audienceLabel}
-                            </Badge>
-                            <span className="text-sm text-muted-foreground flex items-center gap-1">
-                              <Clock className="h-3.5 w-3.5" />
-                              {post.readTime}
-                            </span>
-                            {post.hasVideo && (
-                              <Badge variant="outline" className="text-xs font-medium text-blue-600 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
-                                Video
-                              </Badge>
-                            )}
+                      <Card className="border-border bg-card hover:border-primary/50 hover:shadow-md transition-all duration-200 overflow-hidden">
+                        <div className="flex gap-4 p-0">
+                          {post.featuredImage && (
+                            <div className="relative hidden h-full w-36 shrink-0 overflow-hidden bg-muted sm:block">
+                              <Image
+                                src={post.featuredImage}
+                                alt={post.title}
+                                fill
+                                className="object-cover"
+                                sizes="144px"
+                              />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <CardHeader className="pb-2">
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <Badge variant="outline" className="text-sm font-medium">
+                                  {post.audienceLabel}
+                                </Badge>
+                                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                                  <Clock className="h-3.5 w-3.5" />
+                                  {post.readTime}
+                                </span>
+                                {post.hasVideo && (
+                                  <Badge variant="outline" className="text-xs font-medium text-blue-600 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
+                                    Video
+                                  </Badge>
+                                )}
+                              </div>
+                              <CardTitle className="text-xl font-bold text-foreground group-hover:text-primary transition-colors leading-snug">
+                                {post.title}
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                              <CardDescription className="text-base text-muted-foreground leading-relaxed line-clamp-2 mb-3">
+                                {post.description}
+                              </CardDescription>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">
+                                  {new Date(post.publishedAt).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  })}
+                                </span>
+                                <span className="text-sm font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                  Read
+                                  <ArrowRight className="h-4 w-4" />
+                                </span>
+                              </div>
+                            </CardContent>
                           </div>
-                          <CardTitle className="text-xl font-bold text-foreground group-hover:text-primary transition-colors leading-snug">
-                            {post.title}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          <CardDescription className="text-base text-muted-foreground leading-relaxed line-clamp-2 mb-3">
-                            {post.description}
-                          </CardDescription>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">
-                              {new Date(post.publishedAt).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                              })}
-                            </span>
-                            <span className="text-sm font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                              Read
-                              <ArrowRight className="h-4 w-4" />
-                            </span>
-                          </div>
-                        </CardContent>
+                        </div>
                       </Card>
                     </Link>
                   </FadeInItem>

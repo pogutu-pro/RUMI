@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Clock, Users, BookOpen, Video } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -290,6 +291,21 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               </span>
             </div>
           </header>
+
+          {/* Cover image — only when there's no video, which already shows
+              this same image as its own thumbnail (see below). */}
+          {post.coverImage && !post.videoUrl && (
+            <div className="relative mb-10 aspect-[2/1] w-full overflow-hidden rounded-xl bg-muted">
+              <Image
+                src={post.coverImage}
+                alt={post.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 768px"
+                priority
+              />
+            </div>
+          )}
 
           {/* Video Section */}
           {post.videoUrl && (
