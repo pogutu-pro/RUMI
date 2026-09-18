@@ -25,6 +25,10 @@ jest.mock('@/features/rental/components/organization-switcher', () => ({
   OrganizationSwitcher: () => <div data-testid="org-switcher">OrgSwitcher</div>,
 }));
 
+jest.mock('@/features/notifications', () => ({
+  NotificationBell: () => <div data-testid="notification-bell">Bell</div>,
+}));
+
 const NAV = [{ href: '/landlord/rental', label: 'Dashboard', icon: LayoutDashboard }];
 
 function mockUser(role: UserRole, overrides: Partial<{ email: string; first_name: string; last_name: string }> = {}) {
@@ -58,7 +62,7 @@ describe('DashboardShell', () => {
       user: mockUser(UserRole.CARETAKER, { email: 'c@example.com', first_name: 'Carl', last_name: 'Taker' }),
     });
     render(
-      <DashboardShell allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]} nav={NAV}>
+      <DashboardShell allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]} nav={NAV} settingsHref="/landlord/rental/settings">
         <div>content</div>
       </DashboardShell>,
     );
@@ -70,7 +74,7 @@ describe('DashboardShell', () => {
       user: mockUser(UserRole.LANDLORD, { email: 'l@example.com', first_name: 'Lucy', last_name: 'Land' }),
     });
     render(
-      <DashboardShell allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]} nav={NAV}>
+      <DashboardShell allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]} nav={NAV} settingsHref="/landlord/rental/settings">
         <div>content</div>
       </DashboardShell>,
     );
@@ -81,7 +85,7 @@ describe('DashboardShell', () => {
   it('renders the loading fallback and does not redirect while status is checking', () => {
     mockAuth({ status: 'checking', isAuthenticated: false, user: null });
     render(
-      <DashboardShell allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]} nav={NAV}>
+      <DashboardShell allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]} nav={NAV} settingsHref="/landlord/rental/settings">
         <div>content</div>
       </DashboardShell>,
     );
@@ -95,7 +99,7 @@ describe('DashboardShell', () => {
       user: mockUser(UserRole.SUPER_ADMIN, { email: 's@example.com', first_name: 'Sam', last_name: 'Admin' }),
     });
     const { rerender } = render(
-      <DashboardShell allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]} nav={NAV}>
+      <DashboardShell allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]} nav={NAV} settingsHref="/landlord/rental/settings">
         <div>content</div>
       </DashboardShell>,
     );
@@ -105,7 +109,7 @@ describe('DashboardShell', () => {
       user: mockUser(UserRole.LANDLORD, { email: 'l@example.com', first_name: 'Lucy', last_name: 'Land' }),
     });
     rerender(
-      <DashboardShell allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]} nav={NAV}>
+      <DashboardShell allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]} nav={NAV} settingsHref="/landlord/rental/settings">
         <div>content</div>
       </DashboardShell>,
     );
@@ -120,6 +124,7 @@ describe('DashboardShell', () => {
       <DashboardShell
         allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]}
         nav={NAV}
+        settingsHref="/landlord/rental/settings"
         bannerSlot={<div data-testid="banner">Banner</div>}
       >
         <div>content</div>
@@ -129,7 +134,7 @@ describe('DashboardShell', () => {
     expect(screen.getByText('content')).toBeInTheDocument();
 
     rerender(
-      <DashboardShell allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]} nav={NAV}>
+      <DashboardShell allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]} nav={NAV} settingsHref="/landlord/rental/settings">
         <div>content</div>
       </DashboardShell>,
     );

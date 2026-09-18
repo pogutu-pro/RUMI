@@ -4,18 +4,18 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
-import { ChevronsLeft, ChevronsRight, LogOut, Menu } from 'lucide-react';
+import { ChevronsLeft, ChevronsRight, Menu } from 'lucide-react';
 import { useAuth } from '@/features/auth';
 import { UserRole } from '@/features/auth/stores/auth.types';
 import { UnifiedThemeProvider } from '@/components/providers/unified-theme-provider';
 import { useUiStore } from '@/stores/ui.store';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { getUserInitials } from '@/lib/utils/user';
 import { cn } from '@/lib/utils/cn';
 import { OrganizationSwitcher } from '@/features/rental/components/organization-switcher';
+import { AccountMenu } from '@/components/dashboard/account-menu';
+import { NotificationBell } from '@/features/notifications';
 
 export interface DashboardShellNavItem {
   href: string;
@@ -26,6 +26,8 @@ export interface DashboardShellNavItem {
 export interface DashboardShellProps {
   allowedRoles: UserRole[];
   nav: DashboardShellNavItem[];
+  /** Where the top-right account menu's "Settings" item links to. */
+  settingsHref: string;
   maxWidth?: string;
   bannerSlot?: React.ReactNode;
   /** OrganizationSwitcher writes to a landlord-scoped store (SelectedOrgStore)
@@ -83,48 +85,6 @@ function NavLinks({
   );
 }
 
-function SidebarUserFooter({
-  collapsed,
-  name,
-  email,
-  onLogout,
-}: {
-  collapsed: boolean;
-  name: string;
-  email: string;
-  onLogout: () => void;
-}) {
-  return (
-    <div className="border-t px-3 py-3">
-      <div className={cn('flex items-center gap-3', collapsed && 'flex-col')}>
-        <Avatar className="h-9 w-9 shrink-0">
-          <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
-            {getUserInitials(name) || 'U'}
-          </AvatarFallback>
-        </Avatar>
-        {!collapsed && (
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-foreground">{name}</p>
-            <p className="truncate text-xs text-muted-foreground">{email}</p>
-          </div>
-        )}
-        <Tooltip delayDuration={200}>
-          <TooltipTrigger asChild>
-            <button
-              onClick={onLogout}
-              aria-label="Log out"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="right">Log out</TooltipContent>
-        </Tooltip>
-      </div>
-    </div>
-  );
-}
-
 /**
  * Shared dashboard chrome — collapsible desktop sidebar, mobile slide-over
  * drawer, avatar/logout footer, and the `allowedRoles` auth-gate. Extracted
@@ -139,6 +99,7 @@ function SidebarUserFooter({
 export function DashboardShell({
   allowedRoles,
   nav,
+  settingsHref,
   maxWidth,
   bannerSlot,
   showOrgSwitcher = true,
@@ -170,6 +131,7 @@ export function DashboardShell({
   }
 
   const name = user ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || user.email : '';
+  const firstName = user?.first_name?.trim() || name;
   const email = user?.email ?? '';
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
 
@@ -204,8 +166,6 @@ export function DashboardShell({
               <div className="flex-1 overflow-y-auto py-2">
                 <NavLinks nav={nav} collapsed={collapsed} pathname={pathname} />
               </div>
-
-              <SidebarUserFooter collapsed={collapsed} name={name} email={email} onLogout={logout} />
             </aside>
           )}
 
@@ -221,6 +181,10 @@ export function DashboardShell({
                   <Menu className="h-5 w-5" />
                 </button>
                 <span className="text-base font-semibold text-foreground">RumiaRent</span>
+                <div className="ml-auto flex items-center gap-1">
+                  <NotificationBell />
+                  <AccountMenu name={name} email={email} settingsHref={settingsHref} onLogout={logout} />
+                </div>
               </header>
               <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
                 <SheetContent side="left" className="flex w-72 flex-col p-0">
@@ -232,13 +196,21 @@ export function DashboardShell({
                   <div className="flex-1 overflow-y-auto py-2">
                     <NavLinks nav={nav} collapsed={false} pathname={pathname} onNavigate={() => setMobileNavOpen(false)} />
                   </div>
-                  <SidebarUserFooter collapsed={false} name={name} email={email} onLogout={logout} />
                 </SheetContent>
               </Sheet>
             </>
           )}
 
           <div className="min-w-0 flex-1">
+            {isDesktop && (
+              <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-background px-6">
+                <p className="truncate text-sm font-medium text-foreground">Welcome back, {firstName}</p>
+                <div className="flex items-center gap-1">
+                  <NotificationBell />
+                  <AccountMenu name={name} email={email} settingsHref={settingsHref} onLogout={logout} />
+                </div>
+              </header>
+            )}
             <main className={cn('mx-auto space-y-6 px-4 py-6 md:py-8', maxWidth ?? 'max-w-5xl', !isDesktop && 'pt-[4.5rem]')}>
               {bannerSlot}
               {children}

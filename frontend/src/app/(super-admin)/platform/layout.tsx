@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Bell, Building2, CreditCard, FileClock, LayoutDashboard, LifeBuoy, Users } from 'lucide-react';
+import { Bell, Building2, CreditCard, FileClock, LayoutDashboard, LifeBuoy, Settings, Users } from 'lucide-react';
 import { UserRole } from '@/features/auth/stores/auth.types';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 
@@ -13,6 +13,7 @@ const ADMIN_NAV = [
   { href: '/platform/billing', label: 'Billing', icon: CreditCard },
   { href: '/platform/notifications', label: 'Notifications', icon: Bell },
   { href: '/platform/audit', label: 'Audit log', icon: FileClock },
+  { href: '/platform/settings', label: 'Settings', icon: Settings },
 ];
 
 /**
@@ -30,6 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <DashboardShell
       allowedRoles={[UserRole.SUPER_ADMIN]}
       nav={ADMIN_NAV}
+      settingsHref="/platform/settings"
       maxWidth="max-w-5xl"
       showOrgSwitcher={false}
     >
