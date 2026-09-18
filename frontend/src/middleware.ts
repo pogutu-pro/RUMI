@@ -94,8 +94,9 @@ function isAuthPath(pathname: string): boolean {
 function getDashboardUrl(role?: UserRole): string {
   switch (role) {
     case 'landlord':
-    case 'super_admin':
       return '/landlord/rental';
+    case 'super_admin':
+      return '/admin/billing';
     case 'caretaker':
       return '/caretaker/rental';
     case 'tech_support':
