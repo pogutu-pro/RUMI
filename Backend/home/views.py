@@ -27,19 +27,18 @@ class AboutUsView(APIView):
         return Response({
             'mission': {
                 'title': 'Our Mission',
-                'content': 'To revolutionize student accommodation in Kenya by providing a transparent, secure, and user-friendly platform that connects students with verified landlords and fosters a supportive community.'
+                'content': 'To give Kenyan landlords and property agents a single, trustworthy place to manage properties, tenants, and rent — replacing WhatsApp threads and spreadsheets with a platform built for how landlords actually work.'
             },
             'vision': {
                 'title': 'Our Vision',
-                'content': 'To become the leading student accommodation platform in kenya, empowering students to find safe, affordable housing while helping landlords efficiently manage their properties.'
+                'content': 'To become the platform every Kenyan landlord trusts to reliably collect and route their rent, with every dashboard, form, and payment path provably correct.'
             },
             'story': {
                 'title': 'Our Story',
-                'content': 'Founded in 2025 by university students who experienced the challenges of finding safe accommodation in some of Kenyan universities, RUMI was born from the need for a transparent and trustworthy platform.',
+                'content': 'RumiaRent was built for the landlord running a handful of units without dedicated staff — not for enterprise property managers. We start with what one landlord needs, then make it work for every landlord who needs the same thing.',
                 'milestones': [
-                    {'year': '2025', 'event': 'Platform launched at various University across Kenya'},
-                    {'year': '2025', 'event': 'Expanded to 5 universities across Kenya'},
-                    {'year': '2025', 'event': 'Launched integrated student marketplace'}
+                    {'year': '2025', 'event': 'RumiaRent launched for Kenyan landlords and agents'},
+                    {'year': '2026', 'event': 'Paystack-based rent collection and SMS reminders shipped'},
                 ]
             },
             'values': [
@@ -48,12 +47,12 @@ class AboutUsView(APIView):
                     'description': 'Clear pricing, verified information, no hidden fees'
                 },
                 {
-                    'title': 'Safety',
-                    'description': 'Verified hostels, secure payments, trusted landlords'
+                    'title': 'Trust',
+                    'description': 'Secure Paystack payments, correct payouts, no surprises'
                 },
                 {
-                    'title': 'Community',
-                    'description': 'Building connections between students and landlords'
+                    'title': 'Simplicity',
+                    'description': 'Built for a landlord with a handful of units, not an enterprise back office'
                 }
             ]
         }, status=status.HTTP_200_OK)
@@ -255,7 +254,7 @@ class FAQView(APIView):
         # Define category labels
         category_labels = {
             'getting_started': 'Getting Started',
-            'students': 'For Students',
+            'students': 'For Tenants',
             'landlords': 'For Landlords',
             'payments': 'Payments & Billing',
             'safety': 'Safety & Security',
