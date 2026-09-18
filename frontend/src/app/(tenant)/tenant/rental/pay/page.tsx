@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { ErrorState } from '@/components/ui/error-state';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { useTenancies, useRentBalance, useInitiatePayment } from '@/features/rental/hooks/use-rental';
 
@@ -14,6 +15,8 @@ function formatKes(amount: string | number) {
   const n = Number(amount);
   return `KES ${n.toLocaleString('en-KE', { maximumFractionDigits: 0 })}`;
 }
+
+type PayOption = 'full' | 'custom';
 
 export default function TenantPayRentPage() {
   const {
@@ -31,16 +34,14 @@ export default function TenantPayRentPage() {
 
   const activeTenancy = tenancies.find((t) => t.status === 'active') ?? tenancies[0];
   const outstanding = Number(balance?.outstanding_total ?? '0');
-  const defaultAmount = outstanding > 0 ? outstanding : Number(activeTenancy?.monthly_rent ?? 0);
+  // The full amount is whatever the landlord set — the outstanding charge
+  // when one exists, otherwise the tenancy's own monthly rent. Never
+  // editable: this option exists so a tenant can pay exactly what's owed
+  // with no risk of typing the wrong figure.
+  const fullAmount = outstanding > 0 ? outstanding : Number(activeTenancy?.monthly_rent ?? 0);
 
-  const [amount, setAmount] = React.useState('');
-
-  React.useEffect(() => {
-    if (defaultAmount > 0 && !amount) {
-      setAmount(String(defaultAmount));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultAmount]);
+  const [option, setOption] = React.useState<PayOption>('full');
+  const [customAmount, setCustomAmount] = React.useState('');
 
   if (tenanciesError || balanceError) {
     return <ErrorState onRetry={() => refetchBalance()} />;
@@ -54,10 +55,12 @@ export default function TenantPayRentPage() {
     return <p className="text-sm text-muted-foreground">No tenancy on file yet — contact your landlord.</p>;
   }
 
+  const amount = option === 'full' ? fullAmount : Number(customAmount);
+  const canPay = amount > 0;
+
   const handlePay = async () => {
-    const numericAmount = Number(amount);
-    if (!numericAmount || numericAmount <= 0) return;
-    const result = await initiate.mutateAsync({ tenancyId: activeTenancy.id, amount: String(numericAmount) });
+    if (!canPay) return;
+    const result = await initiate.mutateAsync({ tenancyId: activeTenancy.id, amount: String(amount) });
     if (result.authorization_url) {
       window.location.href = result.authorization_url;
     }
@@ -65,7 +68,7 @@ export default function TenantPayRentPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Pay Rent" description="Pay what's due, or pay ahead of time — any amount, any time." />
+      <PageHeader title="Pay Rent" description="Pay what's due, or pay ahead of time." />
 
       <Card className="rounded-2xl">
         <CardHeader>
@@ -79,29 +82,59 @@ export default function TenantPayRentPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="pay-amount">Amount (KES)</Label>
-            <Input
-              id="pay-amount"
-              type="number"
-              min="1"
-              step="1"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="h-11"
-            />
-            <p className="text-xs text-muted-foreground">
-              {outstanding > 0
-                ? 'Defaults to your outstanding balance — adjust if you want to pay a different amount.'
-                : 'Nothing is due right now. Pay ahead to cover next month’s rent or more.'}
-            </p>
-          </div>
+          <RadioGroup value={option} onValueChange={(v) => setOption(v as PayOption)} className="space-y-3">
+            <label
+              htmlFor="pay-full"
+              className="flex cursor-pointer items-center justify-between rounded-xl border p-4 has-[button[data-state=checked]]:border-primary has-[button[data-state=checked]]:bg-primary/5"
+            >
+              <div className="flex items-center gap-3">
+                <RadioGroupItem value="full" id="pay-full" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">Pay full amount</p>
+                  <p className="text-xs text-muted-foreground">
+                    {outstanding > 0 ? 'Your outstanding balance' : 'Your monthly rent'}
+                  </p>
+                </div>
+              </div>
+              <p className="text-sm font-semibold text-foreground">{formatKes(fullAmount)}</p>
+            </label>
+
+            <label
+              htmlFor="pay-custom"
+              className="flex cursor-pointer flex-col gap-3 rounded-xl border p-4 has-[button[data-state=checked]]:border-primary has-[button[data-state=checked]]:bg-primary/5"
+            >
+              <div className="flex items-center gap-3">
+                <RadioGroupItem value="custom" id="pay-custom" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">Pay a different amount</p>
+                  <p className="text-xs text-muted-foreground">Pay more to get ahead, or pay part of what&apos;s due</p>
+                </div>
+              </div>
+              {option === 'custom' && (
+                <div className="pl-7">
+                  <Label htmlFor="custom-amount" className="sr-only">Amount (KES)</Label>
+                  <Input
+                    id="custom-amount"
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder="Enter amount in KES"
+                    value={customAmount}
+                    onChange={(e) => setCustomAmount(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-11 max-w-xs"
+                  />
+                </div>
+              )}
+            </label>
+          </RadioGroup>
+
           <Button
             onClick={handlePay}
-            disabled={initiate.isPending || !amount || Number(amount) <= 0}
+            disabled={initiate.isPending || !canPay}
             className="w-full rounded-xl"
           >
-            Pay with Paystack
+            Pay Rent
           </Button>
         </CardContent>
       </Card>
