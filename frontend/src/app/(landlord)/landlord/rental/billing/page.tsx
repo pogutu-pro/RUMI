@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusPill, type StatusPillProps } from '@/components/ui/status-pill';
@@ -13,6 +14,7 @@ import {
 } from '@/features/billing/hooks/use-subscription';
 import { usePlans } from '@/features/billing/hooks/use-plans';
 import { usePayoutStatus } from '@/features/payout/hooks/use-payout';
+import { PayoutDetailsForm } from '@/features/payout/components/payout-details-form';
 import type { OrganizationSubscription } from '@/features/billing/types';
 import type { PayoutStatus } from '@/features/payout/types';
 
@@ -51,6 +53,7 @@ export default function BillingPayoutPage() {
     usePlans();
   const subscribeMutation = useSubscribe();
   const switchPlanMutation = useSwitchPlan();
+  const [editingPayout, setEditingPayout] = React.useState(false);
 
   const subscriptionNotFound =
     (subscriptionError as { statusCode?: number } | undefined)?.statusCode === 404;
@@ -96,20 +99,45 @@ export default function BillingPayoutPage() {
         <CardHeader>
           <CardTitle className="text-base">Payout</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-5">
           {payoutLoading ? (
             <div className="skeleton h-16 rounded-xl" />
           ) : payout ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <StatusPill status={PAYOUT_STATUS_VARIANT[payout.status]}>
-                {payout.status.replace(/_/g, ' ')}
-              </StatusPill>
-              {payout.status !== 'not_started' && (
-                <p className="text-sm text-muted-foreground">
-                  {payout.bank_name} · {payout.bank_account_number_masked}
-                </p>
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <StatusPill status={PAYOUT_STATUS_VARIANT[payout.status]}>
+                    {payout.status.replace(/_/g, ' ')}
+                  </StatusPill>
+                  {payout.status !== 'not_started' && (
+                    <p className="text-sm text-muted-foreground">
+                      {payout.bank_name} · {payout.bank_account_number_masked}
+                    </p>
+                  )}
+                </div>
+                {payout.status !== 'not_started' && !editingPayout && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => setEditingPayout(true)}>
+                    Edit bank details
+                  </Button>
+                )}
+              </div>
+
+              {payout.status === 'not_started' && (
+                <div>
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    This is where tenant rent payments actually get paid out to you — add your
+                    bank details so Paystack can settle rent into your account.
+                  </p>
+                  <PayoutDetailsForm />
+                </div>
               )}
-            </div>
+
+              {payout.status !== 'not_started' && editingPayout && (
+                <div className="border-t pt-5">
+                  <PayoutDetailsForm onSuccess={() => setEditingPayout(false)} />
+                </div>
+              )}
+            </>
           ) : (
             <p className="text-sm text-muted-foreground">
               Something went wrong. Please try again.
