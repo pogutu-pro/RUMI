@@ -19,15 +19,15 @@ export default function OnboardingPage() {
       <section className="w-full max-w-2xl mx-auto">
         <AuthCard
           icon={
-            <div className="w-16 h-16 border-2 border-primary bg-primary/5 flex items-center justify-center rounded-none">
+            <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center">
               <UserCheck className="w-8 h-8 text-primary" />
             </div>
           }
-          title={<span className="font-black text-3xl tracking-tight uppercase">Complete Profile</span>}
+          title={<span className="font-semibold text-3xl tracking-tight">Complete Profile</span>}
           description={
             <div className="space-y-1">
               <p className="text-gray-900 font-bold">Finish setting up your {user.role} account</p>
-              <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">We need a few more details to verified your identity</p>
+              <p className="text-xs text-gray-500 font-bold">We need a few more details to verified your identity</p>
             </div>
           }
         >

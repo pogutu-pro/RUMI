@@ -52,7 +52,7 @@ export function LandlordRegisterForm() {
   return (
     <section className="space-y-6">
       {apiMessage && (
-        <Alert variant="destructive" role="alert" className="rounded-none border-2">
+        <Alert variant="destructive" role="alert" className="">
           <AlertCircle className="h-4 w-4" aria-hidden />
           <AlertDescription className="font-bold">{apiMessage}</AlertDescription>
         </Alert>
@@ -135,7 +135,7 @@ export function LandlordRegisterForm() {
           {...register('confirm_password')}
         />
 
-        <div className="text-xs text-center text-gray-500 font-bold uppercase tracking-wider">
+        <div className="text-xs text-center text-gray-500 font-bold">
           By selecting <strong>Create landlord account</strong>, I agree to the{' '}
           <Link
             href="/terms"
@@ -155,7 +155,7 @@ export function LandlordRegisterForm() {
 
         <Button
           type="submit"
-          className="w-full h-12 text-base font-black bg-primary hover:bg-primary/90 text-white rounded-none uppercase tracking-widest shadow-md active:translate-y-0.5 transition-all"
+          className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 text-white shadow-md active:translate-y-0.5 transition-all"
           disabled={isSubmitting}
         >
           {isSubmitting ? (

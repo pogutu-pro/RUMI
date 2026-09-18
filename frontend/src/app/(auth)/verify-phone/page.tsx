@@ -115,7 +115,7 @@ export default function VerifyPhonePage() {
       <section className="w-full">
         <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex justify-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center animate-bounce">
+            <div className="w-16 h-12 bg-green-100 rounded-full flex items-center justify-center animate-bounce">
               <CheckCircle2 className="w-8 h-8 text-green-600" />
             </div>
           </div>

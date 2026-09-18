@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { FormDialogActions, FormRow, FormStack } from '@/components/ui/form-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,7 +15,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { PageHeader } from '@/components/dashboard/page-header';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -128,7 +129,7 @@ function TicketThread({ ticketId, onClose }: { ticketId: string; onClose: () => 
                   name="message"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-semibold">Reply</FormLabel>
+                      <FormLabel>Reply</FormLabel>
                       <FormControl>
                         <Textarea rows={3} {...field} />
                       </FormControl>
@@ -211,17 +212,21 @@ export function MyTicketsPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>New support ticket</DialogTitle>
+                <DialogDescription>
+                  Tell us what&apos;s wrong and our team will get back to you. Include as much detail as you can.
+                </DialogDescription>
               </DialogHeader>
               <Form {...form}>
-                <form onSubmit={handleCreate} className="space-y-3">
+                <form onSubmit={handleCreate}>
+                  <FormStack>
                   <FormField
                     control={form.control}
                     name="subject"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-semibold">Subject</FormLabel>
+                        <FormLabel>Subject</FormLabel>
                         <FormControl>
-                          <Input className="h-11" {...field} />
+                          <Input className="h-11" placeholder="e.g. Leaking tap in the kitchen" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -232,9 +237,9 @@ export function MyTicketsPage() {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-semibold">Describe the issue</FormLabel>
+                        <FormLabel>Describe the issue</FormLabel>
                         <FormControl>
-                          <Textarea rows={4} {...field} />
+                          <Textarea rows={5} placeholder="What happened, and when did it start?" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -245,7 +250,7 @@ export function MyTicketsPage() {
                     name="category"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-semibold">Category</FormLabel>
+                        <FormLabel>Category</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger className="h-11">
@@ -263,13 +268,13 @@ export function MyTicketsPage() {
                     )}
                   />
                   {category === 'maintenance' && (
-                    <>
+                    <FormRow>
                       <FormField
                         control={form.control}
                         name="unit"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="font-semibold">Unit</FormLabel>
+                            <FormLabel>Unit</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger className="h-11">
@@ -291,7 +296,7 @@ export function MyTicketsPage() {
                         name="priority"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="font-semibold">Priority</FormLabel>
+                            <FormLabel>Priority</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger className="h-11">
@@ -308,13 +313,10 @@ export function MyTicketsPage() {
                           </FormItem>
                         )}
                       />
-                    </>
+                    </FormRow>
                   )}
-                  <DialogFooter>
-                    <Button type="submit" disabled={createTicket.isPending}>
-                      Submit
-                    </Button>
-                  </DialogFooter>
+                  <FormDialogActions submitLabel="Submit ticket" isPending={createTicket.isPending} />
+                  </FormStack>
                 </form>
               </Form>
             </DialogContent>

@@ -35,12 +35,12 @@ export default function LoginPage() {
              />
            </Link>
         }
-        title={<span className="font-black text-3xl tracking-tight">Welcome to RumiaRent</span>}
-        description={<span className="text-gray-500 font-bold uppercase tracking-wider text-xs">Sign in to your account</span>}
+        title={<span className="font-semibold text-3xl tracking-tight">Welcome to RumiaRent</span>}
+        description={<span className="text-gray-500 font-bold text-xs">Sign in to your account</span>}
       >
         <div className="space-y-4">
           {sessionExpired && (
-            <Alert variant="destructive" role="alert" className="rounded-none border-2">
+            <Alert variant="destructive" role="alert" className="">
               <AlertCircle className="h-4 w-4" aria-hidden />
               <AlertDescription className="font-bold">
                 Your session expired. Please sign in again.
@@ -49,7 +49,7 @@ export default function LoginPage() {
           )}
 
           {verified && (
-            <Alert role="status" className="rounded-none border-2 border-primary bg-primary/5">
+            <Alert role="status" className="border-primary bg-primary/5">
               <AlertCircle
                 className="h-4 w-4 text-primary"
                 aria-hidden

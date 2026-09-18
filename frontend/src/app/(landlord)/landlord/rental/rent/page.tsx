@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -125,6 +125,11 @@ export default function RentPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Record payment</DialogTitle>
+            <DialogDescription>
+              {activeCharge
+                ? `Record cash or bank money received for the charge due ${activeCharge.due_date}. KES ${activeCharge.outstanding} is outstanding.`
+                : 'Record cash or bank money received for this charge.'}
+            </DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <FormField
@@ -137,6 +142,7 @@ export default function RentPage() {
                     <Input
                       className="h-11"
                       type="number"
+                      placeholder="0"
                       {...field}
                       value={field.value as number | string}
                     />
@@ -147,8 +153,13 @@ export default function RentPage() {
             />
           </Form>
           <DialogFooter>
-            <Button onClick={handleRecord} disabled={recordPayment.isPending}>
-              Save
+            <DialogClose asChild>
+              <Button type="button" variant="outline" disabled={recordPayment.isPending}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button onClick={handleRecord} isLoading={recordPayment.isPending} disabled={recordPayment.isPending}>
+              Record payment
             </Button>
           </DialogFooter>
         </DialogContent>

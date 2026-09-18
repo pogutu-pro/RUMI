@@ -7,11 +7,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { FormDialogActions, FormRow } from '@/components/ui/form-layout';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
-} from '@/components/ui/dialog';
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useProperties, useCreateProperty, useUpdateProperty } from '@/features/rental/hooks/use-rental';
@@ -82,22 +82,26 @@ export default function PropertiesPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add property</DialogTitle>
+                <DialogDescription>
+                  Add a building or estate you manage. You&apos;ll add its rentable units next.
+                </DialogDescription>
               </DialogHeader>
               <Form {...form}>
-                <form onSubmit={handleCreate} className="space-y-3">
+                <form onSubmit={handleCreate} className="space-y-5">
                   <FormField
                     control={form.control}
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Name</FormLabel>
+                        <FormLabel>Property name</FormLabel>
                         <FormControl>
-                          <Input {...field} className="h-11" />
+                          <Input {...field} placeholder="e.g. Greenview Apartments" className="h-11" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  <FormRow>
                   <FormField
                     control={form.control}
                     name="address"
@@ -124,12 +128,9 @@ export default function PropertiesPage() {
                       </FormItem>
                     )}
                   />
+                  </FormRow>
                   {gateError && <GateBanner gate={gateError} onDismiss={() => createProperty.reset()} />}
-                  <DialogFooter>
-                    <Button type="submit" disabled={createProperty.isPending} className="rounded-full">
-                      Save
-                    </Button>
-                  </DialogFooter>
+                  <FormDialogActions submitLabel="Save" isPending={createProperty.isPending} />
                 </form>
               </Form>
             </DialogContent>
@@ -141,9 +142,10 @@ export default function PropertiesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit property</DialogTitle>
+            <DialogDescription>Update this property&apos;s name or location.</DialogDescription>
           </DialogHeader>
           <Form {...editForm}>
-            <form onSubmit={handleEdit} className="space-y-3">
+            <form onSubmit={handleEdit} className="space-y-5">
               <FormField
                 control={editForm.control}
                 name="name"
@@ -157,6 +159,7 @@ export default function PropertiesPage() {
                   </FormItem>
                 )}
               />
+              <FormRow>
               <FormField
                 control={editForm.control}
                 name="address"
@@ -183,11 +186,8 @@ export default function PropertiesPage() {
                   </FormItem>
                 )}
               />
-              <DialogFooter>
-                <Button type="submit" disabled={updateProperty.isPending} className="rounded-full">
-                  Save changes
-                </Button>
-              </DialogFooter>
+              </FormRow>
+              <FormDialogActions submitLabel="Save changes" isPending={updateProperty.isPending} />
             </form>
           </Form>
         </DialogContent>

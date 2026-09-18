@@ -14,6 +14,7 @@ import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FormRow } from '@/components/ui/form-layout';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { useAuth, useProfile } from '@/features/auth';
 import {
@@ -108,41 +109,43 @@ function ProfileTab() {
         </div>
 
         <Form {...form}>
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <FormField
-              control={form.control}
-              name="first_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-semibold">First name</FormLabel>
-                  <FormControl>
-                    <Input className="h-11" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="last_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-semibold">Last name</FormLabel>
-                  <FormControl>
-                    <Input className="h-11" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <form onSubmit={handleSubmit} className="mt-6 max-w-xl space-y-5">
+            <FormRow>
+              <FormField
+                control={form.control}
+                name="first_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First name</FormLabel>
+                    <FormControl>
+                      <Input className="h-11" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="last_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last name</FormLabel>
+                    <FormControl>
+                      <Input className="h-11" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </FormRow>
             <FormField
               control={form.control}
               name="phone_number"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-semibold">Phone number</FormLabel>
+                  <FormLabel>Phone number</FormLabel>
                   <FormControl>
-                    <Input className="h-11" {...field} />
+                    <Input className="h-11" type="tel" placeholder="0712 345 678" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

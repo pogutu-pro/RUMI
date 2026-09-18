@@ -216,7 +216,7 @@ function TicketDetailDialog({ ticketId, onClose }: { ticketId: string; onClose: 
                   name="message"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-semibold">Reply</FormLabel>
+                      <FormLabel>Reply</FormLabel>
                       <FormControl>
                         <Textarea rows={3} {...field} />
                       </FormControl>

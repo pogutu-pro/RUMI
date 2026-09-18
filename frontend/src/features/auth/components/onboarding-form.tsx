@@ -175,9 +175,9 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
 
   if (isLoadingStatus) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-border">
+      <div className="flex flex-col items-center justify-center p-12 rounded-xl border border-dashed border-border">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="font-bold uppercase tracking-widest text-muted-foreground text-xs mt-4">Initializing Session...</p>
+        <p className="font-bold text-muted-foreground text-xs mt-4">Initializing Session...</p>
       </div>
     );
   }
@@ -189,7 +189,7 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
         <div className="flex justify-between items-center mb-8">
           {[1, 2, 3].map((s) => (
             <div key={s} className="flex items-center">
-              <div className={`h-10 w-10 flex items-center justify-center font-black border-2 transition-all ${currentStep >= s ? 'bg-primary border-primary text-white' : 'border-gray-200 text-gray-300'}`}>
+              <div className={`h-10 w-10 rounded-full flex items-center justify-center font-semibold border-2 transition-all ${currentStep >= s ? 'bg-primary border-primary text-white' : 'border-gray-200 text-gray-300'}`}>
                 {currentStep > s ? <CheckCircle2 className="h-6 w-6" /> : s}
               </div>
               {s < 3 && <div className={`h-0.5 w-16 mx-2 ${currentStep > s ? 'bg-primary' : 'bg-gray-100'}`} />}
@@ -201,14 +201,14 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
           <form className="space-y-6">
             {currentStep === 1 && (
               <div className="space-y-4">
-                <h3 className="font-black text-2xl uppercase tracking-tighter border-b-4 border-primary pb-2">Academic Info</h3>
+                <h3 className="font-semibold text-2xl pb-2">Academic Info</h3>
                 <FormField
                   control={studentForm.control}
                   name="university"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-bold uppercase text-xs text-gray-500">University</FormLabel>
-                      <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                      <FormLabel className="font-bold text-xs text-gray-500">University</FormLabel>
+                      <FormControl><Input {...field} className="h-11" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -218,8 +218,8 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
                   name="course"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-bold uppercase text-xs text-gray-500">Course</FormLabel>
-                      <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                      <FormLabel className="font-bold text-xs text-gray-500">Course</FormLabel>
+                      <FormControl><Input {...field} className="h-11" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -230,8 +230,8 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
                     name="student_id_number"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-bold uppercase text-xs text-gray-500">Student ID</FormLabel>
-                        <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                        <FormLabel className="font-bold text-xs text-gray-500">Student ID</FormLabel>
+                        <FormControl><Input {...field} className="h-11" /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -241,9 +241,9 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
                     name="year_of_study"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-bold uppercase text-xs text-gray-500">Year</FormLabel>
+                        <FormLabel className="font-bold text-xs text-gray-500">Year</FormLabel>
                         <Select onValueChange={(val) => field.onChange(parseInt(val))} defaultValue={field.value?.toString()}>
-                          <FormControl><SelectTrigger className="rounded-none border-2 h-14"><SelectValue /></SelectTrigger></FormControl>
+                          <FormControl><SelectTrigger className="h-11"><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent>
                             {[1,2,3,4,5,6].map(y => <SelectItem key={y} value={y.toString()}>Year {y}</SelectItem>)}
                           </SelectContent>
@@ -258,8 +258,8 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
                   name="campus"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-bold uppercase text-xs text-gray-500">Campus (Optional)</FormLabel>
-                      <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                      <FormLabel className="font-bold text-xs text-gray-500">Campus (Optional)</FormLabel>
+                      <FormControl><Input {...field} className="h-11" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -270,8 +270,8 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
                     name="high_school"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-bold uppercase text-xs text-gray-500">High School (Optional)</FormLabel>
-                        <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                        <FormLabel className="font-bold text-xs text-gray-500">High School (Optional)</FormLabel>
+                        <FormControl><Input {...field} className="h-11" /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -281,8 +281,8 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
                     name="graduation_year"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-bold uppercase text-xs text-gray-500">Grad Year</FormLabel>
-                        <FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} className="rounded-none border-2 h-14" /></FormControl>
+                        <FormLabel className="font-bold text-xs text-gray-500">Grad Year</FormLabel>
+                        <FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} className="h-11" /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -291,7 +291,7 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
                 <Button 
                   type="button" 
                   onClick={() => handleNextStep(['university', 'course', 'student_id_number', 'year_of_study', 'campus', 'high_school', 'graduation_year'])} 
-                  className="w-full h-16 rounded-none font-black text-lg uppercase tracking-widest mt-4"
+                  className="w-full h-12 font-semibold text-lg mt-4"
                 >
                   Next Step <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -300,14 +300,14 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
 
             {currentStep === 2 && (
               <div className="space-y-4">
-                <h3 className="font-black text-2xl uppercase tracking-tighter border-b-4 border-primary pb-2">Personal Details</h3>
+                <h3 className="font-semibold text-2xl pb-2">Personal Details</h3>
                 <FormField
                   control={studentForm.control}
                   name="phone_number"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-bold uppercase text-xs text-gray-500">Phone</FormLabel>
-                      <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                      <FormLabel className="font-bold text-xs text-gray-500">Phone</FormLabel>
+                      <FormControl><Input {...field} className="h-11" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -317,14 +317,14 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
                   name="date_of_birth"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-bold uppercase text-xs text-gray-500">DOB</FormLabel>
+                      <FormLabel className="font-bold text-xs text-gray-500">DOB</FormLabel>
                       <FormControl>
                         <Input 
                             type="date" 
                             {...field} 
                             value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
                             onChange={(e) => field.onChange(e.target.valueAsDate)}
-                            className="rounded-none border-2 h-14" 
+                            className="h-11" 
                         />
                       </FormControl>
                       <FormMessage />
@@ -332,22 +332,22 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
                   )}
                 />
                 <div className="flex gap-4 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setCurrentStep(1)} className="flex-1 h-16 rounded-none border-2 font-bold uppercase"><ArrowLeft className="mr-2" /> Back</Button>
-                  <Button type="button" onClick={() => handleNextStep(['phone_number', 'date_of_birth'])} className="flex-[2] h-16 rounded-none font-black uppercase">Continue <ArrowRight className="ml-2" /></Button>
+                  <Button type="button" variant="outline" onClick={() => setCurrentStep(1)} className="flex-1 h-12 font-bold"><ArrowLeft className="mr-2" /> Back</Button>
+                  <Button type="button" onClick={() => handleNextStep(['phone_number', 'date_of_birth'])} className="flex-[2] h-12 font-semibold">Continue <ArrowRight className="ml-2" /></Button>
                 </div>
               </div>
             )}
 
             {currentStep === 3 && (
               <div className="space-y-4">
-                <h3 className="font-black text-2xl uppercase tracking-tighter border-b-4 border-primary pb-2">Emergency Contact</h3>
+                <h3 className="font-semibold text-2xl pb-2">Emergency Contact</h3>
                 <FormField
                   control={studentForm.control}
                   name="emergency_contact_name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-bold uppercase text-xs text-gray-500">Contact Name</FormLabel>
-                      <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                      <FormLabel className="font-bold text-xs text-gray-500">Contact Name</FormLabel>
+                      <FormControl><Input {...field} className="h-11" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -358,8 +358,8 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
                     name="emergency_contact_phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-bold uppercase text-xs text-gray-500">Contact Phone</FormLabel>
-                        <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                        <FormLabel className="font-bold text-xs text-gray-500">Contact Phone</FormLabel>
+                        <FormControl><Input {...field} className="h-11" /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -369,19 +369,19 @@ export function OnboardingForm({ role }: OnboardingFormProps) {
                     name="emergency_contact_relationship"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-bold uppercase text-xs text-gray-500">Relationship</FormLabel>
-                        <FormControl><Input {...field} className="rounded-none border-2 h-14" /></FormControl>
+                        <FormLabel className="font-bold text-xs text-gray-500">Relationship</FormLabel>
+                        <FormControl><Input {...field} className="h-11" /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
                 <div className="flex gap-4 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setCurrentStep(2)} className="flex-1 h-16 rounded-none border-2 font-bold uppercase">Back</Button>
+                  <Button type="button" variant="outline" onClick={() => setCurrentStep(2)} className="flex-1 h-12 font-bold">Back</Button>
                   <Button 
                     type="button" 
                     onClick={onFinalSubmit} 
-                    className="flex-[2] h-16 rounded-none font-black uppercase text-xl bg-green-600 hover:bg-green-700"
+                    className="flex-[2] h-12 font-semibold text-xl bg-green-600 hover:bg-green-700"
                     disabled={isFinalizing}
                   >
                     {isFinalizing ? <Loader2 className="animate-spin" /> : "Finish & Explore"}
