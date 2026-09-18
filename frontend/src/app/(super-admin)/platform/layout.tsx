@@ -9,7 +9,7 @@ const ADMIN_NAV = [
   { href: '/platform/overview', label: 'Overview', icon: LayoutDashboard },
   { href: '/platform/organizations', label: 'Organizations', icon: Building2 },
   { href: '/platform/users', label: 'Users', icon: Users },
-  { href: '/tech-support/dashboard', label: 'Support', icon: LifeBuoy },
+  { href: '/platform/support', label: 'Support', icon: LifeBuoy },
   { href: '/platform/billing', label: 'Billing', icon: CreditCard },
   { href: '/platform/notifications', label: 'Notifications', icon: Bell },
   { href: '/platform/audit', label: 'Audit log', icon: FileClock },
