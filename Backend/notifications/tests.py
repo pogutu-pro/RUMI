@@ -176,3 +176,81 @@ class AdminNotificationTests(TestCase):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.get('/api/v1/notifications/admin/templates/sms/')
         self.assertEqual(response.status_code, 200)
+
+
+@override_settings(
+    CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    AFRICASTALKING_API_KEY='atsk_test_not_a_real_key',
+    AFRICASTALKING_USERNAME='rumiarent',
+    SMS_MONTHLY_LIMIT=3,
+)
+class SendSmsViaAfricasTalkingTests(TestCase):
+    """Africa's Talking answers HTTP 201 even when it refuses a recipient
+    (blacklisted, bad number, no balance) — a refused message must raise, not
+    be recorded as sent."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+
+    @staticmethod
+    def _response(status, code):
+        return {'SMSMessageData': {'Message': 'x', 'Recipients': [
+            {'number': '+254101436845', 'status': status, 'statusCode': code, 'cost': 'KES 0.8000'},
+        ]}}
+
+    def _send(self, response, phone='+254101436845'):
+        from unittest.mock import patch
+        from notifications.tasks import send_sms_via_africastalking
+        with patch('africastalking.initialize'), patch('africastalking.SMS') as sms:
+            sms.send.return_value = response
+            result = send_sms_via_africastalking(phone, 'hello')
+            return result, sms
+
+    def test_accepted_message_returns_response(self):
+        result, _ = self._send(self._response('Success', 100))
+        self.assertEqual(result['SMSMessageData']['Recipients'][0]['status'], 'Success')
+
+    def test_blacklisted_recipient_raises(self):
+        from notifications.tasks import SMSDeliveryError
+        with self.assertRaises(SMSDeliveryError) as ctx:
+            self._send(self._response('UserInBlacklist', 406))
+        self.assertIn('UserInBlacklist', str(ctx.exception))
+
+    def test_insufficient_balance_raises(self):
+        from notifications.tasks import SMSDeliveryError
+        with self.assertRaises(SMSDeliveryError):
+            self._send(self._response('InsufficientBalance', 405))
+
+    def test_empty_recipient_list_raises(self):
+        from notifications.tasks import SMSDeliveryError
+        with self.assertRaises(SMSDeliveryError):
+            self._send({'SMSMessageData': {'Message': 'x', 'Recipients': []}})
+
+    def test_refused_message_does_not_use_up_monthly_allowance(self):
+        from django.core.cache import cache
+        from notifications.tasks import SMSDeliveryError
+        with self.assertRaises(SMSDeliveryError):
+            self._send(self._response('UserInBlacklist', 406))
+        self.assertEqual(cache.get('sms:monthly_count', 0), 0)
+
+    def test_monthly_limit_comes_from_settings(self):
+        for _ in range(3):
+            self._send(self._response('Success', 101))
+        with self.assertRaisesMessage(Exception, 'SMS monthly limit reached'):
+            self._send(self._response('Success', 101))
+
+    def test_local_format_number_is_sent_in_e164(self):
+        _, sms = self._send(self._response('Success', 100), phone='0101 436 845')
+        sms.send.assert_called_once_with('hello', ['+254101436845'])
+
+
+class NormalizeKenyanPhoneTests(TestCase):
+    def test_formats(self):
+        from notifications.tasks import normalize_kenyan_phone as n
+        self.assertEqual(n('0712345678'), '+254712345678')
+        self.assertEqual(n('0101436845'), '+254101436845')
+        self.assertEqual(n('254712345678'), '+254712345678')
+        self.assertEqual(n('+254 712-345-678'), '+254712345678')
+        self.assertEqual(n('+254712345678'), '+254712345678')
+        self.assertEqual(n('+15551234567'), '+15551234567')
