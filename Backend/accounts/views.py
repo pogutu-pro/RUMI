@@ -22,7 +22,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from drf_yasg.utils import swagger_auto_schema
 
 from .models import (
-    User, StudentProfile, LandlordProfile, CaretakerProfile,
+    User, LandlordProfile, CaretakerProfile,
     OTPVerification, PasswordResetToken, UserActivityLog,
     Conversation, Message
 )
@@ -64,10 +64,8 @@ class UserRegistrationView(APIView):
     
     Authentication Required: None (Public endpoint)
     
-    This endpoint allows new users to register accounts with different roles:
-    - student: Student looking for accommodation
-    - landlord: Property owner/manager
-    - caretaker: Property management staff
+    This endpoint allows new landlords to self-register. Tenants are invited
+    by their landlord (see tenants/services.py) and never self-register.
     
     Features:
     - Automatic OTP generation for email verification
@@ -91,7 +89,7 @@ class UserRegistrationView(APIView):
         - password: Strong password (minimum requirements enforced)
         - first_name: User's first name
         - last_name: User's last name
-        - role: User role (student, landlord, caretaker)
+        - role: User role (only 'landlord' is accepted for self-registration)
         
         Optional Fields:
         - phone_number: Contact phone number
@@ -141,13 +139,7 @@ class UserRegistrationView(APIView):
                 )
 
                 # Create role-specific profile
-                if role == 'student':
-                    StudentProfile.objects.create(
-                        user=user,
-                        university=serializer.validated_data.get('university'),
-                        preferred_room_number=serializer.validated_data.get('room_number')
-                    )
-                elif role == 'landlord':
+                if role == 'landlord':
                     LandlordProfile.objects.create(
                         user=user,
                         company_name=serializer.validated_data.get('company_name'),
@@ -2129,23 +2121,20 @@ class GoogleOAuthView(APIView):
     
     def post(self, request):
         access_token = request.data.get('access_token')
-        role = request.data.get('role', 'student')
+        role = request.data.get('role', 'landlord')
         gender = request.data.get('gender')
         date_of_birth = request.data.get('date_of_birth')
         phone_number = request.data.get('phone_number')
-        
-        # Student specific fields
-        university = request.data.get('university')
-        room_number = request.data.get('room_number')
-        
+
         # Landlord specific fields
         company_name = request.data.get('company_name')
         total_units = request.data.get('total_units')
-        
-        # Only allow student and landlord roles for Google OAuth
-        if role and role not in ['student', 'landlord']:
+
+        # Google OAuth self-registration only creates landlord accounts —
+        # tenants are invited by their landlord, never self-register.
+        if role and role != 'landlord':
             return Response({
-                'error': 'Google OAuth only supports student and landlord roles'
+                'error': 'Google OAuth only supports landlord accounts'
             }, status=status.HTTP_400_BAD_REQUEST)
         
         if not access_token:
@@ -2197,7 +2186,7 @@ class GoogleOAuthView(APIView):
                     email=email,
                     first_name=user_info.get('given_name', ''),
                     last_name=user_info.get('family_name', ''),
-                    role=role if role else 'student',
+                    role='landlord',
                     gender=gender,
                     date_of_birth=date_of_birth,
                     phone_number=phone_number,
@@ -2206,23 +2195,14 @@ class GoogleOAuthView(APIView):
                     profile_picture=user_info.get('picture'),
                     onboarding_stage='ROLE_SELECTED'
                 )
-                
-                # Create role-specific profile with all captured data
-                if user.role == 'student':
-                    StudentProfile.objects.create(
-                        user=user,
-                        university=university,
-                        preferred_room_number=room_number,
-                        is_profile_complete=False
-                    )
-                elif user.role == 'landlord':
-                    LandlordProfile.objects.create(
-                        user=user,
-                        company_name=company_name,
-                        total_units=total_units if total_units is not None else 0,
-                        is_verified=False,
-                        total_hostels=0
-                    )
+
+                LandlordProfile.objects.create(
+                    user=user,
+                    company_name=company_name,
+                    total_units=total_units if total_units is not None else 0,
+                    is_verified=False,
+                    total_hostels=0
+                )
                 
                 is_new_user = True
             

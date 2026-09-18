@@ -24,7 +24,9 @@ class AuthenticationTests(TestCase):
         self.login_url = '/api/v1/accounts/login/'
         self.logout_url = '/api/v1/accounts/logout/'
 
-    def test_register_student(self):
+    def test_register_rejects_student_role(self):
+        # Tenants (the current name for the old 'student' role) are invited
+        # by their landlord and never self-register — see tenants/services.py.
         data = {
             'email': 'newstudent@test.com',
             'password': 'StrongPass123!',
@@ -37,8 +39,8 @@ class AuthenticationTests(TestCase):
             'date_of_birth': '2000-01-15',
         }
         response = self.client.post(self.register_url, data, format='json')
-        self.assertIn(response.status_code, [200, 201])
-        self.assertTrue(User.objects.filter(email='newstudent@test.com').exists())
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(User.objects.filter(email='newstudent@test.com').exists())
 
     def test_register_landlord(self):
         data = {
