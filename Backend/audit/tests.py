@@ -9,8 +9,10 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
+from django.utils import timezone
+from rest_framework.test import APIClient
 
-from audit.models import AuditLog
+from audit.models import AuditLog, log_audit
 from billing.models import OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
 from billing.services.webhook import handle_billing_event
 from organizations.models import PayoutAccount
@@ -284,3 +286,66 @@ class PayoutAuditTests(RumiaTestFixtures):
                 'old_value': entry.old_value, 'new_value': entry.new_value, 'metadata': entry.metadata,
             })
             self.assertNotIn(raw_account_number, blob)
+
+
+class AdminAuditLogListViewTests(RumiaTestFixtures):
+    """AuditLog rows exist across the codebase, but had no admin-facing
+    view until now — the first time this data is reachable through the
+    API at all, not just written to the DB."""
+
+    def test_landlord_gets_403(self):
+        user, profile, org = self.create_landlord_with_org()
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.get('/api/v1/audit/admin/logs/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_anonymous_gets_401(self):
+        client = APIClient()
+        response = client.get('/api/v1/audit/admin/logs/')
+        self.assertEqual(response.status_code, 401)
+
+    def test_super_admin_lists_logs_newest_first(self):
+        admin = self.create_super_admin()
+        user, profile, org = self.create_landlord_with_org()
+        older = AuditLog.objects.create(action='tenant_created', actor=user, organization=org)
+        AuditLog.objects.filter(pk=older.pk).update(created_at=timezone.now() - timezone.timedelta(days=1))
+        newer = log_audit(action='property_created', actor=user, organization=org)
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/audit/admin/logs/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['count'], 2)
+        self.assertEqual(response.data['results'][0]['id'], str(newer.id))
+        self.assertEqual(response.data['results'][0]['actor_email'], user.email)
+        self.assertEqual(response.data['results'][0]['organization_name'], org.name)
+
+    def test_filter_by_action(self):
+        admin = self.create_super_admin()
+        user, profile, org = self.create_landlord_with_org()
+        log_audit(action='tenant_created', actor=user, organization=org)
+        log_audit(action='property_created', actor=user, organization=org)
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/audit/admin/logs/', {'action': 'tenant_created'})
+
+        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0]['action'], 'tenant_created')
+
+    def test_actor_and_organization_null_do_not_crash(self):
+        """Both actor and organization are nullable (SET_NULL) — a webhook-
+        driven entry with no human actor, or one whose org was later
+        deleted, must still serialize cleanly."""
+        admin = self.create_super_admin()
+        log_audit(action='subscription_activated', actor=None, organization=None)
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/audit/admin/logs/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.data['results'][0]['actor_email'])
+        self.assertIsNone(response.data['results'][0]['organization_name'])

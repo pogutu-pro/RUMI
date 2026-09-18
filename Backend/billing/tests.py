@@ -1274,3 +1274,97 @@ class AdminSubscriptionOverrideViewTests(RumiaTestFixtures):
         subscription.refresh_from_db()
         self.assertEqual(subscription.paystack_subscription_code, 'sub_original')
         self.assertEqual(subscription.billing_mode, 'auto')
+
+
+class AdminPlatformOverviewViewTests(RumiaTestFixtures):
+    """One-call platform snapshot for the super-admin Overview page —
+    users by role, organizations, revenue, and open support tickets."""
+
+    def _seed_plans(self):
+        call_command('seed_subscription_plans')
+        return {p.slug: p for p in SubscriptionPlan.objects.all()}
+
+    def test_landlord_gets_403(self):
+        user, profile, org = self.create_landlord_with_org()
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.get('/api/v1/billing/admin/overview/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_anonymous_gets_401(self):
+        client = APIClient()
+        response = client.get('/api/v1/billing/admin/overview/')
+        self.assertEqual(response.status_code, 401)
+
+    def test_counts_users_by_role(self):
+        admin = self.create_super_admin()
+        self.create_landlord_with_org(email='l1@test.com')
+        _, _, org2 = self.create_landlord_with_org(email='l2@test.com')
+        self.create_tenant(org2, email='t1@test.com')
+        self.create_tenant(org2, email='t2@test.com')
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/overview/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['users_by_role'].get('landlord'), 2)
+        self.assertEqual(response.data['users_by_role'].get('tenant'), 2)
+        self.assertEqual(response.data['users_by_role'].get('super_admin'), 1)
+        self.assertEqual(response.data['total_users'], 5)
+
+    def test_counts_organizations(self):
+        admin = self.create_super_admin()
+        self.create_landlord_with_org(email='l1@test.com')
+        self.create_landlord_with_org(email='l2@test.com')
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/overview/')
+
+        self.assertEqual(response.data['total_organizations'], 2)
+
+    def test_revenue_matches_admin_revenue_summary(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plans['pro'], status='active',
+        )
+        SubscriptionPayment.objects.create(
+            subscription=subscription, amount=Decimal('7999.00'),
+            internal_reference='SUB-OVERVIEW-1', status='success', paid_at=timezone.now(),
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/overview/')
+
+        self.assertEqual(Decimal(response.data['total_revenue']), Decimal('7999.00'))
+        self.assertEqual(Decimal(response.data['mrr']), plans['pro'].price)
+        self.assertEqual(response.data['paying_organizations'], 1)
+
+    def test_counts_open_and_in_progress_tickets_as_open(self):
+        from support.models import SupportTicket
+
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        SupportTicket.objects.create(
+            organization=org, created_by=admin, subject='A', description='x', status='open',
+        )
+        SupportTicket.objects.create(
+            organization=org, created_by=admin, subject='B', description='x', status='in_progress',
+        )
+        SupportTicket.objects.create(
+            organization=org, created_by=admin, subject='C', description='x', status='resolved',
+        )
+        SupportTicket.objects.create(
+            organization=org, created_by=admin, subject='D', description='x', status='closed',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/overview/')
+
+        self.assertEqual(response.data['open_support_tickets'], 2)
+        self.assertEqual(response.data['total_support_tickets'], 4)

@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 // -- Constants --
 
 const AUTH_REDIRECTS: Record<string, string> = {
-  [UserRole.SUPER_ADMIN]: '/platform/billing',
+  [UserRole.SUPER_ADMIN]: '/platform/overview',
   [UserRole.TECH_SUPPORT_ADMIN]: '/tech-support/dashboard',
   [UserRole.TECH_SUPPORT]: '/tech-support/dashboard',
   [UserRole.LANDLORD]: '/landlord/rental',

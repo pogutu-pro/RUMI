@@ -3,6 +3,7 @@ import type {
   AdminBillingDetail,
   AdminBillingListRow,
   AdminOverridePayload,
+  AdminPlatformOverview,
   AdminRevenueSummary,
 } from '../types';
 
@@ -24,6 +25,10 @@ interface PaginatedResponse<T> {
 export const adminBillingApi = {
   getRevenueSummary: async (): Promise<AdminRevenueSummary> => {
     const res = await axios.get<AdminRevenueSummary>('/billing/admin/revenue/');
+    return res.data;
+  },
+  getPlatformOverview: async (): Promise<AdminPlatformOverview> => {
+    const res = await axios.get<AdminPlatformOverview>('/billing/admin/overview/');
     return res.data;
   },
   listOrganizations: async (search?: string): Promise<AdminBillingListRow[]> => {

@@ -16,6 +16,20 @@ export interface AdminRevenueSummary {
   monthly_revenue: { month: string; total: string }[];
 }
 
+/** Mirrors AdminPlatformOverviewView's response (Backend/billing/views.py) —
+ * the single-call snapshot behind the super-admin Overview page. */
+export interface AdminPlatformOverview {
+  total_users: number;
+  users_by_role: Record<string, number>;
+  total_organizations: number;
+  total_revenue: string;
+  revenue_this_month: string;
+  mrr: string;
+  paying_organizations: number;
+  open_support_tickets: number;
+  total_support_tickets: number;
+}
+
 /** Flat summary row for the super-admin organization list (ADMIN-01/ADMIN-02). */
 export interface AdminBillingListRow {
   id: string;

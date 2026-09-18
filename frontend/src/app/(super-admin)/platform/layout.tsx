@@ -1,15 +1,18 @@
 'use client';
 
 import * as React from 'react';
-import { Building2, CreditCard, LifeBuoy, Users } from 'lucide-react';
+import { Bell, Building2, CreditCard, FileClock, LayoutDashboard, LifeBuoy, Users } from 'lucide-react';
 import { UserRole } from '@/features/auth/stores/auth.types';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 
 const ADMIN_NAV = [
+  { href: '/platform/overview', label: 'Overview', icon: LayoutDashboard },
   { href: '/platform/organizations', label: 'Organizations', icon: Building2 },
   { href: '/platform/users', label: 'Users', icon: Users },
   { href: '/tech-support/dashboard', label: 'Support', icon: LifeBuoy },
   { href: '/platform/billing', label: 'Billing', icon: CreditCard },
+  { href: '/platform/notifications', label: 'Notifications', icon: Bell },
+  { href: '/platform/audit', label: 'Audit log', icon: FileClock },
 ];
 
 /**

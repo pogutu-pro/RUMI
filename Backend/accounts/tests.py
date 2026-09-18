@@ -428,3 +428,26 @@ class UserManagementTests(TestCase):
             {'reason': 'Test'}, format='json',
         )
         self.assertEqual(response.status_code, 404)
+
+    def test_limit_offset_genuinely_pages_through_results(self):
+        """Not just that limit/offset are accepted — that page two is
+        actually a different, non-overlapping slice of page one, matching
+        the frontend's 'Load more' (offset += page size) usage."""
+        for i in range(30):
+            User.objects.create_user(
+                email=f'bulk{i}@test.com', password='Pass123!',
+                first_name='Bulk', last_name=str(i), role='tenant',
+                is_verified=True,
+            )
+        self.client.force_authenticate(self.super_admin)
+
+        page_one = self.client.get('/api/v1/accounts/users/', {'limit': 25, 'offset': 0})
+        page_two = self.client.get('/api/v1/accounts/users/', {'limit': 25, 'offset': 25})
+
+        self.assertEqual(page_one.data['total_users'], 34)
+        self.assertEqual(len(page_one.data['users']), 25)
+        self.assertEqual(len(page_two.data['users']), 9)
+
+        page_one_ids = {u['user_id'] for u in page_one.data['users']}
+        page_two_ids = {u['user_id'] for u in page_two.data['users']}
+        self.assertEqual(page_one_ids & page_two_ids, set())
