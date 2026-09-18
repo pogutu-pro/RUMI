@@ -19,11 +19,33 @@ function errorMessage(err: unknown, fallback: string): string {
   return anyErr?.message || fallback;
 }
 
+// Tickets are a two-sided conversation: the other party's reply arrives while
+// this screen is open. The app-wide 5-minute staleTime and no focus refetch
+// would freeze a thread for minutes, so ticket data is always considered
+// stale and polled while visible.
+const TICKET_LIST_POLL_MS = 30_000;
+const TICKET_THREAD_POLL_MS = 8_000;
+
 export const useTickets = (status?: TicketStatus) =>
-  useQuery({ queryKey: keys.tickets(status), queryFn: () => supportApi.listTickets(status) });
+  useQuery({
+    queryKey: keys.tickets(status),
+    queryFn: () => supportApi.listTickets(status),
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: TICKET_LIST_POLL_MS,
+  });
 
 export const useTicket = (id: string) =>
-  useQuery({ queryKey: keys.ticket(id), queryFn: () => supportApi.getTicket(id), enabled: !!id });
+  useQuery({
+    queryKey: keys.ticket(id),
+    queryFn: () => supportApi.getTicket(id),
+    enabled: !!id,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: TICKET_THREAD_POLL_MS,
+  });
 
 export const useCreateTicket = () => {
   const qc = useQueryClient();
