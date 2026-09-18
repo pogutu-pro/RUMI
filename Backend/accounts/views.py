@@ -319,6 +319,30 @@ class EmailVerificationView(APIView):
             }, status=status.HTTP_200_OK)
 
 
+def issue_email_otp(user, request, verification_type='email'):
+    """
+    Create a fresh 5-minute OTP for `user` and email it (async).
+
+    Shared by the resend endpoint and by the login gate, so a user turned
+    away for an unverified email is sent a live code straight away instead of
+    having to find the resend button first.
+    """
+    otp = OTPVerification.objects.create(
+        user=user,
+        otp_code=generate_6_digit_otp(),
+        verification_type=verification_type,
+        expires_at=timezone.now() + timezone.timedelta(minutes=5),
+        ip_address=get_client_ip(request),
+    )
+    from .tasks import send_verification_email
+    send_verification_email.delay(
+        user_id=user.id,
+        otp_code=otp.otp_code,
+        first_name=user.first_name,
+    )
+    return otp
+
+
 @swagger_auto_schema(
     tags=['Authentication']
 )
@@ -351,22 +375,7 @@ class ResendOTPView(APIView):
                 'expires_in_seconds': 300
             }, status=status.HTTP_200_OK)
 
-        # Generate new OTP
-        otp = OTPVerification.objects.create(
-            user=user,
-            otp_code=generate_6_digit_otp(),
-            verification_type=verification_type,
-            expires_at=timezone.now() + timezone.timedelta(minutes=5),
-            ip_address=get_client_ip(request)
-        )
-
-        # Send email (async)
-        from .tasks import send_verification_email
-        send_verification_email.delay(
-            user_id=user.id,
-            otp_code=otp.otp_code,
-            first_name=user.first_name
-        )
+        issue_email_otp(user, request, verification_type)
 
         return Response({
             'message': 'OTP sent successfully',
@@ -457,11 +466,17 @@ class UserLoginView(APIView):
                 'error': 'Account deactivated'
             }, status=status.HTTP_403_FORBIDDEN)
 
-        # Optional: Check verification
-        # if not user.is_verified:
-        #     return Response({
-        #         'error': 'Email not verified'
-        #     }, status=status.HTTP_403_FORBIDDEN)
+        # The password was right, so revealing that this address still needs
+        # verifying leaks nothing. Send a fresh code (unless the resend rate
+        # limit is hit) so the verify screen the frontend opens next is usable.
+        if not user.is_verified:
+            if not check_otp_rate_limit(email):
+                issue_email_otp(user, request)
+            return Response({
+                'error': 'email_not_verified',
+                'detail': 'Please verify your email address to sign in.',
+                'email': user.email,
+            }, status=status.HTTP_403_FORBIDDEN)
 
         # Generate tokens
         refresh = RefreshToken.for_user(user)
@@ -797,6 +812,10 @@ class PasswordResetConfirmView(APIView):
 
         # Update password
         user.set_password(new_password)
+        # The reset/invite link was delivered to this address, so using it
+        # proves ownership. Invited tenants and caretakers are created
+        # unverified and would otherwise be locked out by the login gate.
+        user.is_verified = True
         user.save()
 
         # Mark token as used

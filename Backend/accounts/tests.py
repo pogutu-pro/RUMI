@@ -20,6 +20,7 @@ class AuthenticationTests(TestCase):
     """Test registration, login, logout, and token refresh."""
 
     def setUp(self):
+        cache.clear()
         self.client = APIClient()
         self.register_url = '/api/v1/accounts/register/'
         self.login_url = '/api/v1/accounts/login/'
@@ -112,6 +113,85 @@ class AuthenticationTests(TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertIn('onboarding_stage', response.data['user'])
                 self.assertEqual(response.data['user']['onboarding_stage'], stage)
+
+    def test_unverified_login_is_blocked_and_sent_a_fresh_code(self):
+        from unittest import mock
+        from accounts.models import OTPVerification
+
+        User.objects.create_user(
+            email='unverified@test.com', password='Pass123!',
+            first_name='Un', last_name='Verified', role='landlord',
+        )
+        with mock.patch('accounts.tasks.send_verification_email.delay') as send:
+            response = self.client.post(
+                self.login_url,
+                {'email': 'unverified@test.com', 'password': 'Pass123!'},
+                format='json',
+            )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.data['error'], 'email_not_verified')
+        self.assertEqual(response.data['email'], 'unverified@test.com')
+        self.assertNotIn('access_token', response.data)
+        self.assertEqual(
+            OTPVerification.objects.filter(user__email='unverified@test.com').count(), 1,
+        )
+        send.assert_called_once()
+
+    def test_unverified_login_with_wrong_password_reveals_nothing(self):
+        User.objects.create_user(
+            email='unverified@test.com', password='Pass123!',
+            first_name='Un', last_name='Verified', role='landlord',
+        )
+        response = self.client.post(
+            self.login_url,
+            {'email': 'unverified@test.com', 'password': 'WrongPass!'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertNotEqual(response.data.get('error'), 'email_not_verified')
+
+    def test_unverified_login_does_not_spam_codes_when_rate_limited(self):
+        from unittest import mock
+        from accounts.models import OTPVerification
+
+        User.objects.create_user(
+            email='unverified@test.com', password='Pass123!',
+            first_name='Un', last_name='Verified', role='landlord',
+        )
+        with mock.patch('accounts.tasks.send_verification_email.delay'):
+            for _ in range(5):
+                response = self.client.post(
+                    self.login_url,
+                    {'email': 'unverified@test.com', 'password': 'Pass123!'},
+                    format='json',
+                )
+                self.assertEqual(response.status_code, 403)
+        self.assertEqual(OTPVerification.objects.filter(user__email='unverified@test.com').count(), 3)
+
+    def test_password_reset_confirm_marks_invited_user_verified(self):
+        from accounts.models import PasswordResetToken
+
+        invited = User.objects.create_user(
+            email='invited@test.com', password=None,
+            first_name='In', last_name='Vited', role='tenant',
+        )
+        self.assertFalse(invited.is_verified)
+        token = PasswordResetToken.objects.create(
+            user=invited, expires_at=timezone.now() + timezone.timedelta(hours=24),
+        )
+        response = self.client.post(
+            '/api/v1/accounts/password/reset/confirm/',
+            {'token': str(token.token), 'new_password': 'StrongPass123!',
+             'confirm_password': 'StrongPass123!'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        invited.refresh_from_db()
+        self.assertTrue(invited.is_verified)
+        login = self.client.post(
+            self.login_url, {'email': 'invited@test.com', 'password': 'StrongPass123!'}, format='json',
+        )
+        self.assertEqual(login.status_code, 200)
 
     def test_login_wrong_password(self):
         User.objects.create_user(
