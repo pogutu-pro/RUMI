@@ -296,6 +296,9 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               this same image as its own thumbnail (see below). */}
           {post.coverImage && !post.videoUrl && (
             <div className="relative mb-10 aspect-[2/1] w-full overflow-hidden rounded-xl bg-muted">
+              {/* unoptimized: this path is served by Caddy straight from the
+                  backend's media volume, not the Next.js server, so the
+                  built-in image optimizer can't fetch it and 400s. */}
               <Image
                 src={post.coverImage}
                 alt={post.title}
@@ -303,6 +306,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 768px"
                 priority
+                unoptimized
               />
             </div>
           )}

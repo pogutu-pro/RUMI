@@ -265,6 +265,9 @@ export default function BlogPage() {
                 <Card className="overflow-hidden border-border bg-card hover:border-primary/50 hover:shadow-lg transition-all duration-300 p-0">
                   {featured.featuredImage && (
                     <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
+                      {/* unoptimized: this path is served by Caddy straight from the
+                          backend's media volume, not the Next.js server, so the
+                          built-in image optimizer can't fetch it and 400s. */}
                       <Image
                         src={featured.featuredImage}
                         alt={featured.title}
@@ -272,6 +275,7 @@ export default function BlogPage() {
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                         sizes="(max-width: 768px) 100vw, 768px"
                         priority
+                        unoptimized
                       />
                     </div>
                   )}
@@ -346,6 +350,7 @@ export default function BlogPage() {
                                 fill
                                 className="object-cover"
                                 sizes="144px"
+                                unoptimized
                               />
                             </div>
                           )}
