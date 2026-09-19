@@ -1,6 +1,10 @@
 @import 'tailwindcss';
 @import './themes.css';
 
+/* Make `dark:` follow the theme class next-themes sets on <html>, not the OS
+   preference, so the in-app Light/Dark/System switch controls every dark: style. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   /* ========================================
      ROOT STYLES & RESETS

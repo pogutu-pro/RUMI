@@ -61,7 +61,7 @@ type Tone = 'ok' | 'due' | 'overdue';
 
 const TONE_STYLES: Record<Tone, { card: string; pill: string; muted: string }> = {
   ok: {
-    card: 'bg-gradient-to-br from-primary to-emerald-700 text-primary-foreground',
+    card: 'bg-gradient-to-br from-emerald-600 to-emerald-800 text-white',
     pill: 'bg-white/15 text-white',
     muted: 'text-white/75',
   },
