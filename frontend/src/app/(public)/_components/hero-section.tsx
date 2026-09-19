@@ -34,7 +34,7 @@ export function HeroSection() {
   const bgY = useTransform(scrollYProgress, [0, 1], [0, -60]);
 
   return (
-    <section ref={sectionRef} className="relative w-full min-h-screen overflow-hidden bg-background">
+    <section ref={sectionRef} className="relative w-full overflow-hidden bg-background lg:min-h-screen">
       {/* Extremely subtle architectural geometry — floor-plan-adjacent lines
           and shapes, never decorative enough to distract. */}
       <motion.div
@@ -53,7 +53,7 @@ export function HeroSection() {
         </svg>
       </motion.div>
 
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-[1280px] flex-col justify-center gap-16 px-5 pt-28 pb-16 sm:px-8 lg:flex-row lg:items-center lg:gap-12 lg:pt-24">
+      <div className="relative z-10 mx-auto flex max-w-[1280px] flex-col justify-center gap-10 px-5 pt-24 pb-12 lg:min-h-screen lg:gap-12 sm:px-8 lg:flex-row lg:items-center lg:pt-24 lg:pb-16">
         {/* Text content */}
         <motion.div
           style={prefersReducedMotion ? undefined : { opacity: contentOpacity, y: contentY }}
@@ -62,7 +62,7 @@ export function HeroSection() {
           <motion.div initial="hidden" animate="visible" variants={fadeUp}>
             <Badge
               variant="outline"
-              className="mb-8 inline-flex rounded-full border-primary/20 bg-primary/5 px-4 py-1.5 font-semibold tracking-wide text-primary"
+              className="mb-5 inline-flex rounded-full border-primary/20 bg-primary/5 px-4 py-1.5 font-semibold tracking-wide text-primary"
             >
               Built for Kenyan landlords and agents
             </Badge>
@@ -74,7 +74,7 @@ export function HeroSection() {
             variants={fadeUp}
             transition={{ delay: 0.12 }}
             className="mb-6 font-bold text-gray-900"
-            style={{ fontSize: 'clamp(2.7rem, 6vw, 5.5rem)', lineHeight: 0.98, letterSpacing: '-0.04em' }}
+            style={{ fontSize: 'clamp(2.3rem, 6vw, 5.5rem)', lineHeight: 0.98, letterSpacing: '-0.04em' }}
           >
             Manage Your Properties.
             <br />
@@ -86,7 +86,7 @@ export function HeroSection() {
             animate="visible"
             variants={fadeUp}
             transition={{ delay: 0.24 }}
-            className="mx-auto mb-10 max-w-[560px] text-gray-500 lg:mx-0"
+            className="mx-auto mb-8 max-w-[560px] text-gray-500 lg:mx-0"
             style={{ fontSize: 'clamp(1rem, 2vw, 1.15rem)', lineHeight: 1.65 }}
           >
             RumiaRent gives landlords one simple place to manage properties, tenants, rent,
@@ -98,13 +98,13 @@ export function HeroSection() {
             animate="visible"
             variants={fadeUp}
             transition={{ delay: 0.35 }}
-            className="flex flex-col items-center justify-center gap-4 sm:flex-row lg:justify-start"
+            className="flex flex-col items-stretch justify-center gap-2 sm:flex-row sm:items-center sm:gap-4 lg:justify-start"
           >
             <Link href={`${AUTH_ROUTES.REGISTER}?role=landlord`} prefetch>
               <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
                 <Button
                   size="lg"
-                  className="h-14 min-w-[250px] rounded-full bg-primary px-8 text-lg font-medium text-white hover:bg-primary/90"
+                  className="h-14 w-full rounded-full bg-primary px-6 text-base font-medium text-white hover:bg-primary/90 sm:min-w-[250px] sm:px-8 sm:text-lg"
                 >
                   Start Managing Your Properties
                   <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
@@ -130,7 +130,7 @@ export function HeroSection() {
             animate="visible"
             variants={fadeUp}
             transition={{ delay: 0.45 }}
-            className="mt-6 text-sm text-gray-400"
+            className="mt-6 hidden text-sm text-gray-400 sm:block"
           >
             Built for landlords. Designed for simpler rental management.
           </motion.p>

@@ -19,7 +19,7 @@ export function PricingTeaser() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-8 rounded-3xl bg-gray-50/60 p-10 text-center shadow-sm sm:flex-row sm:text-left">
+      <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-8 rounded-3xl bg-gray-50/60 p-6 text-center shadow-sm sm:flex-row sm:p-10 sm:text-left">
         <div className="w-full space-y-3 sm:w-auto">
           <p className="mb-1 text-sm font-semibold uppercase tracking-wider text-primary">Pricing</p>
           <div className="skeleton h-8 w-64 max-w-full" />
@@ -57,7 +57,7 @@ export function PricingTeaser() {
   );
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-8 rounded-3xl bg-gray-50/60 p-10 text-center shadow-sm sm:flex-row sm:text-left">
+    <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-8 rounded-3xl bg-gray-50/60 p-6 text-center shadow-sm sm:flex-row sm:p-10 sm:text-left">
       <div>
         <p className="mb-1 text-sm font-semibold uppercase tracking-wider text-primary">Pricing</p>
         <h3 className="text-2xl font-bold text-gray-900">

@@ -53,10 +53,10 @@ export const Footer = React.memo(function Footer() {
     <footer className="w-full bg-gray-950 border-t border-gray-800">
       {/* Main footer container with proper horizontal padding */}
       <div className="mx-auto max-w-7xl px-4 sm:px-8 md:px-16 lg:px-24 xl:px-32">
-        <div className="py-20 md:py-24">
-          <div className="grid grid-cols-1 gap-16 lg:gap-20 lg:grid-cols-12">
+        <div className="py-10 md:py-24">
+          <div className="grid grid-cols-1 gap-10 lg:gap-20 lg:grid-cols-12">
             {/* Brand Section - More width and breathing room */}
-            <div className="space-y-8 lg:col-span-5">
+            <div className="space-y-5 lg:col-span-5 lg:space-y-8">
               <Link
                 href="/"
                 className="inline-flex items-center space-x-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950 rounded-xl transition-all hover:opacity-90"
@@ -68,9 +68,9 @@ export const Footer = React.memo(function Footer() {
                   height={56}
                   className="h-14 w-auto"
                 />
-                <span className="font-extrabold text-4xl text-white tracking-tight">RumiaRent</span>
+                <span className="font-extrabold text-3xl text-white sm:text-4xl tracking-tight">RumiaRent</span>
               </Link>
-              <p className="text-lg text-gray-400 max-w-lg leading-relaxed">
+              <p className="text-base text-gray-400 max-w-lg sm:text-lg leading-relaxed">
                 Rental management for Kenyan landlords and agents. Properties, tenants, rent, and payments in one place.
               </p>
               <SocialLinks />
@@ -78,13 +78,13 @@ export const Footer = React.memo(function Footer() {
 
             {/* Navigation Links - Clean 2x2 grid with proper spacing */}
             <div className="lg:col-span-7">
-              <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-4 lg:gap-12">
                 {FOOTER_LINKS.map((section) => (
-                  <div key={section.title} className="space-y-6">
+                  <div key={section.title} className="space-y-3 sm:space-y-6">
                     <h4 className="text-sm font-bold uppercase tracking-wider text-white">
                       {section.title}
                     </h4>
-                    <ul className="space-y-4">
+                    <ul className="space-y-1 sm:space-y-4">
                       {section.links.map((link) => (
                         <li key={link.label}>
                           <Link
@@ -104,7 +104,7 @@ export const Footer = React.memo(function Footer() {
         </div>
 
         {/* Bottom Section - Clear separation and proper alignment */}
-        <div className="py-12 border-t border-gray-800">
+        <div className="py-8 md:py-12 border-t border-gray-800">
           <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
             <div className="flex flex-col items-center space-y-3 md:items-start">
               <p className="text-base text-gray-400">
@@ -123,7 +123,7 @@ export const Footer = React.memo(function Footer() {
                 .
               </p>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
+            <div className="hidden flex-wrap items-center justify-center gap-8 md:flex md:gap-12">
               <Link
                 href="/privacy"
                 className="text-base text-gray-400 hover:text-white transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950 rounded-md py-2"
