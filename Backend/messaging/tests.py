@@ -260,3 +260,37 @@ class InAppNotificationTests(MessagingTestBase):
         note = self._bell(staff)['notifications'][0]
         self.assertIn('New support ticket', note['subject'])
         self.assertEqual(note['metadata']['url'], '/tech-support/dashboard')
+
+
+class TechSupportChatTests(MessagingTestBase):
+    def setUp(self):
+        super().setUp()
+        self.support = self._user('support@t.com', 'tech_support')
+
+    def test_tech_support_and_super_admin_can_message_each_other(self):
+        self.assertTrue(can_message(self.support, self.admin))
+        self.assertTrue(can_message(self.admin, self.support))
+
+    def test_tech_support_reaches_only_super_admins(self):
+        ids = {p['id'] for p in self.api(self.support).get('/api/v1/messaging/contacts/').json()['results']}
+        self.assertEqual(ids, {self.admin.id})
+        for other in (self.landlord, self.caretaker, self.tenant):
+            self.assertFalse(can_message(self.support, other))
+
+    def test_super_admin_now_sees_tech_support_alongside_landlords(self):
+        ids = {p['id'] for p in self.api(self.admin).get('/api/v1/messaging/contacts/').json()['results']}
+        self.assertEqual(ids, {self.landlord.id, self.other_landlord.id, self.support.id})
+
+    def test_a_chat_between_them_works_and_notifies_with_the_right_link(self):
+        cid = self.api(self.support).post(
+            '/api/v1/messaging/conversations/', {'recipient': self.admin.id}, format='json').json()['id']
+        self.api(self.support).post(
+            f'/api/v1/messaging/conversations/{cid}/messages/', {'body': 'Need a decision'}, format='json')
+        bell = self.api(self.admin).get('/api/v1/notifications/').json()
+        self.assertEqual(bell['notifications'][0]['metadata']['url'], '/platform/messages')
+        self.api(self.admin).post(
+            f'/api/v1/messaging/conversations/{cid}/messages/', {'body': 'Approved'}, format='json')
+        back = self.api(self.support).get('/api/v1/notifications/').json()
+        self.assertEqual(back['notifications'][0]['metadata']['url'], '/tech-support/dashboard/messages')
+        person = self.api(self.admin).get('/api/v1/messaging/contacts/').json()['results']
+        self.assertIn('Support team', {p['role_label'] for p in person})

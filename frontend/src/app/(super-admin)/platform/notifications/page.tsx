@@ -28,6 +28,68 @@ function StatCard({ title, value, loading }: { title: string; value: React.React
   );
 }
 
+interface TemplateItem {
+  id: string;
+  name: string;
+  heading: string;
+  body: string;
+  trigger?: string;
+  variables: string[];
+  custom: boolean;
+}
+
+/** Each message with what triggers it; open one to read exactly what is sent. */
+function TemplateList({ items, headingLabel }: { items: TemplateItem[]; headingLabel: string }) {
+  if (items.length === 0) {
+    return <p className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">No templates.</p>;
+  }
+  return (
+    <ul className="divide-y rounded-2xl border">
+      {items.map((t) => (
+        <li key={t.id}>
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-start justify-between gap-4 px-4 py-3.5 hover:bg-muted/40">
+              <div className="min-w-0">
+                <p className="flex flex-wrap items-center gap-2 font-medium text-foreground">
+                  {t.name}
+                  {t.custom && <StatusPill status="info">Custom</StatusPill>}
+                </p>
+                {t.trigger && <p className="mt-0.5 text-xs text-muted-foreground">{t.trigger}</p>}
+              </div>
+              <span className="shrink-0 text-xs font-medium text-primary group-open:hidden">View</span>
+              <span className="hidden shrink-0 text-xs font-medium text-muted-foreground group-open:inline">Hide</span>
+            </summary>
+            <div className="space-y-3 border-t bg-muted/20 px-4 py-4">
+              {t.heading && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">{headingLabel}</p>
+                  <p className="text-sm text-foreground">{t.heading}</p>
+                </div>
+              )}
+              {t.body && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">{t.heading ? 'Message' : headingLabel}</p>
+                  <pre className="mt-1 whitespace-pre-wrap rounded-xl border bg-background p-3 font-sans text-sm text-foreground">
+                    {t.body}
+                  </pre>
+                </div>
+              )}
+              {t.variables.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs font-medium text-muted-foreground">Filled in with</span>
+                  {t.variables.map((v) => (
+                    <StatusPill key={v} status="neutral">{v}</StatusPill>
+                  ))}
+                </div>
+              )}
+            </div>
+          </details>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 type DeliveryFilter = 'all' | 'failed';
 
 function DeliveryLog() {
@@ -143,30 +205,18 @@ export default function AdminNotificationsPage() {
           {emailLoading ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Variables</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(emailData?.templates ?? []).map((t) => (
-                  <TableRow key={t.template_id}>
-                    <TableCell className="font-medium">{t.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{t.subject}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {t.variables.map((v) => (
-                          <StatusPill key={v} status="neutral">{v}</StatusPill>
-                        ))}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <TemplateList
+              items={(emailData?.templates ?? []).map((t) => ({
+                id: String(t.template_id),
+                name: t.name,
+                heading: t.subject,
+                body: t.body ?? '',
+                trigger: t.trigger,
+                variables: t.variables,
+                custom: t.source === 'custom',
+              }))}
+              headingLabel="Subject"
+            />
           )}
         </TabsContent>
 
@@ -174,30 +224,18 @@ export default function AdminNotificationsPage() {
           {smsLoading ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Message</TableHead>
-                  <TableHead>Variables</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(smsData?.templates ?? []).map((t) => (
-                  <TableRow key={t.template_id}>
-                    <TableCell className="font-medium">{t.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{t.message}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {t.variables.map((v) => (
-                          <StatusPill key={v} status="neutral">{v}</StatusPill>
-                        ))}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <TemplateList
+              items={(smsData?.templates ?? []).map((t) => ({
+                id: String(t.template_id),
+                name: t.name,
+                heading: '',
+                body: t.message,
+                trigger: t.trigger,
+                variables: t.variables,
+                custom: t.source === 'custom',
+              }))}
+              headingLabel="Message"
+            />
           )}
         </TabsContent>
       </Tabs>

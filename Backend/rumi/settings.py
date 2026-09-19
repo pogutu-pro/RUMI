@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     'billing',
     'support',
     'messaging',
+    'platform_settings',
 ]
 
 # Custom User Model (matches schema: email as unique identifier)
@@ -84,6 +85,7 @@ AUTH_USER_MODEL = 'accounts.User'
 MIDDLEWARE = [
     'rumi.middleware.SecurityHeadersMiddleware',
     'rumi.middleware.DatabaseConnectionMiddleware',
+    'platform_settings.middleware.PlatformSettingsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',

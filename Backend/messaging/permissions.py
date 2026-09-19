@@ -1,14 +1,15 @@
 """
 Who may message whom. The chain follows how a rental is actually run:
 
-    tenant  <->  caretaker  <->  landlord  <->  super admin
+    tenant  <->  caretaker  <->  landlord  <->  super admin  <->  tech support
 
 - a tenant reaches the caretaker(s) assigned to their property; if the
   property has none, they reach the landlord instead so nobody is left with
   no one to talk to
 - a caretaker reaches their landlord and the tenants of their properties
 - a landlord reaches their caretakers and the RumiaRent team (super admins)
-- a super admin reaches landlords
+- a super admin reaches landlords and the tech support team
+- tech support reaches the super admins
 
 The relation is symmetric, and is checked on every send, so removing a
 caretaker or a tenancy stops the conversation immediately.
@@ -75,7 +76,11 @@ def _landlord_contacts(user):
 
 
 def _super_admin_contacts(user):
-    return User.objects.filter(is_active=True, role='landlord')
+    return User.objects.filter(is_active=True, role__in=['landlord', 'tech_support', 'tech_support_admin'])
+
+
+def _tech_support_contacts(user):
+    return User.objects.filter(is_active=True, role='super_admin')
 
 
 _RESOLVERS = {
@@ -83,6 +88,8 @@ _RESOLVERS = {
     'caretaker': _caretaker_contacts,
     'landlord': _landlord_contacts,
     'super_admin': _super_admin_contacts,
+    'tech_support': _tech_support_contacts,
+    'tech_support_admin': _tech_support_contacts,
 }
 
 

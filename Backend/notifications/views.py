@@ -613,8 +613,14 @@ class AdminEmailTemplateListView(APIView):
                 'subject': template.subject,
                 'variables': template.variables,
                 'created_at': template.created_at,
-                'updated_at': template.updated_at
+                'updated_at': template.updated_at,
+                'source': 'custom',
             })
+
+        # The platform's own emails are written in code; list them too so this
+        # page shows every message that actually goes out.
+        from .catalog import EMAIL_CATALOG
+        templates_data.extend({**entry, 'source': 'built_in'} for entry in EMAIL_CATALOG)
 
         return Response({
             'total_templates': len(templates_data),
@@ -734,8 +740,12 @@ class AdminSMSTemplateListView(APIView):
                 'name': template.name,
                 'message': template.message,
                 'variables': template.variables,
-                'created_at': template.created_at
+                'created_at': template.created_at,
+                'source': 'custom',
             })
+
+        from .catalog import SMS_CATALOG
+        templates_data.extend({**entry, 'source': 'built_in'} for entry in SMS_CATALOG)
 
         return Response({
             'total_templates': len(templates_data),

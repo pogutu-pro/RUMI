@@ -21,6 +21,8 @@ ROLE_LABELS = {
     'caretaker': 'Caretaker',
     'landlord': 'Landlord',
     'super_admin': 'RumiaRent team',
+    'tech_support': 'Support team',
+    'tech_support_admin': 'Support team',
 }
 
 
