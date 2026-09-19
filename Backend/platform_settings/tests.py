@@ -368,3 +368,22 @@ class SocialLinkTests(PlatformSettingsBase):
         client.force_authenticate(user=tenant)
         self.assertEqual(client.put('/api/v1/platform-settings/social-links/tiktok/', {'url': 'https://tiktok.com/@x'}, format='json').status_code, 403)
 
+
+
+class RefreshDoesNotClobberOtherChangesTests(PlatformSettingsBase):
+    """A refresh must only ever touch settings it overrode itself."""
+
+    def test_a_temporary_override_of_an_unmanaged_value_survives_a_refresh(self):
+        with override_settings(PAYSTACK_WEBHOOK_SECRET='temporary-test-secret'):
+            service.bump_version()
+            service._last_check = 0
+            service.ensure_fresh()
+            service.apply_overrides()
+            self.assertEqual(settings.PAYSTACK_WEBHOOK_SECRET, 'temporary-test-secret')
+
+    def test_only_keys_with_a_dashboard_value_change(self):
+        self.put('EMAIL_HOST', 'smtp.changed.example')
+        with override_settings(PAYSTACK_ENV='live'):
+            service.apply_overrides()
+            self.assertEqual(settings.PAYSTACK_ENV, 'live')
+            self.assertEqual(settings.EMAIL_HOST, 'smtp.changed.example')

@@ -26,7 +26,8 @@ VERSION_KEY = 'platform_settings:version'
 _MISSING = object()
 
 _lock = threading.Lock()
-_originals = {}          # key -> value from the environment file, captured before the first override
+_originals = {}          # key -> value from the environment file, captured before its first override
+_applied_keys = set()    # keys this process currently has a dashboard override applied for
 _applied_version = None  # version this process last applied
 _last_check = 0.0
 _CHECK_EVERY_SECONDS = 2.0  # at most one cache read per process per couple of seconds
@@ -80,30 +81,40 @@ def unreadable_keys() -> set:
 def env_value(key):
     """The value from the server's environment file, ignoring any dashboard override."""
     with _lock:
-        if key in _originals:
-            original = _originals[key]
-        else:
-            original = getattr(settings, key, _MISSING)
+        original = _originals[key] if key in _applied_keys else getattr(settings, key, _MISSING)
     return None if original is _MISSING else original
 
 
 # --- applying ---------------------------------------------------------------
 
 def apply_overrides() -> None:
-    """Make `settings` reflect the database: overrides on, removed overrides back to the env value."""
+    """
+    Make `settings` reflect the database.
+
+    Only settings this module has itself overridden are ever touched: a key
+    with a dashboard value is set, and a key whose override was removed goes
+    back to what the environment file said. Everything else is left exactly as
+    it is, so nothing else that adjusts a setting (a test's override_settings,
+    for one) can be clobbered by a refresh.
+    """
     global _applied_version
     values = stored_values()
     with _lock:
         for spec in SPECS:
-            if spec.key not in _originals:
-                _originals[spec.key] = getattr(settings, spec.key, _MISSING)
-            if spec.key in values:
-                setattr(settings, spec.key, values[spec.key])
-            elif _originals[spec.key] is _MISSING:
-                if hasattr(settings, spec.key):
-                    delattr(settings, spec.key)
-            else:
-                setattr(settings, spec.key, _originals[spec.key])
+            key = spec.key
+            if key in values:
+                if key not in _applied_keys:
+                    _originals[key] = getattr(settings, key, _MISSING)
+                    _applied_keys.add(key)
+                setattr(settings, key, values[key])
+            elif key in _applied_keys:
+                original = _originals.pop(key, _MISSING)
+                _applied_keys.discard(key)
+                if original is _MISSING:
+                    if hasattr(settings, key):
+                        delattr(settings, key)
+                else:
+                    setattr(settings, key, original)
         _applied_version = cache.get(VERSION_KEY)
 
 
