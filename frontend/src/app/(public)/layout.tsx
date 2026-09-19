@@ -44,7 +44,7 @@ export default function PublicLayout({ children }: LayoutProps) {
     <UnifiedThemeProvider forcedTheme="light">
       <div className="flex min-h-screen flex-col">
         <PublicHeader />
-        <main className="flex-1 pb-16 md:pb-0">{children}</main>
+        <main className="flex-1">{children}</main>
         <Footer />
         <MobileBottomNav />
         <BackToTop />

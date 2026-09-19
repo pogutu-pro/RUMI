@@ -49,8 +49,9 @@ const FOOTER_LINKS = [
 export const Footer = React.memo(function Footer() {
   const currentYear = new Date().getFullYear();
 
+  // pb-16 on phones keeps the last line clear of the fixed bottom nav.
   return (
-    <footer className="w-full bg-gray-950 border-t border-gray-800">
+    <footer className="w-full bg-gray-950 border-t border-gray-800 pb-16 md:pb-0">
       {/* Main footer container with proper horizontal padding */}
       <div className="mx-auto max-w-7xl px-4 sm:px-8 md:px-16 lg:px-24 xl:px-32">
         <div className="py-10 md:py-24">
