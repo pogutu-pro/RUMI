@@ -68,6 +68,7 @@ const PUBLIC_ROUTES = new Set([
   '/robots.txt',
   '/sitemap.xml',
   '/llms.txt',
+  '/unsubscribe',
   '/manifest.webmanifest',
   '/favicon.ico',
   '/icon.png',

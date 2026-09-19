@@ -7,6 +7,7 @@ urlpatterns = [
     path('<int:notification_id>/read/', views.NotificationMarkReadView.as_view(), name='notification_mark_read'),
     path('mark-all-read/', views.NotificationMarkAllReadView.as_view(), name='notification_mark_all_read'),
     path('preferences/', views.NotificationPreferencesView.as_view(), name='notification_preferences'),
+    path('unsubscribe/', views.MarketingUnsubscribeView.as_view(), name='notification_unsubscribe'),
 
     # Admin template management
     path('admin/templates/email/', views.AdminEmailTemplateListView.as_view(), name='admin_email_templates'),

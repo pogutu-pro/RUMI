@@ -35,6 +35,10 @@ export default function TermsPage() {
                   abide by the above, please do not use this service.
                 </p>
                 <p className="mt-4 leading-relaxed">
+                  You must be at least 18 years old to create an account or use
+                  RumiaRent. By creating an account you confirm that you are.
+                </p>
+                <p className="mt-4 leading-relaxed">
                   RumiaRent is owned and operated by Stratnovo.
                 </p>
               </section>

@@ -195,6 +195,19 @@ function NotificationsTab() {
           </div>
           <Switch checked disabled />
         </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium">News and updates</p>
+            <p className="text-xs text-muted-foreground">
+              Product news and tips from RumiaRent. Off unless you turn it on.
+            </p>
+          </div>
+          <Switch
+            checked={data?.marketing_emails ?? false}
+            onCheckedChange={(checked) => update.mutate({ marketing_emails: checked })}
+            disabled={update.isPending}
+          />
+        </div>
       </CardContent>
     </Card>
   );
