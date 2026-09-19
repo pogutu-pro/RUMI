@@ -1,11 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { Plus } from 'lucide-react';
+import Link from 'next/link';
+import { MessageSquare, Plus } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { FormDialogActions, FormRow, FormStack } from '@/components/ui/form-layout';
+import { FormDialogActions, FormStack } from '@/components/ui/form-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,13 +18,10 @@ import { PageHeader } from '@/components/dashboard/page-header';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useAuth } from '@/features/auth';
 import { useTickets, useCreateTicket, useTicket, useAddTicketMessage } from '../hooks/use-support';
-import { useTenancies } from '@/features/rental/hooks/use-rental';
-import type { TicketStatus, TicketCategory, TicketPriority } from '../types/types';
+import type { TicketStatus } from '../types/types';
 
 const STATUS_VARIANT: Record<TicketStatus, 'default' | 'secondary' | 'destructive'> = {
   open: 'destructive',
@@ -39,37 +37,14 @@ const STATUS_LABEL: Record<TicketStatus, string> = {
   closed: 'Closed',
 };
 
-const CATEGORY_LABEL: Record<TicketCategory, string> = {
-  general: 'General',
-  maintenance: 'Maintenance',
-};
-
-const PRIORITY_LABEL: Record<TicketPriority, string> = {
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
-  urgent: 'Urgent',
-};
-
-const ticketSchema = z
-  .object({
-    subject: z.string().trim().min(3, 'Subject is required').max(200),
-    description: z.string().trim().min(10, 'Please describe the issue in a bit more detail'),
-    category: z.enum(['general', 'maintenance']),
-    unit: z.string().optional(),
-    priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
-  })
-  .superRefine((values, ctx) => {
-    if (values.category === 'maintenance' && !values.unit) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['unit'], message: 'Choose a unit' });
-    }
-  });
+const ticketSchema = z.object({
+  subject: z.string().trim().min(3, 'Subject is required').max(200),
+  description: z.string().trim().min(10, 'Please describe the issue in a bit more detail'),
+});
 
 type TicketFormValues = z.infer<typeof ticketSchema>;
 
-const EMPTY_TICKET_FORM: TicketFormValues = {
-  subject: '', description: '', category: 'general', unit: undefined, priority: undefined,
-};
+const EMPTY_TICKET_FORM: TicketFormValues = { subject: '', description: '' };
 
 const replySchema = z.object({
   message: z.string().trim().min(1, 'Reply cannot be empty'),
@@ -149,6 +124,35 @@ function TicketThread({ ticketId, onClose }: { ticketId: string; onClose: () => 
   );
 }
 
+const PROPERTY_CONTACT: Record<string, { who: string; messagesHref: string }> = {
+  tenant: { who: 'your caretaker', messagesHref: '/tenant/rental/messages' },
+  caretaker: { who: 'the landlord', messagesHref: '/caretaker/rental/messages' },
+  landlord: { who: 'your caretaker', messagesHref: '/landlord/rental/messages' },
+};
+
+/** Keeps support for the system and sends property problems to the right person. */
+function PropertyIssuesNotice() {
+  const { user } = useAuth();
+  const contact = PROPERTY_CONTACT[user?.role ?? ''];
+  if (!contact) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-2xl border bg-muted/40 px-5 py-4">
+      <MessageSquare className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+      <p className="min-w-0 flex-1 text-sm text-muted-foreground">
+        <span className="font-semibold text-foreground">Support is for problems with RumiaRent itself.</span> For
+        anything about the property, like a shower that is not working or a leak, message {contact.who} instead.
+      </p>
+      <Link
+        href={contact.messagesHref}
+        className="text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
+      >
+        Open messages
+      </Link>
+    </div>
+  );
+}
+
 /**
  * Shared "my tickets" view used by landlord, caretaker, and tenant dashboards —
  * create a ticket, see its status, reply to it. Full ticket management for
@@ -156,7 +160,6 @@ function TicketThread({ ticketId, onClose }: { ticketId: string; onClose: () => 
  */
 export function MyTicketsPage() {
   const { data: tickets = [], isLoading, isError, refetch } = useTickets();
-  const { data: tenancies = [] } = useTenancies();
   const createTicket = useCreateTicket();
   const [open, setOpen] = React.useState(false);
   const [activeTicketId, setActiveTicketId] = React.useState<string | null>(null);
@@ -166,35 +169,13 @@ export function MyTicketsPage() {
     defaultValues: EMPTY_TICKET_FORM,
   });
 
-  // react-hook-form's watch() returns a function that cannot be memoized
-  // safely, so React Compiler skips auto-memoizing this component — a known,
-  // accepted library-level limitation (not a bug), and this file's only use
-  // of the pattern (see 05-PATTERNS.md: no existing analog for conditional
-  // form fields prior to this).
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const category = form.watch('category');
-
-  // Unit choices sourced from the tenant's own tenancies (already
-  // tenant-scoped server-side) — deliberately not from the org-wide units
-  // list, which would leak other tenants' unit numbers within the same org.
-  const unitChoices = React.useMemo(() => {
-    const seen = new Set<string>();
-    const choices: { id: string; label: string }[] = [];
-    for (const t of tenancies) {
-      if (!seen.has(t.unit)) {
-        seen.add(t.unit);
-        choices.push({ id: t.unit, label: t.unit_number });
-      }
-    }
-    return choices;
-  }, [tenancies]);
-
   const handleCreate = form.handleSubmit(async (values) => {
+    // Support tickets are only for problems with RumiaRent itself; anything
+    // about the property goes to the caretaker through Messages.
     await createTicket.mutateAsync({
       subject: values.subject,
       description: values.description,
-      category: values.category,
-      ...(values.category === 'maintenance' ? { unit: values.unit, priority: values.priority } : {}),
+      category: 'general',
     });
     setOpen(false);
     form.reset(EMPTY_TICKET_FORM);
@@ -213,7 +194,7 @@ export function MyTicketsPage() {
               <DialogHeader>
                 <DialogTitle>New support ticket</DialogTitle>
                 <DialogDescription>
-                  Tell us what&apos;s wrong and our team will get back to you. Include as much detail as you can.
+                  Tell the RumiaRent team about a problem with the app or your account. For anything about the property itself, message your caretaker instead.
                 </DialogDescription>
               </DialogHeader>
               <Form {...form}>
@@ -226,7 +207,7 @@ export function MyTicketsPage() {
                       <FormItem>
                         <FormLabel>Subject</FormLabel>
                         <FormControl>
-                          <Input className="h-11" placeholder="e.g. Leaking tap in the kitchen" {...field} />
+                          <Input className="h-11" placeholder="e.g. Payment went through but my balance did not change" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -245,76 +226,6 @@ export function MyTicketsPage() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Category</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="h-11">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {(Object.keys(CATEGORY_LABEL) as TicketCategory[]).map((c) => (
-                              <SelectItem key={c} value={c}>{CATEGORY_LABEL[c]}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  {category === 'maintenance' && (
-                    <FormRow>
-                      <FormField
-                        control={form.control}
-                        name="unit"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Unit</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger className="h-11">
-                                  <SelectValue placeholder="Select a unit" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {unitChoices.map((u) => (
-                                  <SelectItem key={u.id} value={u.id}>{u.label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="priority"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Priority</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger className="h-11">
-                                  <SelectValue placeholder="Select a priority" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {(Object.keys(PRIORITY_LABEL) as TicketPriority[]).map((p) => (
-                                  <SelectItem key={p} value={p}>{PRIORITY_LABEL[p]}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </FormRow>
-                  )}
                   <FormDialogActions submitLabel="Submit ticket" isPending={createTicket.isPending} />
                   </FormStack>
                 </form>
@@ -323,6 +234,8 @@ export function MyTicketsPage() {
           </Dialog>
         }
       />
+
+      <PropertyIssuesNotice />
 
       {isLoading ? (
         <div className="space-y-2">
