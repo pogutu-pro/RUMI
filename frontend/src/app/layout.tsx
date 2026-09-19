@@ -9,6 +9,7 @@ import NetworkStatus from '@/components/pwa/NetworkStatus';
 import DevServiceWorkerCleaner from '@/components/pwa/DevServiceWorkerCleaner';
 import ServiceWorkerUpdater from '@/components/pwa/ServiceWorkerUpdater';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { InitialSplash } from '@/components/ui/initial-splash';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -174,6 +175,7 @@ export default function RootLayout({
           'min-h-screen bg-background font-sans antialiased overflow-x-clip scroll-smooth',
         )}
       >
+        <InitialSplash />
         <ErrorBoundary>
           <Providers>
             {children}

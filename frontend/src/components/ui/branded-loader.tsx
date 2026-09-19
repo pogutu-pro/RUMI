@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { RumiaLoader } from '@/components/ui/rumia-loader';
 import { cn } from '@/lib/utils/cn';
 
 interface BrandedLoaderProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -6,6 +6,7 @@ interface BrandedLoaderProps extends React.HTMLAttributes<HTMLDivElement> {
   text?: string;
 }
 
+/** Centered animated-logo loader for full sections and route transitions. */
 export function BrandedLoader({
   className,
   size = 120,
@@ -13,30 +14,8 @@ export function BrandedLoader({
   ...props
 }: BrandedLoaderProps) {
   return (
-    <div
-      className={cn(
-        'flex flex-col items-center justify-center p-8',
-        className
-      )}
-      {...props}
-    >
-      <div 
-        className="relative flex items-center justify-center mb-8"
-        style={{ width: size, height: size }}
-      >
-        <Image
-          src="/images/logo/logo.png"
-          alt="RumiaRent Logo"
-          fill
-          priority
-          className="object-contain"
-        />
-      </div>
-      {text && (
-        <p className="text-center text-sm font-medium text-muted-foreground tracking-wide">
-          {text}
-        </p>
-      )}
+    <div className={cn('flex items-center justify-center p-8', className)} {...props}>
+      <RumiaLoader size={size} text={text} />
     </div>
   );
 }

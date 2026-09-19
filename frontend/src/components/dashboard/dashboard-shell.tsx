@@ -15,6 +15,7 @@ import { getUserInitials } from '@/lib/utils/user';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
+import { RumiaLoader } from '@/components/ui/rumia-loader';
 import { OrganizationSwitcher } from '@/features/rental/components/organization-switcher';
 import { AccountMenu } from '@/components/dashboard/account-menu';
 import { NotificationBell } from '@/features/notifications';
@@ -189,7 +190,11 @@ export function DashboardShell({
   }, [status, isAuthenticated, user, router, allowedRoles]);
 
   if (status === 'checking' || status === 'idle' || !isAuthenticated) {
-    return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Loading…</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <RumiaLoader size={96} label="Loading your dashboard" />
+      </div>
+    );
   }
 
   const name = user ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || user.email : '';

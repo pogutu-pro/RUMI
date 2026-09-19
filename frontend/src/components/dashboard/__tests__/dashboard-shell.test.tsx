@@ -89,7 +89,7 @@ describe('DashboardShell', () => {
         <div>content</div>
       </DashboardShell>,
     );
-    expect(screen.getByText('Loading…')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Loading your dashboard' })).toBeInTheDocument();
     expect(screen.queryByText('content')).not.toBeInTheDocument();
     expect(mockReplace).not.toHaveBeenCalled();
   });
