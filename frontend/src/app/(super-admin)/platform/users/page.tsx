@@ -9,6 +9,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { Button } from '@/components/ui/button';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { PageHeader } from '@/components/dashboard/page-header';
+import { SimplePager } from '@/components/ui/simple-pager';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   useAdminUserList,
@@ -57,7 +58,6 @@ export default function AdminUsersPage() {
 
   const rows = data?.users ?? [];
   const total = data?.total_users ?? 0;
-  const hasMore = offset + rows.length < total;
 
   return (
     <div className="space-y-6">
@@ -144,14 +144,12 @@ export default function AdminUsersPage() {
             </TableBody>
           </Table>
 
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>Showing {rows.length} of {total}</span>
-            {hasMore && (
-              <Button variant="outline" size="sm" onClick={() => setOffset(offset + PAGE_SIZE)}>
-                Load more
-              </Button>
-            )}
-          </div>
+          <SimplePager
+            page={Math.floor(offset / PAGE_SIZE) + 1}
+            pageSize={PAGE_SIZE}
+            total={total}
+            onPageChange={(next) => setOffset((next - 1) * PAGE_SIZE)}
+          />
         </>
       )}
 

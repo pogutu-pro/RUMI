@@ -3,9 +3,17 @@ import userEvent from '@testing-library/user-event';
 import { SimplePager } from '../simple-pager';
 
 describe('SimplePager', () => {
-  it('renders nothing when everything fits on one page', () => {
-    const { container } = render(<SimplePager page={1} pageSize={10} total={10} onPageChange={jest.fn()} />);
+  it('renders nothing for an empty list', () => {
+    const { container } = render(<SimplePager page={1} pageSize={10} total={0} onPageChange={jest.fn()} />);
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it('is still shown, with both buttons disabled, when everything fits on one page', () => {
+    render(<SimplePager page={1} pageSize={10} total={4} onPageChange={jest.fn()} />);
+    expect(screen.getByText('1–4 of 4')).toBeInTheDocument();
+    expect(screen.getByText('Page 1 of 1')).toBeInTheDocument();
+    expect(screen.getByLabelText('Previous page')).toBeDisabled();
+    expect(screen.getByLabelText('Next page')).toBeDisabled();
   });
 
   it('shows the range and pages forward and back', async () => {

@@ -7,8 +7,11 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/dashboard/page-header';
+import { SimplePager } from '@/components/ui/simple-pager';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuditLogList } from '@/features/admin-audit/hooks/use-admin-audit';
+
+const AUDIT_PAGE_SIZE = 50; // matches AuditLogPagination on the server
 
 const ACTION_OPTIONS = [
   { value: 'all', label: 'All actions' },
@@ -27,6 +30,13 @@ const ACTION_OPTIONS = [
   { value: 'subscription_payment_recorded', label: 'Subscription payment recorded' },
   { value: 'subscription_payment_failed', label: 'Subscription payment failed' },
   { value: 'subscription_disabled', label: 'Subscription disabled' },
+  { value: 'subscription_plan_updated', label: 'Plan or price edited' },
+  { value: 'platform_setting_updated', label: 'Integration setting changed' },
+  { value: 'platform_setting_cleared', label: 'Integration setting reset' },
+  { value: 'platform_settings_unlocked', label: 'Integrations unlocked' },
+  { value: 'platform_settings_unlock_failed', label: 'Integrations unlock failed' },
+  { value: 'social_link_updated', label: 'Social link saved' },
+  { value: 'social_link_removed', label: 'Social link removed' },
 ];
 
 function formatAction(action: string): string {
@@ -98,17 +108,7 @@ export default function AdminAuditLogPage() {
             </TableBody>
           </Table>
 
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>Page {page} · {data?.count ?? 0} total entries</span>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setPage((p) => p - 1)} disabled={!data?.previous}>
-                Previous
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={!data?.next}>
-                Next
-              </Button>
-            </div>
-          </div>
+          <SimplePager page={page} pageSize={AUDIT_PAGE_SIZE} total={data?.count ?? 0} onPageChange={setPage} />
         </>
       )}
     </div>

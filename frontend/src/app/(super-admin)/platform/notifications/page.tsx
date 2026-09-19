@@ -14,7 +14,6 @@ import {
   useAdminNotificationStats,
   useAdminSmsTemplates,
 } from '@/features/admin-notifications/hooks/use-admin-notifications';
-import { usePagination } from '@/hooks/use-pagination';
 import { SimplePager } from '@/components/ui/simple-pager';
 
 function StatCard({ title, value, loading }: { title: string; value: React.ReactNode; loading?: boolean }) {
@@ -92,12 +91,16 @@ function TemplateList({ items, headingLabel }: { items: TemplateItem[]; headingL
   );
 }
 
+const DELIVERIES_PER_PAGE = 20; // matches the server
+
 type DeliveryFilter = 'all' | 'failed';
 
 function DeliveryLog() {
   const [filter, setFilter] = React.useState<DeliveryFilter>('all');
-  const { data: rows = [], isLoading } = useAdminDeliveries(filter === 'failed' ? { status: 'failed' } : undefined);
-  const { pageItems: pagedRows, pagerProps: rowsPager } = usePagination(rows, 10, filter);
+  const [pageState, setPageState] = React.useState({ key: 'all', page: 1 });
+  const page = pageState.key === filter ? pageState.page : 1;
+  const { data, isLoading } = useAdminDeliveries({ ...(filter === 'failed' ? { status: 'failed' as const } : {}), page });
+  const rows = data?.results ?? [];
 
   return (
     <div className="space-y-3">
@@ -137,7 +140,7 @@ function DeliveryLog() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {pagedRows.map((row) => (
+            {rows.map((row) => (
               <TableRow key={row.id}>
                 <TableCell className="whitespace-nowrap text-muted-foreground">
                   {formatDistanceToNow(new Date(row.created_at), { addSuffix: true })}
@@ -169,7 +172,12 @@ function DeliveryLog() {
             ))}
           </TableBody>
         </Table>
-        <SimplePager {...rowsPager} />
+        <SimplePager
+          page={page}
+          pageSize={DELIVERIES_PER_PAGE}
+          total={data?.count ?? 0}
+          onPageChange={(next) => setPageState({ key: filter, page: next })}
+        />
         </>
       )}
     </div>

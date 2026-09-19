@@ -900,7 +900,10 @@ class AdminDeliveryLogView(APIView):
     """
     Admin delivery log: the most recent email and SMS attempts, with outcome.
 
-    GET /notifications/admin/deliveries/?channel=email|sms&status=sent|failed&limit=50
+    GET /notifications/admin/deliveries/?channel=email|sms&status=sent|failed&page=1
+
+    Newest first, 20 per page (the standard paginated envelope), so every
+    delivery ever recorded can be reached, not just the latest few.
 
     Tech support and super admins only. Message bodies are never stored, so
     this exposes who was contacted, when, the email subject and any failure
@@ -908,11 +911,12 @@ class AdminDeliveryLogView(APIView):
     """
 
     permission_classes = [permissions.IsAuthenticated]
-    MAX_LIMIT = 100
 
     def get(self, request):
         if request.user.role not in ['tech_support', 'super_admin']:
             return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+
+        from rest_framework.pagination import PageNumberPagination
 
         from .delivery_log import DELIVERY_TYPES
 
@@ -924,14 +928,12 @@ class AdminDeliveryLogView(APIView):
         if outcome in ('sent', 'failed'):
             rows = rows.filter(status=outcome)
 
-        try:
-            limit = min(max(int(request.query_params.get('limit', 50)), 1), self.MAX_LIMIT)
-        except ValueError:
-            limit = 50
+        class DeliveryPagination(PageNumberPagination):
+            page_size = 20
 
-        rows = rows.select_related('recipient').order_by('-created_at')[:limit]
-        return Response({
-            'results': [
+        paginator = DeliveryPagination()
+        page = paginator.paginate_queryset(rows.select_related('recipient').order_by('-created_at', '-id'), request, view=self)
+        return paginator.get_paginated_response([
                 {
                     'id': row.id,
                     'channel': row.channel,
@@ -944,6 +946,5 @@ class AdminDeliveryLogView(APIView):
                     'error_message': row.error_message or '',
                     'created_at': row.created_at,
                 }
-                for row in rows
-            ],
-        }, status=status.HTTP_200_OK)
+                for row in page
+        ])

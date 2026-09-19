@@ -467,3 +467,20 @@ class BuiltInTemplateCatalogTests(TestCase):
         tenant = User.objects.create_user(email='t@example.com', password='Pass123!', first_name='T', last_name='T', role='tenant')
         self.client.force_authenticate(user=tenant)
         self.assertEqual(self.client.get('/api/v1/notifications/admin/templates/email/').status_code, 403)
+
+    def test_deliveries_are_paged_so_older_ones_can_be_reached(self):
+        from notifications.delivery_log import log_delivery
+
+        for n in range(25):
+            log_delivery(channel='email', address=f'person{n}@example.com', subject=f'Message {n}', ok=True)
+        self.client.force_authenticate(user=self.admin)
+        first = self.client.get('/api/v1/notifications/admin/deliveries/').json()
+        self.assertEqual(first['count'], 25)
+        self.assertEqual(len(first['results']), 20)
+        self.assertIsNotNone(first['next'])
+        second = self.client.get('/api/v1/notifications/admin/deliveries/?page=2').json()
+        self.assertEqual(len(second['results']), 5)
+        self.assertIsNone(second['next'])
+        seen = {r['id'] for r in first['results']} | {r['id'] for r in second['results']}
+        self.assertEqual(len(seen), 25)
+
