@@ -264,3 +264,49 @@ class Statistics(models.Model):
 
     def __str__(self):
         return f"{self.stat_label}: {self.stat_value}"
+
+
+class JobPosting(models.Model):
+    """A role RumiaRent is hiring for, shown on the public careers page."""
+
+    TYPE_CHOICES = [
+        ('full_time', 'Full time'),
+        ('part_time', 'Part time'),
+        ('contract', 'Contract'),
+        ('internship', 'Internship'),
+    ]
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('published', 'Published'),
+        ('closed', 'Closed'),
+    ]
+
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True, max_length=200)
+    department = models.CharField(max_length=100, blank=True, default='')
+    location = models.CharField(max_length=150, default='Nairobi, Kenya')
+    employment_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='full_time')
+    summary = models.CharField(max_length=300, blank=True, default='')
+    description = models.TextField()
+    requirements = models.TextField(blank=True, default='')
+    apply_email = models.EmailField(default='info@rumiarent.com')
+    closing_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft', db_index=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-published_at', '-created_at']
+
+    def __str__(self):
+        return f'{self.title} ({self.status})'
+
+    @property
+    def is_open(self) -> bool:
+        """Published and not past its closing date."""
+        if self.status != 'published':
+            return False
+        return self.closing_date is None or self.closing_date >= timezone.localdate()
+

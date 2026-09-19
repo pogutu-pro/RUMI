@@ -1,13 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import { LifeBuoy, Newspaper, Settings } from 'lucide-react';
+import { Briefcase, LifeBuoy, Newspaper, Settings } from 'lucide-react';
 import { UserRole } from '@/features/auth/stores/auth.types';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 
 const TECH_SUPPORT_NAV = [
   { href: '/tech-support/dashboard', label: 'Tickets', icon: LifeBuoy },
   { href: '/tech-support/dashboard/blog', label: 'Blog', icon: Newspaper },
+  { href: '/tech-support/dashboard/careers', label: 'Careers', icon: Briefcase },
   { href: '/tech-support/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
