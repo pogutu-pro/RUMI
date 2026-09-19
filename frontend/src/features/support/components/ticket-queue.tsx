@@ -21,9 +21,12 @@ import {
 } from '@/components/ui/form';
 import { cn } from '@/lib/utils/cn';
 import { PageHeader } from '@/components/dashboard/page-header';
+import { SimplePager } from '@/components/ui/simple-pager';
 import { useAuth } from '@/features/auth';
 import { useTickets, useTicket, useUpdateTicket, useAddTicketMessage } from '@/features/support/hooks/use-support';
 import type { SupportTicket, TicketStatus, TicketPriority } from '@/features/support/types/types';
+
+const TICKETS_PER_PAGE = 10;
 
 const replySchema = z.object({
   message: z.string().trim().min(1, 'Reply cannot be empty'),
@@ -269,6 +272,15 @@ export function TicketQueue() {
 
   const hasActiveFilters = statusFilter !== 'all' || priorityFilter !== 'all' || search.trim() !== '';
 
+  // Page resets to the first whenever the filters change, without an effect:
+  // the stored page only counts while it belongs to the current filters.
+  const filtersKey = `${statusFilter}|${priorityFilter}|${search.trim().toLowerCase()}`;
+  const [pageState, setPageState] = React.useState({ key: filtersKey, page: 1 });
+  const page = pageState.key === filtersKey ? pageState.page : 1;
+  const pageCount = Math.max(1, Math.ceil(filteredTickets.length / TICKETS_PER_PAGE));
+  const currentPage = Math.min(page, pageCount);
+  const pageTickets = filteredTickets.slice((currentPage - 1) * TICKETS_PER_PAGE, currentPage * TICKETS_PER_PAGE);
+
   return (
     <div className="space-y-4">
       <PageHeader title="Support tickets" />
@@ -342,8 +354,9 @@ export function TicketQueue() {
           }
         />
       ) : (
+        <>
         <ul className="divide-y rounded-2xl border bg-background">
-          {filteredTickets.map((t) => (
+          {pageTickets.map((t) => (
             <li key={t.id}>
               <button
                 onClick={() => setActiveTicketId(t.id)}
@@ -365,6 +378,13 @@ export function TicketQueue() {
             </li>
           ))}
         </ul>
+        <SimplePager
+          page={currentPage}
+          pageSize={TICKETS_PER_PAGE}
+          total={filteredTickets.length}
+          onPageChange={(next) => setPageState({ key: filtersKey, page: next })}
+        />
+        </>
       )}
 
       {activeTicketId && (
