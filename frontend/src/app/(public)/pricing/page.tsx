@@ -97,6 +97,14 @@ export default async function PricingPage() {
       </section>
 
       <PricingContent />
+      <p className="mx-auto max-w-3xl px-4 pb-16 text-center text-sm text-gray-500">
+        Plans renew monthly until cancelled, and you keep access until the end of the month you
+        have paid for. Cancelling and refunds are covered in our{' '}
+        <Link href="/terms" className="text-primary underline underline-offset-4">
+          Terms of Service
+        </Link>
+        .
+      </p>
 
       {/* Billing Details */}
       <section className="pb-24 px-4 bg-white">
