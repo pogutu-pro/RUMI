@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes, action
@@ -12,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
-from .models import Page, TeamMember, ContactInquiry, FAQ, BlogPost, Newsletter, Testimonial, Statistics
+from .models import Page, TeamMember, ContactInquiry, FAQ, BlogPost, JobPosting, Newsletter, Testimonial, Statistics
 from rumi.cache_utils import api_cache
 
 
@@ -913,4 +914,187 @@ class PrometheusMetricsProxyView(APIView):
             return Response({
                 'error': f'Unexpected error: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# --------------------------------------------------------------------------
+# Careers: public openings + tech-support management
+# --------------------------------------------------------------------------
+
+def _job_data(job, *, admin=False):
+    data = {
+        'id': job.id,
+        'title': job.title,
+        'slug': job.slug,
+        'department': job.department,
+        'location': job.location,
+        'employment_type': job.employment_type,
+        'employment_type_label': job.get_employment_type_display(),
+        'summary': job.summary,
+        'description': job.description,
+        'requirements': job.requirements,
+        'apply_email': job.apply_email,
+        'closing_date': job.closing_date,
+        'published_at': job.published_at,
+    }
+    if admin:
+        data.update({
+            'status': job.status,
+            'is_open': job.is_open,
+            'created_at': job.created_at,
+            'updated_at': job.updated_at,
+        })
+    return data
+
+
+def _invalidate_public_careers_cache():
+    """Same reason as the blog: the anonymous list is cached by URL for minutes."""
+    api_cache.cache_manager.delete(api_cache.cache_manager.get_cache_key('api', '/api/v1/home/careers/', 'GET'))
+
+
+def _unique_job_slug(title, exclude_pk=None):
+    from django.utils.text import slugify
+
+    base = slugify(title)[:190] or 'role'
+    slug, n = base, 2
+    while JobPosting.objects.filter(slug=slug).exclude(pk=exclude_pk).exists():
+        slug = f'{base}-{n}'
+        n += 1
+    return slug
+
+
+class CareerListView(APIView):
+    """Public: roles currently open."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        today = timezone.localdate()
+        jobs = JobPosting.objects.filter(status='published').filter(
+            Q(closing_date__isnull=True) | Q(closing_date__gte=today)
+        ).order_by('-published_at')
+        return Response({'results': [_job_data(j) for j in jobs]})
+
+
+class _CareerStaffMixin:
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _forbidden(self, request):
+        from core.permissions.rumia import get_canonical_role
+
+        if not _is_blog_staff_role(get_canonical_role(request.user)):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        return None
+
+    @staticmethod
+    def _apply(job, data, partial):
+        """Validate and copy editable fields onto `job`. Returns an error dict or None."""
+        errors = {}
+        text_limits = {'title': 200, 'department': 100, 'location': 150, 'summary': 300}
+        for field, limit in text_limits.items():
+            if field in data:
+                value = (data.get(field) or '').strip()
+                if len(value) > limit:
+                    errors[field] = f'Keep this under {limit} characters.'
+                setattr(job, field, value)
+        for field in ('description', 'requirements'):
+            if field in data:
+                setattr(job, field, (data.get(field) or '').strip())
+
+        if not partial or 'title' in data:
+            if not job.title:
+                errors['title'] = 'Title is required.'
+        if not partial or 'description' in data:
+            if not job.description:
+                errors['description'] = 'Describe the role.'
+
+        if 'employment_type' in data:
+            if data['employment_type'] not in dict(JobPosting.TYPE_CHOICES):
+                errors['employment_type'] = 'Choose a valid type.'
+            else:
+                job.employment_type = data['employment_type']
+        if 'apply_email' in data:
+            from django.core.validators import validate_email
+            try:
+                validate_email(data['apply_email'])
+                job.apply_email = data['apply_email']
+            except Exception:
+                errors['apply_email'] = 'Enter a valid email address.'
+        if 'closing_date' in data:
+            raw = data['closing_date']
+            if raw in (None, ''):
+                job.closing_date = None
+            else:
+                from django.utils.dateparse import parse_date
+                parsed = parse_date(str(raw))
+                if parsed is None:
+                    errors['closing_date'] = 'Use a valid date.'
+                else:
+                    job.closing_date = parsed
+        if 'status' in data:
+            if data['status'] not in dict(JobPosting.STATUS_CHOICES):
+                errors['status'] = 'Choose draft, published or closed.'
+            else:
+                if data['status'] == 'published' and job.status != 'published':
+                    job.published_at = timezone.now()
+                job.status = data['status']
+        return errors or None
+
+
+class AdminCareerListCreateView(_CareerStaffMixin, APIView):
+    """Every posting, whatever its status. Tech support, tech support admin and super admin."""
+
+    def get(self, request):
+        denied = self._forbidden(request)
+        if denied:
+            return denied
+        jobs = JobPosting.objects.order_by('-created_at')
+        return Response({'results': [_job_data(j, admin=True) for j in jobs]})
+
+    def post(self, request):
+        denied = self._forbidden(request)
+        if denied:
+            return denied
+        job = JobPosting(created_by=request.user)
+        errors = self._apply(job, request.data, partial=False)
+        if errors:
+            return Response({'errors': errors, 'detail': 'Please fix the highlighted fields.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        job.slug = _unique_job_slug(job.title)
+        job.save()
+        _invalidate_public_careers_cache()
+        return Response(_job_data(job, admin=True), status=status.HTTP_201_CREATED)
+
+
+class AdminCareerDetailView(_CareerStaffMixin, APIView):
+    def _get(self, pk):
+        return JobPosting.objects.filter(pk=pk).first()
+
+    def patch(self, request, pk):
+        denied = self._forbidden(request)
+        if denied:
+            return denied
+        job = self._get(pk)
+        if job is None:
+            return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        old_title = job.title
+        errors = self._apply(job, request.data, partial=True)
+        if errors:
+            return Response({'errors': errors, 'detail': 'Please fix the highlighted fields.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if job.title != old_title:
+            job.slug = _unique_job_slug(job.title, exclude_pk=job.pk)
+        job.save()
+        _invalidate_public_careers_cache()
+        return Response(_job_data(job, admin=True))
+
+    def delete(self, request, pk):
+        denied = self._forbidden(request)
+        if denied:
+            return denied
+        job = self._get(pk)
+        if job is None:
+            return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        job.delete()
+        _invalidate_public_careers_cache()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 

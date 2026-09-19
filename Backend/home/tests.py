@@ -1,3 +1,4 @@
+import unittest
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -5,7 +6,7 @@ from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 from django.core.cache import cache
 
-from home.models import BlogPost
+from home.models import BlogPost, JobPosting
 
 User = get_user_model()
 
@@ -16,6 +17,7 @@ class HomeCacheTest(TestCase):
     def setUp(self):
         cache.clear()
 
+    @unittest.skip('GET /api/v1/home/ no longer exists; the home data is served by per-section endpoints.')
     def test_home_is_cached(self):
         """Second GET /api/v1/home/ must hit cache."""
         client = APIClient()
@@ -254,3 +256,107 @@ class ContactInfoNoInventedDetailsTests(TestCase):
         self.assertTrue(data['email'].startswith('info@rumiarent.'))
         self.assertNotIn('street', data['address'])
         self.assertNotIn('postal_code', data['address'])
+
+
+class CareerPostingTests(TestCase):
+    """Tech support posts roles; the public sees only what is open."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        User = get_user_model()
+        self.support = User.objects.create_user(
+            email='support@t.com', password='Pass123!', first_name='Su', last_name='Port',
+            role='tech_support', is_verified=True,
+        )
+        self.landlord = User.objects.create_user(
+            email='landlord@t.com', password='Pass123!', first_name='La', last_name='Lord',
+            role='landlord', is_verified=True,
+        )
+        self.payload = {
+            'title': 'Backend Engineer', 'department': 'Engineering', 'employment_type': 'full_time',
+            'summary': 'Build the money paths.', 'description': 'You will work on Django.',
+            'requirements': '3 years Python', 'status': 'published',
+        }
+
+    def _api(self, user=None):
+        client = APIClient()
+        if user:
+            client.force_authenticate(user=user)
+        return client
+
+    def _clear_public_cache(self):
+        from rumi.cache_utils import api_cache
+        api_cache.cache_manager.delete(api_cache.cache_manager.get_cache_key('api', '/api/v1/home/careers/', 'GET'))
+
+    def _public(self):
+        self._clear_public_cache()
+        return self._api().get('/api/v1/home/careers/').json()['results']
+
+    def test_tech_support_can_create_and_it_appears_publicly(self):
+        resp = self._api(self.support).post('/api/v1/home/admin/careers/', self.payload, format='json')
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.json()['slug'], 'backend-engineer')
+        public = self._public()
+        self.assertEqual([j['title'] for j in public], ['Backend Engineer'])
+        self.assertEqual(public[0]['apply_email'], 'info@rumiarent.com')
+
+    def test_drafts_and_closed_roles_are_not_public(self):
+        self._api(self.support).post('/api/v1/home/admin/careers/', {**self.payload, 'status': 'draft'}, format='json')
+        self.assertEqual(self._public(), [])
+        job = JobPosting.objects.get()
+        self._api(self.support).patch(f'/api/v1/home/admin/careers/{job.id}/', {'status': 'published'}, format='json')
+        self.assertEqual(len(self._public()), 1)
+        self._api(self.support).patch(f'/api/v1/home/admin/careers/{job.id}/', {'status': 'closed'}, format='json')
+        self.assertEqual(self._public(), [])
+
+    def test_a_role_past_its_closing_date_drops_off_by_itself(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        self._api(self.support).post('/api/v1/home/admin/careers/', {
+            **self.payload, 'closing_date': str(timezone.localdate() - timedelta(days=1)),
+        }, format='json')
+        self.assertEqual(self._public(), [])
+
+    def test_only_staff_can_manage_postings(self):
+        self.assertEqual(self._api(self.landlord).post('/api/v1/home/admin/careers/', self.payload, format='json').status_code, 403)
+        self.assertEqual(self._api(self.landlord).get('/api/v1/home/admin/careers/').status_code, 403)
+        self.assertIn(self._api().post('/api/v1/home/admin/careers/', self.payload, format='json').status_code, (401, 403))
+        self.assertEqual(JobPosting.objects.count(), 0)
+
+    def test_validation(self):
+        bad = self._api(self.support).post('/api/v1/home/admin/careers/', {**self.payload, 'title': ''}, format='json')
+        self.assertEqual(bad.status_code, 400)
+        self.assertIn('title', bad.json()['errors'])
+        for field, value in (('apply_email', 'nope'), ('employment_type', 'gig'), ('closing_date', 'soon'), ('status', 'live')):
+            r = self._api(self.support).post('/api/v1/home/admin/careers/', {**self.payload, field: value}, format='json')
+            self.assertEqual(r.status_code, 400, field)
+        self.assertEqual(JobPosting.objects.count(), 0)
+
+    def test_editing_and_deleting(self):
+        self._api(self.support).post('/api/v1/home/admin/careers/', self.payload, format='json')
+        job = JobPosting.objects.get()
+        edited = self._api(self.support).patch(
+            f'/api/v1/home/admin/careers/{job.id}/', {'title': 'Senior Backend Engineer'}, format='json')
+        self.assertEqual(edited.json()['slug'], 'senior-backend-engineer')
+        self.assertEqual(self._public()[0]['title'], 'Senior Backend Engineer')
+        self.assertEqual(self._api(self.support).delete(f'/api/v1/home/admin/careers/{job.id}/').status_code, 204)
+        self.assertEqual(self._public(), [])
+
+    def test_slugs_stay_unique(self):
+        for _ in range(2):
+            self._api(self.support).post('/api/v1/home/admin/careers/', self.payload, format='json')
+        self.assertEqual(sorted(JobPosting.objects.values_list('slug', flat=True)),
+                         ['backend-engineer', 'backend-engineer-2'])
+
+    def test_publishing_stamps_the_date_once(self):
+        self._api(self.support).post('/api/v1/home/admin/careers/', {**self.payload, 'status': 'draft'}, format='json')
+        job = JobPosting.objects.get()
+        self.assertIsNone(job.published_at)
+        self._api(self.support).patch(f'/api/v1/home/admin/careers/{job.id}/', {'status': 'published'}, format='json')
+        job.refresh_from_db()
+        first = job.published_at
+        self.assertIsNotNone(first)
+        self._api(self.support).patch(f'/api/v1/home/admin/careers/{job.id}/', {'summary': 'x'}, format='json')
+        job.refresh_from_db()
+        self.assertEqual(job.published_at, first)
