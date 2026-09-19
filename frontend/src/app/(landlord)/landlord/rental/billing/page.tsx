@@ -177,11 +177,11 @@ export default function BillingPayoutPage() {
                 key={plan.id}
                 className={`rounded-3xl border p-8 ${
                   isCurrentPlan
-                    ? 'border-primary bg-white shadow-xl'
-                    : 'border-gray-100 bg-white shadow-sm'
+                    ? 'border-primary bg-card shadow-xl'
+                    : 'border-border bg-card shadow-sm'
                 }`}
               >
-                <h3 className="text-2xl font-semibold text-gray-900">{plan.name}</h3>
+                <h3 className="text-2xl font-semibold text-foreground">{plan.name}</h3>
                 <div className="mt-2 flex items-baseline gap-1">
                   <PriceDisplay amount={plan.price} size="lg" />
                   <span className="text-sm text-muted-foreground">/month</span>

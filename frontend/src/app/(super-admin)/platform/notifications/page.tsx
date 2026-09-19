@@ -3,9 +3,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { StatusPill } from '@/components/ui/status-pill';
+import { formatDistanceToNow } from 'date-fns';
+import { Mail, MessageSquare } from 'lucide-react';
+import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/dashboard/page-header';
 import {
+  useAdminDeliveries,
   useAdminEmailTemplates,
   useAdminNotificationStats,
   useAdminSmsTemplates,
@@ -21,6 +25,86 @@ function StatCard({ title, value, loading }: { title: string; value: React.React
         {loading ? <div className="skeleton h-8 w-20 rounded-lg" /> : <p className="text-2xl font-bold text-foreground">{value}</p>}
       </CardContent>
     </Card>
+  );
+}
+
+type DeliveryFilter = 'all' | 'failed';
+
+function DeliveryLog() {
+  const [filter, setFilter] = React.useState<DeliveryFilter>('all');
+  const { data: rows = [], isLoading } = useAdminDeliveries(filter === 'failed' ? { status: 'failed' } : undefined);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        {(['all', 'failed'] as const).map((f) => (
+          <button
+            key={f}
+            type="button"
+            onClick={() => setFilter(f)}
+            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              filter === f ? 'border-primary bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            {f === 'all' ? 'All deliveries' : 'Failed only'}
+          </button>
+        ))}
+      </div>
+
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : rows.length === 0 ? (
+        <p className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+          {filter === 'failed'
+            ? 'No failed deliveries. Everything sent has been accepted.'
+            : 'Nothing has been sent since delivery logging was switched on. New emails and SMS will appear here.'}
+        </p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>When</TableHead>
+              <TableHead>Channel</TableHead>
+              <TableHead>To</TableHead>
+              <TableHead>Message</TableHead>
+              <TableHead>Result</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.id}>
+                <TableCell className="whitespace-nowrap text-muted-foreground">
+                  {formatDistanceToNow(new Date(row.created_at), { addSuffix: true })}
+                </TableCell>
+                <TableCell>
+                  <span className="inline-flex items-center gap-1.5 text-sm">
+                    {row.channel === 'email' ? <Mail className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
+                    {row.channel === 'email' ? 'Email' : 'SMS'}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <p className="font-medium">{row.recipient_name || row.recipient_address}</p>
+                  {row.recipient_name && <p className="text-xs text-muted-foreground">{row.recipient_address}</p>}
+                </TableCell>
+                <TableCell className="text-muted-foreground">{row.subject || 'Text message'}</TableCell>
+                <TableCell>
+                  {row.status === 'sent' ? (
+                    <StatusPill status="success">Sent</StatusPill>
+                  ) : (
+                    <div>
+                      <StatusPill status="danger">Failed</StatusPill>
+                      {row.error_message && (
+                        <p className="mt-1 max-w-xs text-xs text-muted-foreground">{row.error_message}</p>
+                      )}
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
   );
 }
 
@@ -44,11 +128,16 @@ export default function AdminNotificationsPage() {
         <StatCard title="SMS sent" value={stats?.by_channel.sms ?? 0} loading={statsLoading} />
       </div>
 
-      <Tabs defaultValue="email">
+      <Tabs defaultValue="log">
         <TabsList>
+          <TabsTrigger value="log">Delivery log</TabsTrigger>
           <TabsTrigger value="email">Email templates</TabsTrigger>
           <TabsTrigger value="sms">SMS templates</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="log" className="mt-4">
+          <DeliveryLog />
+        </TabsContent>
 
         <TabsContent value="email" className="mt-4">
           {emailLoading ? (

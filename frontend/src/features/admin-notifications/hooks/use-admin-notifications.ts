@@ -23,3 +23,16 @@ export function useAdminNotificationStats() {
     queryFn: adminNotificationsApi.getStats,
   });
 }
+
+// Deliveries arrive continuously (every code, reset and reminder); keep the
+// log fresh instead of showing whatever was cached five minutes ago.
+export function useAdminDeliveries(params?: { channel?: 'email' | 'sms'; status?: 'sent' | 'failed' }) {
+  return useQuery({
+    queryKey: ['admin-notifications', 'deliveries', params ?? {}],
+    queryFn: () => adminNotificationsApi.listDeliveries(params),
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
+  });
+}

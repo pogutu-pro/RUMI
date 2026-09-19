@@ -148,7 +148,7 @@ function RentHero({
           href={PAY_HREF}
           className={cn(
             buttonVariants({ size: 'lg' }),
-            'h-12 shrink-0 gap-2 rounded-xl bg-white px-6 text-base font-semibold text-foreground shadow-md hover:bg-white/90',
+            'h-12 shrink-0 gap-2 rounded-xl bg-white px-6 text-base font-semibold text-gray-900 shadow-md hover:bg-white/90',
           )}
         >
           {owing ? 'Pay now' : 'Pay in advance'}
@@ -192,15 +192,15 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 }
 
 const PAYMENT_STATUS: Record<string, { label: string; className: string }> = {
-  success: { label: 'Paid', className: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' },
-  pending: { label: 'Pending', className: 'bg-amber-50 text-amber-700 ring-amber-600/20' },
-  processing: { label: 'Processing', className: 'bg-amber-50 text-amber-700 ring-amber-600/20' },
-  failed: { label: 'Not completed', className: 'bg-red-50 text-red-700 ring-red-600/20' },
-  reversed: { label: 'Reversed', className: 'bg-slate-100 text-slate-700 ring-slate-500/20' },
+  success: { label: 'Paid', className: 'bg-emerald-500/10 text-emerald-700 ring-emerald-600/20 dark:text-emerald-400' },
+  pending: { label: 'Pending', className: 'bg-amber-500/10 text-amber-700 ring-amber-600/20 dark:text-amber-400' },
+  processing: { label: 'Processing', className: 'bg-amber-500/10 text-amber-700 ring-amber-600/20 dark:text-amber-400' },
+  failed: { label: 'Not completed', className: 'bg-red-500/10 text-red-700 ring-red-600/20 dark:text-red-400' },
+  reversed: { label: 'Reversed', className: 'bg-muted text-muted-foreground ring-border' },
 };
 
 function PaymentStatusPill({ status }: { status: string }) {
-  const meta = PAYMENT_STATUS[status] ?? { label: status, className: 'bg-slate-100 text-slate-700 ring-slate-500/20' };
+  const meta = PAYMENT_STATUS[status] ?? { label: status, className: 'bg-muted text-muted-foreground ring-border' };
   return (
     <span
       className={cn(
@@ -253,7 +253,7 @@ function PaymentHistory({ payments, isLoading }: { payments: Payment[]; isLoadin
                   <div
                     className={cn(
                       'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
-                      succeeded ? 'bg-emerald-50 text-emerald-600' : 'bg-muted text-muted-foreground',
+                      succeeded ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-muted text-muted-foreground',
                     )}
                   >
                     {succeeded ? <CheckCircle2 className="h-5 w-5" /> : <Wallet className="h-5 w-5" />}
@@ -369,7 +369,7 @@ export default function TenantRentalDashboard() {
             <DetailRow label="Property">{activeTenancy.property_name}</DetailRow>
             <DetailRow label="Unit">{activeTenancy.unit_number}</DetailRow>
             <DetailRow label="Status">
-              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium capitalize text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+              <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium capitalize text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:text-emerald-400">
                 {activeTenancy.status.replace('_', ' ')}
               </span>
             </DetailRow>

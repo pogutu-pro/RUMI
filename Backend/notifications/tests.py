@@ -254,3 +254,146 @@ class NormalizeKenyanPhoneTests(TestCase):
         self.assertEqual(n('+254 712-345-678'), '+254712345678')
         self.assertEqual(n('+254712345678'), '+254712345678')
         self.assertEqual(n('+15551234567'), '+15551234567')
+
+
+class DeliveryLogTests(TestCase):
+    """Every email and SMS attempt lands in the admin delivery log."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        User = get_user_model()
+        self.user = User.objects.create_user(
+            email='tenant@example.com', password='Pass123!', first_name='Ten', last_name='Ant',
+            role='tenant', phone_number='0712345678',
+        )
+        self.admin = User.objects.create_user(
+            email='root@example.com', password='Pass123!', first_name='Ad', last_name='Min',
+            role='super_admin', is_verified=True,
+        )
+        self.client = APIClient()
+
+    def _email_backend(self, **kwargs):
+        from notifications.email_backend import LoggingSMTPEmailBackend
+        return LoggingSMTPEmailBackend(host='localhost', **kwargs)
+
+    def _message(self, to='tenant@example.com', subject='Your RumiaRent verification code'):
+        from django.core.mail import EmailMessage
+        return EmailMessage(subject=subject, body='<b>code 123456</b>', from_email='a@b.c', to=[to])
+
+    def test_successful_email_is_logged_without_its_body(self):
+        from unittest import mock
+        from notifications.models import Notification
+
+        backend = self._email_backend()
+        with mock.patch('django.core.mail.backends.smtp.EmailBackend.send_messages', return_value=1):
+            sent = backend.send_messages([self._message()])
+        self.assertEqual(sent, 1)
+        row = Notification.objects.get()
+        self.assertEqual((row.channel, row.status), ('email', 'sent'))
+        self.assertEqual(row.recipient, self.user)
+        self.assertEqual(row.recipient_address, 'tenant@example.com')
+        self.assertEqual(row.subject, 'Your RumiaRent verification code')
+        self.assertEqual(row.message, '')
+        self.assertIsNotNone(row.sent_at)
+
+    def test_failed_email_is_logged_with_reason_and_still_raises(self):
+        from unittest import mock
+        from notifications.models import Notification
+
+        backend = self._email_backend()
+        with mock.patch(
+            'django.core.mail.backends.smtp.EmailBackend.send_messages',
+            side_effect=ConnectionRefusedError('smtp down'),
+        ):
+            with self.assertRaises(ConnectionRefusedError):
+                backend.send_messages([self._message()])
+        row = Notification.objects.get()
+        self.assertEqual(row.status, 'failed')
+        self.assertIn('smtp down', row.error_message)
+
+    def test_email_to_a_non_user_is_still_logged(self):
+        from unittest import mock
+        from notifications.models import Notification
+
+        with mock.patch('django.core.mail.backends.smtp.EmailBackend.send_messages', return_value=1):
+            self._email_backend().send_messages([self._message(to='stranger@example.com')])
+        row = Notification.objects.get()
+        self.assertIsNone(row.recipient)
+        self.assertEqual(row.recipient_address, 'stranger@example.com')
+
+    def test_sms_success_and_failure_are_logged(self):
+        from unittest import mock
+        from notifications.models import Notification
+        from notifications.tasks import send_sms_via_africastalking
+
+        with mock.patch('notifications.tasks._deliver_sms', return_value={'ok': True}):
+            send_sms_via_africastalking('0712345678', 'code 123456')
+        with mock.patch('notifications.tasks._deliver_sms', side_effect=Exception('blacklisted')):
+            with self.assertRaises(Exception):
+                send_sms_via_africastalking('0712345678', 'code 654321')
+
+        rows = list(Notification.objects.order_by('created_at'))
+        self.assertEqual([r.status for r in rows], ['sent', 'failed'])
+        self.assertTrue(all(r.channel == 'sms' and r.recipient == self.user for r in rows))
+        self.assertTrue(all(r.message == '' for r in rows))  # the code is never stored
+        self.assertIn('blacklisted', rows[1].error_message)
+
+    def test_suppressed_block_records_nothing(self):
+        from notifications.delivery_log import log_delivery, suppressed
+        from notifications.models import Notification
+
+        with suppressed():
+            log_delivery(channel='email', address='tenant@example.com', ok=True)
+        self.assertEqual(Notification.objects.count(), 0)
+
+    def test_retry_task_leaves_delivery_log_failures_alone(self):
+        from notifications.delivery_log import log_delivery
+        from notifications.models import Notification
+        from notifications.tasks import retry_failed_notifications
+
+        log_delivery(channel='sms', address='0712345678', ok=False, error='no balance')
+        retry_failed_notifications()
+        self.assertEqual(Notification.objects.get().status, 'failed')
+
+    def test_deleting_a_user_keeps_their_delivery_history(self):
+        from notifications.delivery_log import log_delivery
+        from notifications.models import Notification
+
+        log_delivery(channel='email', address='tenant@example.com', subject='Welcome', ok=True)
+        self.user.delete()
+        row = Notification.objects.get()
+        self.assertIsNone(row.recipient)
+        self.assertEqual(row.recipient_address, 'tenant@example.com')
+
+    def test_admin_endpoint_lists_deliveries_and_filters(self):
+        from notifications.delivery_log import log_delivery
+
+        log_delivery(channel='email', address='tenant@example.com', subject='Welcome', ok=True)
+        log_delivery(channel='sms', address='0712345678', ok=False, error='no balance')
+        self.client.force_authenticate(user=self.admin)
+
+        everything = self.client.get('/api/v1/notifications/admin/deliveries/').json()['results']
+        self.assertEqual(len(everything), 2)
+        failed = self.client.get('/api/v1/notifications/admin/deliveries/?status=failed').json()['results']
+        self.assertEqual([(r['channel'], r['error_message']) for r in failed], [('sms', 'no balance')])
+        emails = self.client.get('/api/v1/notifications/admin/deliveries/?channel=email').json()['results']
+        self.assertEqual(emails[0]['recipient_name'], 'Ten Ant')
+
+    def test_admin_endpoint_is_forbidden_to_everyone_else(self):
+        self.client.force_authenticate(user=self.user)
+        self.assertEqual(self.client.get('/api/v1/notifications/admin/deliveries/').status_code, 403)
+        self.client.force_authenticate(user=None)
+        self.assertIn(self.client.get('/api/v1/notifications/admin/deliveries/').status_code, (401, 403))
+
+    def test_stats_reflect_logged_deliveries(self):
+        from notifications.delivery_log import log_delivery
+
+        log_delivery(channel='email', address='tenant@example.com', ok=True)
+        log_delivery(channel='email', address='tenant@example.com', ok=True)
+        log_delivery(channel='sms', address='0712345678', ok=False, error='x')
+        self.client.force_authenticate(user=self.admin)
+        stats = self.client.get('/api/v1/notifications/admin/stats/').json()
+        self.assertEqual(stats['total_notifications'], 3)
+        self.assertEqual(stats['by_channel'], {'email': 2, 'sms': 1, 'in_app': 0})
+        self.assertAlmostEqual(stats['delivery_rate'], 66.666, places=1)

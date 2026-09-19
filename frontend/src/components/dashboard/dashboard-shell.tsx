@@ -204,7 +204,7 @@ export function DashboardShell({
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
 
   return (
-    <UnifiedThemeProvider forcedTheme="light">
+    <UnifiedThemeProvider>
       <TooltipProvider>
         <div className="flex min-h-screen bg-muted/40">
           {/* Desktop sidebar */}
