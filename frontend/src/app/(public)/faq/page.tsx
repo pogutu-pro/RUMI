@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { ArrowRight, MessageCircle } from 'lucide-react';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/faq' },
   title: 'Frequently Asked Questions',
   description: 'Find answers to common questions about RumiaRent.',
 };
@@ -22,7 +23,7 @@ const FAQ_CATEGORIES = [
       {
         question: 'How do I create an account?',
         answer:
-          'Click "Sign up," choose your role (Landlord or Tenant), and fill in your details. You\'ll receive a verification email to complete registration. Caretaker accounts are created by their landlord.',
+          'Landlords and agents click "Sign up" and fill in their details, then verify their email. Tenants and caretakers do not sign up: the landlord or caretaker adds them, and they get an email to set up their own account.',
       },
       {
         question: 'Is RumiaRent free to try?',
@@ -124,8 +125,24 @@ const FAQ_CATEGORIES = [
 ];
 
 export default function FAQPage() {
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ_CATEGORIES.flatMap((category) =>
+      category.items.map((item) => ({
+        '@type': 'Question',
+        name: item.question,
+        acceptedAnswer: { '@type': 'Answer', text: item.answer },
+      })),
+    ),
+  };
+
   return (
     <div className="flex flex-col bg-white text-gray-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       {/* Hero Section */}
       <section className="border-b border-gray-200 bg-white py-24 md:py-32">
         <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8">

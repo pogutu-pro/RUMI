@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { FadeIn } from '@/components/animations/fade-in';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/privacy' },
   title: 'Privacy Policy',
   description: 'Learn how we protect and handle your personal information.',
 };

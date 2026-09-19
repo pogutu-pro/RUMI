@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { Landmark, Receipt, MessageCircle, Headset } from 'lucide-react';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 import { PricingContent } from './_components/pricing-content';
+import { SITE_URL, fetchPublicPlans } from '@/lib/seo';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/pricing' },
   title: 'Pricing',
   description: 'RumiaRent rental management pricing. Simple, flat monthly billing.',
 };
@@ -17,9 +19,35 @@ const PRICING_HIGHLIGHTS = [
   { icon: Headset, label: 'Dedicated customer support' },
 ];
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const plans = await fetchPublicPlans();
+  const appSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'RumiaRent',
+    url: SITE_URL,
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web, Android, iOS',
+    description:
+      'Rental management platform for Kenyan landlords and agents: properties, tenants, rent collection, reminders and simple accounting.',
+    offers: plans.map((plan) => ({
+      '@type': 'Offer',
+      name: plan.name,
+      price: Number(plan.price).toFixed(2),
+      priceCurrency: 'KES',
+      url: `${SITE_URL}/pricing`,
+      availability: 'https://schema.org/InStock',
+    })),
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans">
+      {plans.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema) }}
+        />
+      )}
       {/* Header */}
       <section className="bg-white py-24 px-4 relative overflow-hidden border-b border-gray-100">
         <div className="container mx-auto max-w-3xl text-center">

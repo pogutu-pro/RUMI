@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { HelpCircle, MessageCircle, BookOpen } from 'lucide-react';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/help-center' },
   title: 'Help Center',
   description: 'Get help with RumiaRent: answers to common questions, or reach us directly.',
 };
