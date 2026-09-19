@@ -102,3 +102,24 @@ export const useRemoveSocialLink = () => {
     onError: (err) => toast.error((err as { message?: string })?.message || 'Could not remove the link'),
   });
 };
+
+export const useTaxRates = (enabled = true) =>
+  useQuery({
+    queryKey: ['platform-settings', 'tax-rates'],
+    queryFn: platformSettingsApi.taxRates,
+    enabled,
+    staleTime: 0,
+    retry: false,
+  });
+
+export const useSaveTaxRates = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: platformSettingsApi.saveTaxRates,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['platform-settings', 'tax-rates'] });
+      qc.invalidateQueries({ queryKey: ['accounting'] });
+      toast.success('Tax rates saved. Every landlord\'s figures use them from now on.');
+    },
+  });
+};

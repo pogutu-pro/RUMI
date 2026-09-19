@@ -1,5 +1,5 @@
 import { axiosInstance as axios } from '@/lib/api/client';
-import type { ConnectionTestResult, PlatformSetting, SettingGroup, SocialLinkRow, UnlockState } from '../types';
+import type { ConnectionTestResult, PlatformSetting, SettingGroup, SocialLinkRow, TaxRates, UnlockState } from '../types';
 
 export const platformSettingsApi = {
   list: async (): Promise<SettingGroup[]> => {
@@ -18,6 +18,9 @@ export const platformSettingsApi = {
     const res = await axios.post<ConnectionTestResult>(`/platform-settings/test/${kind}/`);
     return res.data;
   },
+  taxRates: async (): Promise<TaxRates> => (await axios.get<TaxRates>('/platform-settings/tax-rates/')).data,
+  saveTaxRates: async (rates: TaxRates): Promise<TaxRates> =>
+    (await axios.put<TaxRates>('/platform-settings/tax-rates/', rates)).data,
   unlockStatus: async (): Promise<UnlockState> => {
     const res = await axios.get<UnlockState>('/platform-settings/unlock-status/');
     return res.data;

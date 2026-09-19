@@ -34,6 +34,8 @@ def role_url(user, section: str) -> str:
             return '/tech-support/dashboard/messages'
     if section == 'rent' and role == 'tenant':
         return root
+    if section == 'accounting' and role != 'landlord':
+        return ''
     if section == 'rent' and role in ('super_admin', 'tech_support', 'tech_support_admin'):
         return ''
     return f'{root}/{section}'

@@ -26,6 +26,7 @@ import {
 } from '../hooks/use-platform-settings';
 import { PasswordGate } from './password-gate';
 import { SocialLinksSection } from './social-links-section';
+import { TaxRatesSection } from './tax-rates-section';
 import type { ConnectionTestResult, PlatformSetting, SettingGroup } from '../types';
 
 const TESTS: Record<string, { kind: 'paystack' | 'email' | 'sms'; label: string; note?: string } | undefined> = {
@@ -350,6 +351,8 @@ function UnlockedIntegrations({ secondsLeft }: { secondsLeft: number }) {
       )}
 
       <SocialLinksSection />
+
+      <TaxRatesSection />
 
       <p className="flex items-center gap-2 text-xs text-muted-foreground">
         <KeyRound className="h-3.5 w-3.5" />
