@@ -85,7 +85,7 @@ class AdminPlanSerializer(serializers.ModelSerializer):
     rest of the system (trial, gating, upgrade path) refers to by slug.
     """
 
-    ALLOWED_FEATURES = ('analytics', 'branded_receipts')
+    ALLOWED_FEATURES = ('analytics',)
     MAX_PRICE = 1_000_000
     MAX_LIMIT = 100_000
 

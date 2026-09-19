@@ -360,3 +360,29 @@ class CareerPostingTests(TestCase):
         self._api(self.support).patch(f'/api/v1/home/admin/careers/{job.id}/', {'summary': 'x'}, format='json')
         job.refresh_from_db()
         self.assertEqual(job.published_at, first)
+
+
+class PublicApiBrowserCachingTests(TestCase):
+    """Public API responses may be cached by the server, never held by browsers for minutes."""
+
+    def test_browsers_are_told_to_revalidate_on_a_miss_and_on_a_hit(self):
+        from django.http import HttpResponse
+        from django.test import RequestFactory
+        from rumi.middleware import APIResponseCacheMiddleware
+        from rumi.cache_utils import api_cache
+
+        middleware = APIResponseCacheMiddleware(lambda request: HttpResponse('{"results": []}', content_type='application/json'))
+        path = '/api/v1/home/careers/'
+        api_cache.cache_manager.delete(api_cache.cache_manager.get_cache_key('api', path, 'GET'))
+
+        request = RequestFactory().get(path)
+        self.assertIsNone(middleware.process_request(request))
+        miss = middleware.process_response(request, HttpResponse('{"results": []}', content_type='application/json'))
+        self.assertEqual(miss['X-Cache'], 'MISS')
+        self.assertIn('no-cache', miss['Cache-Control'])
+        self.assertNotIn('max-age=300', miss['Cache-Control'])
+
+        hit = middleware.process_request(RequestFactory().get(path))
+        self.assertEqual(hit['X-Cache'], 'HIT')
+        self.assertIn('no-cache', hit['Cache-Control'])
+        api_cache.cache_manager.delete(api_cache.cache_manager.get_cache_key('api', path, 'GET'))

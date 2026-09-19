@@ -24,6 +24,8 @@ import {
   useAdminJobPostings, useCreateJobPosting, useDeleteJobPosting, useUpdateJobPosting,
 } from '@/features/careers/hooks/use-careers';
 import { EMPLOYMENT_TYPES, type AdminJobPosting, type JobPostingInput } from '@/features/careers/types';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 const schema = z.object({
   title: z.string().trim().min(3, 'Give the role a title').max(200),
@@ -200,6 +202,7 @@ function RoleDialog({ job, open, onClose }: { job: AdminJobPosting | null; open:
 
 export default function CareersAdminPage() {
   const { data: jobs = [], isLoading } = useAdminJobPostings();
+  const { pageItems: pagedJobs, pagerProps: jobsPager } = usePagination(jobs, 10);
   const update = useUpdateJobPosting();
   const remove = useDeleteJobPosting();
   const [dialog, setDialog] = React.useState<{ open: boolean; job: AdminJobPosting | null }>({ open: false, job: null });
@@ -229,8 +232,9 @@ export default function CareersAdminPage() {
           description="When you are hiring, post the role here and it goes live on the careers page."
         />
       ) : (
+        <>
         <ul className="divide-y rounded-2xl border">
-          {jobs.map((job) => {
+          {pagedJobs.map((job) => {
             const badge = STATUS_BADGE[job.status];
             const expired = job.status === 'published' && !job.is_open;
             return (
@@ -271,6 +275,8 @@ export default function CareersAdminPage() {
             );
           })}
         </ul>
+        <SimplePager {...jobsPager} />
+        </>
       )}
 
       <RoleDialog job={dialog.job} open={dialog.open} onClose={() => setDialog((d) => ({ ...d, open: false }))} />

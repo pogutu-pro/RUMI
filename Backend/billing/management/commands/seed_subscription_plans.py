@@ -20,7 +20,7 @@ PLAN_SEED_DATA = [
         'max_properties': 1,
         'max_units': 10,
         'max_caretaker_seats': 1,
-        'features': {'analytics': False, 'branded_receipts': False},
+        'features': {'analytics': False},
         'sort_order': 1,
     },
     {
@@ -30,7 +30,7 @@ PLAN_SEED_DATA = [
         'max_properties': 5,
         'max_units': 50,
         'max_caretaker_seats': 5,
-        'features': {'analytics': True, 'branded_receipts': False},
+        'features': {'analytics': True},
         'sort_order': 2,
     },
     {
@@ -40,7 +40,7 @@ PLAN_SEED_DATA = [
         'max_properties': 0,
         'max_units': 0,
         'max_caretaker_seats': 0,
-        'features': {'analytics': True, 'branded_receipts': True},
+        'features': {'analytics': True},
         'sort_order': 3,
     },
 ]

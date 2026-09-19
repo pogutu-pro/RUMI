@@ -177,8 +177,10 @@ class GatingService:
     @classmethod
     def check_analytics_feature(cls, organization) -> dict | None:
         """
-        D-08 — features.branded_receipts stays untouched and unenforced this
-        phase (D-09): no feature exists behind that flag yet.
+        Analytics is the one feature switch a plan carries: the landlord income
+        summary (expected, collected, outstanding and overdue rent, collection
+        rate and a per-property breakdown) is refused with a gate response on a
+        plan that does not include it.
         """
         plan = cls.get_effective_plan(organization)
         if plan.features.get('analytics', False):

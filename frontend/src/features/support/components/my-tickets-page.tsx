@@ -22,6 +22,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useAuth } from '@/features/auth';
 import { useTickets, useCreateTicket, useTicket, useAddTicketMessage } from '../hooks/use-support';
 import type { TicketStatus } from '../types/types';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 const STATUS_VARIANT: Record<TicketStatus, 'default' | 'secondary' | 'destructive'> = {
   open: 'destructive',
@@ -160,6 +162,7 @@ function PropertyIssuesNotice() {
  */
 export function MyTicketsPage() {
   const { data: tickets = [], isLoading, isError, refetch } = useTickets();
+  const { pageItems: pagedTickets, pagerProps: ticketsPager } = usePagination(tickets, 10);
   const createTicket = useCreateTicket();
   const [open, setOpen] = React.useState(false);
   const [activeTicketId, setActiveTicketId] = React.useState<string | null>(null);
@@ -252,8 +255,9 @@ export function MyTicketsPage() {
           description="Submit a ticket and we'll keep you updated on its status here."
         />
       ) : (
+        <>
         <ul className="divide-y rounded-2xl border">
-          {tickets.map((t) => (
+          {pagedTickets.map((t) => (
             <li key={t.id}>
               <button
                 onClick={() => setActiveTicketId(t.id)}
@@ -270,6 +274,8 @@ export function MyTicketsPage() {
             </li>
           ))}
         </ul>
+        <SimplePager {...ticketsPager} />
+        </>
       )}
 
       {activeTicketId && (

@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { PublicHeader } from '@/components/layouts/public-header';
 import { Footer } from '@/components/layouts/public-footer';
 import { MobileBottomNav } from '@/components/layouts/mobile-bottom-nav';
+import { BackToTop } from '@/components/layouts/back-to-top';
 import { UnifiedThemeProvider } from '@/components/providers/unified-theme-provider';
 import type { Metadata } from 'next';
 
@@ -70,6 +71,7 @@ export default function PublicLayout({ children }: LayoutProps) {
         <main className="flex-1 pb-16 md:pb-0">{children}</main>
         <Footer />
         <MobileBottomNav />
+        <BackToTop />
       </div>
     </UnifiedThemeProvider>
   );

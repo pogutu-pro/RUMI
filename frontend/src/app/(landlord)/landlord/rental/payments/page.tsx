@@ -3,6 +3,8 @@
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { usePayments } from '@/features/rental/hooks/use-rental';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = {
   success: 'default',
@@ -15,6 +17,7 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = 
 
 export default function PaymentsPage() {
   const { data: payments = [], isLoading } = usePayments();
+  const { pageItems: pagedPayments, pagerProps: paymentsPager } = usePagination(payments, 10);
 
   return (
     <div className="space-y-4">
@@ -25,6 +28,7 @@ export default function PaymentsPage() {
       ) : payments.length === 0 ? (
         <p className="text-sm text-muted-foreground">No payments yet.</p>
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -36,7 +40,7 @@ export default function PaymentsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {payments.map((p) => (
+            {pagedPayments.map((p) => (
               <TableRow key={p.id}>
                 <TableCell>{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}</TableCell>
                 <TableCell className="font-mono text-xs">{p.internal_reference}</TableCell>
@@ -47,6 +51,8 @@ export default function PaymentsPage() {
             ))}
           </TableBody>
         </Table>
+        <SimplePager {...paymentsPager} />
+        </>
       )}
     </div>
   );

@@ -106,7 +106,7 @@ export interface AdminPlan {
   max_properties: number;
   max_units: number;
   max_caretaker_seats: number;
-  features: { analytics?: boolean; branded_receipts?: boolean };
+  features: { analytics?: boolean };
   sort_order: number;
   paystack_linked: boolean;
   active_subscribers: number;
@@ -119,7 +119,7 @@ export interface AdminPlanUpdate {
   max_properties?: number;
   max_units?: number;
   max_caretaker_seats?: number;
-  features?: { analytics?: boolean; branded_receipts?: boolean };
+  features?: { analytics?: boolean };
 }
 
 export interface AdminPlanUpdateResult extends AdminPlan {

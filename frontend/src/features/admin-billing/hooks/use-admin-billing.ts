@@ -31,10 +31,11 @@ export function useAdminPlatformOverview() {
   });
 }
 
-export function useAdminBillingList(search: string) {
+export function useAdminBillingList(search: string, page = 1) {
   return useQuery({
-    queryKey: ['admin-billing', 'list', search],
-    queryFn: () => adminBillingApi.listOrganizations(search || undefined),
+    queryKey: ['admin-billing', 'list', search, page],
+    queryFn: () => adminBillingApi.listOrganizations(search || undefined, page),
+    placeholderData: (previous) => previous,
   });
 }
 

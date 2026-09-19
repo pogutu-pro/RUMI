@@ -30,7 +30,6 @@ const planSchema = z.object({
   max_units: limit,
   max_caretaker_seats: limit,
   analytics: z.boolean(),
-  branded_receipts: z.boolean(),
 });
 
 type PlanInput = z.input<typeof planSchema>;
@@ -44,7 +43,7 @@ function EditPlanDialog({ plan, onClose }: { plan: AdminPlan | null; onClose: ()
     resolver: zodResolver(planSchema),
     defaultValues: {
       name: '', price: '', max_properties: 0, max_units: 0, max_caretaker_seats: 0,
-      analytics: false, branded_receipts: false,
+      analytics: false,
     },
   });
 
@@ -57,7 +56,6 @@ function EditPlanDialog({ plan, onClose }: { plan: AdminPlan | null; onClose: ()
       max_units: plan.max_units,
       max_caretaker_seats: plan.max_caretaker_seats,
       analytics: !!plan.features.analytics,
-      branded_receipts: !!plan.features.branded_receipts,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan]);
@@ -73,7 +71,7 @@ function EditPlanDialog({ plan, onClose }: { plan: AdminPlan | null; onClose: ()
           max_properties: v.max_properties,
           max_units: v.max_units,
           max_caretaker_seats: v.max_caretaker_seats,
-          features: { analytics: v.analytics, branded_receipts: v.branded_receipts },
+          features: { analytics: v.analytics },
         },
       });
       toast.success(`${result.name} updated. The public site and landlord pages now show it.`);
@@ -151,29 +149,24 @@ function EditPlanDialog({ plan, onClose }: { plan: AdminPlan | null; onClose: ()
             </FormSection>
 
             <FormSection title="Features">
-              <div className="space-y-3">
-                {([
-                  ['analytics', 'Analytics', 'Income and occupancy insights for the landlord.'],
-                  ['branded_receipts', 'Branded receipts', 'Receipts carry the landlord\'s own branding.'],
-                ] as const).map(([name, label, hint]) => (
-                  <FormField
-                    key={name}
-                    control={form.control}
-                    name={name}
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border p-3">
-                        <div>
-                          <FormLabel className="text-sm">{label}</FormLabel>
-                          <FormDescription>{hint}</FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                ))}
-              </div>
+              <FormField
+                control={form.control}
+                name="analytics"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border p-3">
+                    <div>
+                      <FormLabel className="text-sm">Analytics</FormLabel>
+                      <FormDescription>
+                        The income summary on the landlord dashboard: expected, collected, outstanding and overdue rent,
+                        collection rate and a breakdown per property.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
             </FormSection>
 
             <FormDialogActions submitLabel="Save changes" isPending={update.isPending} />
@@ -225,7 +218,6 @@ export default function AdminPlansPage() {
                 <li>{unlimited(plan.max_units, plan.max_units === 1 ? 'unit' : 'units')}</li>
                 <li>{unlimited(plan.max_caretaker_seats, plan.max_caretaker_seats === 1 ? 'caretaker seat' : 'caretaker seats')}</li>
                 <li>Analytics: {plan.features.analytics ? 'included' : 'not included'}</li>
-                <li>Branded receipts: {plan.features.branded_receipts ? 'included' : 'not included'}</li>
               </ul>
 
               <div className="mt-auto flex flex-wrap items-center gap-2 pt-5">

@@ -14,6 +14,8 @@ import {
   useAdminNotificationStats,
   useAdminSmsTemplates,
 } from '@/features/admin-notifications/hooks/use-admin-notifications';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 function StatCard({ title, value, loading }: { title: string; value: React.ReactNode; loading?: boolean }) {
   return (
@@ -95,6 +97,7 @@ type DeliveryFilter = 'all' | 'failed';
 function DeliveryLog() {
   const [filter, setFilter] = React.useState<DeliveryFilter>('all');
   const { data: rows = [], isLoading } = useAdminDeliveries(filter === 'failed' ? { status: 'failed' } : undefined);
+  const { pageItems: pagedRows, pagerProps: rowsPager } = usePagination(rows, 10, filter);
 
   return (
     <div className="space-y-3">
@@ -122,6 +125,7 @@ function DeliveryLog() {
             : 'Nothing has been sent since delivery logging was switched on. New emails and SMS will appear here.'}
         </p>
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -133,7 +137,7 @@ function DeliveryLog() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((row) => (
+            {pagedRows.map((row) => (
               <TableRow key={row.id}>
                 <TableCell className="whitespace-nowrap text-muted-foreground">
                   {formatDistanceToNow(new Date(row.created_at), { addSuffix: true })}
@@ -165,6 +169,8 @@ function DeliveryLog() {
             ))}
           </TableBody>
         </Table>
+        <SimplePager {...rowsPager} />
+        </>
       )}
     </div>
   );

@@ -628,7 +628,7 @@ class CaretakerSeatGateTests(RumiaTestFixtures):
         two_seat_plan = SubscriptionPlan.objects.create(
             slug='test-two-seat', name='Test Two Seat', price=Decimal('0.00'),
             max_properties=0, max_units=0, max_caretaker_seats=2,
-            features={'analytics': True, 'branded_receipts': False},
+            features={'analytics': True},
         )
         user, profile, org = self.create_landlord_with_org()
         OrganizationSubscription.objects.create(
@@ -1492,9 +1492,12 @@ class AdminPlanEditingTests(RumiaTestFixtures):
         self.assertEqual(self.pro.price, Decimal('7999.00'))
 
     def test_feature_switches_merge_rather_than_replace(self):
-        self._patch(self.admin, self.pro, {'features': {'branded_receipts': True}})
+        self._patch(self.admin, self.pro, {'features': {'analytics': False}})
         self.pro.refresh_from_db()
-        self.assertEqual(self.pro.features, {'analytics': True, 'branded_receipts': True})
+        self.assertEqual(self.pro.features, {'analytics': False})
+        self._patch(self.admin, self.pro, {'features': {'analytics': True}})
+        self.pro.refresh_from_db()
+        self.assertEqual(self.pro.features, {'analytics': True})
 
     def test_the_slug_cannot_be_changed(self):
         self._patch(self.admin, self.pro, {'slug': 'hacked', 'interval': 'yearly'})
@@ -1557,3 +1560,19 @@ class AdminPlanEditingTests(RumiaTestFixtures):
         from organizations.models import Organization
         fresh = Organization.objects.get(pk=self.org.pk)
         self.assertEqual(GatingService.get_effective_plan(fresh).max_properties, 9)
+
+    def test_no_plan_advertises_a_feature_that_does_not_exist(self):
+        """Branded receipts were never built; the public catalog must not list them."""
+        public = APIClient().get('/api/v1/billing/plans/').json()
+        for plan in public:
+            self.assertEqual(set(plan['features']), {'analytics'})
+        self.assertEqual(self._patch(self.admin, self.pro, {'features': {'branded_receipts': True}}).status_code, 400)
+
+    def test_the_migration_strips_the_flag_from_existing_plans(self):
+        import importlib
+        from django.apps import apps
+        migration = importlib.import_module('billing.migrations.0002_remove_branded_receipts_feature')
+        SubscriptionPlan.objects.filter(slug='pro').update(features={'analytics': True, 'branded_receipts': True})
+        migration.drop_branded_receipts(apps, None)
+        self.assertEqual(SubscriptionPlan.objects.get(slug='pro').features, {'analytics': True})
+

@@ -20,6 +20,8 @@ import { GateBanner } from '@/features/rental/components/gate-banner';
 import { isGateRejection } from '@/lib/api/gate';
 import { PageHeader } from '@/components/dashboard/page-header';
 import type { RentalUnit } from '@/features/rental/types';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 const UNIT_TYPES = ['studio', 'bedsitter', '1_bedroom', '2_bedroom', '3_bedroom', '4_bedroom', 'house', 'other'] as const;
 const UNIT_STATUSES = ['vacant', 'occupied', 'reserved', 'maintenance'] as const;
@@ -39,6 +41,7 @@ export default function PropertyDetailPage() {
   const propertyId = params.id;
   const { data: property } = useProperty(propertyId);
   const { data: units = [], isLoading } = useUnits(propertyId);
+  const { pageItems: pagedUnits, pagerProps: unitsPager } = usePagination(units, 10);
   const createUnit = useCreateUnit();
   const updateUnit = useUpdateUnit();
 
@@ -265,6 +268,7 @@ export default function PropertyDetailPage() {
       ) : units.length === 0 ? (
         <p className="text-sm text-muted-foreground">No units yet — add the first one above.</p>
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -275,7 +279,7 @@ export default function PropertyDetailPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {units.map((u) => (
+            {pagedUnits.map((u) => (
               <TableRow key={u.id}>
                 <TableCell className="font-medium">{u.unit_number}</TableCell>
                 <TableCell>{u.unit_type.replace('_', ' ')}</TableCell>
@@ -300,6 +304,8 @@ export default function PropertyDetailPage() {
             ))}
           </TableBody>
         </Table>
+        <SimplePager {...unitsPager} />
+        </>
       )}
     </div>
   );

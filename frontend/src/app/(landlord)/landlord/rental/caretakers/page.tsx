@@ -18,6 +18,8 @@ import { useCaretakers, useCreateCaretaker, useProperties } from '@/features/ren
 import { GateBanner } from '@/features/rental/components/gate-banner';
 import { isGateRejection } from '@/lib/api/gate';
 import { PageHeader } from '@/components/dashboard/page-header';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 const KENYAN_PHONE_REGEX = /^(\+254|0)[17]\d{8}$/;
 
@@ -46,6 +48,7 @@ const EMPTY_FORM = {
 
 export default function CaretakersPage() {
   const { data: caretakers = [], isLoading } = useCaretakers();
+  const { pageItems: pagedCaretakers, pagerProps: caretakersPager } = usePagination(caretakers, 10);
   const { data: properties = [] } = useProperties();
   const createCaretaker = useCreateCaretaker();
   const [open, setOpen] = React.useState(false);
@@ -236,6 +239,7 @@ export default function CaretakersPage() {
       ) : caretakers.length === 0 ? (
         <p className="text-sm text-muted-foreground">No caretakers yet — add the first one above.</p>
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -247,7 +251,7 @@ export default function CaretakersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {caretakers.map((c) => (
+            {pagedCaretakers.map((c) => (
               <TableRow key={c.id}>
                 <TableCell className="font-medium">{c.full_name}</TableCell>
                 <TableCell>{c.phone}</TableCell>
@@ -266,6 +270,8 @@ export default function CaretakersPage() {
             ))}
           </TableBody>
         </Table>
+        <SimplePager {...caretakersPager} />
+        </>
       )}
     </div>
   );
