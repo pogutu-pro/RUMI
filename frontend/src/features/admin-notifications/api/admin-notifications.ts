@@ -10,11 +10,15 @@ export const adminNotificationsApi = {
     const res = await axios.get('/notifications/admin/templates/sms/');
     return res.data;
   },
-  listDeliveries: async (params?: { channel?: 'email' | 'sms'; status?: 'sent' | 'failed' }): Promise<AdminDelivery[]> => {
-    const res = await axios.get<{ results: AdminDelivery[] }>('/notifications/admin/deliveries/', {
-      params: { limit: 50, ...params },
+  listDeliveries: async (params?: {
+    channel?: 'email' | 'sms';
+    status?: 'sent' | 'failed';
+    page?: number;
+  }): Promise<{ count: number; results: AdminDelivery[] }> => {
+    const res = await axios.get<{ count: number; results: AdminDelivery[] }>('/notifications/admin/deliveries/', {
+      params,
     });
-    return res.data.results;
+    return { count: res.data.count, results: res.data.results };
   },
   getStats: async (): Promise<AdminNotificationStats> => {
     const res = await axios.get<AdminNotificationStats>('/notifications/admin/stats/');

@@ -11,12 +11,13 @@ interface SimplePagerProps {
 }
 
 /**
- * Range and Previous / Next for a list that is paged on the client:
- * "11-20 of 47", "Page 2 of 5". Renders nothing when everything fits on one page.
+ * Range and Previous / Next: "11-20 of 47", "Page 2 of 5". Always shown when there is
+ * data, even for a single page (with both buttons disabled), so people can see
+ * the list is paged and how many rows there are; hidden only for an empty list.
  */
 export function SimplePager({ page, pageSize, total, onPageChange, className }: SimplePagerProps) {
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
-  if (total <= pageSize) return null;
+  if (total <= 0) return null;
 
   const current = Math.min(page, pageCount);
   const start = (current - 1) * pageSize + 1;
