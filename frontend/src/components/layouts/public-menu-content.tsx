@@ -63,7 +63,7 @@ const MENU_ITEMS = [
   { 
     href: '/blog', 
     label: 'Blog', 
-    desc: 'Latest campus news and accommodation tips.',
+    desc: 'Guides and updates for landlords, caretakers and tenants.',
     icon: <Newspaper className="h-5 w-5" /> 
   },
   { 

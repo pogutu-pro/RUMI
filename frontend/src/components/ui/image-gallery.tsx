@@ -12,7 +12,7 @@ interface ImageGalleryProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * Displays a grid of hostel images, emphasizing the first one, similar to Airbnb listings.
+ * Displays a grid of property images, emphasizing the first one, similar to Airbnb listings.
  */
 export function ImageGallery({
   images,
