@@ -111,7 +111,7 @@ function SidebarFooter({
       onClick={onLogout}
       aria-label="Log out"
       className={cn(
-        'flex items-center gap-2 rounded-xl text-sm font-medium text-destructive transition-colors hover:bg-destructive/10',
+        'flex items-center gap-2 rounded-xl text-sm font-medium text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-400',
         collapsed ? 'h-10 w-10 justify-center' : 'w-full px-3 py-2.5',
       )}
     >
