@@ -303,6 +303,15 @@ function PayoutStep({ onAdvance, onBack }: { onAdvance: () => void; onBack: () =
         submitLabel="Continue to Plan Selection"
         fullWidthButton
       />
+      <div className="mt-5 border-t border-gray-100 pt-5 text-center">
+        <p className="mb-3 text-sm text-gray-600">
+          Not ready with your bank details? You can add them later under Billing &amp; Payout. Until you do,
+          tenants will not be able to pay rent online.
+        </p>
+        <Button type="button" variant="ghost" onClick={onAdvance}>
+          Skip for now
+        </Button>
+      </div>
     </div>
   );
 }

@@ -120,9 +120,12 @@ class OnboardingStatusView(APIView):
 
 class LandlordWizardCompleteView(APIView):
     """
-    Completes the landlord onboarding wizard once org, property, and a
-    payout-submission are all present (payout verification itself is NOT
-    required — D-04/D-05). Records the selected tier as a preference only
+    Completes the landlord onboarding wizard once an organization and a
+    property exist. Payout details are NOT required here: they can be added
+    later from Billing & Payout (the dashboard keeps reminding the landlord),
+    and until they are verified tenants simply cannot pay rent online. Making
+    them mandatory locked every new landlord out whenever Paystack could not
+    take the submission. Records the selected tier as a preference only
     (D-06): never triggers a billing subscription call or a Paystack charge.
     """
     permission_classes = [permissions.IsAuthenticated]
@@ -146,10 +149,6 @@ class LandlordWizardCompleteView(APIView):
 
         if not Property.objects.filter(organization=org).exists():
             return Response({'error': 'Property setup is required first'}, status=status.HTTP_400_BAD_REQUEST)
-
-        payout = PayoutAccount.objects.filter(organization=org).first()
-        if not payout or payout.status == 'not_started':
-            return Response({'error': 'Payout details are required first'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             plan = SubscriptionPlan.objects.get(slug=plan_slug, is_active=True)

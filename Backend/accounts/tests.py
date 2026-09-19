@@ -660,3 +660,44 @@ class BrandedEmailGreetingTests(TestCase):
         from accounts.utils import create_branded_email_html
         html = create_branded_email_html('S', 'Your code is 1.', 'Joseph')
         self.assertEqual(html.count('Hi Joseph,'), 1)
+
+
+@override_settings(
+    CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    ENABLE_RATE_LIMITING=False,
+)
+class LandlordWizardCompletionTests(TestCase):
+    """A new landlord must be able to finish onboarding even before payout details exist."""
+
+    def setUp(self):
+        from django.core.management import call_command
+        from organizations.models import Organization
+        from properties.models import Property
+        cache.clear()
+        call_command('seed_subscription_plans')
+        self.client = APIClient()
+        self.landlord = User.objects.create_user(
+            email='newlandlord@test.com', password='Pass123!', first_name='New', last_name='Landlord',
+            role='landlord', is_verified=True,
+        )
+        self.org = Organization.objects.create(name='New Org', owner=self.landlord)
+        Property.objects.create(organization=self.org, name='First', address='1 Rd', city='Nairobi')
+        self.client.force_authenticate(user=self.landlord)
+        self.url = '/api/v1/accounts/onboarding/wizard-complete/'
+
+    def test_can_finish_without_any_payout_details(self):
+        response = self.client.post(self.url, {'plan_slug': 'pro'}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.landlord.refresh_from_db()
+        self.assertEqual(self.landlord.onboarding_stage, 'COMPLETED')
+
+    def test_still_needs_an_organization_and_a_property(self):
+        from properties.models import Property
+        Property.objects.all().delete()
+        self.assertEqual(self.client.post(self.url, {'plan_slug': 'pro'}, format='json').status_code, 400)
+        self.landlord.refresh_from_db()
+        self.assertEqual(self.landlord.onboarding_stage, 'REGISTERED')
+
+    def test_status_still_points_at_the_payout_step_until_it_is_done(self):
+        data = self.client.get('/api/v1/accounts/onboarding/status/').json()
+        self.assertEqual(data['wizard']['current_step'], 3)
