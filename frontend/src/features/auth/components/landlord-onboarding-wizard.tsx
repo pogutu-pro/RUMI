@@ -24,6 +24,7 @@ import { PriceDisplay } from '@/components/ui/price-display';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { useOnboardingStatus } from '@/features/auth/hooks/use-auth';
+import { useAuthStore } from '@/features/auth/stores/auth.store';
 import { useCreateOrganization, useCreateProperty } from '@/features/rental/hooks/use-rental';
 import { usePayoutStatus } from '@/features/payout/hooks/use-payout';
 import { PayoutDetailsForm } from '@/features/payout/components/payout-details-form';
@@ -330,6 +331,11 @@ function TierStep({ onBack }: { onBack: () => void }) {
     mutationFn: (plan_slug: string) =>
       axios.post('/accounts/onboarding/wizard-complete/', { plan_slug }),
     onSuccess: () => {
+      // The server now has this account as COMPLETED, but the site decides
+      // whether to send someone back to /onboarding from a browser cookie set
+      // at sign-in. Without refreshing it, the very next page load bounced the
+      // landlord straight back into the wizard they had just finished.
+      useAuthStore.getState().updateUser({ onboarding_stage: 'COMPLETED' });
       router.push('/landlord/rental');
     },
     onError: (err) => {
