@@ -527,6 +527,8 @@
   transform-box: fill-box;
   transform-origin: center;
   animation: rl-win var(--rl-duration) cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+  /* Hold the hidden first keyframe during each window's stagger delay. */
+  animation-fill-mode: backwards;
 }
 .rumia-loader__win--1 { animation-delay: 0s; }
 .rumia-loader__win--2 { animation-delay: 0.1s; }
