@@ -397,3 +397,73 @@ class DeliveryLogTests(TestCase):
         self.assertEqual(stats['total_notifications'], 3)
         self.assertEqual(stats['by_channel'], {'email': 2, 'sms': 1, 'in_app': 0})
         self.assertAlmostEqual(stats['delivery_rate'], 66.666, places=1)
+
+
+class BuiltInTemplateCatalogTests(TestCase):
+    """The admin template tabs list the messages the code really sends."""
+
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            email='root@example.com', password='Pass123!', first_name='Ad', last_name='Min',
+            role='super_admin', is_verified=True,
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.admin)
+
+    def test_email_tab_lists_built_in_messages_even_with_no_database_templates(self):
+        data = self.client.get('/api/v1/notifications/admin/templates/email/').json()
+        names = {t['name'] for t in data['templates']}
+        self.assertGreaterEqual(data['total_templates'], 10)
+        self.assertIn('Email verification code', names)
+        self.assertIn('Password reset', names)
+        first = data['templates'][0]
+        self.assertEqual(first['source'], 'built_in')
+        self.assertTrue(first['subject'] and first['body'] and first['trigger'])
+
+    def test_sms_tab_lists_built_in_messages(self):
+        data = self.client.get('/api/v1/notifications/admin/templates/sms/').json()
+        self.assertGreaterEqual(data['total_templates'], 4)
+        self.assertTrue(all(t['message'] and t['trigger'] for t in data['templates']))
+
+    def test_custom_database_templates_are_still_listed_alongside(self):
+        from notifications.models import EmailTemplate
+        EmailTemplate.objects.create(name='promo', subject='Big news', html_content='<p>x</p>', is_active=True)
+        data = self.client.get('/api/v1/notifications/admin/templates/email/').json()
+        self.assertIn('promo', {t['name'] for t in data['templates']})
+
+    def test_every_built_in_message_still_matches_the_code_that_sends_it(self):
+        """
+        The catalog is documentation, so fail when the wording it quotes drifts
+        from the code that sends it: the longest fixed phrase of every subject,
+        body and SMS must still appear in its source file.
+        """
+        import re
+        from pathlib import Path
+        from notifications.catalog import EMAIL_CATALOG, SMS_CATALOG
+
+        root = Path(__file__).resolve().parent.parent
+
+        def source_text(name):
+            text = (root / name).read_text()
+            # Adjacent string literals ('a ' f'b') are one message; join them.
+            text = re.sub(r"['\"]\s*\n\s*f?['\"]", '', text)
+            return re.sub(r'\s+', ' ', text.replace('\\n', ' '))
+
+        def longest_phrase(text):
+            parts = re.split(r'\{[^}]*\}|\n', text)
+            return max((re.sub(r'\s+', ' ', p).strip() for p in parts), key=len)
+
+        for entry in EMAIL_CATALOG:
+            source = source_text(entry['source_file'])
+            for label in ('subject', 'body'):
+                phrase = longest_phrase(entry[label])
+                self.assertIn(phrase, source, f"{entry['name']} {label}: {phrase!r} not in {entry['source_file']}")
+        for entry in SMS_CATALOG:
+            source = source_text(entry['source_file'])
+            phrase = longest_phrase(entry['message'])
+            self.assertIn(phrase, source, f"{entry['name']}: {phrase!r} not in {entry['source_file']}")
+
+    def test_other_roles_are_still_refused(self):
+        tenant = User.objects.create_user(email='t@example.com', password='Pass123!', first_name='T', last_name='T', role='tenant')
+        self.client.force_authenticate(user=tenant)
+        self.assertEqual(self.client.get('/api/v1/notifications/admin/templates/email/').status_code, 403)

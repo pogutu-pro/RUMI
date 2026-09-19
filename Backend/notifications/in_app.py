@@ -27,8 +27,11 @@ def role_url(user, section: str) -> str:
     root = _ROOTS.get(role)
     if root is None:
         return ''
-    if section == 'support' and role in ('tech_support', 'tech_support_admin'):
-        return '/tech-support/dashboard'
+    if role in ('tech_support', 'tech_support_admin'):
+        if section == 'support':
+            return '/tech-support/dashboard'
+        if section == 'messages':
+            return '/tech-support/dashboard/messages'
     if section == 'rent' and role == 'tenant':
         return root
     if section == 'rent' and role in ('super_admin', 'tech_support', 'tech_support_admin'):

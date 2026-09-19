@@ -1,20 +1,27 @@
 /** Mirrors AdminEmailTemplateListView's response (Backend/notifications/views.py). */
 export interface AdminEmailTemplate {
-  template_id: number;
+  /** A database id for custom templates, a slug for the built-in messages. */
+  template_id: number | string;
   name: string;
   subject: string;
   variables: string[];
-  created_at: string;
-  updated_at: string;
+  /** Built-in messages only: the full text and when it is sent. */
+  body?: string;
+  trigger?: string;
+  source: 'built_in' | 'custom';
+  created_at?: string;
+  updated_at?: string;
 }
 
 /** Mirrors AdminSMSTemplateListView's response. */
 export interface AdminSMSTemplate {
-  template_id: number;
+  template_id: number | string;
   name: string;
   message: string;
   variables: string[];
-  created_at: string;
+  trigger?: string;
+  source: 'built_in' | 'custom';
+  created_at?: string;
 }
 
 /** Mirrors AdminNotificationStatsView's actual return payload — its
