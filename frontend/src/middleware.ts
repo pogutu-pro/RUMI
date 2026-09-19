@@ -14,6 +14,17 @@ const TOKEN_COOKIE = 'rumi_access_token';
 const ROLE_COOKIE = 'rumi_user_role';
 const ONBOARDING_COOKIE = 'rumi_onboarding_stage';
 
+// Only these roles have an onboarding wizard to complete. Everyone else
+// (tenants and caretakers invited by a landlord, staff) has nothing to fill
+// in: forcing them to /onboarding just sends them back to their dashboard,
+// which sends them back to /onboarding - an endless redirect loop.
+const ROLES_WITH_ONBOARDING = new Set<string>(['landlord', 'student']);
+
+function needsOnboardingWizard(role?: UserRole): boolean {
+  // Unknown role: keep the strict behaviour and let onboarding sort it out.
+  return !role || ROLES_WITH_ONBOARDING.has(role);
+}
+
 // The backend commonly runs on a different origin than the frontend (e.g.
 // localhost:8000 vs localhost:3000 in dev, or a separate api.* host in some
 // deployments) — frontend/src/lib/api/client.ts talks to it via axios, and
@@ -150,7 +161,12 @@ export function middleware(request: NextRequest) {
   }
 
   // Onboarding Guard
-  if (isAuthenticated && !pathname.startsWith('/onboarding') && !isPublic) {
+  if (
+    isAuthenticated &&
+    !pathname.startsWith('/onboarding') &&
+    !isPublic &&
+    needsOnboardingWizard(userRole)
+  ) {
     const onboardingStage = request.cookies.get(ONBOARDING_COOKIE)?.value;
 
     // Force onboarding if stage is explicitly missing or not completed
@@ -163,7 +179,7 @@ export function middleware(request: NextRequest) {
 
   if (pathname.startsWith('/onboarding') && isAuthenticated) {
      const onboardingStage = request.cookies.get(ONBOARDING_COOKIE)?.value;
-     if (onboardingStage === 'COMPLETED') {
+     if (onboardingStage === 'COMPLETED' || !needsOnboardingWizard(userRole)) {
          return NextResponse.redirect(new URL(getDashboardUrl(userRole), request.url));
      }
   }
