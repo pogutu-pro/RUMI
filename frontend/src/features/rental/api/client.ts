@@ -47,6 +47,7 @@ export const rentalApi = {
     emergency_contact_name: string;
     emergency_contact_phone: string;
     property_ids?: string[];
+    permissions?: Record<string, boolean>;
   }): Promise<Caretaker> => {
     const res = await axios.post<Caretaker>('/caretakers/', payload);
     return res.data;
