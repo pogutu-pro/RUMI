@@ -7,6 +7,7 @@ import { StatusPill, type StatusPillProps } from '@/components/ui/status-pill';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { SimplePager } from '@/components/ui/simple-pager';
 import { useAdminBillingList } from '@/features/admin-billing/hooks/use-admin-billing';
 
 type PillStatus = NonNullable<StatusPillProps['status']>;
@@ -25,6 +26,8 @@ const PAYOUT_STATUS_VARIANT: Record<string, PillStatus> = {
   not_started: 'neutral',
 };
 
+const ORGS_PER_PAGE = 20;
+
 /**
  * Shared organization directory table — used by both the standalone
  * Organizations page and (in a shorter form) the Billing revenue page.
@@ -32,7 +35,11 @@ const PAYOUT_STATUS_VARIANT: Record<string, PillStatus> = {
  */
 export function OrganizationsTable() {
   const [search, setSearch] = React.useState('');
-  const { data: rows = [], isLoading, isError, refetch } = useAdminBillingList(search);
+  // The server sends 20 organizations per page; page through all of them.
+  const [pageState, setPageState] = React.useState({ key: '', page: 1 });
+  const page = pageState.key === search ? pageState.page : 1;
+  const { data, isLoading, isError, refetch } = useAdminBillingList(search, page);
+  const rows = data?.results ?? [];
 
   return (
     <div className="space-y-4">
@@ -53,6 +60,7 @@ export function OrganizationsTable() {
           />
         )
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -97,6 +105,13 @@ export function OrganizationsTable() {
             ))}
           </TableBody>
         </Table>
+        <SimplePager
+          page={page}
+          pageSize={ORGS_PER_PAGE}
+          total={data?.count ?? 0}
+          onPageChange={(next) => setPageState({ key: search, page: next })}
+        />
+        </>
       )}
     </div>
   );

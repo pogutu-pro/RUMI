@@ -20,6 +20,8 @@ import {
 } from '@/features/rental/hooks/use-rental';
 import { PageHeader } from '@/components/dashboard/page-header';
 import type { Tenancy } from '@/features/rental/types';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 const tenancySchema = z.object({
   unit: z.string().min(1, 'Choose a unit'),
@@ -56,6 +58,7 @@ const EMPTY_EDIT_FORM = {
 
 export default function TenanciesPage() {
   const { data: tenancies = [], isLoading } = useTenancies();
+  const { pageItems: pagedTenancies, pagerProps: tenanciesPager } = usePagination(tenancies, 10);
   const { data: units = [] } = useUnits();
   const { data: tenants = [] } = useTenants();
   const createTenancy = useCreateTenancy();
@@ -345,6 +348,7 @@ export default function TenanciesPage() {
       ) : tenancies.length === 0 ? (
         <p className="text-sm text-muted-foreground">No tenancies yet.</p>
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -356,7 +360,7 @@ export default function TenanciesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tenancies.map((t) => (
+            {pagedTenancies.map((t) => (
               <TableRow key={t.id}>
                 <TableCell className="font-medium">{t.tenant_name}</TableCell>
                 <TableCell>{t.unit_number}</TableCell>
@@ -391,6 +395,8 @@ export default function TenanciesPage() {
             ))}
           </TableBody>
         </Table>
+        <SimplePager {...tenanciesPager} />
+        </>
       )}
     </div>
   );

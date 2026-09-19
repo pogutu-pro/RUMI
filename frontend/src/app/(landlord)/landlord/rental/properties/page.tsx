@@ -19,6 +19,8 @@ import { GateBanner } from '@/features/rental/components/gate-banner';
 import { isGateRejection } from '@/lib/api/gate';
 import { PageHeader } from '@/components/dashboard/page-header';
 import type { Property } from '@/features/rental/types';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 const propertySchema = z.object({
   name: z.string().trim().min(2, 'Property name is required').max(255),
@@ -28,6 +30,7 @@ const propertySchema = z.object({
 
 export default function PropertiesPage() {
   const { data: properties = [], isLoading } = useProperties();
+  const { pageItems: pagedProperties, pagerProps: propertiesPager } = usePagination(properties, 10);
   const createProperty = useCreateProperty();
   const updateProperty = useUpdateProperty();
   const [open, setOpen] = React.useState(false);
@@ -198,6 +201,7 @@ export default function PropertiesPage() {
       ) : properties.length === 0 ? (
         <p className="text-sm text-muted-foreground">No properties yet — add your first one above.</p>
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -209,7 +213,7 @@ export default function PropertiesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {properties.map((p) => (
+            {pagedProperties.map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="font-medium">{p.name}</TableCell>
                 <TableCell>{p.city}</TableCell>
@@ -237,6 +241,8 @@ export default function PropertiesPage() {
             ))}
           </TableBody>
         </Table>
+        <SimplePager {...propertiesPager} />
+        </>
       )}
     </div>
   );

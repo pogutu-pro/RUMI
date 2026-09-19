@@ -25,6 +25,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useProperty, useUnits } from '@/features/rental/hooks/use-rental';
 import { useCreateTicket } from '@/features/support/hooks/use-support';
 import type { TicketPriority } from '@/features/support/types/types';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 const PRIORITY_LABEL: Record<TicketPriority, string> = {
   low: 'Low',
@@ -51,6 +53,7 @@ export default function CaretakerPropertyDetailPage() {
   const propertyId = params.id;
   const { data: property, isError, refetch } = useProperty(propertyId);
   const { data: units = [], isLoading: unitsLoading } = useUnits(propertyId);
+  const { pageItems: pagedUnits, pagerProps: unitsPager } = usePagination(units, 10);
   const createTicket = useCreateTicket();
   const [open, setOpen] = React.useState(false);
 
@@ -178,6 +181,7 @@ export default function CaretakerPropertyDetailPage() {
           description="Units for this property haven't been added yet."
         />
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -188,7 +192,7 @@ export default function CaretakerPropertyDetailPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {units.map((u) => (
+            {pagedUnits.map((u) => (
               <TableRow key={u.id}>
                 <TableCell className="font-medium">{u.unit_number}</TableCell>
                 <TableCell>{u.unit_type.replace('_', ' ')}</TableCell>
@@ -202,6 +206,8 @@ export default function CaretakerPropertyDetailPage() {
             ))}
           </TableBody>
         </Table>
+        <SimplePager {...unitsPager} />
+        </>
       )}
     </div>
   );

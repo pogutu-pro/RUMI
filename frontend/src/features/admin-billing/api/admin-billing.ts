@@ -34,11 +34,15 @@ export const adminBillingApi = {
     const res = await axios.get<AdminPlatformOverview>('/billing/admin/overview/');
     return res.data;
   },
-  listOrganizations: async (search?: string): Promise<AdminBillingListRow[]> => {
+  /** One server page (20 rows) plus the total, so the table can page through every organization. */
+  listOrganizations: async (
+    search?: string,
+    page = 1,
+  ): Promise<{ count: number; results: AdminBillingListRow[] }> => {
     const res = await axios.get<PaginatedResponse<AdminBillingListRow>>('/billing/admin/organizations/', {
-      params: search ? { search } : undefined,
+      params: { ...(search ? { search } : {}), page },
     });
-    return res.data.results;
+    return { count: res.data.count, results: res.data.results };
   },
   getOrganization: async (id: string): Promise<AdminBillingDetail> => {
     const res = await axios.get<AdminBillingDetail>(`/billing/admin/organizations/${id}/`);

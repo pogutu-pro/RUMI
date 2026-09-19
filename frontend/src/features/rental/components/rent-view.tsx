@@ -9,6 +9,8 @@ import { PageHeader } from '@/components/dashboard/page-header';
 import { RecordPaymentDialog } from '@/features/rental/components/record-payment-dialog';
 import { useGenerateRentCharges, useRentBalance, useTenancies } from '@/features/rental/hooks/use-rental';
 import type { RentCharge } from '@/features/rental/types';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = {
   paid: 'default',
@@ -50,6 +52,7 @@ export function RentView({ canGenerateCharges = false }: RentViewProps) {
   );
   const tenancyById = React.useMemo(() => new Map(tenancies.map((t) => [t.id, t])), [tenancies]);
   const charges = balance?.charges ?? [];
+  const { pageItems: pagedCharges, pagerProps: chargesPager } = usePagination(charges, 10);
 
   return (
     <div className="space-y-6">
@@ -97,6 +100,7 @@ export function RentView({ canGenerateCharges = false }: RentViewProps) {
           </p>
         </div>
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -109,7 +113,7 @@ export function RentView({ canGenerateCharges = false }: RentViewProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {charges.map((c) => {
+            {pagedCharges.map((c) => {
               const tenancy = tenancyById.get(c.tenancy);
               return (
                 <TableRow key={c.id}>
@@ -137,6 +141,8 @@ export function RentView({ canGenerateCharges = false }: RentViewProps) {
             })}
           </TableBody>
         </Table>
+        <SimplePager {...chargesPager} />
+        </>
       )}
 
       <RecordPaymentDialog

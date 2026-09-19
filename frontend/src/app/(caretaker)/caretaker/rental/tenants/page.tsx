@@ -16,6 +16,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useTenants, useCreateTenant } from '@/features/rental/hooks/use-rental';
 import { PageHeader } from '@/components/dashboard/page-header';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 const tenantSchema = z.object({
   full_name: z.string().trim().min(1, 'Full name is required'),
@@ -41,6 +43,7 @@ const EMPTY_FORM: TenantFormValues = {
 
 export default function CaretakerTenantsPage() {
   const { data: tenants = [], isLoading } = useTenants();
+  const { pageItems: pagedTenants, pagerProps: tenantsPager } = usePagination(tenants, 10);
   const createTenant = useCreateTenant();
   const [open, setOpen] = React.useState(false);
 
@@ -212,6 +215,7 @@ export default function CaretakerTenantsPage() {
       ) : tenants.length === 0 ? (
         <p className="text-sm text-muted-foreground">No tenants yet — add the first one above.</p>
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -222,7 +226,7 @@ export default function CaretakerTenantsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tenants.map((t) => (
+            {pagedTenants.map((t) => (
               <TableRow key={t.id}>
                 <TableCell className="font-medium">{t.full_name}</TableCell>
                 <TableCell>{t.phone}</TableCell>
@@ -232,6 +236,8 @@ export default function CaretakerTenantsPage() {
             ))}
           </TableBody>
         </Table>
+        <SimplePager {...tenantsPager} />
+        </>
       )}
     </div>
   );

@@ -16,6 +16,8 @@ import {
 import { cn } from '@/lib/utils/cn';
 import { useAdminBlogPosts, useDeleteBlogPost } from '@/features/blog-admin/hooks/use-blog-admin';
 import { BLOG_CATEGORIES } from '@/features/blog-admin/types';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 type StatusFilter = 'all' | 'published' | 'draft';
 
@@ -44,6 +46,7 @@ export default function BlogAdminPage() {
     if (!q) return posts;
     return posts.filter((p) => p.title.toLowerCase().includes(q));
   }, [posts, search]);
+  const { pageItems: pagedFiltered, pagerProps: filteredPager } = usePagination(filtered, 10, `${status}|${search}`);
 
   return (
     <div className="space-y-4">
@@ -106,8 +109,9 @@ export default function BlogAdminPage() {
           }
         />
       ) : (
+        <>
         <ul className="divide-y rounded-2xl border bg-background">
-          {filtered.map((post) => (
+          {pagedFiltered.map((post) => (
             <li key={post.id} className="flex items-center justify-between gap-3 px-4 py-3">
               <Link
                 href={`/tech-support/dashboard/blog/${post.id}/edit`}
@@ -146,6 +150,8 @@ export default function BlogAdminPage() {
             </li>
           ))}
         </ul>
+        <SimplePager {...filteredPager} />
+        </>
       )}
 
       <AlertDialog open={pendingDeleteId !== null} onOpenChange={(o) => !o && setPendingDeleteId(null)}>
