@@ -72,7 +72,7 @@ export function VerificationDocumentsUpload() {
         <div className="border-2 border-dashed rounded-lg p-8 text-center">
           <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <p className="text-sm text-muted-foreground mb-4">
-            Upload ID, proof of address, or student ID
+            Upload your ID or proof of address
           </p>
           <input
             type="file"

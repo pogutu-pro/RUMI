@@ -56,42 +56,46 @@ export const UserMenu = React.memo(function UserMenu({
     return getUserInitials(sanitizedName);
   }, [sanitizedName]);
 
-  const base = `/${userRole}` as const;
+  // Profile and notification settings share one page per role.
+  const settingsHref =
+    userRole === 'admin'
+      ? '/platform/settings'
+      : `/${userRole}/rental/settings`;
 
   const roleItems = React.useMemo(() => {
     if (userRole === 'landlord') {
       return [
-        { label: 'My Hostels', href: `${base}/hostels` as const, icon: Home },
         {
-          label: 'Earnings',
-          href: `${base}/payments` as const,
+          label: 'Properties',
+          href: '/landlord/rental/properties' as const,
+          icon: Home,
+        },
+        {
+          label: 'Payments',
+          href: '/landlord/rental/payments' as const,
           icon: DollarSign,
         },
       ];
     }
     if (userRole === 'tenant') {
       return [
+        { label: 'My Rent', href: '/tenant/rental' as const, icon: BookCheck },
         {
-          label: 'My Bookings',
-          href: `${base}/bookings` as const,
-          icon: BookCheck,
-        },
-        {
-          label: 'Payments History',
-          href: `${base}/payments` as const,
+          label: 'Pay Rent',
+          href: '/tenant/rental/pay' as const,
           icon: DollarSign,
         },
       ];
     }
     return [
-      { label: 'Manage Users', href: '/admin/users' as const, icon: User },
+      { label: 'Manage Users', href: '/platform/users' as const, icon: User },
       {
         label: 'System Settings',
-        href: '/admin/settings' as const,
+        href: '/platform/settings' as const,
         icon: Settings,
       },
     ];
-  }, [userRole, base]);
+  }, [userRole]);
 
   const handleSignOut = React.useCallback(async () => {
     if (isSigningOut) return;
@@ -147,16 +151,9 @@ export const UserMenu = React.memo(function UserMenu({
           ))}
 
           <DropdownMenuItem asChild>
-            <Link href={`${base}/profile` as any}>
-              <User className="mr-2 h-4 w-4" />
-              Profile
-            </Link>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem asChild>
-            <Link href={`${base}/settings` as any}>
+            <Link href={settingsHref as any}>
               <Settings className="mr-2 h-4 w-4" />
-              Settings
+              Profile and settings
             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
