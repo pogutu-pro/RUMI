@@ -1432,3 +1432,128 @@ class TrialAccessSummaryTests(RumiaTestFixtures):
     def test_endpoint_is_not_for_tenants(self):
         _, tenant = self.create_tenant(self.org)
         self.assertEqual(self._get(tenant.user).status_code, 403)
+
+
+class AdminPlanEditingTests(RumiaTestFixtures):
+    """A super admin edits tier prices/limits; the public catalog follows at once."""
+
+    def setUp(self):
+        call_command('seed_subscription_plans')
+        self.admin = self.create_super_admin()
+        self.landlord, _, self.org = self.create_landlord_with_org()
+        self.pro = SubscriptionPlan.objects.get(slug='pro')
+
+    def _client(self, user):
+        client = APIClient()
+        client.force_authenticate(user=user)
+        return client
+
+    def _patch(self, user, plan, payload):
+        return self._client(user).patch(f'/api/v1/billing/admin/plans/{plan.id}/', payload, format='json')
+
+    def test_admin_lists_all_tiers_with_subscriber_counts(self):
+        OrganizationSubscription.objects.create(
+            organization=self.org, plan=self.pro, status='active', billing_mode='manual',
+        )
+        resp = self._client(self.admin).get('/api/v1/billing/admin/plans/')
+        self.assertEqual(resp.status_code, 200)
+        by_slug = {p['slug']: p for p in resp.json()}
+        self.assertEqual(set(by_slug), {'starter', 'pro', 'enterprise'})
+        self.assertEqual(by_slug['pro']['active_subscribers'], 1)
+        self.assertNotIn('paystack_plan_code', by_slug['pro'])
+
+    def test_only_super_admin_may_view_or_edit(self):
+        for user in (self.landlord,):
+            self.assertEqual(self._client(user).get('/api/v1/billing/admin/plans/').status_code, 403)
+            self.assertEqual(self._patch(user, self.pro, {'price': '1'}).status_code, 403)
+        self.assertIn(APIClient().get('/api/v1/billing/admin/plans/').status_code, (401, 403))
+
+    def test_price_change_shows_on_the_public_catalog_immediately(self):
+        resp = self._patch(self.admin, self.pro, {'price': '8499.00', 'max_units': 60})
+        self.assertEqual(resp.status_code, 200)
+        self.pro.refresh_from_db()
+        self.assertEqual(self.pro.price, Decimal('8499.00'))
+        public = {p['slug']: p for p in APIClient().get('/api/v1/billing/plans/').json()}
+        self.assertEqual(Decimal(public['pro']['price']), Decimal('8499.00'))
+        self.assertEqual(public['pro']['max_units'], 60)
+
+    def test_saving_clears_the_cached_public_plan_list(self):
+        from unittest import mock
+        with mock.patch('rumi.cache_utils.api_cache.cache_manager.delete') as delete:
+            self._patch(self.admin, self.pro, {'price': '8000'})
+        delete.assert_called()
+
+    def test_validation_rejects_bad_input_and_changes_nothing(self):
+        for payload in ({'price': '0'}, {'price': '-5'}, {'price': '99999999'}, {'name': '  '},
+                        {'max_units': -1}, {'features': {'made_up': True}}, {'features': {'analytics': 'yes'}}):
+            with self.subTest(payload=payload):
+                self.assertEqual(self._patch(self.admin, self.pro, payload).status_code, 400)
+        self.pro.refresh_from_db()
+        self.assertEqual(self.pro.price, Decimal('7999.00'))
+
+    def test_feature_switches_merge_rather_than_replace(self):
+        self._patch(self.admin, self.pro, {'features': {'branded_receipts': True}})
+        self.pro.refresh_from_db()
+        self.assertEqual(self.pro.features, {'analytics': True, 'branded_receipts': True})
+
+    def test_the_slug_cannot_be_changed(self):
+        self._patch(self.admin, self.pro, {'slug': 'hacked', 'interval': 'yearly'})
+        self.pro.refresh_from_db()
+        self.assertEqual((self.pro.slug, self.pro.interval), ('pro', 'monthly'))
+
+    def test_edit_is_audit_logged_with_before_and_after(self):
+        from audit.models import AuditLog
+        self._patch(self.admin, self.pro, {'price': '8000'})
+        entry = AuditLog.objects.filter(action='subscription_plan_updated').latest('id')
+        self.assertEqual(entry.actor, self.admin)
+        self.assertIn('7999', str(entry.old_value))
+        self.assertIn('8000', str(entry.new_value))
+
+    def test_paystack_is_updated_when_the_plan_is_linked(self):
+        from unittest import mock
+        self.pro.paystack_plan_code = 'PLN_test'
+        self.pro.save()
+        with mock.patch('billing.views.PaystackBillingClient.update_plan') as update:
+            resp = self._patch(self.admin, self.pro, {'price': '8000'})
+        update.assert_called_once_with('PLN_test', 'Pro', Decimal('8000.00'))
+        self.assertEqual(resp.json()['paystack_sync']['status'], 'updated')
+
+    def test_a_paystack_failure_still_saves_and_says_so(self):
+        from unittest import mock
+        from rent.providers.base import PaymentProviderError
+        self.pro.paystack_plan_code = 'PLN_test'
+        self.pro.save()
+        with mock.patch(
+            'billing.views.PaystackBillingClient.update_plan',
+            side_effect=PaymentProviderError('boom', 'paystack', recoverable=True),
+        ):
+            resp = self._patch(self.admin, self.pro, {'price': '8000'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['paystack_sync']['status'], 'failed')
+        self.pro.refresh_from_db()
+        self.assertEqual(self.pro.price, Decimal('8000.00'))
+
+    def test_unlinked_plan_is_saved_and_reported_as_skipped(self):
+        self.pro.paystack_plan_code = ''
+        self.pro.save()
+        resp = self._patch(self.admin, self.pro, {'price': '8000'})
+        self.assertEqual(resp.json()['paystack_sync']['status'], 'skipped')
+
+    def test_changing_only_limits_does_not_touch_paystack(self):
+        from unittest import mock
+        self.pro.paystack_plan_code = 'PLN_test'
+        self.pro.save()
+        with mock.patch('billing.views.PaystackBillingClient.update_plan') as update:
+            resp = self._patch(self.admin, self.pro, {'max_units': 75})
+        update.assert_not_called()
+        self.assertEqual(resp.json()['paystack_sync']['status'], 'not_needed')
+
+    def test_new_price_applies_to_later_trials_and_gating_reads_the_new_limits(self):
+        self._patch(self.admin, self.pro, {'max_properties': 9})
+        OrganizationSubscription.objects.create(
+            organization=self.org, plan=SubscriptionPlan.objects.get(slug='pro'),
+            status='active', billing_mode='manual',
+        )
+        from organizations.models import Organization
+        fresh = Organization.objects.get(pk=self.org.pk)
+        self.assertEqual(GatingService.get_effective_plan(fresh).max_properties, 9)

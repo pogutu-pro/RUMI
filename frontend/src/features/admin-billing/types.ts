@@ -94,3 +94,34 @@ export interface AdminOverridePayload {
   status?: string;
   reason: string;
 }
+
+/** Mirrors Backend billing AdminPlanSerializer. */
+export interface AdminPlan {
+  id: string;
+  name: string;
+  slug: 'starter' | 'pro' | 'enterprise' | string;
+  price: string;
+  interval: string;
+  /** 0 means unlimited for each of the three limits. */
+  max_properties: number;
+  max_units: number;
+  max_caretaker_seats: number;
+  features: { analytics?: boolean; branded_receipts?: boolean };
+  sort_order: number;
+  paystack_linked: boolean;
+  active_subscribers: number;
+  updated_at: string;
+}
+
+export interface AdminPlanUpdate {
+  name?: string;
+  price?: number | string;
+  max_properties?: number;
+  max_units?: number;
+  max_caretaker_seats?: number;
+  features?: { analytics?: boolean; branded_receipts?: boolean };
+}
+
+export interface AdminPlanUpdateResult extends AdminPlan {
+  paystack_sync: { status: 'updated' | 'skipped' | 'failed' | 'not_needed'; detail?: string };
+}

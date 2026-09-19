@@ -52,6 +52,41 @@ class PaystackBillingClient:
 
         return data
 
+    def _put(self, path: str, payload: dict, action: str) -> dict:
+        try:
+            response = requests.put(
+                f'{API_BASE}{path}', json=payload, headers=self._headers(), timeout=30,
+            )
+            data = response.json()
+        except requests.RequestException as exc:
+            raise PaymentProviderError(
+                f'Paystack {action} failed: {exc}', self.provider_id, recoverable=True
+            )
+
+        if not data.get('status'):
+            raise PaymentProviderError(
+                data.get('message', f'Paystack {action} failed'), self.provider_id, recoverable=True
+            )
+        return data
+
+    def update_plan(self, plan_code: str, name: str, price: Decimal) -> dict:
+        """
+        Change a Paystack plan's name and amount.
+
+        `update_existing_subscriptions` stays False on purpose: people already
+        subscribed keep the price they signed up at, and only new
+        subscriptions use the new one.
+        """
+        return self._put(
+            f'/plan/{plan_code}',
+            {
+                'name': name,
+                'amount': int(price * 100),
+                'update_existing_subscriptions': False,
+            },
+            action='plan update',
+        )
+
     def create_plan(self, name: str, price: Decimal, interval: str = 'monthly') -> dict:
         """Create a Paystack plan for a SubscriptionPlan tier."""
         data = self._post(

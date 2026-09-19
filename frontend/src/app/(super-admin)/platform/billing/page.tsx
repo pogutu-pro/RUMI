@@ -73,6 +73,14 @@ export default function AdminBillingListPage() {
       </div>
 
       <Link
+        href="/platform/billing/plans"
+        className="flex items-center justify-between rounded-2xl border bg-background p-5 text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-muted/40"
+      >
+        <span>Edit plans and pricing (shown on the public site and every landlord&apos;s billing page)</span>
+        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+      </Link>
+
+      <Link
         href="/platform/organizations"
         className="flex items-center justify-between rounded-2xl border bg-background p-5 text-sm font-medium text-foreground transition-colors hover:border-primary/50 hover:bg-muted/40"
       >

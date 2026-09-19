@@ -2,6 +2,9 @@ import { axiosInstance as axios } from '@/lib/api/client';
 import type {
   AdminBillingDetail,
   AdminBillingListRow,
+  AdminPlan,
+  AdminPlanUpdate,
+  AdminPlanUpdateResult,
   AdminOverridePayload,
   AdminPlatformOverview,
   AdminRevenueSummary,
@@ -43,6 +46,14 @@ export const adminBillingApi = {
   },
   overrideSubscription: async (id: string, payload: AdminOverridePayload): Promise<AdminBillingDetail> => {
     const res = await axios.post<AdminBillingDetail>(`/billing/admin/organizations/${id}/override/`, payload);
+    return res.data;
+  },
+  listPlans: async (): Promise<AdminPlan[]> => {
+    const res = await axios.get<AdminPlan[]>('/billing/admin/plans/');
+    return res.data;
+  },
+  updatePlan: async (id: string, payload: AdminPlanUpdate): Promise<AdminPlanUpdateResult> => {
+    const res = await axios.patch<AdminPlanUpdateResult>(`/billing/admin/plans/${id}/`, payload);
     return res.data;
   },
 };
