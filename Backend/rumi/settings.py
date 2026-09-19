@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'audit',
     'billing',
     'support',
+    'messaging',
 ]
 
 # Custom User Model (matches schema: email as unique identifier)

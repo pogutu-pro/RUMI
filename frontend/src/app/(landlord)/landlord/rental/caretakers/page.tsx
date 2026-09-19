@@ -50,8 +50,9 @@ export default function CaretakersPage() {
   const createCaretaker = useCreateCaretaker();
   const [open, setOpen] = React.useState(false);
   const [propertyIds, setPropertyIds] = React.useState<string[]>([]);
-  // On by default: a caretaker is usually who collects cash from tenants.
+  // On by default: a caretaker usually signs tenants up and collects their rent.
   const [canHandlePayments, setCanHandlePayments] = React.useState(true);
+  const [canManageTenants, setCanManageTenants] = React.useState(true);
   const gateError = isGateRejection(createCaretaker.error);
 
   const form = useForm<z.infer<typeof caretakerSchema>>({
@@ -70,12 +71,16 @@ export default function CaretakersPage() {
         phone: normalizeKenyanPhone(values.phone),
         emergency_contact_phone: normalizeKenyanPhone(values.emergency_contact_phone),
         property_ids: propertyIds,
-        permissions: canHandlePayments ? { can_view_payments: true, can_record_payments: true } : {},
+        permissions: {
+          ...(canHandlePayments ? { can_view_payments: true, can_record_payments: true } : {}),
+          ...(canManageTenants ? { can_manage_tenants: true } : {}),
+        },
       });
       setOpen(false);
       form.reset();
       setPropertyIds([]);
       setCanHandlePayments(true);
+      setCanManageTenants(true);
     } catch {
       // handled via createCaretaker.error / isGateRejection in render
     }
@@ -188,6 +193,20 @@ export default function CaretakersPage() {
                     </FormSection>
                   )}
                   <FormSection title="Permissions" description="What this caretaker is allowed to do.">
+                    <div className="space-y-2">
+                    <label className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40">
+                      <Checkbox
+                        className="mt-0.5"
+                        checked={canManageTenants}
+                        onCheckedChange={(v) => setCanManageTenants(v === true)}
+                      />
+                      <span>
+                        <span className="font-medium">Add and manage tenants</span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                          Lets them register new tenants for the properties they look after.
+                        </span>
+                      </span>
+                    </label>
                     <label className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40">
                       <Checkbox
                         className="mt-0.5"
@@ -201,6 +220,7 @@ export default function CaretakersPage() {
                         </span>
                       </span>
                     </label>
+                    </div>
                   </FormSection>
                   {gateError && <GateBanner gate={gateError} onDismiss={() => createCaretaker.reset()} />}
                   <FormDialogActions submitLabel="Save" isPending={createCaretaker.isPending} />

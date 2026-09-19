@@ -35,3 +35,16 @@ export interface OrganizationSubscription {
   auto_renew: boolean;
   cancel_at_period_end: boolean;
 }
+
+/** Mirrors Backend billing BillingAccessView (GET /billing/access/). */
+export interface BillingAccess {
+  effective_plan: string;
+  effective_plan_name: string;
+  /** True while access comes from the free new-landlord trial. */
+  on_trial: boolean;
+  /** The trial window has passed and there is no paid plan. */
+  trial_expired: boolean;
+  trial_ends_at: string;
+  trial_days_left: number;
+  subscription_status: OrganizationSubscription['status'] | null;
+}

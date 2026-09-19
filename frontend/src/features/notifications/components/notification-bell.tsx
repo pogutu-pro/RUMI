@@ -1,6 +1,7 @@
 'use client';
 
 import { Bell } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import {
   DropdownMenu,
@@ -19,11 +20,23 @@ import {
 } from '../hooks/use-notifications';
 import type { AppNotification } from '../types';
 
-function NotificationRow({ notification, onRead }: { notification: AppNotification; onRead: (id: number) => void }) {
+function NotificationRow({
+  notification,
+  onRead,
+  onOpen,
+}: {
+  notification: AppNotification;
+  onRead: (id: number) => void;
+  onOpen: (url: string) => void;
+}) {
   const isUnread = !notification.read_at;
+  const url = typeof notification.metadata?.url === 'string' ? notification.metadata.url : '';
   return (
     <DropdownMenuItem
-      onClick={() => isUnread && onRead(notification.notification_id)}
+      onClick={() => {
+        if (isUnread) onRead(notification.notification_id);
+        if (url) onOpen(url);
+      }}
       className={cn('flex flex-col items-start gap-0.5 whitespace-normal py-2.5', isUnread && 'bg-primary/5')}
     >
       <div className="flex w-full items-center gap-2">
@@ -39,6 +52,7 @@ function NotificationRow({ notification, onRead }: { notification: AppNotificati
 }
 
 export function NotificationBell() {
+  const router = useRouter();
   const { data } = useNotifications({ limit: 20 });
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
@@ -84,7 +98,12 @@ export function NotificationBell() {
         ) : (
           <div className="max-h-80 overflow-y-auto">
             {notifications.map((n) => (
-              <NotificationRow key={n.notification_id} notification={n} onRead={(id) => markRead.mutate(id)} />
+              <NotificationRow
+                key={n.notification_id}
+                notification={n}
+                onRead={(id) => markRead.mutate(id)}
+                onOpen={(url) => router.push(url)}
+              />
             ))}
           </div>
         )}

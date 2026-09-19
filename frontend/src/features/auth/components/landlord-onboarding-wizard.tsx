@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Gift, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { axiosInstance as axios } from '@/lib/api/client';
@@ -28,6 +28,7 @@ import { useCreateOrganization, useCreateProperty } from '@/features/rental/hook
 import { usePayoutStatus } from '@/features/payout/hooks/use-payout';
 import { PayoutDetailsForm } from '@/features/payout/components/payout-details-form';
 import { usePlans } from '@/features/billing/hooks/use-plans';
+import { useBillingAccess } from '@/features/billing/hooks/use-subscription';
 import {
   wizardOrgSchema,
   wizardPropertySchema,
@@ -309,6 +310,8 @@ function PayoutStep({ onAdvance, onBack }: { onAdvance: () => void; onBack: () =
 function TierStep({ onBack }: { onBack: () => void }) {
   const router = useRouter();
   const { data: plans, isLoading, isError, refetch } = usePlans();
+  const { data: access } = useBillingAccess();
+  const trialDays = access?.on_trial ? access.trial_days_left : 30;
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
   // Records the landlord's tier choice as a preference only (D-06) — this
@@ -342,6 +345,15 @@ function TierStep({ onBack }: { onBack: () => void }) {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h2 className="text-2xl font-semibold text-gray-900">Choose your plan</h2>
+      </div>
+
+      <div className="mb-6 flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+        <Gift className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+        <p className="text-sm text-gray-700">
+          <span className="font-semibold text-gray-900">Your first {trialDays} days are free.</span> You get every
+          Enterprise feature from the moment you finish setting up, and you are not charged today. The plan you pick
+          here is the one to continue on afterwards.
+        </p>
       </div>
 
       {isLoading && (

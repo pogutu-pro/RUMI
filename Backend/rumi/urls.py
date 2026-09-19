@@ -65,6 +65,7 @@ urlpatterns = [
         path('notifications/', include('notifications.urls')),
         path('home/', include('home.urls')),
         path('support/', include('support.urls')),
+        path('messaging/', include('messaging.urls')),
         path('billing/', include('billing.urls')),
         path('organizations/', include('organizations.urls')),
         path('audit/', include('audit.urls')),

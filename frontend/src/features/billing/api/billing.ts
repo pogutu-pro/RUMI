@@ -1,5 +1,5 @@
 import { axiosInstance as axios } from '@/lib/api/client';
-import type { OrganizationSubscription, SubscriptionPlan } from '../types';
+import type { BillingAccess, OrganizationSubscription, SubscriptionPlan } from '../types';
 
 /**
  * RumiaRent billing API client. `listPlans` targets the public plan catalog
@@ -14,6 +14,10 @@ import type { OrganizationSubscription, SubscriptionPlan } from '../types';
 export const billingApi = {
   listPlans: async (): Promise<SubscriptionPlan[]> => {
     const res = await axios.get<SubscriptionPlan[]>('/billing/plans/');
+    return res.data;
+  },
+  getAccess: async (): Promise<BillingAccess> => {
+    const res = await axios.get<BillingAccess>('/billing/access/');
     return res.data;
   },
   getMySubscription: async (): Promise<OrganizationSubscription> => {

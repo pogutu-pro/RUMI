@@ -9,6 +9,7 @@ import {
   Wallet,
   CreditCard,
   LifeBuoy,
+  MessageSquare,
   HardHat,
   Settings,
 } from 'lucide-react';
@@ -16,6 +17,7 @@ import { useAuth } from '@/features/auth';
 import { UserRole } from '@/features/auth/stores/auth.types';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { PayoutPendingBanner } from '@/features/payout/components/payout-pending-banner';
+import { TrialBanner } from '@/features/billing/components/trial-banner';
 
 const NAV = [
   { href: '/landlord/rental', label: 'Dashboard', icon: LayoutDashboard },
@@ -26,6 +28,7 @@ const NAV = [
   { href: '/landlord/rental/rent', label: 'Rent', icon: Wallet },
   { href: '/landlord/rental/payments', label: 'Payments', icon: CreditCard },
   { href: '/landlord/rental/billing', label: 'Billing & Payout', icon: CreditCard },
+  { href: '/landlord/rental/messages', label: 'Messages', icon: MessageSquare },
   { href: '/landlord/rental/support', label: 'Support', icon: LifeBuoy },
   { href: '/landlord/rental/settings', label: 'Settings', icon: Settings },
 ];
@@ -44,7 +47,14 @@ export default function RentalLandlordLayout({ children }: { children: React.Rea
       allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]}
       nav={NAV}
       settingsHref="/landlord/rental/settings"
-      bannerSlot={!isSuperAdmin ? <PayoutPendingBanner /> : null}
+      bannerSlot={
+        !isSuperAdmin ? (
+          <div className="space-y-3">
+            <TrialBanner />
+            <PayoutPendingBanner />
+          </div>
+        ) : null
+      }
     >
       {children}
     </DashboardShell>

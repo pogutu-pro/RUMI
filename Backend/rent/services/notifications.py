@@ -70,6 +70,16 @@ def send_rent_due_reminder(charge) -> None:
     )
     _send_sms(tenant.phone, sms_text)
 
+    if getattr(tenant, 'user', None) is not None:
+        from notifications.in_app import notify_in_app, role_url
+        notify_in_app(
+            tenant.user, notification_type='rent_reminder',
+            subject='Rent reminder',
+            message=f'KES {amount} is due for unit {unit_label} on {charge.due_date.isoformat()}.',
+            url=role_url(tenant.user, 'rent'),
+            dedupe_key=f'rent-charge:{charge.id}',
+        )
+
 
 def send_payment_confirmation(payment) -> None:
     """payment: rent.models.Payment (status must already be 'success')"""
