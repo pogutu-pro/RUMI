@@ -122,19 +122,21 @@ export default function HomePage() {
       <HeroSection />
 
       {/* Outcome pillars */}
-      <section className="bg-gray-50/60 py-20 lg:py-28">
+      <section className="bg-gray-50/60 py-12 lg:py-28">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeInStagger className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-3">
+          <FadeInStagger className="mx-auto grid max-w-5xl gap-3 sm:grid-cols-3 sm:gap-6">
             {PILLARS.map(({ icon: Icon, title, desc }) => (
               <FadeInItem
                 key={title}
-                className="rounded-3xl bg-white p-8 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                className="flex items-start gap-4 rounded-3xl bg-white p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:block sm:p-8 sm:text-center"
               >
-                <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-                  <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 sm:mx-auto sm:mb-5 sm:h-12 sm:w-12">
+                  <Icon className="h-5 w-5 text-primary sm:h-6 sm:w-6" aria-hidden="true" />
                 </div>
-                <h3 className="mb-2 text-lg font-bold text-gray-900">{title}</h3>
-                <p className="text-sm leading-relaxed text-gray-600">{desc}</p>
+                <div>
+                  <h3 className="mb-1 text-base font-bold text-gray-900 sm:mb-2 sm:text-lg">{title}</h3>
+                  <p className="text-sm leading-relaxed text-gray-600">{desc}</p>
+                </div>
               </FadeInItem>
             ))}
           </FadeInStagger>
@@ -142,9 +144,9 @@ export default function HomePage() {
       </section>
 
       {/* Everything connected */}
-      <section className="bg-white py-20 lg:py-28">
+      <section className="bg-white py-12 lg:py-28">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeIn className="mx-auto mb-14 block max-w-2xl text-center" fullWidth>
+          <FadeIn className="mx-auto mb-8 block lg:mb-14 max-w-2xl text-center" fullWidth>
             <Badge
               variant="outline"
               className="mb-6 inline-flex rounded-full border-primary/20 bg-primary/5 px-4 py-1.5 font-semibold tracking-wide text-primary"
@@ -158,17 +160,19 @@ export default function HomePage() {
               Payments, invoicing, communication, and support, all built in, not bolted on.
             </p>
           </FadeIn>
-          <FadeInStagger className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-2">
+          <FadeInStagger className="mx-auto grid max-w-5xl gap-3 sm:grid-cols-2 sm:gap-6">
             {PLATFORM_FEATURES.map(({ icon: Icon, title, desc }) => (
               <FadeInItem
                 key={title}
-                className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                className="flex items-start gap-4 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:block sm:p-8"
               >
-                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-                  <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 sm:mb-5 sm:h-12 sm:w-12">
+                  <Icon className="h-5 w-5 text-primary sm:h-6 sm:w-6" aria-hidden="true" />
                 </div>
-                <h3 className="mb-2 text-lg font-bold text-gray-900">{title}</h3>
-                <p className="text-sm leading-relaxed text-gray-600">{desc}</p>
+                <div>
+                  <h3 className="mb-1 text-base font-bold text-gray-900 sm:mb-2 sm:text-lg">{title}</h3>
+                  <p className="text-sm leading-relaxed text-gray-600">{desc}</p>
+                </div>
               </FadeInItem>
             ))}
           </FadeInStagger>
@@ -176,10 +180,10 @@ export default function HomePage() {
       </section>
 
       {/* Landlords + Tenants, side by side */}
-      <section className="py-20 lg:py-28">
+      <section className="py-12 lg:py-28">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-2">
-            <FadeIn direction="left" className="rounded-3xl border border-gray-100 bg-white p-10 shadow-sm" fullWidth>
+            <FadeIn direction="left" className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-10" fullWidth>
               <Badge variant="outline" className="mb-5 rounded-full border-primary/20 bg-primary/5 font-semibold tracking-wide text-primary">
                 LANDLORDS & AGENTS
               </Badge>
@@ -204,7 +208,7 @@ export default function HomePage() {
               </Link>
             </FadeIn>
 
-            <FadeIn direction="right" className="rounded-3xl border border-gray-100 bg-gray-50/60 p-10 shadow-sm" fullWidth>
+            <FadeIn direction="right" className="rounded-3xl border border-gray-100 bg-gray-50/60 p-6 shadow-sm sm:p-10" fullWidth>
               <Badge variant="outline" className="mb-5 rounded-full border-primary/20 bg-primary/10 font-semibold tracking-wide text-primary">
                 TENANTS
               </Badge>
@@ -233,9 +237,9 @@ export default function HomePage() {
       </section>
 
       {/* Trust & security */}
-      <section className="bg-gray-50/60 py-20 lg:py-28">
+      <section className="bg-gray-50/60 py-12 lg:py-28">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeIn className="mx-auto mb-14 block max-w-2xl text-center" fullWidth>
+          <FadeIn className="mx-auto mb-8 block lg:mb-14 max-w-2xl text-center" fullWidth>
             <h2 className="mb-4 text-3xl font-bold text-gray-900 lg:text-4xl">
               Built to be trusted with your rent money
             </h2>
@@ -243,17 +247,19 @@ export default function HomePage() {
               Role-based access, data isolation, and a full audit trail, on every account.
             </p>
           </FadeIn>
-          <FadeInStagger className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-3">
+          <FadeInStagger className="mx-auto grid max-w-4xl gap-3 sm:grid-cols-3 sm:gap-6">
             {TRUST_POINTS.map(({ icon: Icon, title, desc }) => (
               <FadeInItem
                 key={title}
-                className="rounded-3xl bg-white p-8 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                className="flex items-start gap-4 rounded-3xl bg-white p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:block sm:p-8 sm:text-center"
               >
-                <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-                  <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 sm:mx-auto sm:mb-5 sm:h-12 sm:w-12">
+                  <Icon className="h-5 w-5 text-primary sm:h-6 sm:w-6" aria-hidden="true" />
                 </div>
-                <h3 className="mb-2 text-lg font-bold text-gray-900">{title}</h3>
-                <p className="text-sm leading-relaxed text-gray-600">{desc}</p>
+                <div>
+                  <h3 className="mb-1 text-base font-bold text-gray-900 sm:mb-2 sm:text-lg">{title}</h3>
+                  <p className="text-sm leading-relaxed text-gray-600">{desc}</p>
+                </div>
               </FadeInItem>
             ))}
           </FadeInStagger>
@@ -261,20 +267,22 @@ export default function HomePage() {
       </section>
 
       {/* Three steps */}
-      <section className="bg-gray-50/60 py-20 lg:py-28">
+      <section className="bg-gray-50/60 py-12 lg:py-28">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeIn className="mx-auto mb-14 block max-w-3xl text-center" fullWidth>
+          <FadeIn className="mx-auto mb-8 block lg:mb-14 max-w-3xl text-center" fullWidth>
             <h2 className="mb-4 text-3xl font-bold text-gray-900 lg:text-4xl">Live in minutes</h2>
-            <p className="text-lg text-gray-600">No onboarding call. No setup wizard.</p>
+            <p className="text-lg text-gray-600">No onboarding call. No training needed.</p>
           </FadeIn>
-          <FadeInStagger className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-3" faster>
+          <FadeInStagger className="mx-auto grid max-w-4xl gap-5 sm:grid-cols-3 sm:gap-6" faster>
             {STEPS.map((step, i) => (
-              <FadeInItem key={step.title} className="text-center">
-                <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-gray-900 text-sm font-bold text-white">
+              <FadeInItem key={step.title} className="flex items-start gap-4 text-left sm:block sm:text-center">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-900 text-sm font-bold text-white sm:mx-auto sm:mb-4">
                   {i + 1}
                 </div>
-                <h3 className="mb-2 text-lg font-bold text-gray-900">{step.title}</h3>
-                <p className="text-sm leading-relaxed text-gray-600">{step.desc}</p>
+                <div>
+                  <h3 className="mb-1 text-lg font-bold text-gray-900 sm:mb-2">{step.title}</h3>
+                  <p className="text-sm leading-relaxed text-gray-600">{step.desc}</p>
+                </div>
               </FadeInItem>
             ))}
           </FadeInStagger>
@@ -282,13 +290,13 @@ export default function HomePage() {
       </section>
 
       {/* Talk to us */}
-      <section className="bg-white py-20 lg:py-28">
+      <section className="bg-white py-12 lg:py-28">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <FadeIn className="mx-auto block max-w-3xl" fullWidth>
-            <div className="rounded-[2rem] border border-gray-100 bg-white p-10 text-center shadow-sm sm:p-14">
+            <div className="rounded-[2rem] border border-gray-100 bg-white p-6 text-center shadow-sm sm:p-14">
               <h2 className="mb-4 text-3xl font-bold text-gray-900 lg:text-4xl">Want to see it live first?</h2>
               <p className="mb-8 text-lg text-gray-600">
-                Book a short walkthrough, or message us on WhatsApp, whichever is faster for you.
+                Send us a message and we will walk you through it.
               </p>
               <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
                 <Link href="/contact" prefetch>
@@ -296,7 +304,7 @@ export default function HomePage() {
                     size="lg"
                     className="h-14 rounded-full bg-gray-900 px-8 text-lg font-medium text-white transition-transform hover:scale-[1.02] hover:bg-gray-800 active:scale-95"
                   >
-                    Book a Demo
+                    Talk to us
                   </Button>
                 </Link>
               </div>
@@ -306,7 +314,7 @@ export default function HomePage() {
       </section>
 
       {/* Pricing teaser */}
-      <section className="py-20 lg:py-28">
+      <section className="py-12 lg:py-28">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <FadeIn fullWidth>
             <PricingTeaser />
@@ -324,7 +332,7 @@ export default function HomePage() {
             </p>
             <Link href={`${AUTH_ROUTES.REGISTER}?role=landlord`} prefetch>
               <Button size="lg" className="h-14 rounded-full bg-white px-8 text-lg font-medium text-gray-900 transition-transform hover:scale-[1.02] hover:bg-gray-100 active:scale-95">
-                Get started for free
+                Start your free 30 days
               </Button>
             </Link>
           </FadeIn>
