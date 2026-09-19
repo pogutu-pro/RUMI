@@ -192,6 +192,9 @@ class CaretakerListCreateView(RumiaBaseView):
                 last_name=last_name,
                 role='caretaker',
                 phone_number=data['phone'],
+                # Invited by their landlord, who already supplied everything
+                # the platform needs: there is no onboarding wizard to finish.
+                onboarding_stage='COMPLETED',
             )
             caretaker_profile = CaretakerProfile.objects.create(
                 user=user,

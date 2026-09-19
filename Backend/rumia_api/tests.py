@@ -1173,6 +1173,45 @@ class CaretakerEndpointTests(RumiaTestFixtures):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn('caretaker', mail.outbox[0].body.lower())
 
+    def test_invited_caretaker_can_set_a_password_and_sign_in(self):
+        """
+        Regression: the whole invite journey. A caretaker added by a landlord
+        must be able to use the emailed token to set a password and then sign
+        in, with nothing left to onboard (they were once bounced between
+        /onboarding and their dashboard forever) and no email-code step (the
+        invite link already proved they own the address).
+        """
+        landlord, _, org = self.create_landlord_with_org()
+        client = APIClient()
+        client.force_authenticate(user=landlord)
+        resp = client.post('/api/v1/caretakers/', {
+            'full_name': 'Jane Caretaker',
+            'email': 'jane.invited@test.com',
+            'phone': '+254722333444',
+            'emergency_contact_name': 'Peter Kin',
+            'emergency_contact_phone': '+254733444555',
+        }, format='json')
+        self.assertEqual(resp.status_code, 201)
+
+        caretaker = User.objects.get(email='jane.invited@test.com')
+        self.assertEqual(caretaker.onboarding_stage, 'COMPLETED')
+        self.assertFalse(caretaker.is_verified)
+
+        token = PasswordResetToken.objects.get(user=caretaker)
+        anon = APIClient()
+        confirm = anon.post('/api/v1/accounts/password/reset/confirm/', {
+            'token': str(token.token),
+            'new_password': 'Caretaker#2026x',
+            'confirm_password': 'Caretaker#2026x',
+        }, format='json')
+        self.assertEqual(confirm.status_code, 200)
+
+        login = anon.post('/api/v1/accounts/login/', {
+            'email': 'jane.invited@test.com', 'password': 'Caretaker#2026x',
+        }, format='json')
+        self.assertEqual(login.status_code, 200)
+        self.assertEqual(login.data['user']['onboarding_stage'], 'COMPLETED')
+
     def test_caretaker_creation_requires_valid_phone_format(self):
         landlord, _, org = self.create_landlord_with_org()
         client = APIClient()
