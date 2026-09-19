@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { adminBillingApi } from '../api/admin-billing';
-import type { AdminOverridePayload } from '../types';
+import type { AdminOverridePayload, AdminPlanUpdate } from '../types';
 
 // Same normalized-ApiError shape convention as use-rental.ts/use-payout.ts —
 // the axios interceptor already computes `.message`, never `.response`.
@@ -57,5 +57,25 @@ export function useOverrideSubscription() {
       toast.success('Override applied');
     },
     onError: (err) => toast.error(errorMessage(err, 'Could not apply override')),
+  });
+}
+
+export function useAdminPlans() {
+  return useQuery({
+    queryKey: ['admin-billing', 'plans'],
+    queryFn: adminBillingApi.listPlans,
+  });
+}
+
+export function useUpdateAdminPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: AdminPlanUpdate }) =>
+      adminBillingApi.updatePlan(id, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-billing'] });
+      // Every place that shows prices (homepage, pricing page, onboarding, landlord billing).
+      qc.invalidateQueries({ queryKey: ['billing', 'plans'] });
+    },
   });
 }

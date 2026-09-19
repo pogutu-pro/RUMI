@@ -24,14 +24,17 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from audit.models import log_audit
 from core.permissions.rumia import OrganizationScopedMixin, get_canonical_role
 from organizations.models import Organization
 from rent.providers.base import PaymentProviderError
 from support.models import SupportTicket
 
 from .models import OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
+from .providers.paystack_billing import PaystackBillingClient
 from .serializers import (
     AdminOrganizationBillingDetailSerializer,
+    AdminPlanSerializer,
     AdminOrganizationBillingListSerializer,
     OrganizationSubscriptionSerializer,
     SubscriptionPlanSerializer,
@@ -485,3 +488,83 @@ class BillingAccessView(APIView):
         if organization is None:
             return Response({'error': 'No organization found for this user'}, status=status.HTTP_404_NOT_FOUND)
         return Response(GatingService.get_access_summary(organization))
+
+
+def _invalidate_public_plans_cache():
+    """
+    The anonymous plan list is cached by APIResponseCacheMiddleware for up to
+    5 minutes, keyed only on the URL. Without this, a price a super admin has
+    just changed would keep showing the old figure on the public site.
+    """
+    from rumi.cache_utils import api_cache
+
+    for path in ('/api/v1/billing/plans/',):
+        api_cache.cache_manager.delete(api_cache.cache_manager.get_cache_key('api', path, 'GET'))
+
+
+class AdminPlanListView(APIView):
+    """GET -> every tier with its price, limits, features and subscriber count. Super admin only."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        plans = SubscriptionPlan.objects.order_by('sort_order')
+        return Response(AdminPlanSerializer(plans, many=True).data)
+
+
+class AdminPlanDetailView(APIView):
+    """
+    PATCH -> edit a tier's name, price, limits and feature switches.
+
+    The change is saved first and is audit-logged. Paystack is then updated so
+    that NEW subscribers are charged the new amount; if that call cannot be
+    made the save still stands and the response says so, rather than the admin
+    thinking a price is live when Paystack disagrees.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        if get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            plan = SubscriptionPlan.objects.get(pk=pk)
+        except (SubscriptionPlan.DoesNotExist, ValueError, ValidationError):
+            return Response({'detail': 'Plan not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        before = AdminPlanSerializer(plan).data
+        serializer = AdminPlanSerializer(plan, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        plan = serializer.save()
+        after = AdminPlanSerializer(plan).data
+
+        changed = {k: {'from': str(before[k]), 'to': str(after[k])} for k in after if before.get(k) != after[k] and k != 'updated_at'}
+        if changed:
+            log_audit(
+                'subscription_plan_updated', actor=request.user, entity=plan,
+                old_value={k: str(v['from']) for k, v in changed.items()},
+                new_value={k: str(v['to']) for k, v in changed.items()},
+                metadata={'plan': plan.slug},
+            )
+        _invalidate_public_plans_cache()
+
+        paystack = self._sync_paystack(plan, name_or_price_changed=('name' in changed or 'price' in changed))
+        return Response({**after, 'paystack_sync': paystack})
+
+    @staticmethod
+    def _sync_paystack(plan, name_or_price_changed: bool) -> dict:
+        if not name_or_price_changed:
+            return {'status': 'not_needed'}
+        if not plan.paystack_plan_code:
+            return {
+                'status': 'skipped',
+                'detail': 'Saved. This tier is not linked to a Paystack plan yet, so automatic billing '
+                          'will use the new price once Paystack is connected.',
+            }
+        try:
+            PaystackBillingClient().update_plan(plan.paystack_plan_code, plan.name, plan.price)
+        except PaymentProviderError as exc:
+            return {'status': 'failed', 'detail': f'Saved, but Paystack was not updated: {exc}'}
+        return {'status': 'updated', 'detail': 'Paystack updated. Existing subscribers keep their current price.'}
