@@ -11,22 +11,108 @@ from rest_framework.views import APIView
 from audit.models import log_audit
 from core.permissions.rumia import get_canonical_role
 
-from . import service
+from . import service, social
 from .registry import BY_KEY, GROUPS, SPECS, SettingError
 
 logger = logging.getLogger(__name__)
 
 
 class _SuperAdminOnly(APIView):
-    """Keys are the most sensitive thing in the system: super admin only, no exceptions."""
+    """
+    Keys are the most sensitive thing in the system: super admin only, and the
+    admin must have re-entered their password recently (see UnlockView).
+    """
 
     permission_classes = [IsAuthenticated]
+    requires_unlock = True
 
     def initial(self, request, *args, **kwargs):
         super().initial(request, *args, **kwargs)
+        from rest_framework.exceptions import PermissionDenied
+
         if get_canonical_role(request.user) != 'super_admin':
-            from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied('Only a super admin can manage platform settings.')
+        if self.requires_unlock and not service.is_unlocked(request.user):
+            raise PermissionDenied('Enter your password to open Integrations.', code='reauth_required')
+
+
+class UnlockStatusView(_SuperAdminOnly):
+    requires_unlock = False
+
+    def get(self, request):
+        left = service.unlocked_seconds_left(request.user)
+        return Response({'unlocked': left > 0, 'seconds_left': left})
+
+
+class UnlockView(_SuperAdminOnly):
+    """Check the signed-in super admin's password and open Integrations for a few minutes."""
+
+    requires_unlock = False
+
+    def post(self, request):
+        if service.too_many_failures(request.user):
+            return Response(
+                {'detail': 'Too many wrong passwords. Try again in 15 minutes.', 'code': 'too_many_attempts'},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+        password = request.data.get('password') or ''
+        if not password or not request.user.check_password(password):
+            attempts = service.record_failure(request.user)
+            log_audit('platform_settings_unlock_failed', actor=request.user, metadata={'attempt': attempts})
+            return Response({'detail': 'That password is not correct.', 'code': 'wrong_password'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        service.unlock(request.user)
+        log_audit('platform_settings_unlocked', actor=request.user)
+        return Response({'unlocked': True, 'seconds_left': service.unlocked_seconds_left(request.user)})
+
+
+class LockView(_SuperAdminOnly):
+    requires_unlock = False
+
+    def post(self, request):
+        service.lock(request.user)
+        return Response({'unlocked': False, 'seconds_left': 0})
+
+
+class SocialLinkAdminListView(_SuperAdminOnly):
+    """Every supported platform with its current link (blank if none)."""
+
+    def get(self, request):
+        from home.models import SocialLink
+
+        current = {l.platform: l.url for l in SocialLink.objects.all()}
+        return Response({'results': [
+            {'platform': pid, 'label': label, 'url': current.get(pid, ''), 'example': f'https://{hosts[0]}/rumiarent'}
+            for pid, (label, hosts) in social.PLATFORMS.items()
+        ]})
+
+
+class SocialLinkAdminDetailView(_SuperAdminOnly):
+    def put(self, request, platform):
+        from home.models import SocialLink
+        from home.views import invalidate_public_social_cache
+
+        try:
+            url = social.validate_link(platform, request.data.get('url'))
+        except SettingError as exc:
+            return Response({'detail': str(exc), 'errors': {'url': str(exc)}}, status=status.HTTP_400_BAD_REQUEST)
+        SocialLink.objects.update_or_create(platform=platform, defaults={'url': url, 'updated_by': request.user})
+        invalidate_public_social_cache()
+        log_audit('social_link_updated', actor=request.user, metadata={'platform': platform, 'url': url})
+        return Response({'platform': platform, 'url': url})
+
+    def delete(self, request, platform):
+        from home.models import SocialLink
+        from home.views import invalidate_public_social_cache
+
+        if platform not in social.PLATFORMS:
+            return Response({'detail': 'Unknown platform.'}, status=status.HTTP_404_NOT_FOUND)
+        deleted, _ = SocialLink.objects.filter(platform=platform).delete()
+        invalidate_public_social_cache()
+        if deleted:
+            log_audit('social_link_removed', actor=request.user, metadata={'platform': platform})
+        return Response({'platform': platform, 'url': ''})
 
 
 class SettingListView(_SuperAdminOnly):

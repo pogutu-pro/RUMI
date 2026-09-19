@@ -32,3 +32,15 @@ export interface ConnectionTestResult {
   mode?: string;
   warning?: string;
 }
+
+export interface UnlockState {
+  unlocked: boolean;
+  seconds_left: number;
+}
+
+export interface SocialLinkRow {
+  platform: string;
+  label: string;
+  url: string;
+  example: string;
+}

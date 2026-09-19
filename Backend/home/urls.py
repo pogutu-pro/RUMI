@@ -21,6 +21,7 @@ urlpatterns = [
     # Blog
     path('blog/', views.BlogListView.as_view(), name='blog_list'),
     path('careers/', views.CareerListView.as_view(), name='career_list'),
+    path('social-links/', views.SocialLinkListView.as_view(), name='social_links'),
     path('admin/careers/', views.AdminCareerListCreateView.as_view(), name='admin_career_list_create'),
     path('admin/careers/<int:pk>/', views.AdminCareerDetailView.as_view(), name='admin_career_detail'),
     path('blog/<slug:slug>/', views.BlogDetailView.as_view(), name='blog_detail'),
