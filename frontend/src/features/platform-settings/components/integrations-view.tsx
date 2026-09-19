@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { CheckCircle2, KeyRound, Lock, Send, ShieldCheck, TriangleAlert, XCircle } from 'lucide-react';
+import { CheckCircle2, KeyRound, Lock, LockOpen, Send, ShieldCheck, TriangleAlert, XCircle } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,13 +11,21 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { StatusPill } from '@/components/ui/status-pill';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils/cn';
 import {
   useConnectionTest,
+  useLock,
   usePlatformSettings,
   useResetSetting,
   useSaveSetting,
+  useUnlockStatus,
 } from '../hooks/use-platform-settings';
+import { PasswordGate } from './password-gate';
+import { SocialLinksSection } from './social-links-section';
 import type { ConnectionTestResult, PlatformSetting, SettingGroup } from '../types';
 
 const TESTS: Record<string, { kind: 'paystack' | 'email' | 'sms'; label: string; note?: string } | undefined> = {
@@ -45,6 +54,8 @@ function SettingRow({ setting }: { setting: PlatformSetting }) {
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState('');
   const [error, setError] = React.useState('');
+  // Every change (or reset) is confirmed first: these settings affect the whole platform.
+  const [confirm, setConfirm] = React.useState<{ kind: 'save'; value: string | number | boolean } | { kind: 'reset' } | null>(null);
 
   const begin = () => {
     // Secrets are never sent to the browser, so they always start empty.
@@ -86,7 +97,7 @@ function SettingRow({ setting }: { setting: PlatformSetting }) {
               <Switch
                 checked={!!setting.value}
                 disabled={save.isPending}
-                onCheckedChange={(v) => void submit(v)}
+                onCheckedChange={(v) => setConfirm({ kind: 'save', value: v })}
                 aria-label={setting.label}
               />
             ) : (
@@ -104,7 +115,7 @@ function SettingRow({ setting }: { setting: PlatformSetting }) {
                 size="sm"
                 variant="ghost"
                 disabled={reset.isPending}
-                onClick={() => reset.mutate(setting.key)}
+                onClick={() => setConfirm({ kind: 'reset' })}
                 title="Stop overriding and use the server file value"
               >
                 Reset
@@ -138,7 +149,7 @@ function SettingRow({ setting }: { setting: PlatformSetting }) {
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && draft.trim()) void submit(draft.trim());
+                if (e.key === 'Enter' && draft.trim()) setConfirm({ kind: 'save', value: draft.trim() });
               }}
             />
           )}
@@ -148,7 +159,7 @@ function SettingRow({ setting }: { setting: PlatformSetting }) {
               size="sm"
               isLoading={save.isPending}
               disabled={!draft.trim() || save.isPending}
-              onClick={() => void submit(draft.trim())}
+              onClick={() => setConfirm({ kind: 'save', value: draft.trim() })}
             >
               Save
             </Button>
@@ -163,6 +174,35 @@ function SettingRow({ setting }: { setting: PlatformSetting }) {
           )}
         </div>
       )}
+
+      <AlertDialog open={!!confirm} onOpenChange={(open) => !open && setConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirm?.kind === 'reset' ? `Reset ${setting.label}?` : `Change ${setting.label}?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This takes effect immediately for the whole platform: every landlord, caretaker and tenant. A wrong
+              value can stop rent payments, texts or emails right away.
+              {confirm?.kind === 'reset' && ' The value from the server file will be used again.'}
+              {' '}Use the Test button afterwards to check it works.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const pending = confirm;
+                setConfirm(null);
+                if (pending?.kind === 'save') void submit(pending.value);
+                if (pending?.kind === 'reset') reset.mutate(setting.key);
+              }}
+            >
+              {confirm?.kind === 'reset' ? 'Reset' : 'Save change'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -232,22 +272,70 @@ function GroupCard({ group }: { group: SettingGroup }) {
   );
 }
 
-export function IntegrationsView() {
-  const { data: groups = [], isLoading } = usePlatformSettings();
+function formatLeft(seconds: number) {
+  const m = Math.floor(seconds / 60);
+  const sec = String(seconds % 60).padStart(2, '0');
+  return `${m}:${sec}`;
+}
+
+function UnlockedIntegrations({ secondsLeft }: { secondsLeft: number }) {
+  const qc = useQueryClient();
+  const lock = useLock();
+  const { data: groups = [], isLoading, error } = usePlatformSettings();
+  const [left, setLeft] = React.useState(secondsLeft);
+
+  React.useEffect(() => setLeft(secondsLeft), [secondsLeft]);
+
+  // Count down; when the unlock runs out, ask the server so the password gate returns.
+  React.useEffect(() => {
+    const id = window.setInterval(() => {
+      setLeft((n) => {
+        if (n <= 1) {
+          qc.invalidateQueries({ queryKey: ['platform-settings', 'unlock'] });
+          return 0;
+        }
+        return n - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [qc]);
+
+  // The server can lock earlier than the clock says (e.g. the cache restarted).
+  React.useEffect(() => {
+    if ((error as { error?: string } | null)?.error === 'reauth_required') {
+      qc.invalidateQueries({ queryKey: ['platform-settings', 'unlock'] });
+    }
+  }, [error, qc]);
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Integrations"
-        description="The keys RumiaRent uses for payments, texts and email. Change them here instead of on the server."
-      />
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-background px-4 py-3 shadow-sm">
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <LockOpen className="h-4 w-4 text-primary" />
+          Unlocked. Locks again in <span className="font-mono font-medium text-foreground">{formatLeft(left)}</span>
+        </p>
+        <Button size="sm" variant="outline" onClick={() => lock.mutate()} isLoading={lock.isPending} leftIcon={<Lock className="h-3.5 w-3.5" />}>
+          Lock now
+        </Button>
+      </div>
+
+      <div role="alert" className="flex items-start gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+        <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
+        <div className="text-sm">
+          <p className="font-semibold text-foreground">Be careful: changes here affect the entire system.</p>
+          <p className="mt-0.5 text-muted-foreground">
+            They go live immediately for every landlord, caretaker and tenant. A wrong key or address can stop rent
+            payments, text messages or emails straight away. Double-check each value, run the Test button after every
+            change, and keep the old value safe until the new one is proven to work.
+          </p>
+        </div>
+      </div>
 
       <div className="flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
         <p className="text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">Keys are stored encrypted and are never shown again.</span>{' '}
-          Changes take effect immediately, with no restart. A value set here overrides the server file; press Reset
-          to go back to it. Only super admins can see this page, and every change is recorded in the audit log.
+          A value set here overrides the server file; Reset goes back to it. Every change is recorded in the audit log.
         </p>
       </div>
 
@@ -261,10 +349,32 @@ export function IntegrationsView() {
         </div>
       )}
 
+      <SocialLinksSection />
+
       <p className="flex items-center gap-2 text-xs text-muted-foreground">
         <KeyRound className="h-3.5 w-3.5" />
         Database, hosting and security secrets stay on the server and cannot be changed from here.
       </p>
+    </div>
+  );
+}
+
+export function IntegrationsView() {
+  const { data: unlock, isLoading } = useUnlockStatus();
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Integrations"
+        description="The keys RumiaRent uses for payments, texts and email, and the public site's social links."
+      />
+      {isLoading ? (
+        <div className="skeleton mx-auto h-64 max-w-md rounded-2xl" />
+      ) : unlock?.unlocked ? (
+        <UnlockedIntegrations secondsLeft={unlock.seconds_left} />
+      ) : (
+        <PasswordGate />
+      )}
     </div>
   );
 }

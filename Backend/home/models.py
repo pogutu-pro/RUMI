@@ -310,3 +310,18 @@ class JobPosting(models.Model):
             return False
         return self.closing_date is None or self.closing_date >= timezone.localdate()
 
+
+class SocialLink(models.Model):
+    """A social media profile of RumiaRent, shown as an icon on the public site."""
+
+    platform = models.CharField(max_length=20, unique=True)
+    url = models.URLField(max_length=300)
+    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['platform']
+
+    def __str__(self):
+        return f'{self.platform}: {self.url}'
+

@@ -196,3 +196,50 @@ def describe(spec) -> dict:
         'hint': hint,
         'unreadable': spec.key in unreadable,
     }
+
+
+# --- step-up password gate ---------------------------------------------------
+
+UNLOCK_TTL_SECONDS = 600
+MAX_UNLOCK_FAILURES = 5
+FAILURE_WINDOW_SECONDS = 900
+
+
+def _unlock_key(user) -> str:
+    return f'platform_settings:unlocked:{user.id}'
+
+
+def _failure_key(user) -> str:
+    return f'platform_settings:unlock_failures:{user.id}'
+
+
+def unlock(user) -> None:
+    """Mark this admin as having just proved their password, for a limited time."""
+    cache.set(_unlock_key(user), time.time() + UNLOCK_TTL_SECONDS, timeout=UNLOCK_TTL_SECONDS)
+    cache.delete(_failure_key(user))
+
+
+def lock(user) -> None:
+    cache.delete(_unlock_key(user))
+
+
+def unlocked_seconds_left(user) -> int:
+    expires = cache.get(_unlock_key(user))
+    if not expires:
+        return 0
+    return max(int(expires - time.time()), 0)
+
+
+def is_unlocked(user) -> bool:
+    return unlocked_seconds_left(user) > 0
+
+
+def too_many_failures(user) -> bool:
+    return (cache.get(_failure_key(user)) or 0) >= MAX_UNLOCK_FAILURES
+
+
+def record_failure(user) -> int:
+    count = (cache.get(_failure_key(user)) or 0) + 1
+    cache.set(_failure_key(user), count, timeout=FAILURE_WINDOW_SECONDS)
+    return count
+

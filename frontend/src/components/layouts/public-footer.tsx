@@ -2,6 +2,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Shell } from '@/components/layouts/shell';
+import { SocialLinks } from '@/components/layouts/social-links';
 
 const FOOTER_LINKS = [
   {
@@ -72,6 +73,7 @@ export const Footer = React.memo(function Footer() {
               <p className="text-lg text-gray-400 max-w-lg leading-relaxed">
                 Rental management for Kenyan landlords and agents. Properties, tenants, rent, and payments in one place.
               </p>
+              <SocialLinks />
             </div>
 
             {/* Navigation Links - Clean 2x2 grid with proper spacing */}

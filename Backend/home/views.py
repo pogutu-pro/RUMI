@@ -1098,3 +1098,19 @@ class AdminCareerDetailView(_CareerStaffMixin, APIView):
         _invalidate_public_careers_cache()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+def invalidate_public_social_cache():
+    """The anonymous list is cached by URL for minutes; clear it whenever a link changes."""
+    api_cache.cache_manager.delete(api_cache.cache_manager.get_cache_key('api', '/api/v1/home/social-links/', 'GET'))
+
+
+class SocialLinkListView(APIView):
+    """Public: the social profiles a super admin has added (none until they do)."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        from .models import SocialLink
+
+        return Response({'results': [{'platform': l.platform, 'url': l.url} for l in SocialLink.objects.all()]})
+
