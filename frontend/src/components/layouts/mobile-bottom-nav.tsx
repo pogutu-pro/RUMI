@@ -1,17 +1,25 @@
 'use client';
 
 /**
- * Mobile Bottom Navigation for public pages
- * Sticky navigation bar with Home, Pricing, Profile, and More tabs
+ * Mobile bottom navigation for public pages.
+ * Leads with what RumiaRent does (Features, How it works, Pricing) and puts the
+ * account action at the far right: Sign in for visitors, Dashboard once signed in.
  */
 
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, CreditCard, User, Menu } from 'lucide-react';
+import {
+  Home,
+  Sparkles,
+  ListChecks,
+  CreditCard,
+  LogIn,
+  LayoutDashboard,
+} from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { PublicMenuContent } from '@/components/layouts/public-menu-content';
+import { AUTH_ROUTES } from '@/lib/constants/routes';
+import { useAuthStore } from '@/features/auth/stores/auth.store';
 
 interface NavItem {
   href: string;
@@ -20,68 +28,62 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  { href: '/', label: 'Home', icon: <Home className="h-5 w-5" /> },
   {
-    href: '/',
-    label: 'Home',
-    icon: <Home className="h-5 w-5" />,
+    href: '/features',
+    label: 'Features',
+    icon: <Sparkles className="h-5 w-5" />,
+  },
+  {
+    href: '/how-it-works',
+    label: 'How it works',
+    icon: <ListChecks className="h-5 w-5" />,
   },
   {
     href: '/pricing',
     label: 'Pricing',
     icon: <CreditCard className="h-5 w-5" />,
   },
-  {
-    href: '/profile',
-    label: 'Profile',
-    icon: <User className="h-5 w-5" />,
-  },
-  {
-    href: '/more',
-    label: 'More',
-    icon: <Menu className="h-5 w-5" />,
-  },
 ];
+
+const SIGN_IN_ITEM: NavItem = {
+  href: AUTH_ROUTES.LOGIN,
+  label: 'Sign in',
+  icon: <LogIn className="h-5 w-5" />,
+};
+
+const DASHBOARD_ITEM: NavItem = {
+  href: '/dashboard',
+  label: 'Dashboard',
+  icon: <LayoutDashboard className="h-5 w-5" />,
+};
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const isAuthenticated = useAuthStore((s) => s.status === 'authenticated');
   const [isVisible, setIsVisible] = React.useState(true);
-  const [lastScrollY, setLastScrollY] = React.useState(0);
-  const [isOpen, setIsOpen] = React.useState(false);
+  const lastScrollY = React.useRef(0);
 
-  // Auto-hide on scroll down, show on scroll up (only applies after significant scroll)
+  // Hide on scroll down, show on scroll up; always visible near the top.
   React.useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      // Always show near the top
-      if (currentScrollY < 50) {
+    const handleScroll = (): void => {
+      const current = window.scrollY;
+      if (current < 50 || current < lastScrollY.current) {
         setIsVisible(true);
-        setLastScrollY(currentScrollY);
-        return;
-      }
-      
-      // Show if scrolling up
-      if (currentScrollY < lastScrollY) {
-        setIsVisible(true);
-      } 
-      // Hide if scrolling down and past threshold
-      else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+      } else if (current > 100) {
         setIsVisible(false);
       }
-      
-      setLastScrollY(currentScrollY);
+      lastScrollY.current = current;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  }, []);
 
-  const is_active = (href: string) => {
-    if (href === '/') {
-      return pathname === '/';
-    }
-    return pathname.startsWith(href);
-  };
+  const isActive = (href: string): boolean =>
+    href === '/' ? pathname === '/' : pathname.startsWith(href);
+
+  const items = [...NAV_ITEMS, isAuthenticated ? DASHBOARD_ITEM : SIGN_IN_ITEM];
 
   return (
     <nav
@@ -91,95 +93,40 @@ export function MobileBottomNav() {
         'transition-transform duration-300 ease-in-out',
         'pb-safe-bottom',
         'shadow-[0_-2px_10px_rgba(0,0,0,0.05)]',
-        isVisible ? 'translate-y-0' : 'translate-y-full'
+        isVisible ? 'translate-y-0' : 'translate-y-full',
       )}
       aria-label="Mobile navigation"
     >
-      <div className="flex items-center justify-around h-16 px-2">
-        {NAV_ITEMS.map((item) => {
-          const active = is_active(item.href);
-          
-          if (item.href === '/more') {
-             return (
-                <Sheet key={item.href} open={isOpen} onOpenChange={setIsOpen}>
-                  <SheetTrigger asChild>
-                    <button
-                      className={cn(
-                        'flex flex-col items-center justify-center gap-1',
-                        'min-w-[64px] h-14 rounded-lg',
-                        'transition-all duration-200',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                        isOpen
-                          ? 'text-primary'
-                          : 'text-gray-500 hover:text-gray-900 active:scale-95'
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          'transition-all duration-200',
-                          isOpen && 'scale-110'
-                        )}
-                      >
-                        {item.icon}
-                      </div>
-                      <span
-                        className={cn(
-                          'text-xs font-medium transition-all',
-                          isOpen ? 'font-semibold' : 'font-normal'
-                        )}
-                      >
-                        {item.label}
-                      </span>
-                    </button>
-                  </SheetTrigger>
-                  <SheetContent side="bottom" className="h-[85vh] rounded-none p-0 border-t-2 border-primary">
-                     <SheetHeader className="sr-only">
-                         <SheetTitle>Navigation Menu</SheetTitle>
-                         <SheetDescription>Mobile navigation menu for accessing additional pages.</SheetDescription>
-                     </SheetHeader>
-                     <div className="flex flex-col h-full">
-                        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                            <span className="font-bold text-lg text-primary uppercase tracking-widest">More</span>
-                            <div className="w-12 h-1.5 bg-gray-100 rounded-full" />
-                        </div>
-                        <PublicMenuContent 
-                          onClose={() => setIsOpen(false)} 
-                          isGrid 
-                          excludeItems={['/', '/pricing']}
-                        />
-                     </div>
-                  </SheetContent>
-                </Sheet>
-             );
-          }
-
+      <div className="flex h-16 items-center justify-around px-1">
+        {items.map((item) => {
+          const active = isActive(item.href);
+          const isAccount = item === SIGN_IN_ITEM || item === DASHBOARD_ITEM;
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                'flex flex-col items-center justify-center gap-1',
-                'min-w-[64px] h-14 rounded-lg',
+                'flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg',
                 'transition-all duration-200',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                active
+                active || isAccount
                   ? 'text-primary'
-                  : 'text-gray-500 hover:text-gray-900 active:scale-95'
+                  : 'text-gray-500 hover:text-gray-900 active:scale-95',
               )}
               aria-current={active ? 'page' : undefined}
             >
-              <div
+              <span
                 className={cn(
                   'transition-all duration-200',
-                  active && 'scale-110'
+                  active && 'scale-110',
                 )}
               >
                 {item.icon}
-              </div>
+              </span>
               <span
                 className={cn(
-                  'text-xs font-medium transition-all',
-                  active ? 'font-semibold' : 'font-normal'
+                  'max-w-full truncate text-[11px] leading-none',
+                  active || isAccount ? 'font-semibold' : 'font-normal',
                 )}
               >
                 {item.label}
