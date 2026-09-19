@@ -129,6 +129,20 @@ EMAIL_CATALOG = [
         'source_file': 'billing/services/notifications.py',
     },
     {
+        'template_id': 'mri_reminder',
+        'name': 'Rental income tax (MRI) reminder',
+        'trigger': "Five days and one day before the 20th, and the day after, if last month's MRI is not marked as filed.",
+        'subject': 'Rental income tax (MRI) for {month}',
+        'body': (
+            'Hi {first_name},\n\n{headline}\n\n{detail}\n\n'
+            'File and pay on iTax or eRITS by {deadline}. RumiaRent prepares these figures but does not file for you.\n\n'
+            'Open Accounting in RumiaRent to see the breakdown and mark the month as filed.\n\n'
+            'This is a reminder, not tax advice.'
+        ),
+        'variables': ['first_name', 'headline', 'detail', 'deadline'],
+        'source_file': 'accounting/tasks.py',
+    },
+    {
         'template_id': 'payout_setup_incomplete',
         'name': 'Payout setup incomplete',
         'trigger': "A tenant tries to pay rent but the landlord's payout details are not complete (at most once a day).",

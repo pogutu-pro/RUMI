@@ -115,6 +115,65 @@ class SocialLinkAdminDetailView(_SuperAdminOnly):
         return Response({'platform': platform, 'url': ''})
 
 
+class TaxRatesView(_SuperAdminOnly):
+    """
+    The rental income tax (MRI) parameters every landlord's figures use. They
+    have changed before (10% to 7.5% in 2024), so they are edited here rather
+    than in code. A change applies to every landlord's next calculation.
+    """
+
+    FIELDS = ('mri_rate', 'mri_annual_min', 'mri_annual_max', 'filing_due_day')
+
+    @staticmethod
+    def _data(config):
+        return {
+            'mri_rate': str(config.mri_rate), 'mri_annual_min': str(config.mri_annual_min),
+            'mri_annual_max': str(config.mri_annual_max), 'filing_due_day': config.filing_due_day,
+        }
+
+    def get(self, request):
+        from accounting.models import TaxRateConfig
+        return Response(self._data(TaxRateConfig.get()))
+
+    def put(self, request):
+        from decimal import Decimal, InvalidOperation
+
+        from accounting.models import TaxRateConfig
+
+        config = TaxRateConfig.get()
+        before = self._data(config)
+        errors = {}
+        try:
+            rate = Decimal(str(request.data.get('mri_rate')))
+            if not (Decimal('0') < rate <= Decimal('30')):
+                raise InvalidOperation
+            config.mri_rate = rate
+        except (InvalidOperation, TypeError):
+            errors['mri_rate'] = 'Enter a rate between 0 and 30 (for example 7.5).'
+        try:
+            low = Decimal(str(request.data.get('mri_annual_min')))
+            high = Decimal(str(request.data.get('mri_annual_max')))
+            if low < 0 or high <= low:
+                raise InvalidOperation
+            config.mri_annual_min, config.mri_annual_max = low, high
+        except (InvalidOperation, TypeError):
+            errors['mri_annual_min'] = 'The upper limit must be higher than the lower limit.'
+        try:
+            day = int(request.data.get('filing_due_day'))
+            if not 1 <= day <= 28:
+                raise ValueError
+            config.filing_due_day = day
+        except (TypeError, ValueError):
+            errors['filing_due_day'] = 'Enter a day of the month from 1 to 28.'
+        if errors:
+            return Response({'detail': 'Please fix the highlighted fields.', 'errors': errors},
+                            status=status.HTTP_400_BAD_REQUEST)
+        config.updated_by = request.user
+        config.save()
+        log_audit('tax_rates_updated', actor=request.user, old_value=before, new_value=self._data(config))
+        return Response(self._data(config))
+
+
 class SettingListView(_SuperAdminOnly):
     def get(self, request):
         groups = []

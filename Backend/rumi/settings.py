@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     'support',
     'messaging',
     'platform_settings',
+    'accounting',
 ]
 
 # Custom User Model (matches schema: email as unique identifier)
@@ -323,6 +324,10 @@ CELERY_BEAT_SCHEDULE = {
     'billing-process-grace-period-expirations': {
         'task': 'billing.tasks.process_grace_period_expirations',
         'schedule': _crontab(minute=30, hour=1),  # Daily at 1:30 AM
+    },
+    'accounting-send-mri-reminders': {
+        'task': 'accounting.tasks.send_mri_reminders',
+        'schedule': _crontab(minute=15, hour=8),  # Daily at 8:15 AM
     },
     'billing-send-manual-renewal-reminders': {
         'task': 'billing.tasks.send_manual_renewal_reminders',

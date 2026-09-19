@@ -44,3 +44,10 @@ export interface SocialLinkRow {
   url: string;
   example: string;
 }
+
+export interface TaxRates {
+  mri_rate: string;
+  mri_annual_min: string;
+  mri_annual_max: string;
+  filing_due_day: number;
+}
