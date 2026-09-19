@@ -136,9 +136,17 @@ async function forgotPassword(
 async function resetPassword(
   data: ResetPasswordRequest,
 ): Promise<MessageResponse> {
+  // The backend serializer names the field `new_password`; the forms call it
+  // `password`. Sending it under the form's name was rejected with a 400 on
+  // every attempt, so no invited caretaker/tenant or reset user could ever
+  // set a password.
   const res = await axios.post<MessageResponse>(
     '/accounts/password/reset/confirm/',
-    data,
+    {
+      token: data.token,
+      new_password: data.password,
+      confirm_password: data.confirm_password,
+    },
   );
   return res.data;
 }
