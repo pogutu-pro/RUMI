@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { LayoutDashboard, Building2, Users, Wallet, LifeBuoy, Settings } from 'lucide-react';
+import { LayoutDashboard, Building2, Users, Wallet, MessageSquare, LifeBuoy, Settings } from 'lucide-react';
 import { UserRole } from '@/features/auth/stores/auth.types';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 
@@ -10,6 +10,7 @@ const NAV = [
   { href: '/caretaker/rental/properties', label: 'Properties', icon: Building2 },
   { href: '/caretaker/rental/tenants', label: 'Tenants', icon: Users },
   { href: '/caretaker/rental/rent', label: 'Rent', icon: Wallet },
+  { href: '/caretaker/rental/messages', label: 'Messages', icon: MessageSquare },
   { href: '/caretaker/rental/support', label: 'Support', icon: LifeBuoy },
   { href: '/caretaker/rental/settings', label: 'Settings', icon: Settings },
 ];

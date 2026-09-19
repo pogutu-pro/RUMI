@@ -6,6 +6,7 @@ from .views import (
     AdminPlatformOverviewView,
     AdminRevenueSummaryView,
     AdminSubscriptionOverrideView,
+    BillingAccessView,
     MyOrganizationSubscriptionView,
     SubscriptionPlanListView,
     SubscriptionSubscribeView,
@@ -17,6 +18,7 @@ urlpatterns = [
     path('subscribe/', SubscriptionSubscribeView.as_view(), name='billing-subscribe'),
     path('switch-plan/', SubscriptionSwitchPlanView.as_view(), name='billing-switch-plan'),
     path('my-subscription/', MyOrganizationSubscriptionView.as_view(), name='billing-my-subscription'),
+    path('access/', BillingAccessView.as_view(), name='billing-access'),
     # List route registered BEFORE the detail route so the resolver never
     # accidentally matches admin/organizations/<something>/ against the
     # bare list path (same ordering convention as properties/ in rumia_api/urls.py).

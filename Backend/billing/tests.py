@@ -1368,3 +1368,67 @@ class AdminPlatformOverviewViewTests(RumiaTestFixtures):
 
         self.assertEqual(response.data['open_support_tickets'], 2)
         self.assertEqual(response.data['total_support_tickets'], 4)
+
+
+class TrialAccessSummaryTests(RumiaTestFixtures):
+    """A new landlord gets Enterprise free for the trial window, and can see it."""
+
+    def setUp(self):
+        call_command('seed_subscription_plans')
+        self.landlord, _, self.org = self.create_landlord_with_org()
+
+    def _backdate(self, days):
+        self.org.created_at = timezone.now() - timedelta(days=days)
+        self.org.save(update_fields=['created_at'])
+        self.org.refresh_from_db()
+
+    def _get(self, user):
+        client = APIClient()
+        client.force_authenticate(user=user)
+        return client.get('/api/v1/billing/access/')
+
+    def test_brand_new_landlord_is_on_an_enterprise_trial_for_the_full_window(self):
+        summary = GatingService.get_access_summary(self.org)
+        self.assertEqual(summary['effective_plan'], 'enterprise')
+        self.assertTrue(summary['on_trial'])
+        self.assertFalse(summary['trial_expired'])
+        self.assertEqual(summary['trial_days_left'], 30)
+
+    def test_days_left_counts_down(self):
+        self._backdate(20)
+        self.assertEqual(GatingService.get_access_summary(self.org)['trial_days_left'], 10)
+
+    def test_after_the_window_they_fall_to_starter_and_are_told_so(self):
+        self._backdate(31)
+        summary = GatingService.get_access_summary(self.org)
+        self.assertEqual(summary['effective_plan'], 'starter')
+        self.assertFalse(summary['on_trial'])
+        self.assertTrue(summary['trial_expired'])
+        self.assertEqual(summary['trial_days_left'], 0)
+
+    def test_a_paying_landlord_is_not_shown_as_on_trial(self):
+        plans = {p.slug: p for p in SubscriptionPlan.objects.all()}
+        OrganizationSubscription.objects.create(
+            organization=self.org, plan=plans['pro'], status='active', billing_mode='manual',
+        )
+        from organizations.models import Organization
+        summary = GatingService.get_access_summary(Organization.objects.get(pk=self.org.pk))
+        self.assertEqual(summary['effective_plan'], 'pro')
+        self.assertFalse(summary['on_trial'])
+        self.assertFalse(summary['trial_expired'])
+
+    def test_trial_length_follows_the_setting(self):
+        from django.test import override_settings
+        self._backdate(10)
+        with override_settings(SUBSCRIPTION_TRIAL_DAYS=14):
+            self.assertEqual(GatingService.get_access_summary(self.org)['trial_days_left'], 4)
+
+    def test_endpoint_returns_the_landlords_own_summary(self):
+        resp = self._get(self.landlord)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.data['on_trial'])
+        self.assertEqual(resp.data['effective_plan'], 'enterprise')
+
+    def test_endpoint_is_not_for_tenants(self):
+        _, tenant = self.create_tenant(self.org)
+        self.assertEqual(self._get(tenant.user).status_code, 403)

@@ -25,6 +25,10 @@ jest.mock('@/features/rental/components/organization-switcher', () => ({
   OrganizationSwitcher: () => <div data-testid="org-switcher">OrgSwitcher</div>,
 }));
 
+jest.mock('@/features/messaging', () => ({
+  useUnreadMessageCount: () => ({ data: 0 }),
+}));
+
 jest.mock('@/features/notifications', () => ({
   NotificationBell: () => <div data-testid="notification-bell">Bell</div>,
 }));

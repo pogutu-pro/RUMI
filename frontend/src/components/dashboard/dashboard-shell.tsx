@@ -19,6 +19,7 @@ import { RumiaLoader } from '@/components/ui/rumia-loader';
 import { OrganizationSwitcher } from '@/features/rental/components/organization-switcher';
 import { AccountMenu } from '@/components/dashboard/account-menu';
 import { NotificationBell } from '@/features/notifications';
+import { useUnreadMessageCount } from '@/features/messaging';
 
 export interface DashboardShellNavItem {
   href: string;
@@ -46,11 +47,14 @@ function NavLinks({
   collapsed,
   pathname,
   onNavigate,
+  badges = {},
 }: {
   nav: DashboardShellNavItem[];
   collapsed: boolean;
   pathname: string;
   onNavigate?: () => void;
+  /** Unread counts keyed by nav href. */
+  badges?: Record<string, number>;
 }) {
   return (
     <nav className="flex flex-1 flex-col gap-1 px-3">
@@ -70,8 +74,24 @@ function NavLinks({
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground',
             )}
           >
-            <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+            <span className="relative">
+              <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+              {collapsed && badges[item.href] > 0 && (
+                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background" />
+              )}
+            </span>
             {!collapsed && <span className="truncate">{item.label}</span>}
+            {!collapsed && badges[item.href] > 0 && (
+              <span
+                aria-label={`${badges[item.href]} unread`}
+                className={cn(
+                  'ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold',
+                  isActive ? 'bg-primary-foreground text-primary' : 'bg-destructive text-destructive-foreground',
+                )}
+              >
+                {badges[item.href] > 99 ? '99+' : badges[item.href]}
+              </span>
+            )}
           </Link>
         );
 
@@ -175,6 +195,11 @@ export function DashboardShell({
   const isSidebarOpen = useUiStore((s) => s.isSidebarOpen);
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen);
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
+  const { data: unreadMessages = 0 } = useUnreadMessageCount(isAuthenticated);
+  const navBadges = React.useMemo(
+    () => Object.fromEntries(nav.filter((n) => n.href.endsWith('/messages')).map((n) => [n.href, unreadMessages])),
+    [nav, unreadMessages],
+  );
 
   const collapsed = isDesktop && !isSidebarOpen;
 
@@ -232,7 +257,7 @@ export function DashboardShell({
               {isSuperAdmin && showOrgSwitcher && <OrganizationSwitcher collapsed={collapsed} />}
 
               <div className="flex-1 overflow-y-auto py-2">
-                <NavLinks nav={nav} collapsed={collapsed} pathname={pathname} />
+                <NavLinks nav={nav} collapsed={collapsed} pathname={pathname} badges={navBadges} />
               </div>
 
               <SidebarFooter name={name} email={email} photoUrl={photoUrl} collapsed={collapsed} onLogout={logout} />
@@ -264,7 +289,7 @@ export function DashboardShell({
                   </div>
                   {isSuperAdmin && showOrgSwitcher && <OrganizationSwitcher collapsed={false} />}
                   <div className="flex-1 overflow-y-auto py-2">
-                    <NavLinks nav={nav} collapsed={false} pathname={pathname} onNavigate={() => setMobileNavOpen(false)} />
+                    <NavLinks nav={nav} collapsed={false} pathname={pathname} badges={navBadges} onNavigate={() => setMobileNavOpen(false)} />
                   </div>
                   <SidebarFooter name={name} email={email} photoUrl={photoUrl} collapsed={false} onLogout={logout} />
                 </SheetContent>

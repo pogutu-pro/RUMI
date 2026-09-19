@@ -67,3 +67,16 @@ export const useSwitchPlan = () => {
     },
   });
 };
+
+/**
+ * What the landlord is entitled to right now, and whether that is the free
+ * new-landlord trial. Refetched on focus so the days-left count and the
+ * post-subscribe state never go stale.
+ */
+export const useBillingAccess = () =>
+  useQuery({
+    queryKey: ['billing', 'access'],
+    queryFn: billingApi.getAccess,
+    staleTime: 60_000,
+    refetchOnWindowFocus: true,
+  });

@@ -14,10 +14,12 @@ export function useNotifications(params?: NotificationListParams) {
   return useQuery({
     queryKey: ['notifications', 'list', params],
     queryFn: () => notificationsApi.list(params),
-    // Notifications are how a tenant sees "your reminder was sent" / "we got
-    // your payment" — refetch on an interval so the bell count stays current
-    // without the user needing to manually refresh.
-    refetchInterval: 60_000,
+    // The bell must feel live ("you have a new message", "payment received"),
+    // and the app-wide 5-minute staleTime would hide new items for minutes.
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 20_000,
   });
 }
 

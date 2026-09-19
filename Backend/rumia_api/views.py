@@ -55,6 +55,35 @@ class RumiaBaseView(OrganizationScopedMixin, APIView):
     organization_lookup = 'organization'
 
 
+def _notify_payment_in_app(payment, recorded_by=None) -> None:
+    """Bell notifications for a successful payment: the tenant, and the landlord."""
+    from notifications.in_app import display_name, notify_in_app, role_url
+
+    amount = f'KES {payment.amount:,.0f}'
+    unit = payment.unit.unit_number if payment.unit_id else ''
+    tenant_user = getattr(payment.tenant, 'user', None)
+    owner = getattr(payment.organization, 'owner', None)
+
+    if tenant_user is not None:
+        how = f' recorded by {display_name(recorded_by)}' if recorded_by else ' received'
+        notify_in_app(
+            tenant_user, notification_type='payment',
+            subject='Payment received' if not recorded_by else 'Payment recorded',
+            message=f'Your payment of {amount}{" for unit " + unit if unit else ""} was{how}.',
+            url=role_url(tenant_user, 'rent'),
+        )
+    # Tell the landlord unless they are the one who just recorded it.
+    if owner is not None and (recorded_by is None or recorded_by.id != owner.id):
+        who = payment.tenant.full_name
+        via = f' (recorded by {display_name(recorded_by)})' if recorded_by else ''
+        notify_in_app(
+            owner, notification_type='payment',
+            subject=f'{who} paid {amount}',
+            message=f'Rent payment{" for unit " + unit if unit else ""}{via}.',
+            url=role_url(owner, 'rent'),
+        )
+
+
 def _caretaker_can(user, flag: str) -> bool:
     try:
         return bool(user.caretaker_profile.permissions.get(flag, False))
@@ -797,6 +826,7 @@ class ManualPaymentView(RumiaBaseView):
         log_audit('payment_recorded', actor=request.user, organization=tenancy.organization, entity=payment,
                    metadata={'action': 'manual'})
         self._notify_tenant(payment)
+        _notify_payment_in_app(payment, recorded_by=request.user)
         return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
 
     @staticmethod
@@ -855,6 +885,7 @@ class PaystackWebhookView(APIView):
                         send_payment_confirmation_task.delay(str(payment.id))
                     except Exception:
                         pass  # Never fail the webhook response over a notification-dispatch problem.
+                    _notify_payment_in_app(payment)
 
                 return Response({'status': 'processed', 'payment_status': payment.status})
 

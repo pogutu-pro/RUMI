@@ -8,6 +8,7 @@ import { PriceDisplay } from '@/components/ui/price-display';
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
 import {
+  useBillingAccess,
   useMySubscription,
   useSubscribe,
   useSwitchPlan,
@@ -48,6 +49,7 @@ const PAYOUT_STATUS_VARIANT: Record<PayoutStatus, NonNullable<StatusPillProps['s
 export default function BillingPayoutPage() {
   const { data: subscription, isLoading: subscriptionLoading, error: subscriptionError } =
     useMySubscription();
+  const { data: access } = useBillingAccess();
   const { data: payout, isLoading: payoutLoading } = usePayoutStatus();
   const { data: plans, isLoading: plansLoading, isError: plansError, refetch: refetchPlans } =
     usePlans();
@@ -83,10 +85,28 @@ export default function BillingPayoutPage() {
               </StatusPill>
             </div>
           ) : subscriptionNotFound ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="text-sm text-muted-foreground">No active subscription yet</p>
-              <StatusPill status="neutral">No subscription</StatusPill>
-            </div>
+            access?.on_trial ? (
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="text-lg font-semibold">Enterprise · free trial</p>
+                  <StatusPill status="success">
+                    {access.trial_days_left} {access.trial_days_left === 1 ? 'day' : 'days'} left
+                  </StatusPill>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Every feature is unlocked until your trial ends. Choose a plan below to carry on without a break.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-sm text-muted-foreground">
+                  {access?.trial_expired
+                    ? 'Your free trial has ended. You are on the Starter plan limits.'
+                    : 'No active subscription yet'}
+                </p>
+                <StatusPill status="neutral">No subscription</StatusPill>
+              </div>
+            )
           ) : (
             <p className="text-sm text-muted-foreground">
               Something went wrong. Please try again.

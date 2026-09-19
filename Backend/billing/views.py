@@ -464,3 +464,24 @@ class AdminPlatformOverviewView(APIView):
             'open_support_tickets': open_tickets,
             'total_support_tickets': sum(ticket_counts.values()),
         })
+
+
+class BillingAccessView(APIView):
+    """
+    GET -> what the caller's organization may use right now: the effective
+    plan, and whether that is the free new-landlord trial (and when it ends).
+    Powers the trial banner. Own organization only, resolved server-side.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from organizations.models import Organization
+
+        if get_canonical_role(request.user) not in MUTATING_ROLES:
+            return Response({'error': 'Not permitted'}, status=status.HTTP_403_FORBIDDEN)
+        org_ids = _OrgResolver(request).get_user_organization_ids()
+        organization = Organization.objects.filter(id__in=org_ids or []).order_by('created_at').first()
+        if organization is None:
+            return Response({'error': 'No organization found for this user'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(GatingService.get_access_summary(organization))

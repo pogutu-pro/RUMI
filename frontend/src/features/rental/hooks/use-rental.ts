@@ -185,7 +185,13 @@ export const useCreateTenant = () => {
       qc.invalidateQueries({ queryKey: ['rental', 'tenants'] });
       toast.success('Tenant added');
     },
-    onError: (err) => toast.error(errorMessage(err, 'Could not add tenant')),
+    onError: (err) => {
+      if ((err as { statusCode?: number })?.statusCode === 403) {
+        toast.error('You do not have permission to add tenants. Ask the landlord to turn it on for you.');
+        return;
+      }
+      toast.error(errorMessage(err, 'Could not add tenant'));
+    },
   });
 };
 
@@ -241,11 +247,23 @@ export const useTerminateTenancy = () => {
 
 // -- Rent --
 
+// Money data changes under the user's feet: a landlord or caretaker records a
+// cash payment, Paystack confirms a charge. The app-wide 5-minute staleTime
+// would leave a tenant looking at a balance that was already settled, so these
+// queries refetch on mount, on focus and on a short interval.
+const LIVE_MONEY = {
+  staleTime: 0,
+  refetchOnMount: 'always',
+  refetchOnWindowFocus: true,
+  refetchInterval: 30_000,
+} as const;
+
 export const useRentCharges = (status?: string) => {
   const orgId = useSelectedOrgId();
   return useQuery({
     queryKey: keys.rentCharges(status, orgId),
     queryFn: () => rentalApi.listRentCharges({ status, organizationId: orgId ?? undefined }),
+    ...LIVE_MONEY,
   });
 };
 
@@ -254,6 +272,7 @@ export const useRentBalance = (tenancyId?: string) => {
   return useQuery({
     queryKey: keys.rentBalance(tenancyId, orgId),
     queryFn: () => rentalApi.getRentBalance(tenancyId, orgId ?? undefined),
+    ...LIVE_MONEY,
   });
 };
 
@@ -277,6 +296,7 @@ export const usePayments = () => {
   return useQuery({
     queryKey: keys.payments(orgId),
     queryFn: () => rentalApi.listPayments(orgId ?? undefined),
+    ...LIVE_MONEY,
   });
 };
 
