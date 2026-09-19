@@ -235,6 +235,9 @@ CORS_ALLOW_METHODS = [
 
 # Email Configuration (Mailtrap)
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+# Route real SMTP through the logging backend so the admin delivery log sees it.
+if EMAIL_BACKEND == 'django.core.mail.backends.smtp.EmailBackend':
+    EMAIL_BACKEND = 'notifications.email_backend.LoggingSMTPEmailBackend'
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.mailtrap.io')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'

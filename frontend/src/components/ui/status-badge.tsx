@@ -32,12 +32,12 @@ const defaultVariantMap: Record<string, StatusVariant> = {
 };
 
 const variantClasses: Record<StatusVariant, string> = {
-  active: 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200',
+  active: 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200 dark:bg-green-500/15 dark:text-green-400 dark:border-green-500/30',
   pending:
     'bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-200',
-  rejected: 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200',
-  success: 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200',
-  draft: 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200',
+  rejected: 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/30',
+  success: 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200 dark:bg-green-500/15 dark:text-green-400 dark:border-green-500/30',
+  draft: 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 dark:bg-muted dark:text-muted-foreground dark:border-border',
   info: 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200',
 };
 

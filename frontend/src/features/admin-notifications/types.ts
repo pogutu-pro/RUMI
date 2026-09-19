@@ -33,3 +33,15 @@ export interface AdminNotificationStats {
   };
   top_failed_types: { notification_type: string; count: number }[];
 }
+
+/** One email or SMS attempt from GET /notifications/admin/deliveries/. */
+export interface AdminDelivery {
+  id: number;
+  channel: 'email' | 'sms';
+  status: 'sent' | 'failed';
+  recipient_address: string;
+  recipient_name: string;
+  subject: string;
+  error_message: string;
+  created_at: string;
+}

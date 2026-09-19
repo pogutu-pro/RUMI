@@ -19,11 +19,17 @@ class Notification(models.Model):
         ('read', 'Read'),
     ]
 
+    # Nullable and SET_NULL so the delivery log outlives a deleted user and can
+    # also record messages to addresses that are not (or not yet) users.
     recipient = models.ForeignKey(
         'accounts.User',
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='notifications'
     )
+    # Where the message actually went (email address or phone number).
+    recipient_address = models.CharField(max_length=254, blank=True, default='')
     notification_type = models.CharField(max_length=50)
     channel = models.CharField(max_length=20, choices=CHANNEL_CHOICES)
     subject = models.CharField(max_length=255, blank=True, null=True)
@@ -46,7 +52,8 @@ class Notification(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.notification_type} to {self.recipient.email} via {self.channel}"
+        target = self.recipient.email if self.recipient_id else (self.recipient_address or 'unknown')
+        return f"{self.notification_type} to {target} via {self.channel}"
 
 
 class EmailTemplate(models.Model):

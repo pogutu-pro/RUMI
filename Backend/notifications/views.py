@@ -884,3 +884,56 @@ class AdminNotificationStatsView(APIView):
             },
             'top_failed_types': list(failed_by_type)
         }, status=status.HTTP_200_OK)
+
+
+class AdminDeliveryLogView(APIView):
+    """
+    Admin delivery log: the most recent email and SMS attempts, with outcome.
+
+    GET /notifications/admin/deliveries/?channel=email|sms&status=sent|failed&limit=50
+
+    Tech support and super admins only. Message bodies are never stored, so
+    this exposes who was contacted, when, the email subject and any failure
+    reason - not codes or links.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+    MAX_LIMIT = 100
+
+    def get(self, request):
+        if request.user.role not in ['tech_support', 'super_admin']:
+            return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+
+        from .delivery_log import DELIVERY_TYPES
+
+        rows = Notification.objects.filter(notification_type__in=DELIVERY_TYPES)
+        channel = request.query_params.get('channel')
+        if channel in ('email', 'sms'):
+            rows = rows.filter(channel=channel)
+        outcome = request.query_params.get('status')
+        if outcome in ('sent', 'failed'):
+            rows = rows.filter(status=outcome)
+
+        try:
+            limit = min(max(int(request.query_params.get('limit', 50)), 1), self.MAX_LIMIT)
+        except ValueError:
+            limit = 50
+
+        rows = rows.select_related('recipient').order_by('-created_at')[:limit]
+        return Response({
+            'results': [
+                {
+                    'id': row.id,
+                    'channel': row.channel,
+                    'status': row.status,
+                    'recipient_address': row.recipient_address,
+                    'recipient_name': (
+                        row.recipient.get_full_name().strip() if row.recipient_id else ''
+                    ),
+                    'subject': row.subject or '',
+                    'error_message': row.error_message or '',
+                    'created_at': row.created_at,
+                }
+                for row in rows
+            ],
+        }, status=status.HTTP_200_OK)

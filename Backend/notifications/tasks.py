@@ -5,6 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.template import Template, Context
 from accounts.utils import send_branded_email
+from .delivery_log import DELIVERY_TYPES, log_delivery, suppressed
 
 
 @shared_task
@@ -68,15 +69,15 @@ def send_notification(recipient_id, notification_type, channel, context):
             status='pending'
         )
 
-        # Send via appropriate service
+        # Send via appropriate service. This task keeps its own Notification
+        # row, so the automatic delivery log is suppressed to avoid a duplicate.
         try:
-            if channel == 'email':
-                _send_email_via_mailtrap(recipient.email, subject, message)
-            elif channel == 'sms':
-                send_sms_via_africastalking(recipient.phone_number, message)
-            elif channel == 'in_app':
-                # Already stored in DB, no external service needed
-                pass
+            # in_app needs no external service: it is already stored in the DB.
+            with suppressed():
+                if channel == 'email':
+                    _send_email_via_mailtrap(recipient.email, subject, message)
+                elif channel == 'sms':
+                    send_sms_via_africastalking(recipient.phone_number, message)
 
             notification.status = 'sent'
             notification.sent_at = timezone.now()
@@ -200,6 +201,21 @@ def normalize_kenyan_phone(phone_number):
 
 def send_sms_via_africastalking(phone_number, message):
     """
+    Send SMS via Africa's Talking and record the outcome in the delivery log.
+
+    Thin wrapper over `_deliver_sms`, which holds the actual sending rules.
+    """
+    try:
+        result = _deliver_sms(phone_number, message)
+    except Exception as exc:
+        log_delivery(channel='sms', address=str(phone_number or ''), ok=False, error=exc)
+        raise
+    log_delivery(channel='sms', address=str(phone_number or ''), ok=True)
+    return result
+
+
+def _deliver_sms(phone_number, message):
+    """
     Send SMS via Africa's Talking, with a monthly ceiling
     (settings.SMS_MONTHLY_LIMIT).
 
@@ -294,10 +310,12 @@ def retry_failed_notifications():
 
     # Get failed notifications from last 24 hours
     cutoff_time = timezone.now() - timedelta(hours=24)
+    # Delivery-log rows are a record, not a work queue: retrying them here
+    # would flip real failures back to 'pending' and hide them.
     failed_notifications = Notification.objects.filter(
         status='failed',
         created_at__gte=cutoff_time
-    )
+    ).exclude(notification_type__in=DELIVERY_TYPES)
 
     retried_count = 0
     for notification in failed_notifications:
