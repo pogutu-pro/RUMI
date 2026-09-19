@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/about' },
   title: 'About RumiaRent',
   description:
     'RumiaRent is rental management software built for Kenyan landlords and property agents: properties, tenants, rent, and payments in one place.',

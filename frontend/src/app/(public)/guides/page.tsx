@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/guides' },
   title: 'Guides',
   description: 'Practical guides for landlords and tenants using RumiaRent.',
 };

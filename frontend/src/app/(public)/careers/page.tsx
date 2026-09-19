@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { OpenRoles } from '@/features/careers/components/open-roles';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/careers' },
   title: 'Careers',
   description:
     'Join RumiaRent. See the roles we are hiring for, or tell us how you would like to help build rental management for Kenya.',

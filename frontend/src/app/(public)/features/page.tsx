@@ -25,6 +25,7 @@ import Link from 'next/link';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/features' },
   title: 'Features',
   description:
     'Rent collection, reminders, tenant and caretaker chat, and simple accounting with rental income tax figures. What RumiaRent does for landlords, caretakers and tenants.',

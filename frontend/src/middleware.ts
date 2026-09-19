@@ -65,6 +65,13 @@ const PUBLIC_ROUTES = new Set([
   '/guides',
   '/cookies',
   '/compliance',
+  '/robots.txt',
+  '/sitemap.xml',
+  '/llms.txt',
+  '/manifest.webmanifest',
+  '/favicon.ico',
+  '/icon.png',
+  '/apple-icon.png',
 ]);
 
 const AUTH_ROUTES = new Set([
@@ -194,6 +201,10 @@ export function middleware(request: NextRequest) {
 
   const response = NextResponse.next();
 
+  if (!isPublic) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  }
+
   response.headers.set('X-DNS-Prefetch-Control', 'on');
   response.headers.set(
     'Strict-Transport-Security',
@@ -226,6 +237,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.png|favicon.ico|robots.txt|sitemap.xml|llms.txt|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

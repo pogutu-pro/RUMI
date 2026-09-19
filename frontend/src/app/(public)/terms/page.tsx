@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { FadeIn } from '@/components/animations/fade-in';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/terms' },
   title: 'Terms of Service',
   description: 'Read our terms of service and user agreement.',
 };

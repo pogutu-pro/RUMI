@@ -20,6 +20,7 @@ import { AUTH_ROUTES } from '@/lib/constants/routes';
 import { FadeIn, FadeInStagger, FadeInItem } from '@/components/animations/fade-in';
 import { PricingTeaser } from './_components/pricing-teaser';
 import { HeroSection } from './_components/hero-section';
+import { SHARE_IMAGE } from '@/lib/seo';
 
 export const metadata: Metadata = {
   title: 'RumiaRent - Rental Management for Kenyan Landlords',
@@ -29,19 +30,13 @@ export const metadata: Metadata = {
     title: 'RumiaRent - Rental Management for Kenyan Landlords',
     description:
       'Properties, units, tenants, rent, and payments in one simple place. Know who owes you, get paid via Paystack or cash, and see what needs attention.',
-    url: 'https://rumiarent.com',
+    url: '/',
     siteName: 'RumiaRent',
-    images: [
-      {
-        url: '/og-image.png',
-        alt: 'RumiaRent - Rental Management Platform',
-        width: 1200,
-        height: 630,
-      },
-    ],
-    locale: 'en_US',
+    locale: 'en_KE',
     type: 'website',
+    images: [SHARE_IMAGE],
   },
+  alternates: { canonical: '/' },
   keywords: [
     'rental management Kenya',
     'landlord software Kenya',
