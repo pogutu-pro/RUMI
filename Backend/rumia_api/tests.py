@@ -1274,3 +1274,82 @@ class CaretakerEndpointTests(RumiaTestFixtures):
             'emergency_contact_name': 'X', 'emergency_contact_phone': '+254733444555',
         }, format='json')
         self.assertEqual(resp.status_code, 400)
+
+
+class ManualPaymentRecordingTests(RumiaTestFixtures):
+    """Cash / bank payments recorded by a landlord or a permitted caretaker."""
+
+    def setUp(self):
+        self.landlord, _, self.org = self.create_landlord_with_org()
+        self.prop, self.unit = self.create_property_with_unit(self.org)
+        _, self.tenant = self.create_tenant(self.org)
+        self.tenancy = self.create_tenancy(self.org, self.prop, self.unit, self.tenant)
+        self.charge = self.create_rent_charge(self.tenancy)
+
+    def _caretaker(self, permissions, assigned=True, email='ct@test.com'):
+        user = User.objects.create_user(
+            email=email, password='TestPass123!', first_name='Care', last_name='Taker',
+            role='caretaker', phone_number='+254733333333',
+        )
+        profile = CaretakerProfile.objects.create(
+            user=user, landlord=LandlordProfile.objects.get(user=self.landlord),
+            emergency_contact_name='E', emergency_contact_phone='+254744444444',
+            created_by=self.landlord, permissions=permissions,
+        )
+        OrganizationMembership.objects.get_or_create(
+            organization=self.org, user=user, defaults={'role': 'caretaker'},
+        )
+        if assigned:
+            CaretakerPropertyAssignment.objects.create(
+                caretaker_profile=profile, property_assignment=self.prop,
+                organization=self.org, assigned_by=self.landlord,
+            )
+        return user
+
+    def _record(self, user, **overrides):
+        client = APIClient()
+        client.force_authenticate(user=user)
+        payload = {'tenancy': str(self.tenancy.id), 'amount': '22000.00', 'payment_method': 'cash'}
+        payload.update(overrides)
+        return client.post('/api/v1/rent/payments/manual/', payload, format='json')
+
+    def test_landlord_cash_payment_settles_the_oldest_charge(self):
+        resp = self._record(self.landlord, notes='Receipt 0042')
+        self.assertEqual(resp.status_code, 201)
+        self.charge.refresh_from_db()
+        self.assertEqual(self.charge.status, 'paid')
+        payment = Payment.objects.get()
+        self.assertEqual((payment.provider, payment.payment_method, payment.status), ('manual', 'cash', 'success'))
+        self.assertEqual(payment.notes, 'Receipt 0042')
+        self.assertEqual(payment.recorded_by, self.landlord)
+
+    def test_partial_cash_payment_leaves_the_balance(self):
+        self._record(self.landlord, amount='5000.00')
+        self.charge.refresh_from_db()
+        self.assertEqual(self.charge.status, 'partially_paid')
+        self.assertEqual(self.charge.outstanding, Decimal('17000.00'))
+
+    def test_caretaker_with_permission_can_record_on_an_assigned_property(self):
+        caretaker = self._caretaker({'can_view_payments': True, 'can_record_payments': True})
+        self.assertEqual(self._record(caretaker).status_code, 201)
+        self.assertEqual(Payment.objects.get().recorded_by, caretaker)
+
+    def test_caretaker_without_permission_is_refused(self):
+        caretaker = self._caretaker({'can_view_payments': True})
+        self.assertEqual(self._record(caretaker).status_code, 403)
+        self.assertEqual(Payment.objects.count(), 0)
+
+    def test_caretaker_cannot_record_on_a_property_they_are_not_assigned_to(self):
+        caretaker = self._caretaker({'can_record_payments': True}, assigned=False)
+        self.assertEqual(self._record(caretaker).status_code, 403)
+        self.assertEqual(Payment.objects.count(), 0)
+
+    def test_tenant_cannot_record_a_payment_for_themselves(self):
+        tenant_user = self.tenant.user
+        self.assertEqual(self._record(tenant_user).status_code, 403)
+
+    def test_recording_queues_a_confirmation_to_the_tenant(self):
+        from unittest import mock
+        with mock.patch('rent.tasks.send_payment_confirmation_task.delay') as queued:
+            self._record(self.landlord)
+        queued.assert_called_once_with(str(Payment.objects.get().id))

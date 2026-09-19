@@ -50,6 +50,8 @@ export default function CaretakersPage() {
   const createCaretaker = useCreateCaretaker();
   const [open, setOpen] = React.useState(false);
   const [propertyIds, setPropertyIds] = React.useState<string[]>([]);
+  // On by default: a caretaker is usually who collects cash from tenants.
+  const [canHandlePayments, setCanHandlePayments] = React.useState(true);
   const gateError = isGateRejection(createCaretaker.error);
 
   const form = useForm<z.infer<typeof caretakerSchema>>({
@@ -68,10 +70,12 @@ export default function CaretakersPage() {
         phone: normalizeKenyanPhone(values.phone),
         emergency_contact_phone: normalizeKenyanPhone(values.emergency_contact_phone),
         property_ids: propertyIds,
+        permissions: canHandlePayments ? { can_view_payments: true, can_record_payments: true } : {},
       });
       setOpen(false);
       form.reset();
       setPropertyIds([]);
+      setCanHandlePayments(true);
     } catch {
       // handled via createCaretaker.error / isGateRejection in render
     }
@@ -183,6 +187,21 @@ export default function CaretakersPage() {
                       </div>
                     </FormSection>
                   )}
+                  <FormSection title="Permissions" description="What this caretaker is allowed to do.">
+                    <label className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40">
+                      <Checkbox
+                        className="mt-0.5"
+                        checked={canHandlePayments}
+                        onCheckedChange={(v) => setCanHandlePayments(v === true)}
+                      />
+                      <span>
+                        <span className="font-medium">See rent and record payments</span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                          Lets them view who owes rent and record cash, bank or M-Pesa payments received from tenants.
+                        </span>
+                      </span>
+                    </label>
+                  </FormSection>
                   {gateError && <GateBanner gate={gateError} onDismiss={() => createCaretaker.reset()} />}
                   <FormDialogActions submitLabel="Save" isPending={createCaretaker.isPending} />
                 </form>

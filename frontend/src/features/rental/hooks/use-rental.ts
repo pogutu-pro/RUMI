@@ -325,6 +325,13 @@ export const useRecordManualPayment = () => {
       qc.invalidateQueries({ queryKey: ['rental', 'rent-balance'] });
       toast.success('Payment recorded');
     },
-    onError: (err) => toast.error(errorMessage(err, 'Could not record payment')),
+    onError: (err) => {
+      // Caretakers can only record if the landlord granted them the permission.
+      if ((err as { statusCode?: number })?.statusCode === 403) {
+        toast.error('You do not have permission to record payments. Ask the landlord to turn it on for you.');
+        return;
+      }
+      toast.error(errorMessage(err, 'Could not record payment'));
+    },
   });
 };

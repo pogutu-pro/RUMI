@@ -796,7 +796,17 @@ class ManualPaymentView(RumiaBaseView):
         PaymentService.record_manual_payment(payment, allocations=allocations, verified_by=request.user)
         log_audit('payment_recorded', actor=request.user, organization=tenancy.organization, entity=payment,
                    metadata={'action': 'manual'})
+        self._notify_tenant(payment)
         return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
+
+    @staticmethod
+    def _notify_tenant(payment):
+        """Tell the tenant their cash/bank payment was recorded, like an online one."""
+        try:
+            from rent.tasks import send_payment_confirmation_task
+            send_payment_confirmation_task.delay(str(payment.id))
+        except Exception:
+            logger.exception('Could not queue confirmation for manual payment %s', payment.id)
 
 
 class PaystackWebhookView(APIView):
