@@ -136,7 +136,7 @@ export function LandlordRegisterForm() {
         />
 
         <div className="text-xs text-center text-gray-500 leading-relaxed">
-          By selecting <strong>Create landlord account</strong>, I agree to the{' '}
+          By selecting <strong>Create landlord account</strong>, I confirm I am 18 or older and agree to the{' '}
           <Link
             href="/terms"
             className="text-primary hover:underline underline-offset-4"

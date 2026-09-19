@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from drf_yasg.utils import swagger_auto_schema
 
 from .models import Notification, NotificationPreference, EmailTemplate, SMSTemplate
+from .unsubscribe import read_unsubscribe_token
 
 
 class NotificationListView(APIView):
@@ -948,3 +949,30 @@ class AdminDeliveryLogView(APIView):
                 }
                 for row in page
         ])
+
+
+class MarketingUnsubscribeView(APIView):
+    """
+    Marketing Email Unsubscribe
+
+    POST: turn off marketing email for the user named by a signed token.
+
+    Authentication Required: None. The token from the email link is the proof.
+    It is a POST so mail scanners that pre-fetch links cannot unsubscribe
+    someone by accident.
+    """
+
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        user_id = read_unsubscribe_token(request.data.get('token') or '')
+        if user_id is None:
+            return Response(
+                {'error': 'This unsubscribe link is invalid or has been altered.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        NotificationPreference.objects.update_or_create(
+            user_id=user_id, defaults={'marketing_emails': False},
+        )
+        return Response({'unsubscribed': True})

@@ -484,3 +484,69 @@ class BuiltInTemplateCatalogTests(TestCase):
         seen = {r['id'] for r in first['results']} | {r['id'] for r in second['results']}
         self.assertEqual(len(seen), 25)
 
+
+
+@override_settings(
+    CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}},
+    ENABLE_RATE_LIMITING=False,
+)
+class MarketingConsentTests(TestCase):
+    """Marketing email is opt-in, gated per user, and one click to leave."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='consent@test.com', password='Pass123!',
+            first_name='Con', last_name='Sent', role='landlord', is_verified=True,
+        )
+        self.url = '/api/v1/notifications/unsubscribe/'
+
+    def test_marketing_defaults_to_off(self):
+        from notifications.models import NotificationPreference
+        prefs = NotificationPreference.objects.create(user=self.user)
+        self.assertFalse(prefs.marketing_emails)
+
+    def test_unsubscribe_link_turns_marketing_off_without_login(self):
+        from notifications.models import NotificationPreference
+        from notifications.unsubscribe import make_unsubscribe_token
+        NotificationPreference.objects.create(user=self.user, marketing_emails=True)
+        response = self.client.post(
+            self.url, {'token': make_unsubscribe_token(self.user)}, format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(
+            NotificationPreference.objects.get(user=self.user).marketing_emails
+        )
+
+    def test_tampered_token_is_rejected(self):
+        response = self.client.post(self.url, {'token': 'not-a-real-token'}, format='json')
+        self.assertEqual(response.status_code, 400)
+
+    def test_get_does_not_unsubscribe(self):
+        """Mail scanners pre-fetch links with GET; that must change nothing."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 405)
+
+    def test_marketing_email_is_skipped_when_not_opted_in(self):
+        from unittest import mock
+        from notifications.models import EmailTemplate
+        from notifications.tasks import send_notification
+        EmailTemplate.objects.create(
+            name='marketing_news', subject='News', html_content='<p>Hi</p>', is_active=True,
+        )
+        with mock.patch('notifications.tasks._send_email_via_mailtrap') as send:
+            send_notification(self.user.id, 'marketing_news', 'email', {})
+        send.assert_not_called()
+
+    def test_marketing_email_carries_unsubscribe_link_when_opted_in(self):
+        from unittest import mock
+        from notifications.models import EmailTemplate, NotificationPreference
+        from notifications.tasks import send_notification
+        NotificationPreference.objects.create(user=self.user, marketing_emails=True)
+        EmailTemplate.objects.create(
+            name='marketing_news', subject='News', html_content='<p>Hi</p>', is_active=True,
+        )
+        with mock.patch('notifications.tasks._send_email_via_mailtrap') as send:
+            send_notification(self.user.id, 'marketing_news', 'email', {})
+        body = send.call_args[0][2]
+        self.assertIn('/unsubscribe?token=', body)
