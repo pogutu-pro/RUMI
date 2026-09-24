@@ -7,6 +7,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -24,7 +25,7 @@ from core.permissions.rumia import (
 )
 from organizations.models import Organization, OrganizationMembership
 from properties.models import CaretakerPropertyAssignment, Property, RentalUnit, Tenancy
-from rent.models import Payment, RentCharge
+from rent.models import Payment, PaymentAllocation, RentCharge
 from rent.services.income_flow import IncomeFlowService
 from rent.services.deposits import DepositService
 from rent.services.payment_service import PaymentService
@@ -699,15 +700,15 @@ class RentBalanceView(RumiaBaseView):
     property_lookup = 'parent_property'
 
     def get(self, request):
+        role = get_canonical_role(request.user)
+        tenancy_id = request.query_params.get('tenancy_id')
+
         qs = self.filter_by_organization(
             RentCharge.objects.select_related('tenant', 'unit').prefetch_related('lines')
             .exclude(status__in=['paid', 'waived'])
         )
-        role = get_canonical_role(request.user)
         if role == 'tenant':
             qs = qs.filter(tenant__user=request.user)
-
-        tenancy_id = request.query_params.get('tenancy_id')
         if tenancy_id:
             qs = qs.filter(tenancy_id=tenancy_id)
 
@@ -726,11 +727,22 @@ class RentBalanceView(RumiaBaseView):
             credit_qs = credit_qs.filter(tenancy_id=tenancy_id)
         credit_total = sum((p.unapplied_amount for p in credit_qs), Decimal('0.00'))
 
+        paid_qs = self.filter_by_organization(Payment.objects.filter(status='success'))
+        if role == 'tenant':
+            paid_qs = paid_qs.filter(tenant__user=request.user)
+        if tenancy_id:
+            paid_qs = paid_qs.filter(tenancy_id=tenancy_id)
+        paid_this_month = paid_qs.filter(paid_at__date__gte=timezone.localdate().replace(day=1)).aggregate(
+            total=Sum('amount'),
+        )['total'] or Decimal('0.00')
+
         return Response({
             'outstanding_total': str(outstanding_total),
             'overdue_total': str(overdue_total),
             'credit_total': str(credit_total),
             'net_balance': str(outstanding_total - credit_total),
+            'paid_this_month': str(paid_this_month),
+            'credit_balance': str(credit_total),  # same figure as credit_total, kept for older clients
             'charges': RentChargeSerializer(charges, many=True).data,
         })
 

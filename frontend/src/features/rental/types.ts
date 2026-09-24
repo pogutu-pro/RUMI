@@ -166,6 +166,10 @@ export interface RentBalance {
   credit_total?: string;
   /** outstanding_total − credit_total (negative = tenant is in credit). */
   net_balance?: string;
+  /** Successful payments received since the 1st of the current calendar month. */
+  paid_this_month?: string;
+  /** Same as credit_total (kept for older screens). */
+  credit_balance?: string;
   charges: RentCharge[];
 }
 

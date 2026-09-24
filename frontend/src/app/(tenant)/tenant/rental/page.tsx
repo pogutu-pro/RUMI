@@ -88,10 +88,14 @@ function RentHero({
   tenancy,
   nextCharge,
   outstanding,
+  paidThisMonth,
+  creditBalance,
 }: {
   tenancy: Tenancy;
   nextCharge: RentCharge | undefined;
   outstanding: number;
+  paidThisMonth: number;
+  creditBalance: number;
 }) {
   const owing = outstanding > 0 && !!nextCharge;
   const tone: Tone = !owing ? 'ok' : nextCharge?.status === 'overdue' ? 'overdue' : 'due';
@@ -161,6 +165,27 @@ function RentHero({
           {owing ? 'Pay now' : 'Pay in advance'}
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
+      </div>
+
+      {/* Monthly rent and what's gone toward it this month always show here,
+          regardless of the headline figure above — including money paid
+          ahead of time, which has nothing to reduce and would otherwise be
+          invisible. */}
+      <div className="relative mt-6 grid grid-cols-2 gap-3 border-t border-white/20 pt-6 sm:grid-cols-3">
+        <div>
+          <p className={cn('text-xs', styles.muted)}>Monthly rent</p>
+          <p className="mt-1 text-lg font-semibold">{formatKes(tenancy.monthly_rent)}</p>
+        </div>
+        <div>
+          <p className={cn('text-xs', styles.muted)}>Paid this month</p>
+          <p className="mt-1 text-lg font-semibold">{formatKes(paidThisMonth)}</p>
+        </div>
+        {creditBalance > 0 && (
+          <div>
+            <p className={cn('text-xs', styles.muted)}>Credit — paid ahead</p>
+            <p className="mt-1 text-lg font-semibold">{formatKes(creditBalance)}</p>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -349,12 +374,20 @@ export default function TenantRentalDashboard() {
   }
 
   const outstanding = Number(balance?.outstanding_total ?? '0');
+  const paidThisMonth = Number(balance?.paid_this_month ?? '0');
+  const creditBalance = Number(balance?.credit_balance ?? '0');
 
   return (
     <div className="space-y-6">
       <PageHeader title="My rent" description="Your home, your rent and your payments in one place." />
 
-      <RentHero tenancy={activeTenancy} nextCharge={nextCharge} outstanding={outstanding} />
+      <RentHero
+        tenancy={activeTenancy}
+        nextCharge={nextCharge}
+        outstanding={outstanding}
+        paidThisMonth={paidThisMonth}
+        creditBalance={creditBalance}
+      />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile icon={Wallet} label="Monthly rent" value={formatKes(activeTenancy.monthly_rent)} />

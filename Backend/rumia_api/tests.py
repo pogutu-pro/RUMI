@@ -675,6 +675,50 @@ class RentGenerationTests(RumiaTestFixtures):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Decimal(response.data['outstanding_total']), Decimal('22000.00'))
 
+    def test_rent_balance_reports_credit_for_an_unallocated_payment(self):
+        """A payment with nothing due to apply it to (paid ahead, or a small
+        test payment) must still be visible somewhere — it has no RentCharge
+        at all, so it cannot show up in `charges`."""
+        user_l, _, org = self.create_landlord_with_org()
+        prop, unit = self.create_property_with_unit(org)
+        _, tenant = self.create_tenant(org)
+        tenancy = self.create_tenancy(org, prop, unit, tenant, status='active')
+        Payment.objects.create(
+            organization=org, tenancy=tenancy, tenant=tenant, parent_property=prop, unit=unit,
+            amount=Decimal('10.00'), payment_method='paystack', provider='paystack',
+            internal_reference='RUMIA-CREDIT-TEST', status='success', paid_at=timezone.now(),
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=tenant.user)
+        response = client.get('/api/v1/rent/balance/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Decimal(response.data['credit_balance']), Decimal('10.00'))
+        self.assertEqual(Decimal(response.data['paid_this_month']), Decimal('10.00'))
+        self.assertEqual(Decimal(response.data['outstanding_total']), Decimal('0.00'))
+
+    def test_rent_balance_credit_excludes_amount_already_allocated(self):
+        """A payment that fully settles its charge leaves no credit behind."""
+        from rent.services.payment_service import PaymentService
+
+        user_l, _, org = self.create_landlord_with_org()
+        prop, unit = self.create_property_with_unit(org)
+        _, tenant = self.create_tenant(org)
+        tenancy = self.create_tenancy(org, prop, unit, tenant, status='active')
+        self.create_rent_charge(tenancy, amount=Decimal('22000.00'))
+        payment = Payment.objects.create(
+            organization=org, tenancy=tenancy, tenant=tenant, parent_property=prop, unit=unit,
+            amount=Decimal('22000.00'), payment_method='cash', provider='manual',
+            internal_reference='RUMIA-FULL-SETTLE',
+        )
+        PaymentService.record_manual_payment(payment)
+
+        client = APIClient()
+        client.force_authenticate(user=tenant.user)
+        response = client.get('/api/v1/rent/balance/')
+        self.assertEqual(Decimal(response.data['credit_balance']), Decimal('0.00'))
+        self.assertEqual(Decimal(response.data['outstanding_total']), Decimal('0.00'))
+
 
 class PaystackFlowTests(RumiaTestFixtures):
     def _tenancy_with_tenant(self):
