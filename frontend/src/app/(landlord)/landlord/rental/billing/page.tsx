@@ -15,6 +15,7 @@ import {
 } from '@/features/billing/hooks/use-subscription';
 import { usePlans } from '@/features/billing/hooks/use-plans';
 import { usePayoutStatus } from '@/features/payout/hooks/use-payout';
+import { navigateCheckoutTab, openCheckoutTab } from '@/lib/utils/checkout-window';
 import { PayoutDetailsForm } from '@/features/payout/components/payout-details-form';
 import type { OrganizationSubscription } from '@/features/billing/types';
 import type { PayoutStatus } from '@/features/payout/types';
@@ -226,9 +227,25 @@ export default function BillingPayoutPage() {
                       className="w-full"
                       disabled={isSubscribingThisPlan}
                       isLoading={isSubscribingThisPlan}
-                      onClick={() =>
-                        subscribeMutation.mutate({ planId: plan.id, billingMode: 'auto' })
-                      }
+                      onClick={() => {
+                        // Must happen synchronously, before the mutation's
+                        // async request resolves, or the browser blocks it
+                        // as an unsolicited popup — see checkout-window.ts.
+                        const checkoutTab = openCheckoutTab();
+                        subscribeMutation.mutate(
+                          { planId: plan.id, billingMode: 'auto' },
+                          {
+                            onSuccess: (result) => {
+                              if (result.authorization_url) {
+                                navigateCheckoutTab(checkoutTab, result.authorization_url);
+                              } else {
+                                checkoutTab?.close();
+                              }
+                            },
+                            onError: () => checkoutTab?.close(),
+                          },
+                        );
+                      }}
                     >
                       Subscribe to {plan.name}
                     </Button>
