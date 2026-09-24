@@ -148,6 +148,11 @@ export interface RentCharge {
 export interface RentBalance {
   outstanding_total: string;
   overdue_total: string;
+  /** Successful payments received since the 1st of the current calendar month. */
+  paid_this_month: string;
+  /** Money already paid that isn't applied to any charge — an overpayment, or
+   * paid while nothing was due. Derived from the ledger, not a stored value. */
+  credit_balance: string;
   charges: RentCharge[];
 }
 

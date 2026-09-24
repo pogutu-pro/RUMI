@@ -7,6 +7,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -24,7 +25,7 @@ from core.permissions.rumia import (
 )
 from organizations.models import Organization, OrganizationMembership
 from properties.models import CaretakerPropertyAssignment, Property, RentalUnit, Tenancy
-from rent.models import Payment, RentCharge
+from rent.models import Payment, PaymentAllocation, RentCharge
 from rent.services.income_flow import IncomeFlowService
 from rent.services.payment_service import PaymentService
 from rent.services.rent_generation import RentChargeGenerationService
@@ -676,14 +677,14 @@ class RentBalanceView(RumiaBaseView):
     property_lookup = 'parent_property'
 
     def get(self, request):
+        role = get_canonical_role(request.user)
+        tenancy_id = request.query_params.get('tenancy_id')
+
         qs = self.filter_by_organization(
             RentCharge.objects.select_related('tenant', 'unit').exclude(status__in=['paid', 'waived'])
         )
-        role = get_canonical_role(request.user)
         if role == 'tenant':
             qs = qs.filter(tenant__user=request.user)
-
-        tenancy_id = request.query_params.get('tenancy_id')
         if tenancy_id:
             qs = qs.filter(tenancy_id=tenancy_id)
 
@@ -691,9 +692,38 @@ class RentBalanceView(RumiaBaseView):
         outstanding_total = sum((c.outstanding for c in charges), Decimal('0.00'))
         overdue_total = sum((c.outstanding for c in charges if c.status == 'overdue'), Decimal('0.00'))
 
+        # Scoped the same way as the charges above, but built independently —
+        # a credit-only payment (nothing outstanding to allocate it to, e.g.
+        # paid ahead or a test payment with no charge due) has no RentCharge
+        # at all, so it would never show up if this were derived from
+        # `charges`, which excludes paid charges entirely.
+        payments_qs = self.filter_by_organization(Payment.objects.filter(status='success'))
+        if role == 'tenant':
+            payments_qs = payments_qs.filter(tenant__user=request.user)
+        if tenancy_id:
+            payments_qs = payments_qs.filter(tenancy_id=tenancy_id)
+
+        month_start = timezone.localdate().replace(day=1)
+        paid_this_month = payments_qs.filter(paid_at__date__gte=month_start).aggregate(
+            total=Sum('amount'),
+        )['total'] or Decimal('0.00')
+
+        # Credit balance: money already paid that isn't applied to any
+        # charge yet — an overpayment, or a payment made while nothing was
+        # due (paying ahead). Derived straight from the ledger (paid minus
+        # allocated) rather than stored anywhere, matching RentCharge and
+        # Payment's own append-only, status-derived-from-allocations design.
+        total_received = payments_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        total_allocated = PaymentAllocation.objects.filter(payment__in=payments_qs).aggregate(
+            total=Sum('amount'),
+        )['total'] or Decimal('0.00')
+        credit_balance = total_received - total_allocated
+
         return Response({
             'outstanding_total': str(outstanding_total),
             'overdue_total': str(overdue_total),
+            'paid_this_month': str(paid_this_month),
+            'credit_balance': str(credit_balance),
             'charges': RentChargeSerializer(charges, many=True).data,
         })
 
