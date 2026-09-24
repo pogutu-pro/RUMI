@@ -968,6 +968,35 @@ class NotificationTests(RumiaTestFixtures):
         self.assertIn(tenant.email, mock_email.call_args[0])
         self.assertIn(tenant.phone, mock_sms.call_args[0])
 
+    def test_payment_confirmation_email_is_branded_html(self):
+        """The tenant asked for this specifically: the plain-text confirmation
+        email did not look like it came from RumiaRent at all."""
+        from rent.services.notifications import send_payment_confirmation
+
+        user_l, _, org = self.create_landlord_with_org()
+        prop, unit = self.create_property_with_unit(org)
+        _, tenant = self.create_tenant(org)
+        tenancy = self.create_tenancy(org, prop, unit, tenant, status='active')
+        payment = Payment.objects.create(
+            organization=org, tenancy=tenancy, tenant=tenant, parent_property=prop, unit=unit,
+            amount=Decimal('22000.00'), payment_method='paystack', provider='paystack',
+            internal_reference='RUMIA-NOTIFY-BRANDED', status='success', paid_at=timezone.now(),
+        )
+
+        with patch('rent.services.notifications._send_sms', return_value=True):
+            send_payment_confirmation(payment)
+
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.content_subtype, 'html')
+        self.assertIn('RumiaRent', sent.body)
+        self.assertIn('logo', sent.body)
+        self.assertIn('22000.00', sent.body)
+        self.assertIn(payment.internal_reference, sent.body)
+        # The plain-text message already opens with "Hi <name>," — the
+        # branded wrapper must not print a second greeting above it.
+        self.assertEqual(sent.body.count(f'Hi {tenant.full_name}'), 1)
+
     def test_rent_due_reminder_sends_email_and_sms(self):
         from rent.services.notifications import send_rent_due_reminder
 
