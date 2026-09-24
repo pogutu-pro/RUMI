@@ -209,10 +209,26 @@ export const useCreateTenancy = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: Record<string, unknown>) => rentalApi.createTenancy(payload),
-    onSuccess: () => {
+    onSuccess: (tenancy) => {
       qc.invalidateQueries({ queryKey: ['rental', 'tenancies'] });
       qc.invalidateQueries({ queryKey: ['rental', 'units'] });
-      toast.success('Tenancy created');
+
+      // The landlord/caretaker otherwise has no way to know an invite email
+      // didn't go out — it looks identical to success. This bit them for
+      // real: a tenant profile created with the landlord's own login email
+      // silently linked to that account instead of inviting anyone.
+      if (tenancy.tenant_invite_outcome === 'linked_existing') {
+        toast.success('Tenancy created', {
+          description:
+            'No invite sent — this email already has a RumiaRent account, so it kept its existing access instead of getting a tenant login.',
+        });
+      } else if (tenancy.tenant_invite_outcome === 'no_email') {
+        toast.success('Tenancy created', {
+          description: 'No invite sent — add an email for this tenant to give them a login.',
+        });
+      } else {
+        toast.success('Tenancy created');
+      }
     },
     onError: (err) => toast.error(errorMessage(err, 'Could not create tenancy — is the unit already occupied?')),
   });

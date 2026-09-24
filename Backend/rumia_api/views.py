@@ -521,8 +521,13 @@ class TenancyListCreateView(RumiaBaseView):
         log_audit('tenancy_created', actor=request.user, organization=unit.organization, entity=tenancy)
         # Outside the transaction — this is the point a tenant is actually tied to a
         # property, so it's when they should get their account + login invite.
-        onboard_tenant_user(tenant, property_name=unit.parent_property.name)
-        return Response(TenancySerializer(tenancy).data, status=status.HTTP_201_CREATED)
+        _tenant, invite_outcome = onboard_tenant_user(tenant, property_name=unit.parent_property.name)
+        data = TenancySerializer(tenancy).data
+        # 'invited' | 'linked_existing' | 'no_email' | 'already_linked' — the
+        # frontend uses this to tell the landlord/caretaker whether an
+        # invite actually went out, instead of leaving them to assume it did.
+        data['tenant_invite_outcome'] = invite_outcome
+        return Response(data, status=status.HTTP_201_CREATED)
 
 
 class TenancyDetailView(RumiaBaseView):
