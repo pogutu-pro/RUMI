@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { ArrowLeft, Gift, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Gift, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { axiosInstance as axios } from '@/lib/api/client';
@@ -29,6 +29,7 @@ import { useCreateOrganization, useCreateProperty } from '@/features/rental/hook
 import { usePayoutStatus } from '@/features/payout/hooks/use-payout';
 import { PayoutDetailsForm } from '@/features/payout/components/payout-details-form';
 import { usePlans } from '@/features/billing/hooks/use-plans';
+import { planFeatures, RECOMMENDED_PLAN_SLUG } from '@/features/billing/plan-summary';
 import { useBillingAccess } from '@/features/billing/hooks/use-subscription';
 import {
   wizardOrgSchema,
@@ -354,7 +355,7 @@ function TierStep({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-10 shadow-sm">
+    <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-10">
       <div className="mb-6 flex items-center gap-3">
         <Button type="button" variant="ghost" size="icon" aria-label="Go back" onClick={onBack}>
           <ArrowLeft className="h-5 w-5" />
@@ -396,19 +397,10 @@ function TierStep({ onBack }: { onBack: () => void }) {
       )}
 
       {!isLoading && !isError && plans && plans.length > 0 && (
-        <div className="grid gap-6 sm:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-3">
           {plans.map((plan) => {
             const isSelected = selectedSlug === plan.slug;
-            const propertiesLabel =
-              plan.max_properties === 0
-                ? 'Unlimited properties'
-                : `${plan.max_properties} propert${plan.max_properties === 1 ? 'y' : 'ies'}`;
-            const unitsLabel =
-              plan.max_units === 0 ? 'Unlimited units' : `${plan.max_units} units`;
-            const seatsLabel =
-              plan.max_caretaker_seats === 0
-                ? 'Unlimited caretaker seats'
-                : `${plan.max_caretaker_seats} caretaker seat${plan.max_caretaker_seats === 1 ? '' : 's'}`;
+            const isRecommended = plan.slug === RECOMMENDED_PLAN_SLUG;
 
             return (
               <button
@@ -416,21 +408,35 @@ function TierStep({ onBack }: { onBack: () => void }) {
                 type="button"
                 onClick={() => setSelectedSlug(plan.slug)}
                 aria-pressed={isSelected}
-                className={`rounded-3xl p-8 text-left transition-all ${
+                className={`relative rounded-3xl p-6 text-left transition-all ${
                   isSelected
-                    ? 'border border-primary bg-white shadow-xl'
-                    : 'border border-gray-100 bg-white shadow-sm hover:shadow-md'
+                    ? 'border-2 border-primary bg-primary/5 shadow-xl'
+                    : 'border border-gray-100 bg-white shadow-sm hover:-translate-y-0.5 hover:shadow-md'
                 }`}
               >
-                <h3 className="text-2xl font-semibold text-gray-900">{plan.name}</h3>
-                <div className="mt-2 flex items-baseline gap-1">
+                {isRecommended && (
+                  <span className="absolute right-6 top-6 rounded-full bg-primary px-3 py-1 text-xs font-semibold tracking-wide text-white">
+                    POPULAR
+                  </span>
+                )}
+                {isSelected && (
+                  <CheckCircle2 className="absolute right-6 top-6 h-6 w-6 text-primary" aria-hidden />
+                )}
+
+                <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400">
+                  {plan.name}
+                </h3>
+                <div className="mt-3 flex items-baseline gap-1">
                   <PriceDisplay amount={plan.price} size="lg" />
                   <span className="text-sm text-muted-foreground">/month</span>
                 </div>
-                <ul className="mt-4 space-y-1 text-sm text-muted-foreground">
-                  <li>{propertiesLabel}</li>
-                  <li>{unitsLabel}</li>
-                  <li>{seatsLabel}</li>
+                <ul className="mt-5 space-y-2.5 border-t border-gray-100 pt-5">
+                  {planFeatures(plan).map((feature) => (
+                    <li key={feature} className="flex items-start gap-2.5 text-sm text-gray-600">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+                      {feature}
+                    </li>
+                  ))}
                 </ul>
               </button>
             );

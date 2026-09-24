@@ -8,7 +8,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { PriceDisplay } from '@/components/ui/price-display';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 import { usePlans } from '@/features/billing/hooks/use-plans';
-import type { SubscriptionPlan } from '@/features/billing/types';
+import { planFeatures, RECOMMENDED_PLAN_SLUG } from '@/features/billing/plan-summary';
 
 const FAQS = [
   {
@@ -28,30 +28,6 @@ const FAQS = [
     a: "You'll be prompted to choose a plan before your trial ends, and we'll send a reminder in advance. No card is required to start, so there's no surprise charge.",
   },
 ];
-
-function formatFeatureKey(key: string): string {
-  return key
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function formatLimit(count: number, singular: string, plural: string): string {
-  if (count === 0) return `Unlimited ${plural}`;
-  return `${count} ${count === 1 ? singular : plural}`;
-}
-
-function planFeatures(plan: SubscriptionPlan): string[] {
-  const featureFlags = Object.entries(plan.features)
-    .filter(([, enabled]) => enabled)
-    .map(([key]) => formatFeatureKey(key));
-
-  return [
-    formatLimit(plan.max_properties, 'property', 'properties'),
-    formatLimit(plan.max_units, 'unit', 'units'),
-    formatLimit(plan.max_caretaker_seats, 'caretaker seat', 'caretaker seats'),
-    ...featureFlags,
-  ];
-}
 
 function PlanGridSkeleton() {
   return (
@@ -103,7 +79,7 @@ export function PricingContent() {
           {!isLoading && !isError && data && data.length > 0 && (
             <div className="grid lg:grid-cols-3 gap-8">
               {data.map((plan) => {
-                const isRecommended = plan.slug === 'pro';
+                const isRecommended = plan.slug === RECOMMENDED_PLAN_SLUG;
                 return (
                   <div
                     key={plan.id}
