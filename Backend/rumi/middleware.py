@@ -311,6 +311,18 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
         return response
 
 
+# Paths a payment (or other) provider posts webhooks to. These are already
+# authenticated by a cryptographic signature the view itself checks, and the
+# caller is the provider's shared server pool, not one client — an anonymous
+# per-IP limit is the wrong tool and can silently drop real events under
+# load (or once several projects on this deployment share one provider
+# account). Add a new project's webhook path prefix here rather than
+# exempting it ad hoc in the view.
+RATE_LIMIT_EXEMPT_PATH_PREFIXES = (
+    '/api/v1/rent/payments/webhook/',
+)
+
+
 class RateLimitMiddleware(MiddlewareMixin):
     """Enhanced rate limiting middleware with Redis backend"""
     
@@ -329,6 +341,9 @@ class RateLimitMiddleware(MiddlewareMixin):
         """Check rate limits"""
         # 1. Global toggle
         if not getattr(settings, 'ENABLE_RATE_LIMITING', True):
+            return None
+
+        if request.path.startswith(RATE_LIMIT_EXEMPT_PATH_PREFIXES):
             return None
 
         # 2. Get client identifier

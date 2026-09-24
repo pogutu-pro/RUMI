@@ -887,6 +887,12 @@ class PaystackWebhookView(APIView):
     """
 
     permission_classes = [AllowAny]
+    # DRF's default AnonRateThrottle would otherwise count every delivery
+    # against Paystack's shared sending IPs (100/hour by default here) —
+    # the HMAC signature check above is the real gate for this endpoint,
+    # not a per-IP anonymous-abuse limit. RATE_LIMIT_EXEMPT_PATH_PREFIXES
+    # in rumi/middleware.py exempts it from the other rate limiter too.
+    throttle_classes = []
 
     def post(self, request):
         import hashlib
