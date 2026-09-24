@@ -1086,6 +1086,7 @@ class TenantOnboardingTests(RumiaTestFixtures):
             'start_date': date.today().isoformat(), 'monthly_rent': '18000.00', 'status': 'active',
         })
         self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data['tenant_invite_outcome'], 'invited')
 
         profile.refresh_from_db()
         self.assertIsNotNone(profile.user)
@@ -1096,6 +1097,8 @@ class TenantOnboardingTests(RumiaTestFixtures):
         self.assertIn('reset-password', mail.outbox[0].body)
 
     def test_tenancy_creation_links_existing_user_without_reinvite(self):
+        """A profile already linked to a user (create_tenant links it eagerly)
+        should not be re-linked or re-invited on tenancy creation."""
         user_l, _, org = self.create_landlord_with_org()
         prop, unit = self.create_property_with_unit(org)
         existing_user, profile = self.create_tenant(org, 'already_has_account@test.com')
@@ -1109,6 +1112,36 @@ class TenantOnboardingTests(RumiaTestFixtures):
         })
         self.assertEqual(response.status_code, 201)
         self.assertEqual(len(mail.outbox), 0)  # already had an account, no invite needed
+        self.assertEqual(response.data['tenant_invite_outcome'], 'already_linked')
+
+    def test_tenancy_creation_reusing_a_landlords_own_email_skips_the_invite_visibly(self):
+        """Reproduces a real production incident: a landlord created a tenant
+        profile using their OWN login email (no user linked yet), then created
+        the tenancy. onboard_tenant_user matched that email to the landlord's
+        existing account and linked it, silently — the landlord assumed an
+        invite had gone out and only found out it hadn't by asking. The
+        response must say so explicitly."""
+        user_l, _, org = self.create_landlord_with_org()
+        prop, unit = self.create_property_with_unit(org)
+        profile = TenantProfile.objects.create(
+            organization=org, full_name='Landlord As Tenant', phone='+254700222111',
+            email=user_l.email, status='prospect',
+        )
+        self.assertIsNone(profile.user)
+
+        client = APIClient()
+        client.force_authenticate(user=user_l)
+        response = client.post('/api/v1/tenancies/', {
+            'unit': str(unit.id), 'tenant': str(profile.id),
+            'start_date': date.today().isoformat(), 'monthly_rent': '18000.00', 'status': 'active',
+        })
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(response.data['tenant_invite_outcome'], 'linked_existing')
+
+        profile.refresh_from_db()
+        self.assertEqual(profile.user_id, user_l.id)
+        self.assertEqual(profile.user.role, 'landlord')  # unchanged — no second role granted
 
 
 class NextOfKinEscalationTests(RumiaTestFixtures):
