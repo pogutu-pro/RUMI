@@ -1,6 +1,8 @@
 'use client';
 
 import * as React from 'react';
+import { toast } from 'sonner';
+import { Landmark } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusPill, type StatusPillProps } from '@/components/ui/status-pill';
@@ -8,7 +10,11 @@ import { PriceDisplay } from '@/components/ui/price-display';
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
 import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import {
   useBillingAccess,
+  useManualPaymentInstructions,
   useMySubscription,
   useSubscribe,
   useSwitchPlan,
@@ -17,8 +23,68 @@ import { usePlans } from '@/features/billing/hooks/use-plans';
 import { usePayoutStatus } from '@/features/payout/hooks/use-payout';
 import { navigateCheckoutTab, openCheckoutTab } from '@/lib/utils/checkout-window';
 import { PayoutDetailsForm } from '@/features/payout/components/payout-details-form';
-import type { OrganizationSubscription } from '@/features/billing/types';
+import type { OrganizationSubscription, SubscriptionPlan } from '@/features/billing/types';
 import type { PayoutStatus } from '@/features/payout/types';
+
+/** "Pay another way" — for a landlord with no card. Shows whatever a super
+ * admin has configured (RumiaRent's real bank/paybill details), never
+ * anything invented here. Subscribing this way activates nothing by
+ * itself — it lands as 'pending' until a super admin confirms the payment
+ * arrived. */
+function ManualPayDialog({
+  plan,
+  onClose,
+  onConfirm,
+  isPending,
+}: {
+  plan: SubscriptionPlan | null;
+  onClose: () => void;
+  onConfirm: () => void;
+  isPending: boolean;
+}) {
+  const { data, isLoading } = useManualPaymentInstructions(!!plan);
+
+  return (
+    <Dialog open={!!plan} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Pay another way</DialogTitle>
+          <DialogDescription>
+            {plan && (
+              <>
+                For the {plan.name} plan (<PriceDisplay amount={plan.price} size="sm" />
+                /month). Your plan activates once we confirm the payment has arrived — usually
+                within one working day.
+              </>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="skeleton h-24 rounded-xl" />
+        ) : data?.instructions ? (
+          <div className="whitespace-pre-wrap rounded-xl border bg-muted/40 p-4 font-mono text-sm">
+            {data.instructions}
+          </div>
+        ) : (
+          <p className="rounded-xl border bg-muted/40 p-4 text-sm text-muted-foreground">
+            Payment details aren&apos;t set up yet — confirm below and our team will follow up with
+            how to pay.
+          </p>
+        )}
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="button" isLoading={isPending} onClick={onConfirm}>
+            I&apos;ll pay this way
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // Mirrors SubscriptionService.ACTIVE_STATUSES (Backend/billing/services/subscription_service.py)
 // exactly — only a subscription in one of these statuses is excluded from "reactivation"
@@ -57,6 +123,8 @@ export default function BillingPayoutPage() {
   const subscribeMutation = useSubscribe();
   const switchPlanMutation = useSwitchPlan();
   const [editingPayout, setEditingPayout] = React.useState(false);
+  const [manualPayPlan, setManualPayPlan] = React.useState<SubscriptionPlan | null>(null);
+  const isManualPending = subscription?.status === 'pending' && subscription.billing_mode === 'manual';
 
   const subscriptionNotFound =
     (subscriptionError as { statusCode?: number } | undefined)?.statusCode === 404;
@@ -115,6 +183,30 @@ export default function BillingPayoutPage() {
           )}
         </CardContent>
       </Card>
+
+      {isManualPending && (
+        <Card className="rounded-2xl border-amber-500/40 bg-amber-500/5">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 py-5">
+            <div className="flex items-start gap-3">
+              <Landmark className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden />
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {subscription?.plan_details.name} plan pending confirmation
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  We&apos;ll activate it as soon as we confirm your payment arrived.
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button" variant="outline" size="sm"
+              onClick={() => subscription && setManualPayPlan(subscription.plan_details)}
+            >
+              View payment instructions
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="rounded-2xl">
         <CardHeader>
@@ -183,7 +275,7 @@ export default function BillingPayoutPage() {
         />
       )}
 
-      {!plansLoading && !plansError && plans && plans.length > 0 && (
+      {!plansLoading && !plansError && !isManualPending && plans && plans.length > 0 && (
         <div className="grid gap-6 sm:grid-cols-3">
           {plans.map((plan) => {
             const isCurrentPlan = !isReactivatable && subscription?.plan === plan.id;
@@ -250,12 +342,39 @@ export default function BillingPayoutPage() {
                       Subscribe to {plan.name}
                     </Button>
                   )}
+                  {!isCurrentPlan && !isSwitchable && (
+                    <button
+                      type="button"
+                      className="mt-3 w-full text-center text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                      onClick={() => setManualPayPlan(plan)}
+                    >
+                      No card? Pay another way
+                    </button>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
       )}
+
+      <ManualPayDialog
+        plan={manualPayPlan}
+        isPending={subscribeMutation.isPending}
+        onClose={() => setManualPayPlan(null)}
+        onConfirm={() => {
+          if (!manualPayPlan) return;
+          subscribeMutation.mutate(
+            { planId: manualPayPlan.id, billingMode: 'manual' },
+            {
+              onSuccess: () => {
+                setManualPayPlan(null);
+                toast.success(`Noted — we'll activate your ${manualPayPlan.name} plan once payment is confirmed.`);
+              },
+            },
+          );
+        }}
+      />
     </div>
   );
 }
