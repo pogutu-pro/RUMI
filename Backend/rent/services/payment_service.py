@@ -318,3 +318,44 @@ class PaymentService:
             if alloc_amount > 0:
                 cls._create_allocation(payment, charge.id, alloc_amount)
                 remaining -= alloc_amount
+
+    @classmethod
+    @transaction.atomic
+    def apply_credit_to_new_charge(cls, charge: RentCharge) -> Decimal:
+        """
+        Sweep this tenancy's existing credit — successful payments with
+        money left over from every charge they've already been applied to —
+        onto a freshly generated charge, oldest payment first.
+
+        A tenant who pays before anything is due (or overpays) has that
+        money sitting unattached to any charge; without this, it stays
+        invisible the moment a new charge generates instead of settling it.
+        Called once per newly created RentCharge, from
+        RentChargeGenerationService — never from a normal payment, whose own
+        allocation already runs through _auto_allocate/_create_allocation.
+
+        Returns the total amount applied.
+        """
+        remaining_charge = charge.outstanding
+        if remaining_charge <= 0:
+            return Decimal('0.00')
+
+        candidates = (
+            Payment.objects.filter(tenancy_id=charge.tenancy_id, status='success')
+            .annotate(allocated=Sum('allocations__amount'))
+            .order_by('paid_at', 'created_at')
+        )
+
+        applied = Decimal('0.00')
+        for payment in candidates:
+            if remaining_charge <= 0:
+                break
+            payment_credit = payment.amount - (payment.allocated or Decimal('0.00'))
+            if payment_credit <= 0:
+                continue
+            alloc_amount = min(remaining_charge, payment_credit)
+            cls._create_allocation(payment, charge.id, alloc_amount)
+            remaining_charge -= alloc_amount
+            applied += alloc_amount
+
+        return applied

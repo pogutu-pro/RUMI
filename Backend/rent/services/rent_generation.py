@@ -83,6 +83,14 @@ class RentChargeGenerationService:
                     # overdue on day one, not 'upcoming' (the model default).
                     charge.recalculate_status(as_of=as_of)
                     charge.save(update_fields=['amount_paid', 'status', 'updated_at'])
+
+                    # A tenant who paid ahead (or overpaid) has that money
+                    # sitting unattached to any charge until one exists to
+                    # apply it to — this is that moment. Settles the new
+                    # charge from oldest existing credit first; a no-op when
+                    # there isn't any.
+                    from rent.services.payment_service import PaymentService
+                    PaymentService.apply_credit_to_new_charge(charge)
                 created += 1
             except IntegrityError:
                 # Another process already created this period's charge — expected

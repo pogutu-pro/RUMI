@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
+from django.db.models import Sum
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -127,7 +128,7 @@ class RumiaTestFixtures(TestCase):
         return user, profile
 
     @classmethod
-    def create_tenancy(cls, org, prop, unit, tenant, status='active'):
+    def create_tenancy(cls, org, prop, unit, tenant, status='active', monthly_rent=Decimal('22000.00')):
         return Tenancy.objects.create(
             organization=org,
             parent_property=prop,
@@ -135,8 +136,8 @@ class RumiaTestFixtures(TestCase):
             tenant=tenant,
             start_date=date.today() - timedelta(days=30),
             end_date=date.today() + timedelta(days=335),
-            monthly_rent=Decimal('22000.00'),
-            deposit=Decimal('22000.00'),
+            monthly_rent=monthly_rent,
+            deposit=monthly_rent,
             rent_due_day=5,
             status=status,
         )
@@ -645,6 +646,72 @@ class RentGenerationTests(RumiaTestFixtures):
 
         self.assertGreaterEqual(first.created, 1)
         self.assertEqual(second.created, 0)
+
+    def test_generation_sweeps_existing_credit_onto_the_new_charge(self):
+        """
+        Regression test for a real production incident: a caretaker recorded
+        a KES 8,000 cash payment for a tenant with no rent charge yet (a
+        brand-new tenancy). It saved correctly as a successful Payment, but
+        with nothing to allocate to, it had zero effect anywhere the
+        caretaker could see — not the charges table, not the tenant's
+        balance. Generating the tenancy's first charge must sweep that
+        existing credit onto it immediately, not leave it stranded forever
+        waiting for someone to notice.
+        """
+        from rent.services.payment_service import PaymentService
+
+        user_l, _, org = self.create_landlord_with_org()
+        prop, unit = self.create_property_with_unit(org)
+        _, tenant = self.create_tenant(org)
+        tenancy = self.create_tenancy(
+            org, prop, unit, tenant, status='active', monthly_rent=Decimal('10000.00'),
+        )
+        self.assertEqual(RentCharge.objects.filter(tenancy=tenancy).count(), 0)
+
+        payment = Payment.objects.create(
+            organization=org, tenancy=tenancy, tenant=tenant, parent_property=prop, unit=unit,
+            amount=Decimal('8000.00'), payment_method='cash', provider='manual',
+            internal_reference='RUMIA-CARETAKER-CASH', recorded_by=user_l,
+        )
+        PaymentService.record_manual_payment(payment, verified_by=user_l)
+        self.assertEqual(payment.allocations.count(), 0)  # nothing existed to apply it to
+
+        RentChargeGenerationService.generate_for_tenancy(tenancy)
+
+        charge = RentCharge.objects.get(tenancy=tenancy)
+        self.assertEqual(charge.amount_paid, Decimal('8000.00'))
+        self.assertEqual(charge.outstanding, Decimal('2000.00'))
+        self.assertEqual(charge.status, 'partially_paid')
+        payment.refresh_from_db()
+        self.assertEqual(payment.allocations.count(), 1)
+        self.assertEqual(payment.allocations.first().rent_charge_id, charge.id)
+
+    def test_generation_marks_the_new_charge_paid_when_credit_covers_it(self):
+        from rent.services.payment_service import PaymentService
+
+        user_l, _, org = self.create_landlord_with_org()
+        prop, unit = self.create_property_with_unit(org)
+        _, tenant = self.create_tenant(org)
+        tenancy = self.create_tenancy(
+            org, prop, unit, tenant, status='active', monthly_rent=Decimal('10000.00'),
+        )
+        payment = Payment.objects.create(
+            organization=org, tenancy=tenancy, tenant=tenant, parent_property=prop, unit=unit,
+            amount=Decimal('15000.00'), payment_method='cash', provider='manual',
+            internal_reference='RUMIA-PAID-AHEAD',
+        )
+        PaymentService.record_manual_payment(payment)
+
+        RentChargeGenerationService.generate_for_tenancy(tenancy)
+
+        charge = RentCharge.objects.get(tenancy=tenancy)
+        self.assertEqual(charge.status, 'paid')
+        self.assertEqual(charge.outstanding, Decimal('0.00'))
+        # KES 5,000 of the original 15,000 is still unapplied credit.
+        self.assertEqual(
+            payment.amount - (payment.allocations.aggregate(t=Sum('amount'))['t'] or Decimal('0.00')),
+            Decimal('5000.00'),
+        )
 
     def test_overdue_status_applied_by_date_alone(self):
         user_l, _, org = self.create_landlord_with_org()
