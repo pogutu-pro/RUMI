@@ -67,7 +67,7 @@ function NavLinks({
             href={item.href}
             onClick={onNavigate}
             className={cn(
-              'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-normal transition-colors',
+              'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-normal transition-colors',
               collapsed && 'justify-center px-0',
               isActive
                 ? 'bg-primary text-primary-foreground shadow-sm'
@@ -105,6 +105,23 @@ function NavLinks({
         );
       })}
     </nav>
+  );
+}
+
+/**
+ * Wraps the nav links so the list scrolls internally instead of pushing the
+ * logout footer down — but a plain `overflow-y-auto` div gives no hint that
+ * there's more below: the last item just gets sliced off mid-row with no
+ * scrollbar or fade, which reads as broken rather than scrollable on any
+ * screen too short to fit every item (a landlord's 12-item nav on a
+ * laptop-height window, for one). This adds that hint back.
+ */
+function NavScrollArea({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative flex-1">
+      <div className="h-full overflow-y-auto py-2">{children}</div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-background to-transparent" />
+    </div>
   );
 }
 
@@ -256,9 +273,9 @@ export function DashboardShell({
 
               {isSuperAdmin && showOrgSwitcher && <OrganizationSwitcher collapsed={collapsed} />}
 
-              <div className="flex-1 overflow-y-auto py-2">
+              <NavScrollArea>
                 <NavLinks nav={nav} collapsed={collapsed} pathname={pathname} badges={navBadges} />
-              </div>
+              </NavScrollArea>
 
               <SidebarFooter name={name} email={email} photoUrl={photoUrl} collapsed={collapsed} onLogout={logout} />
             </aside>
@@ -288,9 +305,9 @@ export function DashboardShell({
                     <span className="text-lg font-semibold text-foreground">RumiaRent</span>
                   </div>
                   {isSuperAdmin && showOrgSwitcher && <OrganizationSwitcher collapsed={false} />}
-                  <div className="flex-1 overflow-y-auto py-2">
+                  <NavScrollArea>
                     <NavLinks nav={nav} collapsed={false} pathname={pathname} badges={navBadges} onNavigate={() => setMobileNavOpen(false)} />
-                  </div>
+                  </NavScrollArea>
                   <SidebarFooter name={name} email={email} photoUrl={photoUrl} collapsed={false} onLogout={logout} />
                 </SheetContent>
               </Sheet>
