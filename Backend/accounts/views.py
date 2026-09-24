@@ -517,18 +517,35 @@ class UserLoginView(APIView):
 # Set cookies for frontend access
         from django.utils.http import http_date
         from django.conf import settings
-        
+
+        # SameSite=Strict withholds these cookies on ANY cross-site
+        # navigation, including the browser being redirected back to us by
+        # Paystack (or Google OAuth, already Lax below) after a top-level
+        # GET. That made every tenant land on /login right after paying,
+        # even though they never logged out — the middleware saw no cookie
+        # at all and assumed they weren't authenticated. Lax still refuses
+        # the cookie on cross-site POST/PUT/DELETE, so CSRF protection is
+        # unaffected; it only allows the legitimate case of a trusted site
+        # redirecting the user's own browser back to us.
+        #
+        # secure=False also let these cookies be sent over plain HTTP,
+        # unlike every other cookie this project sets (SESSION_COOKIE_SECURE
+        # / CSRF_COOKIE_SECURE are already True outside DEBUG) — production
+        # is HTTPS-only via Caddy, so there's no reason these should be the
+        # one exception.
+        secure = not settings.DEBUG
+
         # Set access token cookie
         response.set_cookie(
             key='rumi_access_token',
             value=access_token,
             path='/',
             domain=None,
-            secure=False,  # Set to True in production with HTTPS
+            secure=secure,
             httponly=True,
-            samesite='Strict'
+            samesite='Lax'
         )
-        
+
         # Set refresh token cookie
         response.set_cookie(
             key='rumi_refresh_token',
@@ -536,11 +553,11 @@ class UserLoginView(APIView):
             max_age=30 * 24 * 60 * 60,  # 30 days
             path='/',
             domain=None,
-            secure=False,  # Set to True in production with HTTPS
+            secure=secure,
             httponly=True,
-            samesite='Strict'
+            samesite='Lax'
         )
-        
+
         # Set user role cookie
         response.set_cookie(
             key='rumi_user_role',
@@ -548,9 +565,9 @@ class UserLoginView(APIView):
             max_age=30 * 24 * 60 * 60,  # 30 days
             path='/',
             domain=None,
-            secure=False,  # Set to True in production with HTTPS
+            secure=secure,
             httponly=False,  # Frontend needs access to role
-            samesite='Strict'
+            samesite='Lax'
         )
 
         return response
@@ -665,9 +682,9 @@ class UserLogoutView(APIView):
         # never navigate away from. path/domain/samesite must match what
         # UserLoginView.post() used when setting them, or the browser treats
         # this as a different cookie and the delete silently no-ops.
-        response.delete_cookie('rumi_access_token', path='/', domain=None, samesite='Strict')
-        response.delete_cookie('rumi_refresh_token', path='/', domain=None, samesite='Strict')
-        response.delete_cookie('rumi_user_role', path='/', domain=None, samesite='Strict')
+        response.delete_cookie('rumi_access_token', path='/', domain=None, samesite='Lax')
+        response.delete_cookie('rumi_refresh_token', path='/', domain=None, samesite='Lax')
+        response.delete_cookie('rumi_user_role', path='/', domain=None, samesite='Lax')
 
         return response
 

@@ -84,6 +84,36 @@ class AuthenticationTests(TestCase):
         response = self.client.post(self.login_url, data, format='json')
         self.assertEqual(response.status_code, 200)
 
+    def test_login_cookies_survive_a_redirect_back_from_an_external_site(self):
+        """
+        Regression test: these cookies used to be SameSite=Strict, which a
+        browser withholds on ANY cross-site navigation — including Paystack
+        (or Google OAuth) redirecting a tenant's own browser back to us
+        after they leave the site to pay. That silently logged out every
+        tenant the instant they finished paying, since the middleware saw
+        no auth cookie at all on the return trip and assumed no session.
+        Lax is the weakest setting that still survives that legitimate
+        top-level-GET-redirect-back case, while still refusing the cookie
+        on cross-site POST/PUT/DELETE (real CSRF protection is unaffected).
+        """
+        User.objects.create_user(
+            email='cookie-samesite@test.com', password='Pass123!',
+            first_name='Test', last_name='User', role='tenant',
+            is_verified=True,
+        )
+        response = self.client.post(
+            self.login_url,
+            {'email': 'cookie-samesite@test.com', 'password': 'Pass123!'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        for name in ('rumi_access_token', 'rumi_refresh_token', 'rumi_user_role'):
+            cookie = response.cookies[name]
+            self.assertEqual(
+                cookie['samesite'], 'Lax',
+                f'{name} must be SameSite=Lax, not Strict, to survive a redirect back from Paystack',
+            )
+
     def test_login_response_includes_onboarding_stage(self):
         """
         Regression test for post-login-redirect-broken: the frontend's
