@@ -40,11 +40,12 @@ export const useSubscribe = () => {
       billingApi.subscribe(planId, billingMode),
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: MY_SUBSCRIPTION_KEY });
-      if (result.authorization_url) {
-        // Auto mode redirects to Paystack — manual mode has no
-        // authorization_url and just shows the success toast.
-        window.location.href = result.authorization_url;
-      } else {
+      // Auto mode has an authorization_url to send the caller to Paystack
+      // with — manual mode doesn't, so this is where it's done. The
+      // caller (billing/page.tsx) opens the checkout tab itself, since
+      // only it has the synchronous click-handler context a browser
+      // requires before allowing window.open.
+      if (!result.authorization_url) {
         toast.success('Subscribed');
       }
     },
