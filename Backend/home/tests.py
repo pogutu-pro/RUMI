@@ -386,3 +386,75 @@ class PublicApiBrowserCachingTests(TestCase):
         self.assertEqual(hit['X-Cache'], 'HIT')
         self.assertIn('no-cache', hit['Cache-Control'])
         api_cache.cache_manager.delete(api_cache.cache_manager.get_cache_key('api', path, 'GET'))
+
+
+class LoggedInResponsesAreNeverCachedForOtherUsersTests(TestCase):
+    """
+    Regression test for a real production incident: _has_auth_credentials()
+    checked for cookies named 'access_token'/'sessionid', which this project
+    has never set (the real cookie is 'rumi_access_token' — see
+    accounts/views.py UserLoginView.post and accounts/authentication.py).
+    It returned False for every authenticated request, so every logged-in
+    tenant's and landlord's GET response got cached under a key with no
+    user in it (cache_api_response() is only ever called with endpoint and
+    method, never a user_id) and served to the next person who hit the same
+    URL. Found live: a brand-new tenant's first login showed a different
+    tenant's dashboard data.
+    """
+
+    def setUp(self):
+        from rumi.cache_utils import api_cache
+        self.api_cache = api_cache
+        self.path = '/api/v1/rent/balance/'
+        self.cache_key = self.api_cache.cache_manager.get_cache_key('api', self.path, 'GET')
+        self.api_cache.cache_manager.delete(self.cache_key)
+
+    def tearDown(self):
+        self.api_cache.cache_manager.delete(self.cache_key)
+
+    def test_a_request_carrying_the_real_login_cookie_is_never_cached_or_served_from_cache(self):
+        from django.http import HttpResponse
+        from django.test import RequestFactory
+        from rumi.middleware import APIResponseCacheMiddleware
+
+        tenant_a_response = HttpResponse('{"tenant": "A", "outstanding_total": "0.00"}', content_type='application/json')
+        tenant_b_response = HttpResponse('{"tenant": "B", "outstanding_total": "22000.00"}', content_type='application/json')
+
+        middleware = APIResponseCacheMiddleware(lambda request: tenant_a_response)
+
+        request_a = RequestFactory().get(self.path)
+        request_a.COOKIES['rumi_access_token'] = 'tenant-a-session-token'
+        # A cookie-carrying request must never even attempt a cache read —
+        # process_request must return None (fall through to the view),
+        # never a cached HttpResponse.
+        self.assertIsNone(middleware.process_request(request_a))
+        middleware.process_response(request_a, tenant_a_response)
+
+        # Nothing must have been written to the shared, unscoped cache key —
+        # prove it by confirming a completely different logged-in user
+        # (different cookie value) reaching the SAME URL does not receive
+        # tenant A's response.
+        self.assertIsNone(self.api_cache.cache_manager.get(self.cache_key))
+
+        request_b = RequestFactory().get(self.path)
+        request_b.COOKIES['rumi_access_token'] = 'tenant-b-session-token'
+        served_to_b = middleware.process_request(request_b)
+        self.assertIsNone(served_to_b, 'tenant B must never be served a cached response at all, let alone tenant A\'s')
+
+    def test_a_request_with_no_login_cookie_can_still_use_the_public_cache(self):
+        """The fix must not disable caching for genuinely anonymous requests."""
+        from django.http import HttpResponse
+        from django.test import RequestFactory
+        from rumi.middleware import APIResponseCacheMiddleware
+
+        response = HttpResponse('{"plans": []}', content_type='application/json')
+        middleware = APIResponseCacheMiddleware(lambda request: response)
+
+        anon_request = RequestFactory().get(self.path)
+        self.assertIsNone(middleware.process_request(anon_request))
+        middleware.process_response(anon_request, response)
+
+        second_anon_request = RequestFactory().get(self.path)
+        hit = middleware.process_request(second_anon_request)
+        self.assertIsNotNone(hit, 'a genuinely anonymous request should still be servable from cache')
+        self.assertEqual(hit['X-Cache'], 'HIT')

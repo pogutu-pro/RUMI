@@ -46,17 +46,33 @@ class APIResponseCacheMiddleware(MiddlewareMixin):
     # changed has to show up on the next visit, not five minutes later.
     BROWSER_CACHE_CONTROL = 'public, no-cache'
 
+    # The actual cookies RumiaRent's login sets (accounts/views.py
+    # UserLoginView.post) and reads (accounts/authentication.py). This used
+    # to check for 'access_token'/'sessionid' instead — cookies this project
+    # has never set — so _has_auth_credentials() returned False for every
+    # authenticated request. Every GET response for every logged-in tenant
+    # and landlord was cached under a key with no user in it at all
+    # (cache_api_response() below is only ever called with endpoint+method,
+    # never a user_id), and the next person to hit the same URL — anyone,
+    # not just the same tenant — was served whatever the cache held. This
+    # was found live: a newly created tenant landed on a different tenant's
+    # dashboard data on their very first login.
+    AUTH_COOKIE_NAMES = ('rumi_access_token', 'rumi_refresh_token', 'rumi_user_role')
+
     def _has_auth_credentials(self, request):
         """Check if request carries authentication credentials.
 
         DRF authentication runs during view dispatch (after middleware),
         so request.user may not reflect the actual user at middleware time.
-        We check for auth headers directly to avoid serving user-specific
-        cached responses to the wrong user.
+        We check for auth headers/cookies directly to avoid serving
+        user-specific cached responses to the wrong user. Any one of the
+        three login cookies present is enough to treat this as a private,
+        never-cached request — erring toward caching too little, never
+        toward leaking one user's response to another.
         """
         if request.META.get('HTTP_AUTHORIZATION'):
             return True
-        if request.COOKIES.get('access_token') or request.COOKIES.get('sessionid'):
+        if any(request.COOKIES.get(name) for name in self.AUTH_COOKIE_NAMES):
             return True
         # DRF's force_authenticate sets _force_auth_user without headers
         if getattr(request, '_force_auth_user', None):
