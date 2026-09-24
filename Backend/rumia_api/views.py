@@ -764,7 +764,15 @@ class PaymentListCreateView(RumiaBaseView):
             recorded_by=request.user,
         )
 
-        callback_url = f'{settings.FRONTEND_URL}/payments/{payment.id}/callback'
+        # Must match an actual frontend route — this is where Paystack's
+        # hosted checkout redirects the tenant's browser after they pay.
+        # There is no page at /payments/{id}/callback (there never was);
+        # the real one lives under the tenant's own rental area and polls
+        # our API for the payment this tenant most recently started, so it
+        # doesn't need the id in the URL. Paystack's dashboard "Callback
+        # URL" setting is only a fallback default — this per-transaction
+        # value always takes precedence.
+        callback_url = f'{settings.FRONTEND_URL}/tenant/rental/payments/callback?payment={payment.id}'
         result = PaymentService.initiate(payment, callback_url)
 
         if not result.get('success'):

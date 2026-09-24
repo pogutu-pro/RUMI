@@ -723,6 +723,38 @@ class PaystackFlowTests(RumiaTestFixtures):
         payment = Payment.objects.get(internal_reference=response.data['internal_reference'])
         self.assertEqual(payment.status, 'processing')
 
+    @override_settings(PAYSTACK_SECRET_KEY='test_secret_key', FRONTEND_URL='https://app.test')
+    @patch.object(PaystackProvider, 'initiate_payment')
+    @patch.object(PaystackProvider, 'get_config_status')
+    def test_payment_callback_url_points_at_a_real_page(self, mock_config, mock_initiate):
+        """Paystack's hosted checkout redirects the tenant's browser to this
+        URL after they pay — it must be a route the frontend actually
+        serves, not a stale path nobody has cleaned up (there is no page
+        at /payments/{id}/callback; the real one is under the tenant's own
+        rental area)."""
+        mock_config.return_value = ProviderConfigStatus(provider='paystack', status=ProviderStatus.AVAILABLE)
+        mock_initiate.return_value = InitiatePaymentResult(
+            success=True, provider_reference='PSK-REF-1',
+            authorization_url='https://checkout.paystack.com/abc123',
+        )
+        org, tenant_user, tenant, tenancy = self._tenancy_with_tenant()
+        PayoutAccount.objects.create(
+            organization=org, status='active', paystack_subaccount_code='SUB_TEST_CODE',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=tenant_user)
+        response = client.post('/api/v1/rent/payments/', {
+            'tenancy': str(tenancy.id), 'amount': '22000.00',
+        })
+        self.assertEqual(response.status_code, 201)
+
+        callback_url = mock_initiate.call_args[0][0].callback_url
+        self.assertTrue(
+            callback_url.startswith('https://app.test/tenant/rental/payments/callback'),
+            f'callback_url {callback_url!r} does not point at the frontend\'s payment-callback page',
+        )
+
     def test_tenant_cannot_initiate_payment_for_other_tenants_tenancy(self):
         org, tenant_user, tenant, tenancy = self._tenancy_with_tenant()
         other_user, _ = self.create_tenant(org, 'other@test.com')
