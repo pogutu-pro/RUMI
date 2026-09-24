@@ -848,12 +848,29 @@ class PaystackWebhookView(APIView):
     """
 
     permission_classes = [AllowAny]
+    # DRF's default AnonRateThrottle would otherwise count every delivery
+    # against Paystack's shared sending IPs (100/hour by default here) —
+    # the HMAC signature check above is the real gate for this endpoint,
+    # not a per-IP anonymous-abuse limit. RATE_LIMIT_EXEMPT_PATH_PREFIXES
+    # in rumi/middleware.py exempts it from the other rate limiter too.
+    throttle_classes = []
 
     def post(self, request):
         import hashlib
         import hmac as hmac_module
 
-        secret = (getattr(settings, 'PAYSTACK_WEBHOOK_SECRET', '') or '').encode()
+        # Paystack signs every webhook with your Paystack SECRET key — there
+        # is no separate "webhook secret" to generate in their dashboard.
+        # PAYSTACK_WEBHOOK_SECRET exists only as an explicit override (in
+        # case that ever changes); when it's left unset, fall back to the
+        # secret key so a deployment that only configured the one required
+        # credential still verifies correctly instead of silently rejecting
+        # every delivery forever.
+        secret = (
+            getattr(settings, 'PAYSTACK_WEBHOOK_SECRET', '')
+            or getattr(settings, 'PAYSTACK_SECRET_KEY', '')
+            or ''
+        ).encode()
         signature = request.headers.get('x-paystack-signature', '')
 
         if not secret or not signature:

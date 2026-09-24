@@ -837,6 +837,36 @@ class PaystackFlowTests(RumiaTestFixtures):
         self.assertEqual(payment.status, 'processing')
         self.assertEqual(AuditLog.objects.count(), 0)
 
+    @override_settings(PAYSTACK_WEBHOOK_SECRET='', PAYSTACK_SECRET_KEY='test_secret_key')
+    @patch.object(PaystackProvider, 'verify_payment')
+    def test_webhook_falls_back_to_secret_key_when_webhook_secret_unset(self, mock_verify):
+        """Paystack has no separate webhook-signing secret — it signs with
+        your Secret key. A deployment that only configured PAYSTACK_SECRET_KEY
+        (the one credential Paystack actually issues) must still verify."""
+        org, tenant_user, tenant, tenancy = self._tenancy_with_tenant()
+        charge = self.create_rent_charge(tenancy, amount=Decimal('22000.00'))
+        payment = Payment.objects.create(
+            organization=org, tenancy=tenancy, tenant=tenant, parent_property=tenancy.parent_property,
+            unit=tenancy.unit, amount=Decimal('22000.00'), payment_method='paystack', provider='paystack',
+            internal_reference='RUMIA-WEBHOOK-FALLBACK', status='processing',
+        )
+        mock_verify.return_value = VerifyPaymentResult(
+            success=True, status='success', amount=Decimal('22000.00'),
+            provider_reference=payment.internal_reference,
+        )
+        body, sig = self._webhook_body_and_signature('test_secret_key', payment.internal_reference, 2200000)
+
+        client = APIClient()
+        response = client.generic(
+            'POST', '/api/v1/rent/payments/webhook/paystack/', data=body,
+            content_type='application/json', HTTP_X_PAYSTACK_SIGNATURE=sig,
+        )
+        self.assertEqual(response.status_code, 200)
+        payment.refresh_from_db()
+        charge.refresh_from_db()
+        self.assertEqual(payment.status, 'success')
+        self.assertEqual(charge.status, 'paid')
+
 
 class SecurityAccessTests(RumiaTestFixtures):
     def test_tenant_cannot_create_property(self):

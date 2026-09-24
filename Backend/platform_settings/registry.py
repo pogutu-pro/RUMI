@@ -40,8 +40,9 @@ SPECS = [
          placeholder='sk_live_...', help='From Paystack: Settings > API Keys & Webhooks.'),
     Spec('PAYSTACK_PUBLIC_KEY', 'Public key', 'paystack', prefixes=('pk_test_', 'pk_live_'),
          placeholder='pk_live_...'),
-    Spec('PAYSTACK_WEBHOOK_SECRET', 'Webhook secret', 'paystack', secret=True,
-         help='Paystack signs its webhooks with your secret key; use the same value unless Paystack shows a separate one.'),
+    Spec('PAYSTACK_WEBHOOK_SECRET', 'Webhook secret (optional)', 'paystack', secret=True,
+         help='Leave blank. Paystack signs webhooks with your Secret key, and RumiaRent falls back to '
+              'it automatically. Only fill this in if Paystack ever shows you a separate value.'),
     Spec('PAYSTACK_ENV', 'Mode', 'paystack', kind='choice', choices=('test', 'live'),
          help='Must match the keys: sk_test_ keys need test, sk_live_ keys need live.'),
     Spec('AFRICASTALKING_USERNAME', 'Username', 'sms', placeholder='rumiarent',
