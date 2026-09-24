@@ -36,6 +36,21 @@ export interface OrganizationSubscription {
   cancel_at_period_end: boolean;
 }
 
+/** Mirrors Backend billing SubscriptionSubscribeView's response. auto mode
+ * always returns an authorization_url; manual mode never does — it lands as
+ * 'pending' until a super admin confirms payment was actually received. */
+export interface SubscribeResult {
+  mode?: 'auto' | 'manual';
+  status?: string;
+  authorization_url?: string;
+}
+
+/** Mirrors Backend billing ManualPaymentInstructionsView. */
+export interface ManualPaymentInstructions {
+  instructions: string;
+  updated_at: string;
+}
+
 /** Mirrors Backend billing BillingAccessView (GET /billing/access/). */
 export interface BillingAccess {
   effective_plan: string;

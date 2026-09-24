@@ -30,12 +30,13 @@ from organizations.models import Organization
 from rent.providers.base import PaymentProviderError
 from support.models import SupportTicket
 
-from .models import OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
+from .models import ManualPaymentInstructions, OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
 from .providers.paystack_billing import PaystackBillingClient
 from .serializers import (
     AdminOrganizationBillingDetailSerializer,
     AdminPlanSerializer,
     AdminOrganizationBillingListSerializer,
+    ManualPaymentInstructionsSerializer,
     OrganizationSubscriptionSerializer,
     SubscriptionPlanSerializer,
 )
@@ -142,6 +143,39 @@ class SubscriptionSubscribeView(_BillingMutationView):
             return Response({'error': str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
 
         return Response(result, status=status.HTTP_201_CREATED)
+
+
+class ManualPaymentInstructionsView(APIView):
+    """
+    What to show a landlord who chooses to pay another way instead of by
+    card.
+
+    GET: any landlord (to decide whether to use it) or super_admin.
+    PUT: super_admin only — editing this is a real, live payment
+    instruction, not a cosmetic setting.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if get_canonical_role(request.user) not in MUTATING_ROLES:
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        return Response(ManualPaymentInstructionsSerializer(ManualPaymentInstructions.get()).data)
+
+    def put(self, request):
+        if get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        instance = ManualPaymentInstructions.get()
+        serializer = ManualPaymentInstructionsSerializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(updated_by=request.user)
+
+        log_audit(
+            'manual_payment_instructions_updated', actor=request.user,
+            entity=instance, new_value={'instructions': instance.instructions},
+        )
+        return Response(ManualPaymentInstructionsSerializer(instance).data)
 
 
 class MyOrganizationSubscriptionView(APIView):

@@ -1,5 +1,11 @@
 import { axiosInstance as axios } from '@/lib/api/client';
-import type { BillingAccess, OrganizationSubscription, SubscriptionPlan } from '../types';
+import type {
+  BillingAccess,
+  ManualPaymentInstructions,
+  OrganizationSubscription,
+  SubscribeResult,
+  SubscriptionPlan,
+} from '../types';
 
 /**
  * RumiaRent billing API client. `listPlans` targets the public plan catalog
@@ -27,8 +33,8 @@ export const billingApi = {
   subscribe: async (
     planId: string,
     billingMode: 'auto' | 'manual' = 'auto',
-  ): Promise<{ mode: string; authorization_url?: string; internal_reference?: string; status?: string }> => {
-    const res = await axios.post('/billing/subscribe/', {
+  ): Promise<SubscribeResult> => {
+    const res = await axios.post<SubscribeResult>('/billing/subscribe/', {
       plan_id: planId,
       billing_mode: billingMode,
     });
@@ -36,6 +42,18 @@ export const billingApi = {
   },
   switchPlan: async (newPlanId: string): Promise<{ mode: string; status: string }> => {
     const res = await axios.post('/billing/switch-plan/', { new_plan_id: newPlanId });
+    return res.data;
+  },
+  /** Readable by any landlord (to decide whether to use it) or super_admin. */
+  getManualPaymentInstructions: async (): Promise<ManualPaymentInstructions> => {
+    const res = await axios.get<ManualPaymentInstructions>('/billing/manual-payment-instructions/');
+    return res.data;
+  },
+  /** super_admin only — the backend enforces this; this is not itself an access check. */
+  setManualPaymentInstructions: async (instructions: string): Promise<ManualPaymentInstructions> => {
+    const res = await axios.put<ManualPaymentInstructions>('/billing/manual-payment-instructions/', {
+      instructions,
+    });
     return res.data;
   },
 };

@@ -39,6 +39,8 @@ class AuditLog(models.Model):
         ('subscription_payment_recorded', 'Subscription Payment Recorded'),
         ('subscription_payment_failed', 'Subscription Payment Failed'),
         ('subscription_disabled', 'Subscription Disabled'),
+        ('manual_subscription_requested', 'Manual Subscription Requested'),
+        ('manual_payment_instructions_updated', 'Manual Payment Instructions Updated'),
         ('other', 'Other'),
     ]
 

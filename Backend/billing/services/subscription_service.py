@@ -15,6 +15,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from audit.models import log_audit
 from billing.models import OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
 from billing.providers.paystack_billing import PaystackBillingClient
 from rent.providers.base import PaymentProviderError
@@ -128,17 +129,26 @@ class SubscriptionService:
                 )
 
             if billing_mode == 'manual':
-                today = timezone.now().date()
+                # Stays 'pending' — GatingService only grants a plan's limits
+                # for 'active' (or 'past_due' within its grace period), so
+                # choosing to pay another way never hands out the paid tier
+                # before anyone has actually paid. A super admin confirms
+                # receipt via AdminSubscriptionOverrideView, the same
+                # override endpoint used for every other billing correction,
+                # which sets status='active' and starts the period then.
                 subscription.plan = plan
                 subscription.billing_mode = 'manual'
-                subscription.status = 'active'
-                subscription.current_period_start = today
-                subscription.current_period_end = today + timedelta(days=30)
-                subscription.save(update_fields=[
-                    'plan', 'billing_mode', 'status',
-                    'current_period_start', 'current_period_end', 'updated_at',
-                ])
-                return {'mode': 'manual', 'status': 'active'}
+                subscription.status = 'pending'
+                subscription.save(update_fields=['plan', 'billing_mode', 'status', 'updated_at'])
+
+                log_audit(
+                    'manual_subscription_requested',
+                    actor=organization.owner,
+                    organization=subscription.organization,
+                    entity=subscription,
+                    metadata={'plan': plan.slug, 'requester_email': requester_email},
+                )
+                return {'mode': 'manual', 'status': 'pending'}
 
             if billing_mode == 'auto':
                 return cls._initiate_auto_charge(subscription, plan, requester_email)

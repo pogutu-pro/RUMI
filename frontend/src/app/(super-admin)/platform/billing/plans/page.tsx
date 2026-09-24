@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { ArrowLeft, Pencil, Users } from 'lucide-react';
+import { ArrowLeft, Landmark, Pencil, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { PriceDisplay } from '@/components/ui/price-display';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
@@ -20,6 +21,10 @@ import { FormDialogActions, FormRow, FormSection } from '@/components/ui/form-la
 import { PageHeader } from '@/components/dashboard/page-header';
 import { useAdminPlans, useUpdateAdminPlan } from '@/features/admin-billing/hooks/use-admin-billing';
 import type { AdminPlan } from '@/features/admin-billing/types';
+import {
+  useManualPaymentInstructions,
+  useSetManualPaymentInstructions,
+} from '@/features/billing/hooks/use-subscription';
 
 const limit = z.coerce.number().int('Whole numbers only').min(0, 'Use 0 for unlimited').max(100000);
 
@@ -177,6 +182,43 @@ function EditPlanDialog({ plan, onClose }: { plan: AdminPlan | null; onClose: ()
   );
 }
 
+function ManualPaymentInstructionsSection() {
+  const { data, isLoading } = useManualPaymentInstructions();
+  const save = useSetManualPaymentInstructions();
+  const [draft, setDraft] = React.useState<string | null>(null);
+  const value = draft ?? data?.instructions ?? '';
+  const changed = draft !== null && draft !== (data?.instructions ?? '');
+
+  return (
+    <section className="rounded-2xl border bg-background p-5 shadow-sm">
+      <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
+        <Landmark className="h-4 w-4" /> Manual payment instructions
+      </h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Shown to a landlord who chooses &quot;Pay another way&quot; instead of a card — RumiaRent&apos;s bank or
+        paybill details, exactly as you want them to read it. Their plan activates once you confirm the payment
+        arrived, from Organizations.
+      </p>
+      <Textarea
+        className="mt-3 min-h-32 font-mono text-sm"
+        placeholder={'Bank: \nAccount name: \nAccount number: \n\nOr: Paybill 000000, Account: your phone number'}
+        value={value}
+        disabled={isLoading}
+        maxLength={2000}
+        onChange={(e) => setDraft(e.target.value)}
+      />
+      <div className="mt-3 flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          {data?.instructions ? `Last saved ${new Date(data.updated_at).toLocaleString('en-KE')}` : 'Not set — landlords without a card have no way to pay yet'}
+        </p>
+        <Button size="sm" disabled={!changed || save.isPending} isLoading={save.isPending} onClick={() => save.mutate(value, { onSuccess: () => setDraft(null) })}>
+          Save
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 export default function AdminPlansPage() {
   const { data: plans = [], isLoading } = useAdminPlans();
   const [editing, setEditing] = React.useState<AdminPlan | null>(null);
@@ -232,6 +274,8 @@ export default function AdminPlansPage() {
           ))}
         </div>
       )}
+
+      <ManualPaymentInstructionsSection />
 
       <EditPlanDialog plan={editing} onClose={() => setEditing(null)} />
     </div>
