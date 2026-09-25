@@ -111,7 +111,13 @@ const CommandItem = React.forwardRef<
   <CommandPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      // cmdk always renders data-disabled="false" on every non-disabled item
+      // (the attribute is present either way) — Tailwind's data-[disabled]
+      // variant matches on ATTRIBUTE PRESENCE, not its value, so the bare
+      // form here made every item permanently pointer-events:none. No real
+      // click could ever reach an item; this went unnoticed only because
+      // nothing used CommandInput/CommandItem anywhere in the app until now.
+      'relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50',
       className,
     )}
     {...props}

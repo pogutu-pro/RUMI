@@ -7,9 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import {
   wizardPayoutSchema,
   type WizardPayoutFormData,
@@ -91,34 +89,25 @@ export function PayoutDetailsForm({
                   control={form.control}
                   name="bank_code"
                   render={({ field }) => (
-                    <Select
+                    <Combobox
                       value={field.value}
-                      onValueChange={(code) => {
+                      onChange={(code) => {
                         const bank = banks.find((b) => b.code === code);
                         field.onChange(code);
                         if (bank) form.setValue('bank_name', bank.name);
                       }}
+                      options={banks.map((bank) => ({ value: bank.code, label: bank.name }))}
                       disabled={banksLoading || banksUnavailable}
-                    >
-                      <SelectTrigger className="h-11">
-                        <SelectValue
-                          placeholder={
-                            banksLoading
-                              ? 'Loading banks…'
-                              : banksUnavailable
-                                ? 'Bank list unavailable right now'
-                                : 'Select your bank'
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {banks.map((bank) => (
-                          <SelectItem key={bank.code} value={bank.code}>
-                            {bank.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      searchPlaceholder="Type to search banks…"
+                      emptyText="No bank matches that."
+                      placeholder={
+                        banksLoading
+                          ? 'Loading banks…'
+                          : banksUnavailable
+                            ? 'Bank list unavailable right now'
+                            : 'Select your bank'
+                      }
+                    />
                   )}
                 />
               </FormControl>
