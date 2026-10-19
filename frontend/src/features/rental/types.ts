@@ -105,6 +105,8 @@ export interface Tenancy {
   rent_due_day: number;
   grace_period_days: number;
   prorate_final_period?: boolean;
+  /** Account number tenants type when paying the landlord's paybill. */
+  payment_reference?: string;
   status: TenancyStatus;
   renewal_notes: string;
   notes: string;

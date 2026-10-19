@@ -15,6 +15,7 @@ import { InvoiceDetailSheet } from '@/features/ledger/components/invoice-detail-
 import { InvoiceStatusBadge } from '@/features/ledger/components/invoice-status-badge';
 import { ReceiptDownloadButton } from '@/features/ledger/components/receipt-actions';
 import { INVOICE_TYPE_LABEL, formatDate } from '@/features/ledger/lib/format';
+import { usePaybillInstructions } from '@/features/paybill/hooks';
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = {
   success: 'default',
@@ -97,6 +98,7 @@ export default function TenantRentalDashboard() {
   const { data: payments = [], isLoading: paymentsLoading } = usePayments();
   const initiate = useInitiatePayment();
   const { data: invoices = [] } = useInvoices();
+  const { data: paybills = [] } = usePaybillInstructions();
   const [page, setPage] = React.useState(1);
   const [openInvoice, setOpenInvoice] = React.useState<string | null>(null);
 
@@ -166,6 +168,27 @@ export default function TenantRentalDashboard() {
           </Button>
         </CardContent>
       </Card>
+
+      {paybills.filter((p) => p.tenancy === activeTenancy.id).map((p) => (
+        <Card key={`${p.tenancy}-${p.shortcode}`}>
+          <CardHeader>
+            <CardTitle>Pay by M-Pesa</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ol className="list-decimal space-y-1 pl-5 text-sm">
+              <li>M-Pesa → Lipa na M-Pesa → {p.shortcode_type === 'till' ? 'Buy Goods and Services' : 'Pay Bill'}</li>
+              <li>
+                {p.shortcode_type === 'till' ? 'Till' : 'Business'} number: <span className="font-mono font-semibold">{p.shortcode}</span>
+                {' '}({p.business_name})
+              </li>
+              {p.account_number && (
+                <li>Account number: <span className="font-mono font-semibold">{p.account_number}</span></li>
+              )}
+              <li>Enter the amount and your PIN. Using exactly this account number lets us record your payment automatically and send your receipt.</li>
+            </ol>
+          </CardContent>
+        </Card>
+      ))}
 
       {invoices.length > 0 && (
         <Card>

@@ -391,6 +391,7 @@ export default function TenanciesPage() {
             <TableRow>
               <TableHead>Tenant</TableHead>
               <TableHead>Unit</TableHead>
+              <TableHead title="What the tenant types as the account number when paying your paybill">M-Pesa account</TableHead>
               <TableHead>Rent</TableHead>
               <TableHead>Status</TableHead>
               <TableHead />
@@ -401,6 +402,7 @@ export default function TenanciesPage() {
               <TableRow key={t.id}>
                 <TableCell className="font-medium">{t.tenant_name}</TableCell>
                 <TableCell>{t.unit_number}</TableCell>
+                <TableCell className="font-mono text-xs">{t.payment_reference || '—'}</TableCell>
                 <TableCell>KES {t.monthly_rent}</TableCell>
                 <TableCell>
                   <Badge variant={t.status === 'active' ? 'default' : 'secondary'}>{t.status}</Badge>

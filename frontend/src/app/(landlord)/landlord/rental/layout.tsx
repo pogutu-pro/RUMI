@@ -11,6 +11,7 @@ import {
   LifeBuoy,
   HardHat,
   SlidersHorizontal,
+  Smartphone,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth';
 import { UserRole } from '@/features/auth/stores/auth.types';
@@ -25,6 +26,7 @@ const NAV = [
   { href: '/landlord/rental/tenancies', label: 'Tenancies', icon: FileText },
   { href: '/landlord/rental/rent', label: 'Rent & invoices', icon: Wallet },
   { href: '/landlord/rental/payments', label: 'Payments', icon: CreditCard },
+  { href: '/landlord/rental/paybill', label: 'M-Pesa paybill', icon: Smartphone },
   { href: '/landlord/rental/rules', label: 'Rent rules', icon: SlidersHorizontal },
   { href: '/landlord/rental/billing', label: 'Billing & Payout', icon: CreditCard },
   { href: '/landlord/rental/support', label: 'Support', icon: LifeBuoy },
