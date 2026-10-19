@@ -12,6 +12,8 @@ from rumia_api.ledger_views import (
     ReceiptListView,
     ReceiptPdfView,
     ReceiptResendView,
+    RecurringChargeDetailView,
+    TenancyRecurringChargeListCreateView,
 )
 
 from rumia_api.views import (
@@ -66,6 +68,12 @@ urlpatterns = [
     path('invoices/<uuid:pk>/dispute/', InvoiceDisputeView.as_view(), name='rumia-invoice-dispute'),
     path('credit-notes/', CreditNoteListView.as_view(), name='rumia-credit-notes'),
     path('receipts/', ReceiptListView.as_view(), name='rumia-receipts'),
+    path(
+        'tenancies/<uuid:pk>/recurring-charges/',
+        TenancyRecurringChargeListCreateView.as_view(),
+        name='rumia-tenancy-recurring-charges',
+    ),
+    path('recurring-charges/<uuid:pk>/', RecurringChargeDetailView.as_view(), name='rumia-recurring-charge-detail'),
     path('receipts/<uuid:pk>/', ReceiptDetailView.as_view(), name='rumia-receipt-detail'),
     path('receipts/<uuid:pk>/pdf/', ReceiptPdfView.as_view(), name='rumia-receipt-pdf'),
     path('receipts/<uuid:pk>/resend/', ReceiptResendView.as_view(), name='rumia-receipt-resend'),

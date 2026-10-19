@@ -435,3 +435,40 @@ class Receipt(models.Model):
 
     def __str__(self):
         return f'{self.number} — {self.payment.amount} {self.payment.currency}'
+
+
+class RecurringCharge(models.Model):
+    """
+    A fixed monthly extra billed on every rent invoice of a tenancy while
+    active — service charge, garbage, parking, internet, flat-rate water.
+    """
+
+    LINE_TYPE_CHOICES = [
+        choice for choice in InvoiceLine.LINE_TYPE_CHOICES if choice[0] not in ('rent', 'penalty', 'deposit')
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        'organizations.Organization', on_delete=models.CASCADE, related_name='recurring_charges',
+    )
+    tenancy = models.ForeignKey('properties.Tenancy', on_delete=models.CASCADE, related_name='recurring_charges')
+    line_type = models.CharField(max_length=20, choices=LINE_TYPE_CHOICES)
+    description = models.CharField(max_length=255, blank=True, default='')
+    amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'rent_recurringcharge'
+        ordering = ['start_date', 'created_at']
+
+    def __str__(self):
+        return f'{self.get_line_type_display()} {self.amount}/month'
+
+    def applies_to(self, period_start, period_end) -> bool:
+        return self.is_active and self.start_date <= period_end and (
+            self.end_date is None or self.end_date >= period_start
+        )

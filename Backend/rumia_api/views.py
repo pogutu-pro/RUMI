@@ -479,7 +479,7 @@ class TenancyDetailView(RumiaBaseView):
 
     # Status transitions go through TenancyTerminateView, not a generic PATCH,
     # so the unit-vacancy/one-active-tenancy side effects always happen correctly.
-    PATCHABLE_FIELDS = ('monthly_rent', 'deposit', 'rent_due_day', 'grace_period_days',
+    PATCHABLE_FIELDS = ('monthly_rent', 'deposit', 'rent_due_day', 'grace_period_days', 'prorate_final_period',
                         'end_date', 'renewal_notes', 'notes')
 
     def get_object(self, pk):
@@ -536,6 +536,8 @@ class TenancyTerminateView(RumiaBaseView):
                 tenancy.renewal_notes = serializer.validated_data['renewal_notes']
             tenancy.save(update_fields=['status', 'end_date', 'move_out_date', 'renewal_notes', 'updated_at'])
             _sync_unit_status(tenancy)
+            # Bill anything still owed up to the move-out date (prorated final period).
+            RentChargeGenerationService.generate_for_tenancy(tenancy)
 
         log_audit('tenancy_terminated', actor=request.user, organization=tenancy.organization, entity=tenancy)
         return Response(TenancySerializer(tenancy).data)

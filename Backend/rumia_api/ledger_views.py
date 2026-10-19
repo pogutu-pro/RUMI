@@ -16,7 +16,8 @@ from rest_framework.response import Response
 
 from audit.models import log_audit
 from core.permissions.rumia import CanViewFinancials, get_canonical_role
-from rent.models import CreditNote, Invoice, PaymentAllocation, Receipt
+from properties.models import Tenancy
+from rent.models import CreditNote, Invoice, PaymentAllocation, Receipt, RecurringCharge
 from rent.services.invoicing import InvoiceError, InvoiceService, LineSpec
 from rent.services.receipts import ReceiptService
 from rumia_api.serializers import (
@@ -25,6 +26,7 @@ from rumia_api.serializers import (
     CreditNoteSerializer,
     InvoiceSerializer,
     ReceiptSerializer,
+    RecurringChargeSerializer,
 )
 from rumia_api.views import RumiaBaseView, _caretaker_can
 
@@ -260,3 +262,72 @@ class ReceiptResendView(ReceiptScopedMixin, RumiaBaseView):
 
         deliver_receipt_task.delay(str(receipt.pk))
         return Response({'status': 'queued'}, status=status.HTTP_202_ACCEPTED)
+
+
+class RecurringChargeMixin:
+    property_lookup = 'parent_property'
+
+    def tenancy_or_404(self, pk):
+        qs = self.filter_by_organization(Tenancy.objects.all())
+        if get_canonical_role(self.request.user) == 'tenant':
+            qs = qs.filter(tenant__user=self.request.user)
+        return get_object_or_404(qs, pk=pk)
+
+    def can_edit(self) -> bool:
+        role = get_canonical_role(self.request.user)
+        return role in ('landlord', 'super_admin') or (
+            role == 'caretaker' and _caretaker_can(self.request.user, 'can_manage_tenants')
+        )
+
+
+class TenancyRecurringChargeListCreateView(RecurringChargeMixin, RumiaBaseView):
+    """Fixed monthly extras (service charge, garbage, parking…) billed with each rent invoice."""
+
+    permission_classes = [IsAuthenticated, CanViewFinancials]
+
+    def get(self, request, pk):
+        tenancy = self.tenancy_or_404(pk)
+        return Response(RecurringChargeSerializer(tenancy.recurring_charges.all(), many=True).data)
+
+    def post(self, request, pk):
+        if not self.can_edit():
+            return _forbidden()
+        tenancy = self.tenancy_or_404(pk)
+        serializer = RecurringChargeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        charge = serializer.save(tenancy=tenancy, organization=tenancy.organization)
+        log_audit('tenancy_updated', actor=request.user, organization=tenancy.organization, entity=tenancy,
+                  metadata={'recurring_charge_added': str(charge.id), 'line_type': charge.line_type,
+                            'amount': str(charge.amount)})
+        return Response(RecurringChargeSerializer(charge).data, status=status.HTTP_201_CREATED)
+
+
+class RecurringChargeDetailView(RecurringChargeMixin, RumiaBaseView):
+    permission_classes = [IsAuthenticated, CanViewFinancials]
+    property_lookup = 'tenancy__parent_property'
+
+    def get_object(self, pk):
+        qs = self.filter_by_organization(RecurringCharge.objects.select_related('tenancy'))
+        if get_canonical_role(self.request.user) == 'tenant':
+            qs = qs.filter(tenancy__tenant__user=self.request.user)
+        return get_object_or_404(qs, pk=pk)
+
+    def patch(self, request, pk):
+        if not self.can_edit():
+            return _forbidden()
+        charge = self.get_object(pk)
+        serializer = RecurringChargeSerializer(charge, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        log_audit('tenancy_updated', actor=request.user, organization=charge.organization, entity=charge.tenancy,
+                  metadata={'recurring_charge_updated': str(charge.id)})
+        return Response(serializer.data)
+
+    def delete(self, request, pk):
+        """Stops the charge from future invoices; past invoices are unaffected."""
+        if not self.can_edit():
+            return _forbidden()
+        charge = self.get_object(pk)
+        charge.is_active = False
+        charge.save(update_fields=['is_active', 'updated_at'])
+        return Response(status=status.HTTP_204_NO_CONTENT)

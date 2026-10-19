@@ -6,7 +6,7 @@ from rest_framework import serializers
 
 from organizations.models import Organization
 from properties.models import Property, RentalUnit, Tenancy
-from rent.models import CreditNote, Invoice, InvoiceLine, Payment, Receipt, RentCharge
+from rent.models import CreditNote, Invoice, InvoiceLine, Payment, Receipt, RecurringCharge, RentCharge
 from tenants.models import EmergencyContact, TenantProfile
 
 
@@ -68,7 +68,7 @@ class TenancySerializer(serializers.ModelSerializer):
             'id', 'organization', 'property', 'unit', 'tenant',
             'tenant_name', 'unit_number',
             'start_date', 'end_date', 'move_in_date', 'move_out_date',
-            'monthly_rent', 'deposit', 'rent_due_day', 'grace_period_days',
+            'monthly_rent', 'deposit', 'rent_due_day', 'grace_period_days', 'prorate_final_period',
             'status', 'renewal_notes', 'notes', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'organization', 'created_at', 'updated_at']
@@ -294,3 +294,20 @@ class ReceiptSerializer(serializers.ModelSerializer):
             'issued_at', 'snapshot', 'sent_sms_at', 'sent_email_at',
         ]
         read_only_fields = fields
+
+
+class RecurringChargeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecurringCharge
+        fields = [
+            'id', 'tenancy', 'line_type', 'description', 'amount', 'start_date', 'end_date', 'is_active',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'tenancy', 'created_at']
+
+    def validate(self, attrs):
+        start = attrs.get('start_date', getattr(self.instance, 'start_date', None))
+        end = attrs.get('end_date', getattr(self.instance, 'end_date', None))
+        if start and end and end < start:
+            raise serializers.ValidationError({'end_date': 'End date cannot be before start date.'})
+        return attrs

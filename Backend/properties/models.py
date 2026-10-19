@@ -279,6 +279,10 @@ class Tenancy(models.Model):
         help_text='Day of month rent is due (1-28)',
     )
     grace_period_days = models.PositiveIntegerField(default=5)
+    prorate_final_period = models.BooleanField(
+        default=True,
+        help_text='Bill the last, partial month by days stayed (true) or as a full month (false).',
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     renewal_notes = models.TextField(blank=True, default='')
     notes = models.TextField(blank=True, default='')
