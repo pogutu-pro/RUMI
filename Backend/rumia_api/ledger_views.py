@@ -24,12 +24,14 @@ from rent.models import (
     CreditNote,
     DepositSettlement,
     Invoice,
+    MeterReading,
     PaymentAllocation,
     PenaltyPolicy,
     Receipt,
     RecurringCharge,
 )
 from rent.services.deposits import DepositError, DepositService
+from rent.services.utilities import UtilityError, UtilityService
 from rent.services.invoicing import InvoiceError, InvoiceService, LineSpec
 from rent.services.receipts import ReceiptService
 from rumia_api.serializers import (
@@ -41,9 +43,11 @@ from rumia_api.serializers import (
     CreditNoteInputSerializer,
     CreditNoteSerializer,
     InvoiceSerializer,
+    MeterReadingSerializer,
     PenaltyPolicySerializer,
     ReceiptSerializer,
     RecurringChargeSerializer,
+    UtilityRatesSerializer,
 )
 from rumia_api.views import RumiaBaseView, _caretaker_can
 
@@ -532,3 +536,94 @@ class DepositSettlementActionView(RumiaBaseView):
                   metadata={'deposit_settlement': settlement.number, 'action': self.action})
         settlement = self.get_object(pk)
         return Response(DepositSettlementSerializer(settlement).data)
+
+
+class MeterReadingListCreateView(RumiaBaseView):
+    """Water/electricity meter readings. Caretakers need `can_record_readings`."""
+
+    permission_classes = [IsAuthenticated, CanViewFinancials]
+    property_lookup = 'unit__parent_property'
+
+    def get(self, request):
+        qs = self.filter_by_organization(MeterReading.objects.select_related('unit', 'billed_invoice'))
+        if get_canonical_role(request.user) == 'tenant':
+            qs = qs.filter(unit__tenancies__tenant__user=request.user).distinct()
+        for param, field in (('unit_id', 'unit_id'), ('utility', 'utility')):
+            if request.query_params.get(param):
+                qs = qs.filter(**{field: request.query_params[param]})
+        if request.query_params.get('billed') in ('true', 'false'):
+            qs = qs.filter(billed=request.query_params['billed'] == 'true')
+        return Response(MeterReadingSerializer(qs.order_by('-reading_date'), many=True).data)
+
+    def post(self, request):
+        role = get_canonical_role(request.user)
+        if role not in ('landlord', 'super_admin') and not (
+            role == 'caretaker' and _caretaker_can(request.user, 'can_record_readings')
+        ):
+            return _forbidden()
+        serializer = MeterReadingSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        unit = serializer.validated_data['unit']
+        org_ids = self.get_user_organization_ids()
+        if org_ids is not None and unit.organization_id not in org_ids:
+            return _forbidden()
+        if role == 'caretaker' and unit.parent_property_id not in self.get_user_property_ids():
+            return _forbidden()
+        try:
+            reading = UtilityService.record_reading(
+                unit,
+                serializer.validated_data['utility'],
+                serializer.validated_data['reading_date'],
+                serializer.validated_data['value'],
+                rate_per_unit=serializer.validated_data.get('rate_per_unit'),
+                notes=serializer.validated_data.get('notes', ''),
+                recorded_by=request.user,
+            )
+        except UtilityError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(MeterReadingSerializer(reading).data, status=status.HTTP_201_CREATED)
+
+
+class TenancyUtilitiesBillNowView(RecurringChargeMixin, RumiaBaseView):
+    """POST: bill this tenancy's unbilled meter consumption on an ad-hoc invoice today."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        role = get_canonical_role(request.user)
+        if role not in ('landlord', 'super_admin') and not (
+            role == 'caretaker' and _caretaker_can(request.user, 'can_create_charges')
+        ):
+            return _forbidden()
+        tenancy = self.tenancy_or_404(pk)
+        try:
+            invoice = UtilityService.bill_now(tenancy, created_by=request.user)
+        except (UtilityError, InvoiceError) as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(InvoiceSerializer(invoice).data, status=status.HTTP_201_CREATED)
+
+
+class PropertyUtilityRatesView(RumiaBaseView):
+    """GET/PUT a property's default utility rates (KES per unit), used for new readings."""
+
+    permission_classes = [IsAuthenticated]
+
+    def _property(self, pk):
+        return get_object_or_404(self.filter_by_organization(Property.objects.all()), pk=pk)
+
+    def get(self, request, pk):
+        if get_canonical_role(request.user) == 'tenant':
+            return _forbidden()
+        prop = self._property(pk)
+        return Response((prop.settings or {}).get('utility_rates', {}))
+
+    def put(self, request, pk):
+        if get_canonical_role(request.user) not in ('landlord', 'super_admin'):
+            return _forbidden()
+        prop = self._property(pk)
+        serializer = UtilityRatesSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        rates = {k: str(v) for k, v in serializer.validated_data.items() if v is not None}
+        prop.settings = {**(prop.settings or {}), 'utility_rates': rates}
+        prop.save(update_fields=['settings', 'updated_at'])
+        return Response(rates)

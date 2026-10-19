@@ -12,6 +12,7 @@ from rent.models import (
     DepositSettlement,
     Invoice,
     InvoiceLine,
+    MeterReading,
     Payment,
     PenaltyPolicy,
     Receipt,
@@ -394,3 +395,24 @@ class DepositRefundSerializer(serializers.Serializer):
     method = serializers.ChoiceField(choices=[c[0] for c in DepositSettlement.REFUND_METHOD_CHOICES])
     reference = serializers.CharField(required=False, allow_blank=True, default='')
     refunded_on = serializers.DateField(required=False)
+
+
+class MeterReadingSerializer(serializers.ModelSerializer):
+    unit_number = serializers.CharField(source='unit.unit_number', read_only=True)
+    billed_invoice_number = serializers.CharField(source='billed_invoice.number', read_only=True, default=None)
+
+    class Meta:
+        model = MeterReading
+        fields = [
+            'id', 'unit', 'unit_number', 'utility', 'reading_date', 'value', 'rate_per_unit', 'consumption',
+            'billed', 'billed_invoice', 'billed_invoice_number', 'notes', 'created_at',
+        ]
+        read_only_fields = ['id', 'consumption', 'billed', 'billed_invoice', 'created_at']
+        extra_kwargs = {'rate_per_unit': {'required': False}}
+
+
+class UtilityRatesSerializer(serializers.Serializer):
+    water = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=Decimal('0'), required=False, allow_null=True)
+    electricity = serializers.DecimalField(
+        max_digits=10, decimal_places=2, min_value=Decimal('0'), required=False, allow_null=True,
+    )

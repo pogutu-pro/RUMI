@@ -13,7 +13,8 @@ trigger or the daily Celery beat task — can never create a duplicate.
 - The final, partial period is prorated by days stayed unless the tenancy
   opts out (`Tenancy.prorate_final_period`, design decision D6).
 - Each rent invoice carries the tenancy's active RecurringCharges as extra
-  lines (prorated the same way).
+  lines (prorated the same way) and metered utility consumption read
+  before the period started (billed in arrears).
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ from django.db.models import Q
 from properties.models import Tenancy
 from rent.models import Invoice
 from rent.services.invoicing import InvoiceService, LineSpec
+from rent.services.utilities import UtilityService
 
 # Tenancies whose rent is still being invoiced day to day.
 BILLABLE_STATUSES = ('active', 'notice_period')
@@ -117,10 +119,16 @@ class RentChargeGenerationService:
             if lines:
                 try:
                     with transaction.atomic():
-                        InvoiceService.create_invoice(
+                        # Metered utilities are billed in arrears: readings taken
+                        # before this period starts (or, for the final period, up
+                        # to the move-out date) go on this invoice.
+                        final = billing_end is not None and billing_end <= natural_end
+                        readings_before = (billing_end + timedelta(days=1)) if final else period_start
+                        utility_lines, readings = UtilityService.lines_for(tenancy, before=readings_before)
+                        invoice = InvoiceService.create_invoice(
                             tenancy,
                             'rent',
-                            lines,
+                            lines + utility_lines,
                             period_start=period_start,
                             period_end=period_end,
                             due_date=min(_due_date_for(period_start, tenancy.rent_due_day), period_end),
@@ -130,6 +138,7 @@ class RentChargeGenerationService:
                             # overdue on day one, not 'upcoming' (the model default).
                             as_of=as_of,
                         )
+                        UtilityService.mark_billed(readings, invoice)
                     created += 1
                 except IntegrityError:
                     # Another process already created this period's invoice —

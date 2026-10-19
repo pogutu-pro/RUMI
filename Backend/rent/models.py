@@ -658,3 +658,47 @@ class DepositDeduction(models.Model):
 
     def __str__(self):
         return f'{self.get_kind_display()}: {self.amount}'
+
+
+class MeterReading(models.Model):
+    """
+    A water/electricity meter reading for a unit. Consumption since the
+    previous reading is billed in arrears on the next rent invoice (or
+    immediately via an ad-hoc bill). The first reading for a unit is the
+    baseline and is never billed.
+    """
+
+    UTILITY_CHOICES = [
+        ('water', 'Water'),
+        ('electricity', 'Electricity'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        'organizations.Organization', on_delete=models.CASCADE, related_name='meter_readings',
+    )
+    unit = models.ForeignKey('properties.RentalUnit', on_delete=models.CASCADE, related_name='meter_readings')
+    utility = models.CharField(max_length=20, choices=UTILITY_CHOICES)
+    reading_date = models.DateField()
+    value = models.DecimalField(max_digits=12, decimal_places=3, validators=[MinValueValidator(Decimal('0'))])
+    rate_per_unit = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0'))])
+    consumption = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
+    billed_invoice = models.ForeignKey(
+        Invoice, on_delete=models.SET_NULL, null=True, blank=True, related_name='meter_readings',
+    )
+    billed = models.BooleanField(default=False)
+    notes = models.CharField(max_length=255, blank=True, default='')
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='meter_readings',
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'rent_meterreading'
+        ordering = ['unit', 'utility', 'reading_date']
+        constraints = [
+            models.UniqueConstraint(fields=['unit', 'utility', 'reading_date'], name='uniq_meter_reading_per_day'),
+        ]
+
+    def __str__(self):
+        return f'{self.unit} {self.utility} {self.reading_date}: {self.value}'

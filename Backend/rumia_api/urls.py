@@ -3,6 +3,9 @@
 from django.urls import path
 
 from rumia_api.ledger_views import (
+    MeterReadingListCreateView,
+    PropertyUtilityRatesView,
+    TenancyUtilitiesBillNowView,
     DepositSettlementActionView,
     TenancyDepositInvoiceView,
     TenancyDepositRecordHeldView,
@@ -77,6 +80,13 @@ urlpatterns = [
     path('credit-notes/', CreditNoteListView.as_view(), name='rumia-credit-notes'),
     path('receipts/', ReceiptListView.as_view(), name='rumia-receipts'),
     path('penalty-policy/', PenaltyPolicyView.as_view(), name='rumia-penalty-policy'),
+    path('meter-readings/', MeterReadingListCreateView.as_view(), name='rumia-meter-readings'),
+    path(
+        'tenancies/<uuid:pk>/utilities/bill-now/',
+        TenancyUtilitiesBillNowView.as_view(),
+        name='rumia-tenancy-utilities-bill-now',
+    ),
+    path('properties/<uuid:pk>/utility-rates/', PropertyUtilityRatesView.as_view(), name='rumia-utility-rates'),
     path('tenancies/<uuid:pk>/deposit/', TenancyDepositView.as_view(), name='rumia-tenancy-deposit'),
     path('tenancies/<uuid:pk>/deposit/invoice/', TenancyDepositInvoiceView.as_view(), name='rumia-deposit-invoice'),
     path(
