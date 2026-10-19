@@ -136,6 +136,12 @@ class InvoiceService:
         invoice.save(update_fields=['amount_paid', 'status', 'updated_at'])
 
         cls.post_invoice(invoice, created_by=created_by)
+
+        # Credit from earlier overpayments/advance payments pays this invoice now.
+        from rent.services.allocation import AllocationService
+
+        AllocationService.apply_credit(tenancy, created_by=created_by)
+        invoice.refresh_from_db()
         return invoice
 
     @classmethod

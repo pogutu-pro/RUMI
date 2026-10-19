@@ -194,12 +194,12 @@ class PaymentSerializer(serializers.ModelSerializer):
         model = Payment
         fields = [
             'id', 'organization', 'tenancy', 'tenant', 'property', 'unit',
-            'amount', 'currency', 'payment_method', 'provider',
-            'provider_reference', 'internal_reference', 'status',
+            'amount', 'unapplied_amount', 'currency', 'payment_method', 'provider',
+            'provider_reference', 'internal_reference', 'status', 'notes',
             'paid_at', 'created_at',
         ]
         read_only_fields = [
-            'id', 'organization', 'internal_reference', 'status',
+            'id', 'organization', 'internal_reference', 'status', 'unapplied_amount',
             'provider_reference', 'paid_at', 'created_at',
         ]
 

@@ -657,9 +657,22 @@ class RentBalanceView(RumiaBaseView):
         outstanding_total = sum((c.outstanding for c in charges), Decimal('0.00'))
         overdue_total = sum((c.outstanding for c in charges if c.status == 'overdue'), Decimal('0.00'))
 
+        # Tenant credit (overpayments / advance payments not yet applied),
+        # within the same visibility scope as the charges above.
+        credit_qs = self.filter_by_organization(
+            Payment.objects.filter(status='success', unapplied_amount__gt=0)
+        )
+        if role == 'tenant':
+            credit_qs = credit_qs.filter(tenant__user=request.user)
+        if tenancy_id:
+            credit_qs = credit_qs.filter(tenancy_id=tenancy_id)
+        credit_total = sum((p.unapplied_amount for p in credit_qs), Decimal('0.00'))
+
         return Response({
             'outstanding_total': str(outstanding_total),
             'overdue_total': str(overdue_total),
+            'credit_total': str(credit_total),
+            'net_balance': str(outstanding_total - credit_total),
             'charges': RentChargeSerializer(charges, many=True).data,
         })
 
@@ -778,26 +791,33 @@ class ManualPaymentView(RumiaBaseView):
         if role == 'caretaker' and tenancy.parent_property_id not in self.get_user_property_ids():
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
-        payment = Payment.objects.create(
-            organization=tenancy.organization,
-            tenancy=tenancy,
-            tenant=tenancy.tenant,
-            parent_property=tenancy.parent_property,
-            unit=tenancy.unit,
-            amount=serializer.validated_data['amount'],
-            payment_method=serializer.validated_data['payment_method'],
-            provider='manual',
-            internal_reference=f'RUMIA-MANUAL-{uuid.uuid4().hex[:16].upper()}',
-            notes=serializer.validated_data.get('notes', ''),
-            recorded_by=request.user,
-        )
-
         allocations = None
         rent_charge = serializer.validated_data.get('rent_charge_id')
         if rent_charge:
-            allocations = [{'rent_charge_id': rent_charge.id, 'amount': serializer.validated_data['amount']}]
+            allocations = [{'invoice_id': rent_charge.id, 'amount': serializer.validated_data['amount']}]
 
-        PaymentService.record_manual_payment(payment, allocations=allocations, verified_by=request.user)
+        try:
+            # One transaction: a rejected allocation must not leave an orphan payment row.
+            with transaction.atomic():
+                payment = Payment.objects.create(
+                    organization=tenancy.organization,
+                    tenancy=tenancy,
+                    tenant=tenancy.tenant,
+                    parent_property=tenancy.parent_property,
+                    unit=tenancy.unit,
+                    amount=serializer.validated_data['amount'],
+                    payment_method=serializer.validated_data['payment_method'],
+                    provider='manual',
+                    internal_reference=f'RUMIA-MANUAL-{uuid.uuid4().hex[:16].upper()}',
+                    notes=serializer.validated_data.get('notes', ''),
+                    recorded_by=request.user,
+                )
+                payment = PaymentService.record_manual_payment(
+                    payment, allocations=allocations, verified_by=request.user,
+                )
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
         log_audit('payment_recorded', actor=request.user, organization=tenancy.organization, entity=payment,
                    metadata={'action': 'manual'})
         return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)

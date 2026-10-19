@@ -271,6 +271,7 @@ class Payment(models.Model):
 
     METHOD_CHOICES = [
         ('paystack', 'Paystack'),
+        ('mpesa_paybill', 'M-Pesa Paybill'),
         ('bank_transfer', 'Bank Transfer'),
         ('cash', 'Cash'),
         ('other', 'Other'),
@@ -324,6 +325,10 @@ class Payment(models.Model):
     internal_reference = models.CharField(max_length=100, unique=True)
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    unapplied_amount = models.DecimalField(
+        max_digits=12, decimal_places=2, default=Decimal('0.00'),
+        help_text='Part of a successful payment not yet allocated to an invoice — tenant credit.',
+    )
     notes = models.TextField(blank=True, default='')
     metadata = models.JSONField(default=dict, blank=True)
 
@@ -348,6 +353,12 @@ class Payment(models.Model):
 
     class Meta:
         db_table = 'rent_payment'
+        constraints = [
+            models.CheckConstraint(
+                check=Q(unapplied_amount__gte=0) & Q(unapplied_amount__lte=F('amount')),
+                name='check_payment_unapplied_within_amount',
+            ),
+        ]
         indexes = [
             models.Index(fields=['organization', 'status'], name='idx_payment_org_status'),
             models.Index(fields=['tenant', 'status'], name='idx_payment_tenant_status'),
