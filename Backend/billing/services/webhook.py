@@ -62,14 +62,19 @@ def _amount_major(data: dict) -> Decimal | None:
 
 
 def _subscriptions_for_email(email: str):
-    """Subscriptions of every organization the email owns or is an active member of."""
-    return OrganizationSubscription.objects.select_for_update().filter(
+    """
+    Subscriptions of every organization the email owns or is an active member
+    of, row-locked. PostgreSQL rejects FOR UPDATE together with DISTINCT (which
+    the membership join needs), so the ids are found first and locked after.
+    """
+    ids = OrganizationSubscription.objects.filter(
         Q(organization__owner__email__iexact=email)
         | Q(
             organization__memberships__user__email__iexact=email,
             organization__memberships__is_active=True,
         ),
-    ).distinct()
+    ).values_list('pk', flat=True).distinct()
+    return OrganizationSubscription.objects.select_for_update().filter(pk__in=list(ids))
 
 
 def handle_billing_event(payload: dict) -> dict:
