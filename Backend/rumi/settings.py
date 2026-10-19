@@ -308,6 +308,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'rent.tasks.generate_rent_charges',
         'schedule': _crontab(minute=0, hour=1),  # Daily at 1 AM
     },
+    'rumia-reconcile-pending-payments': {
+        'task': 'rent.tasks.reconcile_pending_payments',
+        'schedule': _crontab(minute='*/15'),
+    },
     'rumia-apply-late-penalties': {
         'task': 'rent.tasks.apply_late_penalties',
         'schedule': _crontab(minute=15, hour=1),  # Daily at 1:15 AM, after invoicing

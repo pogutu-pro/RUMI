@@ -858,19 +858,29 @@ class PaystackWebhookView(APIView):
         import hashlib
         import hmac as hmac_module
 
-        secret = (getattr(settings, 'PAYSTACK_WEBHOOK_SECRET', '') or '').encode()
+        # Paystack signs webhooks with the account's secret key. A separately
+        # configured PAYSTACK_WEBHOOK_SECRET is also accepted for backwards
+        # compatibility; either way the signer must hold a server secret.
+        secrets = [
+            value.encode() for value in {
+                getattr(settings, 'PAYSTACK_SECRET_KEY', '') or '',
+                getattr(settings, 'PAYSTACK_WEBHOOK_SECRET', '') or '',
+            } if value
+        ]
         signature = request.headers.get('x-paystack-signature', '')
 
-        if not secret or not signature:
+        if not secrets or not signature:
             return Response({'error': 'Missing signature'}, status=status.HTTP_400_BAD_REQUEST)
 
-        computed = hmac_module.new(secret, request.body, hashlib.sha512).hexdigest()
-        if not hmac_module.compare_digest(computed, signature):
+        if not any(
+            hmac_module.compare_digest(hmac_module.new(secret, request.body, hashlib.sha512).hexdigest(), signature)
+            for secret in secrets
+        ):
             return Response({'error': 'Invalid signature'}, status=status.HTTP_400_BAD_REQUEST)
 
         payload = request.data
-        event = payload.get('event')
-        data = payload.get('data', {})
+        event = payload.get('event') or ''
+        data = payload.get('data', {}) or {}
         reference = data.get('reference')
 
         if event == 'charge.success' and reference:
@@ -890,21 +900,109 @@ class PaystackWebhookView(APIView):
 
                 return Response({'status': 'processed', 'payment_status': payment.status})
 
-        # Not a rent-payment reference (unmatched, or the event isn't
-        # charge.success at all) — the only other consumer of this single
+        if event.startswith('refund.') or event.startswith('charge.dispute.'):
+            payment = _payment_for_paystack_event(data)
+            if payment is not None:
+                return Response(_handle_payment_event(payment, event, data, payload))
+
+        # Not a rent-payment event — the only other consumer of this single
         # physical webhook URL is the billing/subscription domain. Paystack
         # never calls a second endpoint for subscription.*/invoice.* events.
+        # handle_billing_event returns 'ignored' for anything it doesn't own;
+        # an exception here is a genuine failure, so answer 500 and let
+        # Paystack retry the delivery (audit H6).
+        from billing.services.webhook import handle_billing_event
         try:
-            from billing.services.webhook import handle_billing_event
             result = handle_billing_event(payload)
         except Exception:
-            # Never surface a 5xx to Paystack over a malformed/unrecognized
-            # billing event — same "ignored -> 200" philosophy as the
-            # unmatched-rent-reference case above.
             logger.exception('Billing webhook dispatch failed for event=%s', event)
-            result = {'status': 'error'}
+            return Response({'status': 'error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response(result, status=status.HTTP_200_OK)
+
+
+def _payment_for_paystack_event(data: dict):
+    """
+    Refund/dispute payloads carry the original transaction reference in
+    different places across Paystack versions — check each.
+    """
+    transaction_data = data.get('transaction')
+    candidates = [
+        data.get('transaction_reference'),
+        transaction_data.get('reference') if isinstance(transaction_data, dict) else None,
+        data.get('reference'),
+    ]
+    for reference in filter(None, candidates):
+        payment = Payment.objects.filter(internal_reference=str(reference)).first()
+        if payment is not None:
+            return payment
+    return None
+
+
+def _handle_payment_event(payment, event: str, data: dict, payload: dict) -> dict:
+    if event == 'refund.processed':
+        raw_amount = data.get('amount')
+        try:
+            amount = Decimal(str(raw_amount)) / Decimal('100') if raw_amount not in (None, '') else None
+        except Exception:
+            amount = None
+        outcome = PaymentService.handle_refund(payment, amount, payload)
+        action = 'payment_reversed' if outcome == 'reversed' else 'payment_edited'
+    elif event.startswith('charge.dispute.'):
+        outcome = PaymentService.flag_dispute(payment, event, payload)
+        action = 'payment_edited'
+        if event == 'charge.dispute.create':
+            _notify_landlord_of_dispute(payment)
+    else:
+        return {'status': 'ignored', 'event': event}
+
+    log_audit(action, organization=payment.organization, entity=payment,
+              metadata={'source': 'paystack_webhook', 'event': event, 'outcome': outcome})
+    return {'status': 'processed', 'event': event, 'outcome': outcome}
+
+
+def _notify_landlord_of_dispute(payment) -> None:
+    from rent.services.notifications import _deliver
+
+    owner = payment.organization.owner
+    text = (
+        f'RumiaRent: a chargeback was opened on payment {payment.internal_reference} '
+        f'(KES {payment.amount}, {payment.tenant.full_name}). Respond in your Paystack dashboard; '
+        f'if you lose it, reverse the payment in RumiaRent.'
+    )
+    try:
+        _deliver(['email', 'sms', 'in_app'], email=owner.email, phone=getattr(owner, 'phone_number', ''), user=owner,
+                 subject=f'Chargeback on {payment.internal_reference}', body=text, sms=text,
+                 kind='payment_dispute', metadata={'payment_id': str(payment.pk)})
+    except Exception:
+        logger.exception('Dispute notification failed for payment %s', payment.pk)
+
+
+class PaymentReverseView(RumiaBaseView):
+    """
+    POST {reason}: reverse a successful payment (bounced cheque, lost
+    chargeback, recorded in error). Owner-side only; unwinds the ledger and
+    restores the invoices it paid.
+    """
+
+    property_lookup = 'parent_property'
+
+    def post(self, request, pk):
+        if get_canonical_role(request.user) not in ('landlord', 'super_admin'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        reason = str(request.data.get('reason', '')).strip()
+        if not reason:
+            return Response({'reason': 'A reason is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        payment = self.filter_by_organization(Payment.objects.all()).filter(pk=pk).first()
+        if payment is None:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            PaymentService.reverse_payment(payment, reversed_by=request.user, reason=reason)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        log_audit('payment_reversed', actor=request.user, organization=payment.organization, entity=payment,
+                  metadata={'reason': reason})
+        return Response(PaymentSerializer(payment).data)
 
 
 class IncomeSummaryView(RumiaBaseView):

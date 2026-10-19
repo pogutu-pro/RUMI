@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 from decimal import Decimal
 from typing import Optional
 
@@ -341,3 +342,71 @@ class PaymentService:
             charge.save(update_fields=['amount_paid', 'status', 'updated_at'])
 
         return payment
+
+    # --- reconciliation, refunds and disputes (audit H4/H5) -----------------
+
+    RECONCILE_AFTER = timedelta(minutes=10)
+    ABANDON_AFTER = timedelta(hours=24)
+
+    @classmethod
+    def reconcile_processing(cls) -> dict:
+        now = timezone.now()
+        counts = {'checked': 0, 'settled': 0, 'failed': 0, 'abandoned': 0}
+        stale = Payment.objects.filter(
+            status='processing', provider='paystack', created_at__lt=now - cls.RECONCILE_AFTER,
+        )
+        for payment in stale:
+            counts['checked'] += 1
+            try:
+                payment = cls.verify_and_allocate(payment, raw_callback={'source': 'reconciliation'})
+            except Exception:
+                logger.exception('Reconciliation failed for payment %s', payment.pk)
+                continue
+            if payment.status == 'success':
+                counts['settled'] += 1
+            elif payment.status == 'failed':
+                counts['failed'] += 1
+            elif payment.status == 'processing' and payment.created_at < now - cls.ABANDON_AFTER:
+                Payment.objects.filter(pk=payment.pk, status='processing').update(
+                    status='failed', notes='Abandoned: checkout not completed within 24 hours',
+                    updated_at=now,
+                )
+                counts['abandoned'] += 1
+        return counts
+
+    @classmethod
+    def handle_refund(cls, payment: Payment, refund_amount_major: Optional[Decimal], payload: dict) -> str:
+        """
+        Paystack refunded (part of) a payment. A full refund reverses it; a
+        partial refund is flagged for the landlord to resolve, never guessed.
+        """
+        payment.refresh_from_db()
+        if payment.status != 'success':
+            return 'ignored'
+        if refund_amount_major is None or refund_amount_major >= payment.amount:
+            cls.reverse_payment(payment, reason='Refunded through Paystack')
+            return 'reversed'
+        payment.metadata = {
+            **payment.metadata,
+            'partial_refunds': [*payment.metadata.get('partial_refunds', []), {
+                'amount': str(refund_amount_major), 'at': timezone.now().isoformat(),
+            }],
+        }
+        payment.notes = f'{payment.notes}\nPartial refund of {refund_amount_major} via Paystack — review.'.strip()
+        payment.save(update_fields=['metadata', 'notes', 'updated_at'])
+        return 'flagged'
+
+    @classmethod
+    def flag_dispute(cls, payment: Payment, event: str, payload: dict) -> str:
+        """Record a chargeback event on the payment; money only moves when a person reverses it."""
+        payment.refresh_from_db()
+        payment.metadata = {
+            **payment.metadata,
+            'disputes': [*payment.metadata.get('disputes', []), {
+                'event': event, 'at': timezone.now().isoformat(),
+                'status': (payload.get('data') or {}).get('status', ''),
+                'resolution': (payload.get('data') or {}).get('resolution', ''),
+            }],
+        }
+        payment.save(update_fields=['metadata', 'updated_at'])
+        return 'flagged'

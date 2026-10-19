@@ -29,6 +29,7 @@ from rumia_api.views import (
     OrganizationListView,
     PaymentListCreateView,
     PaymentProviderStatusView,
+    PaymentReverseView,
     PaystackWebhookView,
     PropertyDetailView,
     PropertyListCreateView,
@@ -65,6 +66,7 @@ urlpatterns = [
     # silently be shadowed by the legacy router/webhook and never get hit.
     path('rent/payments/', PaymentListCreateView.as_view(), name='rumia-payments'),
     path('rent/payments/manual/', ManualPaymentView.as_view(), name='rumia-payment-manual'),
+    path('rent/payments/<uuid:pk>/reverse/', PaymentReverseView.as_view(), name='rumia-payment-reverse'),
     path('rent/payments/webhook/paystack/', PaystackWebhookView.as_view(), name='rumia-paystack-webhook'),
     path('rent/payments/providers/', PaymentProviderStatusView.as_view(), name='rumia-payment-providers'),
     path('income/', IncomeSummaryView.as_view(), name='rumia-income'),

@@ -59,6 +59,20 @@ def send_rent_due_reminders():
     return counts
 
 
+@shared_task(name='rent.tasks.reconcile_pending_payments')
+def reconcile_pending_payments():
+    """
+    Every 15 minutes: re-verify Paystack payments still `processing` (lost or
+    late webhook, transient error) and settle them; give up on checkouts not
+    completed within 24 hours (audit H4).
+    """
+    from rent.services.payment_service import PaymentService
+
+    counts = PaymentService.reconcile_processing()
+    logger.info('RumiaRent payment reconciliation: %s', counts)
+    return counts
+
+
 @shared_task(name='rent.tasks.apply_late_penalties')
 def apply_late_penalties():
     """Daily: issue late-penalty invoices under each organization's enabled PenaltyPolicy."""
