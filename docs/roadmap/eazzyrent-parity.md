@@ -26,7 +26,7 @@ in-app channel.
 |---|---|---|---|
 | Rent invoicing | Yes, recurring | **Done (Phase 1):** monthly invoices, lease end, proration | 1 |
 | Service charge / utility / repair invoicing | Yes | **Done:** recurring extras, metered water/electricity, one-off charges | 1 |
-| Paybill + bank auto-reconciliation | Yes, 7+ banks | No | 2, 4 |
+| Paybill + bank auto-reconciliation | Yes, 7+ banks | **Paybill done (Phase 2, pending Safaricom test)**; banks not yet | 2, 4 |
 | Automatic SMS/email receipts | Yes | **Done:** numbered PDF receipts by SMS + email | 1 |
 | Late penalties | Yes | **Done:** fixed/percent, grace, monthly, cap, per-property | 1 |
 | Arrears control (reminders, demand notes, quit notices) | Yes | **Reminders + escalations done**; demand notes / quit notices not yet | 1 |
