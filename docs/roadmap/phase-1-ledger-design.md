@@ -1,6 +1,10 @@
 # Phase 1 — Ledger Core: Design
 
-**Status: DRAFT — awaiting owner sign-off on the decisions in §10.**
+**Status: IN PROGRESS on branch `feature/phase-1-ledger`, built on the
+recommended defaults for D1–D7 (§10). These are PROVISIONAL — the owner has
+not yet explicitly confirmed them.** Each decision is isolated so it can be
+changed: D2 in `rent/services/allocation.py`, D4 in `ledger/services/numbering.py`,
+D6 in invoicing, D7 in `PenaltyPolicy` defaults.
 Nothing here is built yet. Prerequisite: Phase 0 (branch `fix/payments-phase-0`).
 
 ## 1. Goal
