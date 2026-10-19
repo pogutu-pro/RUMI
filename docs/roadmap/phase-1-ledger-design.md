@@ -1,6 +1,6 @@
 # Phase 1 — Ledger Core: Design
 
-**Status: IN PROGRESS on branch `feature/phase-1-ledger`, built on the
+**Status: IMPLEMENTED on branch `feature/phase-1-ledger` (not pushed), built on the
 recommended defaults for D1–D7 (§10). These are PROVISIONAL — the owner has
 not yet explicitly confirmed them.** Each decision is isolated so it can be
 changed: D2 in `rent/services/allocation.py`, D4 in `ledger/services/numbering.py`,
@@ -303,7 +303,8 @@ Every step is a separate, reversible migration with its own tests.
 | 1i | Done | `fb9d0ee0` | H4–H6; reconciliation task every 15 min; `/rent/payments/<id>/reverse/` |
 | 1j | Done | `3ab71c12` | `rent/services/utilities.py`, `MeterReading`, rates in `Property.settings` |
 | infra | Done | `a658e937`, `590b4123` | PostgreSQL FOR UPDATE+DISTINCT bug; broken prod DB OPTIONS; per-request disconnect middleware removed; CI now really runs on PostgreSQL |
-| frontend | In progress | | |
+| frontend | Done | `ed11e69d` | `frontend/src/features/ledger/`; pages: Rent & invoices, Payments, Tenancies → Money, Rent rules, tenant dashboard |
+| dispute alert | Done | `2bdfe21d` | Owner emailed + in-app when a tenant disputes |
 
 Backend: 349 tests pass on SQLite and on PostgreSQL 15. Migrations verified
 on both against pre-Phase-1 data (`rent.0002_invoice` data step).

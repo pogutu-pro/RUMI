@@ -24,13 +24,48 @@ prior context.
 | Phase | Scope | Status |
 |-------|-------|--------|
 | 0 | Critical bug fixes (C1–C5) | **Done** — commit `b2cea1f1` on branch `fix/payments-phase-0` (not pushed/merged) |
-| 1 | Ledger core: general invoices, receipts, penalties, deposits, tenant credit | **Design drafted** — waiting on owner decisions D1–D7 |
+| 1 | Ledger core: general invoices, receipts, penalties, deposits, tenant credit, utilities | **Implemented** on branch `feature/phase-1-ledger` (local, not pushed) using the *recommended* D1–D7 — owner to confirm |
 | 2 | M-Pesa paybill (Daraja C2B) collection + auto-matching + unmatched queue | Not started |
 | 3 | Agency → many landlords, commissions, landlord statements, expenses | Not started |
 | 4 | Bank IPN integrations (bank by bank) | Not started |
 | 5 | Disbursements, full accounting reports | Not started |
 
 **Explicitly out of scope for now:** USSD.
+
+## Owner checklist (next working session)
+
+Nothing has been pushed, merged or deployed — the push was blocked pending
+the owner's explicit OK. Branches (each builds on the previous):
+
+1. `fix/payments-phase-0` — critical fixes C1–C5.
+2. `feature/phase-1-ledger` — Phase 1 backend + frontend, PostgreSQL fixes.
+
+To ship:
+
+```bash
+git push -u origin fix/payments-phase-0 feature/phase-1-ledger
+gh pr create --base main --head feature/phase-1-ledger   # contains phase 0 too
+# after CI is green (CI now really runs on PostgreSQL):
+gh pr merge --merge          # a push to main auto-deploys via webhook/
+# then on the server, inside the backend container:
+python manage.py migrate
+python manage.py ledger_backfill
+python manage.py ledger_backfill --check   # must say "reconciles"
+python manage.py seed_subscription_plans   # if plans are not linked to Paystack yet
+```
+
+Also needed:
+- Confirm (or change) Phase 1 decisions D1–D7 — see phase-1-ledger-design.md §10.
+- Paystack **test** keys in `Backend/.env` (`PAYSTACK_SECRET_KEY`, `PAYSTACK_PUBLIC_KEY`,
+  `PAYSTACK_ENV=test`). `PAYSTACK_WEBHOOK_SECRET` is no longer required.
+- Africa's Talking sandbox keys (receipts, reminders).
+- Celery beat must run: new schedules — penalties 01:15, payment reconciliation every 15 min.
+- Local dev only: `frontend/node_modules/@types/node` is corrupted (missing
+  semicolons vs the published package) so `next build`'s type-check fails
+  locally. Fix with `cd frontend && rm -rf node_modules && pnpm install`.
+  Docker builds install fresh and are unaffected.
+- Local dev only: `Backend/db.sqlite3` has an inconsistent migration history
+  (`rent.0001` applied before `organizations.0001`); recreate it or use PostgreSQL.
 
 ## Ground rules decided so far
 

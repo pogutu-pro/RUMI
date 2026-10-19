@@ -24,14 +24,14 @@ in-app channel.
 
 | Money operation | EazzyRent | RumiaRent (Oct 2026) | Phase |
 |---|---|---|---|
-| Rent invoicing | Yes, recurring | Monthly charges (ignores lease end) | 1 |
-| Service charge / utility / repair invoicing | Yes | No | 1 |
+| Rent invoicing | Yes, recurring | **Done (Phase 1):** monthly invoices, lease end, proration | 1 |
+| Service charge / utility / repair invoicing | Yes | **Done:** recurring extras, metered water/electricity, one-off charges | 1 |
 | Paybill + bank auto-reconciliation | Yes, 7+ banks | No | 2, 4 |
-| Automatic SMS/email receipts | Yes | No | 1 |
-| Late penalties | Yes | Field only | 1 |
-| Arrears control (reminders, demand notes, quit notices) | Yes | 1 reminder + next-of-kin escalation | 1 |
-| Deposits held and refunded | Yes | Number on tenancy only | 1 |
-| Tenant credit / advance payments | Yes | Lost (bug H1) | 1 |
+| Automatic SMS/email receipts | Yes | **Done:** numbered PDF receipts by SMS + email | 1 |
+| Late penalties | Yes | **Done:** fixed/percent, grace, monthly, cap, per-property | 1 |
+| Arrears control (reminders, demand notes, quit notices) | Yes | **Reminders + escalations done**; demand notes / quit notices not yet | 1 |
+| Deposits held and refunded | Yes | **Done:** held as liability, move-out settlement, refund recorded | 1 |
+| Tenant credit / advance payments | Yes | **Done:** kept and auto-applied | 1 |
 | Landlord statements | Yes | No | 3 |
 | Landlord remittance, advances, loans | Yes | Paystack split only | 3, 5 |
 | Agent commissions | Yes | No agent model | 3 |
