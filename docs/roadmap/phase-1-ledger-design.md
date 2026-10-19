@@ -288,6 +288,19 @@ Every step is a separate, reversible migration with its own tests.
 | 1i | Paystack hardening | H3–H6 |
 | 1j | Metered utilities (if D3 = yes) | utilities |
 
+### Progress log (branch `feature/phase-1-ledger`, local only — not pushed)
+
+| Slice | Status | Commit | Notes |
+|---|---|---|---|
+| 1a | Done | `ceac6069` | `ledger` app; `LedgerService.post/reverse/balance` |
+| 1b | Done | `175e3316` | Invoice/InvoiceLine/CreditNote; credit notes became a separate model (see §3.1 note) |
+| 1c | Done | `1b154ea2` | `rent/services/allocation.py`; `manage.py ledger_backfill [--check]` |
+| 1d | Done | `14e5e5c8` | `rent/services/receipts.py`; org toggles `settings.receipt_sms/receipt_email` |
+| 1e | Next | | |
+
+**Deploy steps once merged:** `migrate` → `manage.py ledger_backfill` →
+`manage.py ledger_backfill --check` (must print "reconciles").
+
 ## 8. Testing strategy
 
 - Ledger invariant test over every journal entry after each test (fixture hook).
