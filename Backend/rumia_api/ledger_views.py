@@ -204,9 +204,28 @@ class InvoiceDisputeView(InvoiceScopedMixin, RumiaBaseView):
 
         invoice = get_object_or_404(self.invoice_queryset(), pk=pk)
         invoice = InvoiceService.set_disputed(invoice, disputed)
+        note = str(request.data.get('note', ''))[:500]
         log_audit('rent_modified', actor=request.user, organization=invoice.organization, entity=invoice,
-                  metadata={'disputed': disputed, 'note': str(request.data.get('note', ''))[:500]})
+                  metadata={'disputed': disputed, 'note': note})
+        if role == 'tenant' and disputed:
+            _notify_owner_of_tenant_dispute(invoice, note)
         return Response(InvoiceSerializer(invoice).data)
+
+
+def _notify_owner_of_tenant_dispute(invoice, note: str) -> None:
+    from rent.services.notifications import _deliver
+
+    owner = invoice.organization.owner
+    text = (
+        f'RumiaRent: {invoice.tenant.full_name} ({invoice.unit.unit_number}) disputed {invoice.number} '
+        f'(KES {invoice.outstanding}).' + (f' Note: {note}' if note else '')
+    )
+    try:
+        _deliver(['email', 'in_app'], email=owner.email, phone='', user=owner,
+                 subject=f'Invoice {invoice.number} disputed by {invoice.tenant.full_name}', body=text, sms=text,
+                 kind='invoice_disputed', metadata={'invoice_id': str(invoice.pk)})
+    except Exception:
+        pass  # Never fail the tenant's request over a notification problem.
 
 
 class CreditNoteListView(RumiaBaseView):

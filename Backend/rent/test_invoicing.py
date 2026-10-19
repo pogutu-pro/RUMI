@@ -250,9 +250,13 @@ class InvoiceApiTests(InvoiceFixtures):
         invoice = self.make_invoice()
         tenant = self.client_for(self.tenant_user)
 
-        raised = tenant.post(f'/api/v1/invoices/{invoice.id}/dispute/', {'disputed': True}, format='json')
+        raised = tenant.post(f'/api/v1/invoices/{invoice.id}/dispute/', {'disputed': True, 'note': 'Paid in cash'},
+                             format='json')
         self.assertEqual(raised.status_code, 200)
         self.assertEqual(raised.data['status'], 'disputed')
+        from django.core import mail
+        self.assertEqual(mail.outbox[-1].to, [self.landlord.email])
+        self.assertIn('Paid in cash', mail.outbox[-1].body)
 
         cleared_by_tenant = tenant.post(f'/api/v1/invoices/{invoice.id}/dispute/', {'disputed': False}, format='json')
         self.assertEqual(cleared_by_tenant.status_code, 403)
