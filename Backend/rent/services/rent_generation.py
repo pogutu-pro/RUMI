@@ -2,8 +2,8 @@
 Recurring rent-charge generation.
 
 For every active tenancy, ensure the current billing period has exactly one
-RentCharge. Idempotent by design: (tenancy, period_start) is unique at the
-database level (rent.RentCharge.Meta.unique_together), so calling this
+rent Invoice. Idempotent by design: (tenancy, period_start) is unique for rent
+invoices at the database level (rent.Invoice uniq_rent_invoice_per_period), so calling this
 repeatedly — from a manual trigger or the daily Celery beat task — can never
 create a duplicate charge for a period that already has one.
 
@@ -20,7 +20,8 @@ from dateutil.relativedelta import relativedelta
 from django.db import IntegrityError, transaction
 
 from properties.models import Tenancy
-from rent.models import RentCharge
+from rent.models import Invoice
+from rent.services.invoicing import InvoiceService, LineSpec
 
 
 @dataclass
@@ -45,7 +46,7 @@ def _due_date_for(period_start: date, rent_due_day: int) -> date:
 
 
 class RentChargeGenerationService:
-    """Generates the next-due RentCharge for active tenancies. Never duplicates."""
+    """Generates the next-due rent Invoice for active tenancies. Never duplicates."""
 
     @classmethod
     def generate_for_tenancy(cls, tenancy: Tenancy, as_of: date | None = None) -> int:
@@ -53,7 +54,7 @@ class RentChargeGenerationService:
         as_of = as_of or date.today()
         created = 0
 
-        latest = tenancy.rent_charges.order_by('-period_start').first()
+        latest = tenancy.invoices.filter(invoice_type='rent').order_by('-period_start').first()
         period_start = (latest.period_end + timedelta(days=1)) if latest else tenancy.start_date
 
         # Safety cap: never generate more than 24 periods in one pass, even if
@@ -66,23 +67,19 @@ class RentChargeGenerationService:
 
             try:
                 with transaction.atomic():
-                    charge = RentCharge.objects.create(
-                        organization=tenancy.organization,
-                        tenancy=tenancy,
-                        parent_property=tenancy.parent_property,
-                        unit=tenancy.unit,
-                        tenant=tenancy.tenant,
+                    InvoiceService.create_invoice(
+                        tenancy,
+                        'rent',
+                        [LineSpec('rent', tenancy.monthly_rent)],
                         period_start=period_start,
                         period_end=period_end,
                         due_date=due_date,
-                        amount_due=tenancy.monthly_rent,
-                        currency='KES',
+                        issue_date=period_start,
+                        # Set the true status immediately — a backfilled invoice for a
+                        # tenancy that's been running a while may already be due or
+                        # overdue on day one, not 'upcoming' (the model default).
+                        as_of=as_of,
                     )
-                    # Set the true status immediately — a backfilled charge for a
-                    # tenancy that's been running a while may already be due or
-                    # overdue on day one, not 'upcoming' (the model default).
-                    charge.recalculate_status(as_of=as_of)
-                    charge.save(update_fields=['amount_paid', 'status', 'updated_at'])
                 created += 1
             except IntegrityError:
                 # Another process already created this period's charge — expected
@@ -114,11 +111,11 @@ class RentChargeGenerationService:
         """
         Advance charge status purely by date (upcoming->due->overdue) for charges
         with no recent payment activity. Payment flows already call
-        RentCharge.recalculate_status() themselves; this catches charges that
+        Invoice.recalculate_status() themselves; this catches charges that
         just aged past a boundary with no payment at all.
         """
         as_of = as_of or date.today()
-        candidates = RentCharge.objects.exclude(
+        candidates = Invoice.objects.exclude(
             status__in=['paid', 'waived', 'disputed'],
         ).filter(period_start__lte=as_of)
 

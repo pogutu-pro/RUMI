@@ -339,6 +339,6 @@ class Command(BaseCommand):
             if charge:
                 PaymentAllocation.objects.create(
                     payment=payment,
-                    rent_charge=charge,
+                    invoice=charge,
                     amount=txn.amount,
                 )

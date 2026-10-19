@@ -6,7 +6,7 @@ from rest_framework import serializers
 
 from organizations.models import Organization
 from properties.models import Property, RentalUnit, Tenancy
-from rent.models import Payment, RentCharge
+from rent.models import CreditNote, Invoice, InvoiceLine, Payment, RentCharge
 from tenants.models import EmergencyContact, TenantProfile
 
 
@@ -105,26 +105,84 @@ class EmergencyContactSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
 
+class InvoiceLineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoiceLine
+        fields = ['id', 'line_type', 'description', 'quantity', 'unit_price', 'amount']
+
+
+class CreditNoteSerializer(serializers.ModelSerializer):
+    invoice_number = serializers.CharField(source='invoice.number', read_only=True)
+
+    class Meta:
+        model = CreditNote
+        fields = ['id', 'number', 'invoice', 'invoice_number', 'amount', 'reason', 'issue_date', 'created_at']
+
+
 class RentChargeSerializer(serializers.ModelSerializer):
+    """
+    Invoice representation. Named for the pre-Phase-1 `/rent/` endpoints, whose
+    response shape it keeps (`amount_due`, `late_fee_amount`, `outstanding`).
+    """
+
     outstanding = serializers.SerializerMethodField()
+    late_fee_amount = serializers.SerializerMethodField()
+    tenant_name = serializers.CharField(source='tenant.full_name', read_only=True)
+    unit_number = serializers.CharField(source='unit.unit_number', read_only=True)
+    lines = InvoiceLineSerializer(many=True, read_only=True)
     property = serializers.PrimaryKeyRelatedField(
         source='parent_property', read_only=True
     )
 
     class Meta:
-        model = RentCharge
+        model = Invoice
         fields = [
-            'id', 'organization', 'tenancy', 'property', 'unit', 'tenant',
+            'id', 'number', 'invoice_type', 'organization', 'tenancy', 'property', 'unit', 'tenant',
+            'tenant_name', 'unit_number', 'issue_date',
             'period_start', 'period_end', 'due_date',
-            'amount_due', 'amount_paid', 'late_fee_amount', 'outstanding',
-            'status', 'currency', 'notes', 'created_at',
+            'amount_due', 'amount_paid', 'amount_credited', 'late_fee_amount', 'outstanding',
+            'status', 'is_disputed', 'currency', 'notes', 'lines', 'source_invoice', 'created_at',
         ]
-        read_only_fields = [
-            'id', 'organization', 'amount_paid', 'status', 'created_at',
-        ]
+        read_only_fields = fields
 
     def get_outstanding(self, obj):
         return str(obj.outstanding)
+
+    def get_late_fee_amount(self, obj):
+        # Late fees used to be a column; they are now penalty lines/invoices.
+        total = sum((line.amount for line in obj.lines.all() if line.line_type == 'penalty'), Decimal('0.00'))
+        return str(total)
+
+
+InvoiceSerializer = RentChargeSerializer
+
+
+class InvoiceLineInputSerializer(serializers.Serializer):
+    line_type = serializers.ChoiceField(choices=[
+        choice for choice in InvoiceLine.LINE_TYPE_CHOICES if choice[0] not in ('rent', 'penalty', 'deposit')
+    ])
+    description = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
+    quantity = serializers.DecimalField(max_digits=12, decimal_places=3, min_value=Decimal('0.001'), default=Decimal('1'))
+    unit_price = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal('0.01'))
+
+
+class AdhocInvoiceSerializer(serializers.Serializer):
+    """Input for a landlord-raised one-off charge (repair, utility top-up, etc.)."""
+
+    tenancy = serializers.PrimaryKeyRelatedField(queryset=Tenancy.objects.all())
+    due_date = serializers.DateField()
+    notes = serializers.CharField(required=False, allow_blank=True, default='')
+    lines = InvoiceLineInputSerializer(many=True)
+
+    def validate_lines(self, value):
+        if not value:
+            raise serializers.ValidationError('At least one line is required.')
+        return value
+
+
+class CreditNoteInputSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal('0.01'))
+    reason = serializers.CharField(max_length=2000)
 
 
 class PaymentSerializer(serializers.ModelSerializer):

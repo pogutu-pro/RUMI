@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from organizations.models import PayoutAccount
 from organizations.services.notifications import notify_payout_blocked_attempt
-from rent.models import Payment, PaymentAllocation, RentCharge
+from rent.models import Invoice, Payment, PaymentAllocation
 from rent.providers.base import (
     InitiatePaymentRequest,
     PaymentProviderError,
@@ -22,6 +22,11 @@ from rent.providers.base import (
 from rent.providers.paystack import PaystackProvider
 
 logger = logging.getLogger(__name__)
+
+
+def _allocation_invoice_id(alloc: dict):
+    # 'rent_charge_id' is the pre-Phase-1 key, still accepted from older callers.
+    return alloc.get('invoice_id') or alloc['rent_charge_id']
 
 
 class PaymentService:
@@ -223,7 +228,7 @@ class PaymentService:
             for alloc in allocations:
                 cls._create_allocation(
                     payment,
-                    alloc['rent_charge_id'],
+                    _allocation_invoice_id(alloc),
                     Decimal(str(alloc['amount'])),
                 )
         elif payment.tenancy_id:
@@ -251,7 +256,7 @@ class PaymentService:
             for alloc in allocations:
                 cls._create_allocation(
                     payment,
-                    alloc['rent_charge_id'],
+                    _allocation_invoice_id(alloc),
                     Decimal(str(alloc['amount'])),
                 )
         elif payment.tenancy_id:
@@ -277,16 +282,16 @@ class PaymentService:
         }
         payment.save(update_fields=['status', 'metadata', 'updated_at'])
 
-        for allocation in payment.allocations.select_related('rent_charge'):
-            charge = allocation.rent_charge
+        for allocation in payment.allocations.select_related('invoice'):
+            charge = allocation.invoice
             charge.recalculate_status()
             charge.save(update_fields=['amount_paid', 'status', 'updated_at'])
 
         return payment
 
     @classmethod
-    def _create_allocation(cls, payment: Payment, rent_charge_id, amount: Decimal):
-        charge = RentCharge.objects.select_for_update().get(id=rent_charge_id)
+    def _create_allocation(cls, payment: Payment, invoice_id, amount: Decimal):
+        charge = Invoice.objects.select_for_update().get(id=invoice_id)
         if payment.status != 'success':
             raise ValueError('Cannot allocate non-successful payment')
         if charge.organization_id != payment.organization_id or (
@@ -296,7 +301,7 @@ class PaymentService:
 
         PaymentAllocation.objects.create(
             payment=payment,
-            rent_charge=charge,
+            invoice=charge,
             amount=amount,
         )
         paid = charge.payment_allocations.filter(
@@ -309,7 +314,7 @@ class PaymentService:
     @classmethod
     def _auto_allocate(cls, payment: Payment):
         remaining = payment.amount
-        charges = RentCharge.objects.filter(
+        charges = Invoice.objects.filter(
             tenancy=payment.tenancy,
             status__in=['due', 'partially_paid', 'overdue'],
         ).order_by('due_date')

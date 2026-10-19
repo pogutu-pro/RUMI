@@ -1,8 +1,11 @@
 """
-Rent domain — authoritative financial ledger for RumiaRent.
+Rent domain — authoritative tenant ledger for RumiaRent.
 
-Tenancy → RentCharge → Payment(s) via PaymentAllocation
+Tenancy → Invoice (+ InvoiceLines, CreditNotes) → Payment(s) via PaymentAllocation
 
+Invoices are immutable once issued: corrections are CreditNotes. Every money
+event also posts a balanced journal entry in the `ledger` app (see
+rent/services/invoicing.py and docs/roadmap/phase-1-ledger-design.md).
 Financial state is computed from ledger records, never from dashboard caches.
 """
 
@@ -12,15 +15,18 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import F, Sum
+from django.db.models import F, Q, Sum
 from django.utils import timezone
 
 
-class RentCharge(models.Model):
+class Invoice(models.Model):
     """
-    Immutable rent obligation for a billing period.
+    An amount a tenant owes: monthly rent (plus recurring extras), a deposit,
+    a late penalty, or an ad-hoc charge.
 
-    Status is derived from amount_paid vs amount_due but stored for query efficiency.
+    Evolved in place from the former `RentCharge` (same table, same rows).
+    `amount_due` is the invoice total — always the sum of its lines.
+    Status is derived from payments and credit notes but stored for query efficiency.
     """
 
     STATUS_CHOICES = [
@@ -33,32 +39,51 @@ class RentCharge(models.Model):
         ('disputed', 'Disputed'),
     ]
 
+    TYPE_CHOICES = [
+        ('rent', 'Rent'),
+        ('deposit', 'Deposit'),
+        ('penalty', 'Late Penalty'),
+        ('adhoc', 'Ad-hoc Charge'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     organization = models.ForeignKey(
         'organizations.Organization',
         on_delete=models.CASCADE,
-        related_name='rent_charges',
+        related_name='invoices',
     )
     tenancy = models.ForeignKey(
         'properties.Tenancy',
         on_delete=models.CASCADE,
-        related_name='rent_charges',
+        related_name='invoices',
     )
     parent_property = models.ForeignKey(
         'properties.Property',
         on_delete=models.CASCADE,
-        related_name='rent_charges',
+        related_name='invoices',
         db_column='property_id',
     )
     unit = models.ForeignKey(
         'properties.RentalUnit',
         on_delete=models.CASCADE,
-        related_name='rent_charges',
+        related_name='invoices',
     )
     tenant = models.ForeignKey(
         'tenants.TenantProfile',
         on_delete=models.CASCADE,
-        related_name='rent_charges',
+        related_name='invoices',
+    )
+
+    invoice_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='rent')
+    number = models.CharField(max_length=30, blank=True, default='')
+    issue_date = models.DateField(null=True, blank=True)
+    source_invoice = models.ForeignKey(
+        'self',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='derived_invoices',
+        help_text='For a penalty: the invoice it penalizes.',
     )
 
     period_start = models.DateField()
@@ -73,10 +98,12 @@ class RentCharge(models.Model):
         max_digits=12, decimal_places=2, default=Decimal('0.00'),
         validators=[MinValueValidator(Decimal('0.00'))],
     )
-    late_fee_amount = models.DecimalField(
+    amount_credited = models.DecimalField(
         max_digits=12, decimal_places=2, default=Decimal('0.00'),
+        validators=[MinValueValidator(Decimal('0.00'))],
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='upcoming')
+    is_disputed = models.BooleanField(default=False)
     currency = models.CharField(max_length=3, default='KES')
     notes = models.TextField(blank=True, default='')
     reminder_sent_at = models.DateTimeField(null=True, blank=True)
@@ -87,7 +114,6 @@ class RentCharge(models.Model):
 
     class Meta:
         db_table = 'rent_rentcharge'
-        unique_together = [['tenancy', 'period_start']]
         indexes = [
             models.Index(fields=['organization', 'status'], name='idx_charge_org_status'),
             models.Index(fields=['tenancy', 'due_date'], name='idx_charge_tenancy_due'),
@@ -95,25 +121,36 @@ class RentCharge(models.Model):
             models.Index(fields=['tenant', 'status'], name='idx_charge_tenant_status'),
         ]
         constraints = [
+            models.UniqueConstraint(
+                fields=['tenancy', 'period_start'],
+                condition=Q(invoice_type='rent'),
+                name='uniq_rent_invoice_per_period',
+            ),
+            models.UniqueConstraint(
+                fields=['organization', 'number'],
+                condition=~Q(number=''),
+                name='uniq_invoice_number_per_org',
+            ),
             models.CheckConstraint(
-                check=models.Q(amount_paid__lte=F('amount_due') + F('late_fee_amount')),
-                name='check_charge_paid_not_exceed_due',
+                check=Q(amount_paid__lte=F('amount_due') - F('amount_credited')),
+                name='check_invoice_paid_not_exceed_due',
             ),
         ]
 
     def __str__(self):
-        return f'{self.tenant.full_name} — {self.period_start.strftime("%b %Y")} ({self.status})'
+        return f'{self.number or self.pk} {self.tenant.full_name} — {self.get_invoice_type_display()} ({self.status})'
 
     @property
     def total_due(self) -> Decimal:
-        return self.amount_due + self.late_fee_amount
+        """What the tenant must pay: the total less anything credited."""
+        return self.amount_due - self.amount_credited
 
     @property
     def outstanding(self) -> Decimal:
         return max(self.total_due - self.amount_paid, Decimal('0.00'))
 
     def recalculate_status(self, as_of=None) -> str:
-        """Recompute status from authoritative payment allocations."""
+        """Recompute amount_paid and status from authoritative allocations and credit notes."""
         today = (as_of or timezone.now().date())
         paid = self.payment_allocations.filter(
             payment__status='success'
@@ -122,11 +159,11 @@ class RentCharge(models.Model):
         self.amount_paid = paid
         total = self.total_due
 
-        if self.status == 'waived':
-            return 'waived'
-        if self.status == 'disputed':
-            return 'disputed'
-        if paid >= total and total > 0:
+        if self.is_disputed:
+            new_status = 'disputed'
+        elif total <= 0 and self.amount_credited > 0:
+            new_status = 'waived'
+        elif paid >= total and total > 0:
             new_status = 'paid'
         elif paid > 0:
             new_status = 'partially_paid'
@@ -141,6 +178,79 @@ class RentCharge(models.Model):
 
         self.status = new_status
         return new_status
+
+
+# Backwards-compatible alias — the model was named RentCharge before Phase 1.
+RentCharge = Invoice
+
+
+class InvoiceLine(models.Model):
+    """One billed item on an invoice. Lines never change after the invoice is issued."""
+
+    LINE_TYPE_CHOICES = [
+        ('rent', 'Rent'),
+        ('service_charge', 'Service Charge'),
+        ('water', 'Water'),
+        ('electricity', 'Electricity'),
+        ('garbage', 'Garbage'),
+        ('parking', 'Parking'),
+        ('penalty', 'Late Penalty'),
+        ('deposit', 'Deposit'),
+        ('repair', 'Repair'),
+        ('other', 'Other'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='lines')
+    line_type = models.CharField(max_length=20, choices=LINE_TYPE_CHOICES)
+    description = models.CharField(max_length=255, blank=True, default='')
+    quantity = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('1'))
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = 'rent_invoiceline'
+        ordering = ['sort_order', 'id']
+
+    def __str__(self):
+        return f'{self.get_line_type_display()}: {self.amount}'
+
+
+class CreditNote(models.Model):
+    """
+    Reduces what a tenant owes on one invoice — a waiver, discount or correction.
+
+    Never exceeds the invoice's unpaid balance; money already paid is returned
+    by reversing/refunding the payment, not by a credit note.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        'organizations.Organization', on_delete=models.CASCADE, related_name='credit_notes',
+    )
+    invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT, related_name='credit_notes')
+    number = models.CharField(max_length=30)
+    amount = models.DecimalField(
+        max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))],
+    )
+    reason = models.TextField()
+    issue_date = models.DateField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='credit_notes_issued',
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'rent_creditnote'
+        ordering = ['-issue_date', '-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['organization', 'number'], name='uniq_credit_note_number_per_org'),
+        ]
+
+    def __str__(self):
+        return f'{self.number} on {self.invoice.number}: {self.amount}'
 
 
 class Payment(models.Model):
@@ -251,9 +361,9 @@ class Payment(models.Model):
 
 class PaymentAllocation(models.Model):
     """
-    Links a payment to one or more rent charges.
+    Links a payment to one or more invoices.
 
-    Supports partial payments and multiple payments against a single charge.
+    Supports partial payments and multiple payments against a single invoice.
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -262,8 +372,8 @@ class PaymentAllocation(models.Model):
         on_delete=models.CASCADE,
         related_name='allocations',
     )
-    rent_charge = models.ForeignKey(
-        RentCharge,
+    invoice = models.ForeignKey(
+        Invoice,
         on_delete=models.CASCADE,
         related_name='payment_allocations',
     )
@@ -276,9 +386,9 @@ class PaymentAllocation(models.Model):
     class Meta:
         db_table = 'rent_paymentallocation'
         indexes = [
-            models.Index(fields=['rent_charge'], name='idx_allocation_charge'),
+            models.Index(fields=['invoice'], name='idx_allocation_charge'),
             models.Index(fields=['payment'], name='idx_allocation_payment'),
         ]
 
     def __str__(self):
-        return f'{self.payment.internal_reference} → {self.rent_charge_id}: {self.amount}'
+        return f'{self.payment.internal_reference} → {self.invoice_id}: {self.amount}'

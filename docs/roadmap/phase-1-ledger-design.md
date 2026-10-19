@@ -58,22 +58,29 @@ cleanup. `PaymentAllocation.rent_charge` becomes `invoice`.
 | Field | Notes |
 |---|---|
 | existing fields | organization, tenancy, property, unit, tenant, period_start/end, due_date, currency, notes, status, created_at |
-| `invoice_type` | `rent` (monthly, may carry extra lines), `deposit`, `penalty`, `adhoc`, `credit_note` |
+| `invoice_type` | `rent` (monthly, may carry extra lines), `deposit`, `penalty`, `adhoc` |
 | `number` | Per-organization sequence, e.g. `INV-000123` / `CN-000004`. Unique (organization, number). |
 | `issue_date` | Date the invoice became payable |
-| `total` | Sum of lines. Replaces `amount_due`; `late_fee_amount` is dropped (penalties become their own invoices). |
+| `amount_due` | Invoice total = sum of lines (name kept for API compatibility) |
+| `amount_credited` | Sum of credit notes |
 | `amount_paid` | Unchanged meaning — sum of successful allocations |
-| `source_invoice` | Nullable self-FK: penalty → invoice it penalizes; credit note → invoice it credits |
-| `voided_at`, `void_reason` | Only for draft/never-paid mistakes; everything else uses credit notes |
+| `source_invoice` | Nullable self-FK: penalty → invoice it penalizes |
 
 **Immutability:** an issued invoice's lines never change. Corrections (waivers,
-discounts, mistakes) are **credit notes**: an `Invoice` with
-`invoice_type='credit_note'`, negative lines and `source_invoice` set. The
-current `waived` status becomes "fully credited". `disputed` stays as a flag.
+discounts, mistakes) are **credit notes** — a separate `CreditNote` record
+(per-org number `CN-000001`, amount, reason) against one invoice, never more
+than its unpaid balance. `Invoice.amount_credited` tracks the total;
+`outstanding = amount_due − amount_credited − amount_paid`. An invoice credited
+in full shows status `waived`. `disputed` became an `is_disputed` flag.
+
+*(Implementation note: the first draft modelled credit notes as negative
+invoices; that was changed because it breaks the `amount_paid ≤ amount_due`
+database check and makes every total query sign-aware. `late_fee_amount` was
+dropped; existing late fees were migrated into penalty lines.)*
 
 Unique constraint: `(tenancy, period_start)` becomes
-`(tenancy, invoice_type, period_start)` conditional on `invoice_type='rent'`,
-so one rent invoice per period stays guaranteed.
+`(tenancy, period_start)` conditional on `invoice_type='rent'`, so one rent
+invoice per period stays guaranteed while deposits/penalties can share dates.
 
 ### 3.2 InvoiceLine (new)
 

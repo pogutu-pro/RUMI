@@ -622,7 +622,9 @@ class RentChargeListView(RumiaBaseView):
     property_lookup = 'parent_property'
 
     def get(self, request):
-        qs = self.filter_by_organization(RentCharge.objects.select_related('tenant', 'unit'))
+        qs = self.filter_by_organization(
+            RentCharge.objects.select_related('tenant', 'unit').prefetch_related('lines')
+        )
         role = get_canonical_role(request.user)
         if role == 'tenant':
             qs = qs.filter(tenant__user=request.user)
@@ -640,7 +642,8 @@ class RentBalanceView(RumiaBaseView):
 
     def get(self, request):
         qs = self.filter_by_organization(
-            RentCharge.objects.select_related('tenant', 'unit').exclude(status__in=['paid', 'waived'])
+            RentCharge.objects.select_related('tenant', 'unit').prefetch_related('lines')
+            .exclude(status__in=['paid', 'waived'])
         )
         role = get_canonical_role(request.user)
         if role == 'tenant':

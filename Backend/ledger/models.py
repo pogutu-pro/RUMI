@@ -153,3 +153,24 @@ class JournalLine(models.Model):
     def __str__(self):
         side = f'Dr {self.debit}' if self.debit else f'Cr {self.credit}'
         return f'{self.account.code} {side}'
+
+
+class DocumentSequence(models.Model):
+    """
+    Gap-free per-organization counter for document numbers (INV-000001,
+    CN-000001, RCT-000001). Incremented under a row lock — see
+    ledger.services.numbering.next_number.
+    """
+
+    organization = models.ForeignKey(
+        'organizations.Organization', on_delete=models.CASCADE, related_name='document_sequences',
+    )
+    prefix = models.CharField(max_length=10)
+    last_value = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = 'ledger_documentsequence'
+        unique_together = [['organization', 'prefix']]
+
+    def __str__(self):
+        return f'{self.organization_id} {self.prefix} @ {self.last_value}'

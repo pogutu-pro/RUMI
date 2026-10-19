@@ -1,7 +1,7 @@
 """
 Income flow calculations — authoritative, ledger-based.
 
-All figures derive from RentCharge and Payment records, never dashboard caches.
+All figures derive from Invoice and Payment records, never dashboard caches.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from django.db.models import F, Q, Sum
 from django.utils import timezone
 
 from properties.models import Property, RentalUnit, Tenancy
-from rent.models import Payment, RentCharge
+from rent.models import Invoice, Payment
 
 
 @dataclass
@@ -57,7 +57,7 @@ class IncomeFlowService:
         period_end: date,
         property_id: Optional[str] = None,
     ) -> IncomeFlowReport:
-        charges = RentCharge.objects.filter(
+        charges = Invoice.objects.filter(
             organization_id=organization_id,
             period_start__lte=period_end,
             period_end__gte=period_start,
@@ -175,13 +175,13 @@ class IncomeFlowService:
     @classmethod
     def overdue_charges(cls, organization_id, as_of: Optional[date] = None):
         today = as_of or timezone.now().date()
-        return RentCharge.objects.filter(
+        return Invoice.objects.filter(
             organization_id=organization_id,
             due_date__lt=today,
         ).exclude(
             status__in=['paid', 'waived']
         ).filter(
-            Q(amount_paid__lt=F('amount_due') + F('late_fee_amount'))
+            Q(amount_paid__lt=F('amount_due') - F('amount_credited'))
         )
 
     @classmethod

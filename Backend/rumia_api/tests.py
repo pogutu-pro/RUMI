@@ -272,7 +272,7 @@ class FinancialIntegrityTests(RumiaTestFixtures):
             status='success',
             paid_at=timezone.now(),
         )
-        PaymentAllocation.objects.create(payment=payment, rent_charge=charge, amount=Decimal('10000.00'))
+        PaymentAllocation.objects.create(payment=payment, invoice=charge, amount=Decimal('10000.00'))
         charge.amount_paid = Decimal('10000.00')
         charge.recalculate_status()
         charge.save()
@@ -299,7 +299,7 @@ class FinancialIntegrityTests(RumiaTestFixtures):
                 status='success',
                 paid_at=timezone.now(),
             )
-            PaymentAllocation.objects.create(payment=payment, rent_charge=charge, amount=amount)
+            PaymentAllocation.objects.create(payment=payment, invoice=charge, amount=amount)
 
         charge.amount_paid = Decimal('25000.00')
         charge.recalculate_status()
@@ -346,7 +346,7 @@ class FinancialIntegrityTests(RumiaTestFixtures):
             paid_at=timezone.now(),
         )
         PaymentAllocation.objects.create(
-            payment=payment, rent_charge=charge, amount=Decimal('25000.00')
+            payment=payment, invoice=charge, amount=Decimal('25000.00')
         )
         charge.amount_paid = Decimal('25000.00')
         charge.recalculate_status()
@@ -404,7 +404,7 @@ class IncomeFlowServiceTests(RumiaTestFixtures):
             paid_at=timezone.now(),
         )
         PaymentAllocation.objects.create(
-            payment=payment, rent_charge=charge, amount=Decimal('450000.00'),
+            payment=payment, invoice=charge, amount=Decimal('450000.00'),
         )
         charge.recalculate_status()
         charge.save()
