@@ -104,6 +104,7 @@ export interface Tenancy {
   deposit: string;
   rent_due_day: number;
   grace_period_days: number;
+  prorate_final_period?: boolean;
   status: TenancyStatus;
   renewal_notes: string;
   notes: string;
@@ -129,11 +130,22 @@ export interface RentCharge {
   currency: string;
   notes: string;
   created_at: string;
+  // Phase 1 invoice fields (rent/ endpoints now return invoices).
+  number?: string;
+  invoice_type?: 'rent' | 'deposit' | 'penalty' | 'adhoc';
+  tenant_name?: string;
+  unit_number?: string;
+  amount_credited?: string;
+  is_disputed?: boolean;
 }
 
 export interface RentBalance {
   outstanding_total: string;
   overdue_total: string;
+  /** Overpayments / advance payments not yet applied to an invoice. */
+  credit_total?: string;
+  /** outstanding_total − credit_total (negative = tenant is in credit). */
+  net_balance?: string;
   charges: RentCharge[];
 }
 
@@ -145,14 +157,18 @@ export interface Payment {
   property: string | null;
   unit: string | null;
   amount: string;
+  /** Part of the payment kept as credit (not yet applied to an invoice). */
+  unapplied_amount?: string;
   currency: string;
   payment_method: string;
   provider: string;
   provider_reference: string;
   internal_reference: string;
   status: PaymentStatus;
+  notes?: string;
   paid_at: string | null;
   created_at: string;
+  receipt?: { id: string; number: string } | null;
 }
 
 export interface PaymentInitiateResponse {

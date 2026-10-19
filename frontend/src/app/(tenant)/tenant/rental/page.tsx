@@ -10,6 +10,11 @@ import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { useTenancies, useRentBalance, usePayments, useInitiatePayment } from '@/features/rental/hooks/use-rental';
 import type { RentCharge, Payment } from '@/features/rental/types';
+import { useInvoices } from '@/features/ledger/hooks/use-ledger';
+import { InvoiceDetailSheet } from '@/features/ledger/components/invoice-detail-sheet';
+import { InvoiceStatusBadge } from '@/features/ledger/components/invoice-status-badge';
+import { ReceiptDownloadButton } from '@/features/ledger/components/receipt-actions';
+import { INVOICE_TYPE_LABEL, formatDate } from '@/features/ledger/lib/format';
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = {
   success: 'default',
@@ -70,6 +75,11 @@ const paymentColumns: ColumnDef<Payment>[] = [
       <Badge variant={STATUS_VARIANT[row.original.status] ?? 'secondary'}>{row.original.status}</Badge>
     ),
   },
+  {
+    id: 'receipt',
+    header: 'Receipt',
+    cell: ({ row }) => (row.original.receipt ? <ReceiptDownloadButton receipt={row.original.receipt} /> : '—'),
+  },
 ];
 
 export default function TenantRentalDashboard() {
@@ -86,7 +96,9 @@ export default function TenantRentalDashboard() {
   } = useRentBalance();
   const { data: payments = [], isLoading: paymentsLoading } = usePayments();
   const initiate = useInitiatePayment();
+  const { data: invoices = [] } = useInvoices();
   const [page, setPage] = React.useState(1);
+  const [openInvoice, setOpenInvoice] = React.useState<string | null>(null);
 
   const activeTenancy = tenancies.find((t) => t.status === 'active') ?? tenancies[0];
   const nextCharge = (balance?.charges ?? [])
@@ -94,9 +106,15 @@ export default function TenantRentalDashboard() {
     .slice()
     .sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
 
+  const credit = Number(balance?.credit_total ?? '0');
+  // Pay what is actually owed after credit; with nothing owed, pay a month
+  // ahead — it is kept as credit and applied to the next invoice.
+  const netOwed = Math.max(Number(balance?.outstanding_total ?? '0') - credit, 0);
+  const payAmount = netOwed > 0 ? netOwed.toFixed(2) : activeTenancy?.monthly_rent ?? '0';
+
   const handlePay = async () => {
     if (!activeTenancy) return;
-    const amount = nextCharge?.outstanding ?? activeTenancy.monthly_rent;
+    const amount = payAmount;
     const result = await initiate.mutateAsync({ tenancyId: activeTenancy.id, amount });
     if (result.authorization_url) {
       window.location.href = result.authorization_url;
@@ -132,16 +150,52 @@ export default function TenantRentalDashboard() {
             </span>
           </div>
           <p className="text-3xl font-semibold">
-            {outstanding > 0 ? formatKes(outstanding) : formatKes(activeTenancy.monthly_rent)}
+            {outstanding > 0 ? formatKes(netOwed) : formatKes(activeTenancy.monthly_rent)}
           </p>
           <p className="text-sm text-muted-foreground">
-            {outstanding > 0 ? 'Outstanding balance' : `Monthly rent · next charge not due yet`}
+            {outstanding > 0
+              ? credit > 0
+                ? `Outstanding ${formatKes(outstanding)} less ${formatKes(credit)} credit`
+                : 'Outstanding balance'
+              : credit > 0
+                ? `You have ${formatKes(credit)} credit — it will pay your next invoice`
+                : 'Monthly rent · next charge not due yet'}
           </p>
           <Button onClick={handlePay} disabled={initiate.isPending} className="w-full rounded-xl">
-            Pay with Paystack
+            {netOwed > 0 ? `Pay ${formatKes(payAmount)}` : `Pay next month ahead · ${formatKes(payAmount)}`}
           </Button>
         </CardContent>
       </Card>
+
+      {invoices.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Invoices</CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y p-0">
+            {invoices.slice(0, 12).map((invoice) => (
+              <button
+                key={invoice.id}
+                type="button"
+                className="flex w-full items-center justify-between gap-3 px-6 py-3 text-left hover:bg-muted/50"
+                onClick={() => setOpenInvoice(invoice.id)}
+              >
+                <span className="text-sm">
+                  <span className="font-medium">{INVOICE_TYPE_LABEL[invoice.invoice_type]}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {invoice.number} · due {formatDate(invoice.due_date)}
+                  </span>
+                </span>
+                <span className="flex items-center gap-3 text-sm">
+                  {formatKes(Number(invoice.outstanding) > 0 ? invoice.outstanding : invoice.amount_due)}
+                  <InvoiceStatusBadge status={invoice.status} />
+                </span>
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+      <InvoiceDetailSheet invoiceId={openInvoice} onClose={() => setOpenInvoice(null)} audience="tenant" />
 
       <Card>
         <CardHeader>
