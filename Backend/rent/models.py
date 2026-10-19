@@ -403,3 +403,35 @@ class PaymentAllocation(models.Model):
 
     def __str__(self):
         return f'{self.payment.internal_reference} → {self.invoice_id}: {self.amount}'
+
+
+class Receipt(models.Model):
+    """
+    Numbered proof of a successful payment (RCT-000001, per organization).
+
+    `snapshot` freezes what the payment paid at the moment of issue — invoices
+    and amounts, credit kept, and the tenant's balance afterwards — so a
+    receipt never changes when credit is applied to later invoices.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        'organizations.Organization', on_delete=models.CASCADE, related_name='receipts',
+    )
+    payment = models.OneToOneField(Payment, on_delete=models.PROTECT, related_name='receipt')
+    number = models.CharField(max_length=30)
+    issued_at = models.DateTimeField(default=timezone.now)
+    snapshot = models.JSONField(default=dict)
+    pdf = models.FileField(upload_to='receipts/rumiarent/%Y/%m/', blank=True)
+    sent_sms_at = models.DateTimeField(null=True, blank=True)
+    sent_email_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'rent_receipt'
+        ordering = ['-issued_at']
+        constraints = [
+            models.UniqueConstraint(fields=['organization', 'number'], name='uniq_receipt_number_per_org'),
+        ]
+
+    def __str__(self):
+        return f'{self.number} — {self.payment.amount} {self.payment.currency}'

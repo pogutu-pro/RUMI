@@ -34,6 +34,17 @@ def send_payment_confirmation_task(payment_id):
     send_payment_confirmation(payment)
 
 
+@shared_task(name='rent.tasks.deliver_receipt_task')
+def deliver_receipt_task(receipt_id):
+    """Render a receipt PDF and send it by SMS/email — scheduled after the payment commits."""
+    from rent.models import Receipt
+    from rent.services.receipts import ReceiptService
+
+    receipt = Receipt.objects.filter(pk=receipt_id).first()
+    if receipt is not None:
+        ReceiptService.deliver(receipt)
+
+
 @shared_task(name='rent.tasks.send_rent_due_reminders')
 def send_rent_due_reminders():
     """

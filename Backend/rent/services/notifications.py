@@ -1,5 +1,5 @@
 """
-RumiaRent rental notifications — rent due reminder, payment confirmation only.
+RumiaRent rental notifications — rent reminders, receipts, payment confirmation.
 
 Deliberately minimal: no template management system, no escalation ladder.
 Uses Django's configured EMAIL_BACKEND directly (Mailtrap in dev, real SMTP
@@ -121,3 +121,47 @@ def send_next_of_kin_escalation(charge, contact) -> None:
         f'for unit {unit_label}. You are listed as their contact for this.'
     )
     _send_sms(contact.phone, sms_text)
+
+
+def send_receipt_email(receipt) -> bool:
+    """Email the receipt PDF to the tenant. Returns True when sent."""
+    tenant = receipt.payment.tenant
+    if not tenant.email:
+        return False
+    s = receipt.snapshot
+    body = (
+        f'Hi {tenant.full_name},\n\n'
+        f'Thank you — we received KES {s.get("amount")} for unit {s.get("unit")}.\n'
+        f'Receipt: {receipt.number}\n'
+        f'Balance after this payment: KES {s.get("balance_after")}\n\n'
+        f'Your receipt is attached.\n\n'
+        f'{s.get("organization_name", "")}'
+    )
+    try:
+        message = EmailMessage(
+            subject=f'Receipt {receipt.number}: RumiaRent',
+            body=body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[tenant.email],
+        )
+        if receipt.pdf:
+            receipt.pdf.open('rb')
+            try:
+                message.attach(f'{receipt.number}.pdf', receipt.pdf.read(), 'application/pdf')
+            finally:
+                receipt.pdf.close()
+        message.send(fail_silently=False)
+        return True
+    except Exception:
+        logger.exception('RumiaRent receipt email failed (receipt=%s)', receipt.number)
+        return False
+
+
+def send_receipt_sms(receipt) -> bool:
+    """Short SMS receipt. Returns True when sent."""
+    s = receipt.snapshot
+    text = (
+        f'RumiaRent: Received KES {s.get("amount")} for {s.get("unit")}. '
+        f'Receipt {receipt.number}. Balance KES {s.get("balance_after")}.'
+    )
+    return _send_sms(receipt.payment.tenant.phone, text)

@@ -7,6 +7,7 @@ rumia_api.views.
 from __future__ import annotations
 
 from django.db.models import Prefetch
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
@@ -15,13 +16,15 @@ from rest_framework.response import Response
 
 from audit.models import log_audit
 from core.permissions.rumia import CanViewFinancials, get_canonical_role
-from rent.models import CreditNote, Invoice, PaymentAllocation
+from rent.models import CreditNote, Invoice, PaymentAllocation, Receipt
 from rent.services.invoicing import InvoiceError, InvoiceService, LineSpec
+from rent.services.receipts import ReceiptService
 from rumia_api.serializers import (
     AdhocInvoiceSerializer,
     CreditNoteInputSerializer,
     CreditNoteSerializer,
     InvoiceSerializer,
+    ReceiptSerializer,
 )
 from rumia_api.views import RumiaBaseView, _caretaker_can
 
@@ -195,3 +198,65 @@ class CreditNoteListView(RumiaBaseView):
         if tenancy_id:
             qs = qs.filter(invoice__tenancy_id=tenancy_id)
         return Response(CreditNoteSerializer(qs, many=True).data)
+
+
+class ReceiptScopedMixin:
+    property_lookup = 'payment__parent_property'
+
+    def receipt_queryset(self):
+        qs = self.filter_by_organization(
+            Receipt.objects.select_related('payment__tenant')
+        )
+        if get_canonical_role(self.request.user) == 'tenant':
+            qs = qs.filter(payment__tenant__user=self.request.user)
+        return qs
+
+
+class ReceiptListView(ReceiptScopedMixin, RumiaBaseView):
+    permission_classes = [IsAuthenticated, CanViewFinancials]
+
+    def get(self, request):
+        qs = self.receipt_queryset()
+        tenancy_id = request.query_params.get('tenancy_id')
+        if tenancy_id:
+            qs = qs.filter(payment__tenancy_id=tenancy_id)
+        return Response(ReceiptSerializer(qs, many=True).data)
+
+
+class ReceiptDetailView(ReceiptScopedMixin, RumiaBaseView):
+    permission_classes = [IsAuthenticated, CanViewFinancials]
+
+    def get(self, request, pk):
+        return Response(ReceiptSerializer(get_object_or_404(self.receipt_queryset(), pk=pk)).data)
+
+
+class ReceiptPdfView(ReceiptScopedMixin, RumiaBaseView):
+    permission_classes = [IsAuthenticated, CanViewFinancials]
+
+    def get(self, request, pk):
+        receipt = ReceiptService.ensure_pdf(get_object_or_404(self.receipt_queryset(), pk=pk))
+        receipt.pdf.open('rb')
+        try:
+            content = receipt.pdf.read()
+        finally:
+            receipt.pdf.close()
+        response = HttpResponse(content, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{receipt.number}.pdf"'
+        return response
+
+
+class ReceiptResendView(ReceiptScopedMixin, RumiaBaseView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        """Landlord-side: send the receipt again (clears the sent markers, then delivers)."""
+        if get_canonical_role(request.user) not in ('landlord', 'super_admin') and not (
+            get_canonical_role(request.user) == 'caretaker' and _caretaker_can(request.user, 'can_record_payments')
+        ):
+            return _forbidden()
+        receipt = get_object_or_404(self.receipt_queryset(), pk=pk)
+        Receipt.objects.filter(pk=receipt.pk).update(sent_sms_at=None, sent_email_at=None)
+        from rent.tasks import deliver_receipt_task
+
+        deliver_receipt_task.delay(str(receipt.pk))
+        return Response({'status': 'queued'}, status=status.HTTP_202_ACCEPTED)

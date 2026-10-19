@@ -21,6 +21,7 @@ from organizations.models import Organization
 from rent.models import CreditNote, Invoice, Payment, PaymentAllocation
 from rent.services.allocation import channel_account
 from rent.services.invoicing import InvoiceService, tenancy_dimensions
+from rent.services.receipts import ReceiptService
 
 ZERO = Decimal('0.00')
 
@@ -37,7 +38,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if not options['check']:
-            counts = {'invoices': 0, 'credit_notes': 0, 'payments': 0, 'allocations': 0}
+            counts = {'invoices': 0, 'credit_notes': 0, 'payments': 0, 'allocations': 0, 'receipts': 0}
             for org in Organization.objects.all():
                 with transaction.atomic():
                     self._backfill_org(org, counts)
@@ -94,6 +95,11 @@ class Command(BaseCommand):
                     memo=f'{payment.internal_reference} → {allocation.invoice.number} (backfill)',
                 )
                 counts['allocations'] += 1
+
+            if not hasattr(payment, 'receipt'):
+                # Past payments get a receipt for the record — never sent.
+                ReceiptService.issue(payment, notify=False)
+                counts['receipts'] += 1
 
     def _reconcile(self):
         """Per tenancy: ledger receivable == Σ invoice balances, ledger prepayments == Σ unapplied."""

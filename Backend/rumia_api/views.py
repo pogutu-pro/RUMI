@@ -862,13 +862,10 @@ class PaystackWebhookView(APIView):
                 payment = PaymentService.verify_and_allocate(payment, raw_callback=payload)
 
                 if payment.status == 'success':
+                    # The tenant is notified by the receipt issued in
+                    # PaymentService (SMS + emailed PDF), after commit.
                     log_audit('payment_recorded', organization=payment.organization, entity=payment,
                                metadata={'action': 'webhook_verified'})
-                    try:
-                        from rent.tasks import send_payment_confirmation_task
-                        send_payment_confirmation_task.delay(str(payment.id))
-                    except Exception:
-                        pass  # Never fail the webhook response over a notification-dispatch problem.
 
                 return Response({'status': 'processed', 'payment_status': payment.status})
 

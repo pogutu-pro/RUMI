@@ -21,6 +21,7 @@ from rent.providers.base import (
 )
 from rent.providers.paystack import PaystackProvider
 from rent.services.allocation import AllocationError, AllocationService
+from rent.services.receipts import ReceiptService
 
 logger = logging.getLogger(__name__)
 
@@ -267,6 +268,7 @@ class PaymentService:
                 )
         elif payment.tenancy_id:
             AllocationService.auto_allocate(payment, created_by=created_by)
+        ReceiptService.issue(payment)
 
     @classmethod
     @transaction.atomic

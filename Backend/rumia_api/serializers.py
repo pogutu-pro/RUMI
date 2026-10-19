@@ -6,7 +6,7 @@ from rest_framework import serializers
 
 from organizations.models import Organization
 from properties.models import Property, RentalUnit, Tenancy
-from rent.models import CreditNote, Invoice, InvoiceLine, Payment, RentCharge
+from rent.models import CreditNote, Invoice, InvoiceLine, Payment, Receipt, RentCharge
 from tenants.models import EmergencyContact, TenantProfile
 
 
@@ -189,6 +189,11 @@ class PaymentSerializer(serializers.ModelSerializer):
     property = serializers.PrimaryKeyRelatedField(
         source='parent_property', read_only=True
     )
+    receipt = serializers.SerializerMethodField()
+
+    def get_receipt(self, obj):
+        receipt = getattr(obj, 'receipt', None)
+        return {'id': str(receipt.id), 'number': receipt.number} if receipt else None
 
     class Meta:
         model = Payment
@@ -196,7 +201,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             'id', 'organization', 'tenancy', 'tenant', 'property', 'unit',
             'amount', 'unapplied_amount', 'currency', 'payment_method', 'provider',
             'provider_reference', 'internal_reference', 'status', 'notes',
-            'paid_at', 'created_at',
+            'paid_at', 'created_at', 'receipt',
         ]
         read_only_fields = [
             'id', 'organization', 'internal_reference', 'status', 'unapplied_amount',
@@ -274,3 +279,18 @@ class CaretakerCreateSerializer(serializers.Serializer):
     emergency_contact_phone = serializers.RegexField(r'^\+254[0-9]{9}$')
     property_ids = serializers.ListField(child=serializers.UUIDField(), required=False, default=list)
     permissions = serializers.DictField(required=False, default=dict)
+
+
+class ReceiptSerializer(serializers.ModelSerializer):
+    payment_reference = serializers.CharField(source='payment.internal_reference', read_only=True)
+    amount = serializers.DecimalField(source='payment.amount', max_digits=12, decimal_places=2, read_only=True)
+    tenancy = serializers.UUIDField(source='payment.tenancy_id', read_only=True)
+    tenant_name = serializers.CharField(source='payment.tenant.full_name', read_only=True)
+
+    class Meta:
+        model = Receipt
+        fields = [
+            'id', 'number', 'payment', 'payment_reference', 'amount', 'tenancy', 'tenant_name',
+            'issued_at', 'snapshot', 'sent_sms_at', 'sent_email_at',
+        ]
+        read_only_fields = fields
