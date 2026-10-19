@@ -8,6 +8,8 @@ from organizations.models import Organization
 from properties.models import Property, RentalUnit, Tenancy
 from rent.models import (
     CreditNote,
+    DepositDeduction,
+    DepositSettlement,
     Invoice,
     InvoiceLine,
     Payment,
@@ -349,3 +351,46 @@ class PenaltyPolicySerializer(serializers.ModelSerializer):
             if merged.get('method') == 'percent' and not (Decimal('0') < Decimal(merged.get('percent') or 0) <= 100):
                 raise serializers.ValidationError({'percent': 'Percent must be between 0 and 100.'})
         return attrs
+
+
+class DepositDeductionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DepositDeduction
+        fields = ['id', 'kind', 'description', 'amount']
+        read_only_fields = ['id']
+
+
+class DepositSettlementSerializer(serializers.ModelSerializer):
+    deductions = DepositDeductionSerializer(many=True, read_only=True)
+    total_deductions = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    refund_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    tenant_name = serializers.CharField(source='tenancy.tenant.full_name', read_only=True)
+
+    class Meta:
+        model = DepositSettlement
+        fields = [
+            'id', 'number', 'tenancy', 'tenant_name', 'status', 'held_amount', 'deductions', 'total_deductions',
+            'refund_amount', 'notes', 'condition_report', 'refund_method', 'refund_reference', 'refunded_on',
+            'approved_at', 'created_at',
+        ]
+        read_only_fields = fields
+
+
+class DepositSettlementInputSerializer(serializers.Serializer):
+    deductions = DepositDeductionSerializer(many=True, required=False, default=list)
+    include_arrears = serializers.BooleanField(default=True)
+    notes = serializers.CharField(required=False, allow_blank=True, default='')
+    condition_report = serializers.UUIDField(required=False, allow_null=True)
+
+
+class DepositRecordHeldSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal('0.01'))
+    method = serializers.ChoiceField(choices=['cash', 'bank_transfer', 'mpesa_paybill', 'other'], default='cash')
+    reference = serializers.CharField(required=False, allow_blank=True, default='')
+    received_on = serializers.DateField(required=False)
+
+
+class DepositRefundSerializer(serializers.Serializer):
+    method = serializers.ChoiceField(choices=[c[0] for c in DepositSettlement.REFUND_METHOD_CHOICES])
+    reference = serializers.CharField(required=False, allow_blank=True, default='')
+    refunded_on = serializers.DateField(required=False)

@@ -3,6 +3,11 @@
 from django.urls import path
 
 from rumia_api.ledger_views import (
+    DepositSettlementActionView,
+    TenancyDepositInvoiceView,
+    TenancyDepositRecordHeldView,
+    TenancyDepositSettlementCreateView,
+    TenancyDepositView,
     CreditNoteListView,
     InvoiceCreditNoteView,
     InvoiceDetailView,
@@ -70,6 +75,34 @@ urlpatterns = [
     path('credit-notes/', CreditNoteListView.as_view(), name='rumia-credit-notes'),
     path('receipts/', ReceiptListView.as_view(), name='rumia-receipts'),
     path('penalty-policy/', PenaltyPolicyView.as_view(), name='rumia-penalty-policy'),
+    path('tenancies/<uuid:pk>/deposit/', TenancyDepositView.as_view(), name='rumia-tenancy-deposit'),
+    path('tenancies/<uuid:pk>/deposit/invoice/', TenancyDepositInvoiceView.as_view(), name='rumia-deposit-invoice'),
+    path(
+        'tenancies/<uuid:pk>/deposit/record-held/',
+        TenancyDepositRecordHeldView.as_view(),
+        name='rumia-deposit-record-held',
+    ),
+    path(
+        'tenancies/<uuid:pk>/deposit/settlements/',
+        TenancyDepositSettlementCreateView.as_view(),
+        name='rumia-deposit-settlement-create',
+    ),
+    path('deposit-settlements/<uuid:pk>/', DepositSettlementActionView.as_view(), name='rumia-deposit-settlement'),
+    path(
+        'deposit-settlements/<uuid:pk>/approve/',
+        DepositSettlementActionView.as_view(action='approve'),
+        name='rumia-deposit-settlement-approve',
+    ),
+    path(
+        'deposit-settlements/<uuid:pk>/refund/',
+        DepositSettlementActionView.as_view(action='refund'),
+        name='rumia-deposit-settlement-refund',
+    ),
+    path(
+        'deposit-settlements/<uuid:pk>/cancel/',
+        DepositSettlementActionView.as_view(action='cancel'),
+        name='rumia-deposit-settlement-cancel',
+    ),
     path(
         'tenancies/<uuid:pk>/recurring-charges/',
         TenancyRecurringChargeListCreateView.as_view(),

@@ -279,6 +279,7 @@ class Payment(models.Model):
         ('mpesa_paybill', 'M-Pesa Paybill'),
         ('bank_transfer', 'Bank Transfer'),
         ('cash', 'Cash'),
+        ('deposit_transfer', 'Deposit applied'),
         ('other', 'Other'),
     ]
 
@@ -567,3 +568,93 @@ class PenaltyPolicy(models.Model):
     @property
     def invoice_types(self) -> list:
         return list(self.applies_to or ['rent'])
+
+
+class DepositSettlement(models.Model):
+    """
+    Move-out settlement of a tenancy's deposit: what was held, what is
+    deducted (arrears, damages, other), and what is refunded.
+
+    draft → approved (ledger postings made, arrears paid from the deposit)
+          → refunded (refund recorded; paying it out happens outside RumiaRent in Phase 1)
+    """
+
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('approved', 'Approved'),
+        ('refunded', 'Refunded'),
+        ('cancelled', 'Cancelled'),
+    ]
+    REFUND_METHOD_CHOICES = [
+        ('cash', 'Cash'),
+        ('bank_transfer', 'Bank Transfer'),
+        ('mpesa_paybill', 'M-Pesa'),
+        ('other', 'Other'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        'organizations.Organization', on_delete=models.CASCADE, related_name='deposit_settlements',
+    )
+    tenancy = models.ForeignKey('properties.Tenancy', on_delete=models.PROTECT, related_name='deposit_settlements')
+    number = models.CharField(max_length=30)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    held_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    notes = models.TextField(blank=True, default='')
+    condition_report = models.ForeignKey(
+        'properties.PropertyConditionReport', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='deposit_settlements',
+    )
+    refund_method = models.CharField(max_length=20, choices=REFUND_METHOD_CHOICES, blank=True, default='')
+    refund_reference = models.CharField(max_length=100, blank=True, default='')
+    refunded_on = models.DateField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='deposit_settlements_created',
+    )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='deposit_settlements_approved',
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'rent_depositsettlement'
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['organization', 'number'], name='uniq_deposit_settlement_number_per_org'),
+        ]
+
+    def __str__(self):
+        return f'{self.number} ({self.status})'
+
+    @property
+    def total_deductions(self) -> Decimal:
+        return sum((d.amount for d in self.deductions.all()), Decimal('0.00'))
+
+    @property
+    def refund_amount(self) -> Decimal:
+        return max(self.held_amount - self.total_deductions, Decimal('0.00'))
+
+
+class DepositDeduction(models.Model):
+    KIND_CHOICES = [
+        ('arrears', 'Unpaid rent and charges'),
+        ('damages', 'Damages / repairs'),
+        ('cleaning', 'Cleaning'),
+        ('other', 'Other'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    settlement = models.ForeignKey(DepositSettlement, on_delete=models.CASCADE, related_name='deductions')
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES)
+    description = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+
+    class Meta:
+        db_table = 'rent_depositdeduction'
+
+    def __str__(self):
+        return f'{self.get_kind_display()}: {self.amount}'

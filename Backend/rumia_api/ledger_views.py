@@ -19,12 +19,25 @@ from rest_framework.response import Response
 
 from audit.models import log_audit
 from core.permissions.rumia import CanViewFinancials, get_canonical_role
-from properties.models import Property, Tenancy
-from rent.models import CreditNote, Invoice, PaymentAllocation, PenaltyPolicy, Receipt, RecurringCharge
+from properties.models import Property, PropertyConditionReport, Tenancy
+from rent.models import (
+    CreditNote,
+    DepositSettlement,
+    Invoice,
+    PaymentAllocation,
+    PenaltyPolicy,
+    Receipt,
+    RecurringCharge,
+)
+from rent.services.deposits import DepositError, DepositService
 from rent.services.invoicing import InvoiceError, InvoiceService, LineSpec
 from rent.services.receipts import ReceiptService
 from rumia_api.serializers import (
     AdhocInvoiceSerializer,
+    DepositRecordHeldSerializer,
+    DepositRefundSerializer,
+    DepositSettlementInputSerializer,
+    DepositSettlementSerializer,
     CreditNoteInputSerializer,
     CreditNoteSerializer,
     InvoiceSerializer,
@@ -393,3 +406,129 @@ class PenaltyPolicyView(RumiaBaseView):
                             status=status.HTTP_400_BAD_REQUEST)
         PenaltyPolicy.objects.filter(organization_id=org_id, parent_property=prop).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def _money_summary(summary: dict) -> dict:
+    return {key: str(value) for key, value in summary.items()}
+
+
+class TenancyDepositView(RecurringChargeMixin, RumiaBaseView):
+    """GET a tenancy's deposit position and its settlements."""
+
+    permission_classes = [IsAuthenticated, CanViewFinancials]
+
+    def get(self, request, pk):
+        tenancy = self.tenancy_or_404(pk)
+        return Response({
+            **_money_summary(DepositService.summary(tenancy)),
+            'settlements': DepositSettlementSerializer(tenancy.deposit_settlements.all(), many=True).data,
+        })
+
+
+class TenancyDepositInvoiceView(RecurringChargeMixin, RumiaBaseView):
+    """POST: invoice the deposit (or the part of it not yet invoiced)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if not self.can_edit():
+            return _forbidden()
+        tenancy = self.tenancy_or_404(pk)
+        try:
+            invoice = DepositService.issue_invoice(tenancy, request.data.get('amount'), created_by=request.user)
+        except (DepositError, InvoiceError) as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(InvoiceSerializer(invoice).data, status=status.HTTP_201_CREATED)
+
+
+class TenancyDepositRecordHeldView(RecurringChargeMixin, RumiaBaseView):
+    """POST: record a deposit received before RumiaRent (invoice + payment, receipt not sent)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if not self.can_edit():
+            return _forbidden()
+        tenancy = self.tenancy_or_404(pk)
+        serializer = DepositRecordHeldSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            payment = DepositService.record_held(tenancy, created_by=request.user, **serializer.validated_data)
+        except (DepositError, InvoiceError, ValueError) as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        log_audit('payment_recorded', actor=request.user, organization=tenancy.organization, entity=payment,
+                  metadata={'action': 'deposit_recorded_as_held'})
+        return Response(_money_summary(DepositService.summary(tenancy)), status=status.HTTP_201_CREATED)
+
+
+class TenancyDepositSettlementCreateView(RecurringChargeMixin, RumiaBaseView):
+    """POST: draft the move-out deposit settlement (deductions; arrears suggested automatically)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if not self.can_edit():
+            return _forbidden()
+        tenancy = self.tenancy_or_404(pk)
+        serializer = DepositSettlementInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        report = None
+        report_id = serializer.validated_data.get('condition_report')
+        if report_id:
+            report = get_object_or_404(PropertyConditionReport, pk=report_id, tenancy=tenancy)
+        try:
+            settlement = DepositService.create_settlement(
+                tenancy,
+                deductions=serializer.validated_data['deductions'],
+                include_arrears=serializer.validated_data['include_arrears'],
+                notes=serializer.validated_data['notes'],
+                condition_report=report,
+                created_by=request.user,
+            )
+        except DepositError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(DepositSettlementSerializer(settlement).data, status=status.HTTP_201_CREATED)
+
+
+class DepositSettlementActionView(RumiaBaseView):
+    """GET a settlement; POST /approve/, /refund/ or /cancel/ (landlord side)."""
+
+    permission_classes = [IsAuthenticated, CanViewFinancials]
+    property_lookup = 'tenancy__parent_property'
+    action = None
+
+    def get_object(self, pk):
+        qs = self.filter_by_organization(
+            DepositSettlement.objects.select_related('tenancy__tenant').prefetch_related('deductions')
+        )
+        if get_canonical_role(self.request.user) == 'tenant':
+            qs = qs.filter(tenancy__tenant__user=self.request.user)
+        return get_object_or_404(qs, pk=pk)
+
+    def get(self, request, pk):
+        return Response(DepositSettlementSerializer(self.get_object(pk)).data)
+
+    def post(self, request, pk):
+        role = get_canonical_role(request.user)
+        if role not in ('landlord', 'super_admin'):
+            return _forbidden()  # settling money is an owner decision, not a caretaker one
+        settlement = self.get_object(pk)
+        try:
+            if self.action == 'approve':
+                settlement = DepositService.approve(settlement, approved_by=request.user)
+            elif self.action == 'refund':
+                serializer = DepositRefundSerializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                settlement = DepositService.record_refund(
+                    settlement, recorded_by=request.user, **serializer.validated_data,
+                )
+            elif self.action == 'cancel':
+                settlement = DepositService.cancel(settlement)
+            else:
+                return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        except (DepositError, InvoiceError) as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        log_audit('other', actor=request.user, organization=settlement.organization, entity=settlement,
+                  metadata={'deposit_settlement': settlement.number, 'action': self.action})
+        settlement = self.get_object(pk)
+        return Response(DepositSettlementSerializer(settlement).data)

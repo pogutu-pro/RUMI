@@ -73,7 +73,7 @@ class Command(BaseCommand):
                     org,
                     (payment.paid_at or payment.created_at).date(),
                     [
-                        Leg.dr(channel_account(payment), payment.amount, f'Payment {payment.internal_reference}'),
+                        Leg.dr(channel_account(payment), payment.amount, f'Payment {payment.internal_reference}', **dims),
                         Leg.cr(chart.TENANT_PREPAYMENTS, payment.amount, f'Payment {payment.internal_reference}', **dims),
                     ],
                     source_type='payment', source_id=str(payment.pk), memo=f'Payment {payment.internal_reference} (backfill)',

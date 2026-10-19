@@ -251,7 +251,9 @@ class PaymentService:
         return ''
 
     @classmethod
-    def _receive_and_allocate(cls, payment: Payment, allocations: Optional[list[dict]], created_by=None):
+    def _receive_and_allocate(
+        cls, payment: Payment, allocations: Optional[list[dict]], created_by=None, notify: bool = True,
+    ):
         """
         Book the payment as tenant credit, then allocate it: explicitly when
         allocations are given, otherwise oldest invoice first. Anything left
@@ -268,7 +270,7 @@ class PaymentService:
                 )
         elif payment.tenancy_id:
             AllocationService.auto_allocate(payment, created_by=created_by)
-        ReceiptService.issue(payment)
+        ReceiptService.issue(payment, notify=notify)
 
     @classmethod
     @transaction.atomic
@@ -277,8 +279,12 @@ class PaymentService:
         payment: Payment,
         allocations: Optional[list[dict]] = None,
         verified_by=None,
+        notify: bool = True,
     ) -> Payment:
-        """Record a cash/bank payment without external provider verification."""
+        """
+        Record a cash/bank payment without external provider verification.
+        `notify=False` issues the receipt without sending it (historical entries).
+        """
         payment.status = 'success'
         payment.provider = 'manual'
         payment.payment_method = payment.payment_method or 'cash'
@@ -287,7 +293,7 @@ class PaymentService:
         payment.save()
 
         try:
-            cls._receive_and_allocate(payment, allocations, created_by=verified_by)
+            cls._receive_and_allocate(payment, allocations, created_by=verified_by, notify=notify)
         except AllocationError as exc:
             # Re-raised as ValueError for existing callers; the whole
             # transaction (including the payment row) rolls back.

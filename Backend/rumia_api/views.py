@@ -26,6 +26,7 @@ from organizations.models import Organization, OrganizationMembership
 from properties.models import CaretakerPropertyAssignment, Property, RentalUnit, Tenancy
 from rent.models import Payment, RentCharge
 from rent.services.income_flow import IncomeFlowService
+from rent.services.deposits import DepositService
 from rent.services.payment_service import PaymentService
 from rent.services.rent_generation import RentChargeGenerationService
 from rumia_api.serializers import (
@@ -429,6 +430,13 @@ class TenancyListCreateView(RumiaBaseView):
         if role not in ('landlord', 'super_admin', 'caretaker'):
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
+        if request.data.get('deposit_handling', 'invoice') not in ('invoice', 'already_paid', 'none'):
+            return Response({'deposit_handling': 'Use invoice, already_paid or none.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if request.data.get('deposit_payment_method', 'cash') not in ('cash', 'bank_transfer', 'mpesa_paybill', 'other'):
+            return Response({'deposit_payment_method': 'Use cash, bank_transfer, mpesa_paybill or other.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
         with transaction.atomic():
             # WR-05: missing/unknown/deleted `unit` or `tenant` ids
             # previously raised KeyError/DoesNotExist -> opaque 500;
@@ -466,6 +474,17 @@ class TenancyListCreateView(RumiaBaseView):
                 created_by=request.user,
             )
             _sync_unit_status(tenancy)
+
+            # Deposit for a new tenancy: invoice it (default), record it as
+            # already paid, or skip ('none').
+            deposit_handling = request.data.get('deposit_handling', 'invoice')
+            if tenancy.deposit > 0 and deposit_handling == 'invoice':
+                DepositService.issue_invoice(tenancy, created_by=request.user)
+            elif tenancy.deposit > 0 and deposit_handling == 'already_paid':
+                DepositService.record_held(
+                    tenancy, tenancy.deposit, method=request.data.get('deposit_payment_method', 'cash'),
+                    created_by=request.user,
+                )
 
         log_audit('tenancy_created', actor=request.user, organization=unit.organization, entity=tenancy)
         # Outside the transaction — this is the point a tenant is actually tied to a
