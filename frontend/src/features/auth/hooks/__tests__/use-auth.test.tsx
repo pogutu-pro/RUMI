@@ -45,7 +45,9 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe('useProfile — recovering a store stuck at "checking"', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    document.cookie = 'rumi_access_token=fake-jwt; Path=/;';
+    // The session hint is the JS-readable role cookie (lib/auth/token.ts
+    // hasSessionHint) — the real access token is httpOnly and invisible here.
+    document.cookie = 'rumi_user_role=tenant; Path=/;';
     useAuthStore.setState({
       status: 'checking',
       user: null,
@@ -56,7 +58,7 @@ describe('useProfile — recovering a store stuck at "checking"', () => {
   });
 
   afterEach(() => {
-    document.cookie = 'rumi_access_token=; Max-Age=0; Path=/;';
+    document.cookie = 'rumi_user_role=; Max-Age=0; Path=/;';
   });
 
   it('rehydrates to "authenticated" from a flat response with a null profile (tenant role)', async () => {
