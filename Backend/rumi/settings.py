@@ -256,6 +256,12 @@ PAYSTACK_ENV = os.getenv('PAYSTACK_ENV', 'test')  # 'test' or 'live'
 # Billing Configuration — days a past_due subscription (failed renewal) has
 # before billing.tasks.process_grace_period_expirations suspends it.
 BILLING_GRACE_PERIOD_DAYS = int(os.getenv('BILLING_GRACE_PERIOD_DAYS', '7'))
+# Minutes an unpaid subscription checkout blocks a new subscribe/switch
+# before it is treated as abandoned.
+BILLING_PENDING_CHECKOUT_TTL_MINUTES = int(os.getenv('BILLING_PENDING_CHECKOUT_TTL_MINUTES', '30'))
+# Days past current_period_end an auto-billed subscription stays active while
+# waiting for Paystack's renewal charge before it lapses into past_due.
+BILLING_AUTO_RENEWAL_BUFFER_DAYS = int(os.getenv('BILLING_AUTO_RENEWAL_BUFFER_DAYS', '3'))
 
 # Webhook URLs (must include /api/v1/ and trailing slash)
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rumiarent.co.ke').rstrip('/')

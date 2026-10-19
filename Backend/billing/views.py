@@ -116,6 +116,16 @@ class SubscriptionSubscribeView(_BillingMutationView):
         plan_id = request.data.get('plan_id')
         billing_mode = request.data.get('billing_mode', 'auto')
 
+        # Manual mode activates a plan with no Paystack charge — it exists for
+        # support to record offline (bank transfer/cash) payments, so only a
+        # super_admin may choose it. A landlord choosing it would get any paid
+        # plan for free (audit C1).
+        if billing_mode == 'manual' and get_canonical_role(request.user) != 'super_admin':
+            return Response(
+                {'error': 'Manual billing can only be set up by RumiaRent support'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         try:
             plan = SubscriptionPlan.objects.get(id=plan_id, is_active=True)
         except PLAN_LOOKUP_ERRORS:
@@ -197,6 +207,17 @@ class SubscriptionSwitchPlanView(_BillingMutationView):
             new_plan = SubscriptionPlan.objects.get(id=new_plan_id, is_active=True)
         except PLAN_LOOKUP_ERRORS:
             return Response({'error': 'Invalid new_plan_id'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # A manual-mode switch changes the plan without any charge, so — like
+        # a manual subscribe — only a super_admin may perform it (audit C1).
+        is_manual = OrganizationSubscription.objects.filter(
+            organization=organization, billing_mode='manual',
+        ).exists()
+        if is_manual and get_canonical_role(request.user) != 'super_admin':
+            return Response(
+                {'error': 'Plans on manual billing can only be changed by RumiaRent support'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         try:
             result = SubscriptionService.switch_plan(

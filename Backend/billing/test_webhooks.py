@@ -542,3 +542,221 @@ class GracePeriodAndReminderTaskTests(RumiaTestFixtures):
         self.assertEqual(len(mail.outbox), 0)
         subscription.refresh_from_db()
         self.assertIsNone(subscription.last_reminder_sent_at)
+
+
+class PlanSwitchWebhookTests(RumiaTestFixtures):
+    """Audit C2 — a switch only takes effect, and the old Paystack subscription
+    is only disabled, once the new plan's first charge succeeds."""
+
+    def _setup_switch(self):
+        user, profile, org = self.create_landlord_with_org(email='switch-wh@test.com')
+        old_plan = _make_plan('starter-switch-wh')
+        new_plan = SubscriptionPlan.objects.create(
+            name='Pro', slug='pro-switch-wh', price=Decimal('7999.00'), paystack_plan_code='PLN_new',
+        )
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=old_plan, status='active', billing_mode='auto',
+            paystack_subscription_code='SUB_OLD', paystack_email_token='tok_old',
+        )
+        payment = SubscriptionPayment.objects.create(
+            subscription=subscription, amount=new_plan.price, internal_reference='SUB-SWITCH-1',
+            status='pending', metadata={
+                'kind': 'switch', 'plan_id': str(new_plan.id),
+                'replaces_subscription_code': 'SUB_OLD', 'replaces_email_token': 'tok_old',
+            },
+        )
+        return user, subscription, payment, new_plan
+
+    def test_switch_charge_success_applies_plan_and_disables_old_subscription(self):
+        user, subscription, payment, new_plan = self._setup_switch()
+
+        with patch('billing.tasks.disable_replaced_paystack_subscription.delay') as mock_disable, \
+                self.captureOnCommitCallbacks(execute=True):
+            result = handle_billing_event({
+                'event': 'charge.success',
+                'data': {
+                    'id': 'evt_switch_1', 'reference': 'SUB-SWITCH-1', 'amount': 799900,
+                    'customer': {'customer_code': 'CUS_1', 'email': user.email},
+                    'plan': {'plan_code': 'PLN_new'},
+                },
+            })
+
+        self.assertEqual(result['status'], 'processed')
+        mock_disable.assert_called_once_with('SUB_OLD', 'tok_old')
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.plan_id, new_plan.id)
+        self.assertEqual(subscription.status, 'active')
+        self.assertEqual(subscription.paystack_subscription_code, '')
+        self.assertEqual(subscription.paystack_customer_code, 'CUS_1')
+
+        # The new Paystack subscription now attaches to this org.
+        create_result = handle_billing_event({
+            'event': 'subscription.create',
+            'data': {
+                'id': 'evt_switch_sub_create', 'subscription_code': 'SUB_NEW', 'email_token': 'tok_new',
+                'customer': {'email': user.email, 'customer_code': 'CUS_1'},
+                'plan': {'plan_code': 'PLN_new'},
+            },
+        })
+        self.assertEqual(create_result['status'], 'processed')
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.paystack_subscription_code, 'SUB_NEW')
+
+    def test_subscription_create_arriving_before_switch_charge_still_matches(self):
+        user, subscription, payment, new_plan = self._setup_switch()
+
+        create_result = handle_billing_event({
+            'event': 'subscription.create',
+            'data': {
+                'id': 'evt_early_create', 'subscription_code': 'SUB_NEW', 'email_token': 'tok_new',
+                'customer': {'email': user.email}, 'plan': {'plan_code': 'PLN_new'},
+            },
+        })
+        self.assertEqual(create_result['status'], 'processed')
+
+        with patch('billing.tasks.disable_replaced_paystack_subscription.delay') as mock_disable, \
+                self.captureOnCommitCallbacks(execute=True):
+            handle_billing_event({
+                'event': 'charge.success',
+                'data': {'id': 'evt_late_charge', 'reference': 'SUB-SWITCH-1'},
+            })
+
+        mock_disable.assert_called_once_with('SUB_OLD', 'tok_old')
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.paystack_subscription_code, 'SUB_NEW')
+        self.assertEqual(subscription.plan_id, new_plan.id)
+
+    def test_underpaid_checkout_does_not_activate(self):
+        user, subscription, payment, new_plan = self._setup_switch()
+
+        result = handle_billing_event({
+            'event': 'charge.success',
+            'data': {'id': 'evt_underpaid', 'reference': 'SUB-SWITCH-1', 'amount': 100},
+        })
+
+        self.assertEqual(result['status'], 'amount_mismatch')
+        payment.refresh_from_db()
+        subscription.refresh_from_db()
+        self.assertEqual(payment.status, 'failed')
+        self.assertNotEqual(subscription.plan_id, new_plan.id)
+
+
+class RenewalChargeWebhookTests(RumiaTestFixtures):
+    """Audit C3 — Paystack-generated recurring charges must be recorded."""
+
+    def _renewal_payload(self, event_id, **extra):
+        data = {
+            'id': event_id, 'reference': f'paystack_ref_{event_id}', 'amount': 150000, 'currency': 'KES',
+            'customer': {'customer_code': 'CUS_RENEW', 'email': 'renew@test.com'},
+            'plan': {'plan_code': 'PLN_starter'},
+        }
+        data.update(extra)
+        return {'event': 'charge.success', 'data': data}
+
+    def test_on_time_renewal_extends_from_period_end_and_records_payment(self):
+        user, profile, org = self.create_landlord_with_org(email='renew@test.com')
+        plan = _make_plan('starter-renew')
+        period_end = timezone.now().date() + timedelta(days=1)
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plan, status='active', billing_mode='auto',
+            paystack_customer_code='CUS_RENEW', current_period_end=period_end,
+        )
+
+        result = handle_billing_event(self._renewal_payload('evt_renew_1'))
+
+        self.assertEqual(result['kind'], 'renewal')
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.current_period_start, period_end)
+        self.assertEqual(subscription.current_period_end, period_end + timedelta(days=30))
+        payment = SubscriptionPayment.objects.get(subscription=subscription)
+        self.assertEqual(payment.status, 'success')
+        self.assertEqual(payment.amount, Decimal('1500.00'))
+        self.assertEqual(payment.paystack_reference, 'paystack_ref_evt_renew_1')
+
+    def test_retry_charge_after_failed_renewal_restores_past_due_subscription(self):
+        user, profile, org = self.create_landlord_with_org(email='renew@test.com')
+        plan = _make_plan('starter-renew-retry')
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plan, status='past_due', billing_mode='auto',
+            current_period_end=timezone.now().date() - timedelta(days=4),
+            grace_period_ends_at=timezone.now() + timedelta(days=3),
+        )
+
+        # No customer code stored yet — resolved by the unambiguous email.
+        handle_billing_event(self._renewal_payload('evt_retry_1'))
+
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.status, 'active')
+        self.assertIsNone(subscription.grace_period_ends_at)
+        self.assertEqual(subscription.current_period_start, timezone.now().date())
+        self.assertEqual(subscription.paystack_customer_code, 'CUS_RENEW')
+
+    def test_duplicate_renewal_delivery_records_one_payment(self):
+        user, profile, org = self.create_landlord_with_org(email='renew@test.com')
+        plan = _make_plan('starter-renew-dup')
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plan, status='active', billing_mode='auto',
+            paystack_customer_code='CUS_RENEW', current_period_end=timezone.now().date(),
+        )
+
+        handle_billing_event(self._renewal_payload('evt_dup'))
+        second = handle_billing_event(self._renewal_payload('evt_dup'))
+
+        self.assertEqual(second['status'], 'already_processed')
+        self.assertEqual(SubscriptionPayment.objects.filter(subscription=subscription).count(), 1)
+
+    def test_charge_without_plan_and_unknown_reference_is_still_ignored(self):
+        result = handle_billing_event({
+            'event': 'charge.success',
+            'data': {'id': 'evt_rent_like', 'reference': 'RUMIA-XYZ', 'customer': {'email': 'renew@test.com'}},
+        })
+        self.assertEqual(result['status'], 'ignored')
+        self.assertEqual(SubscriptionPayment.objects.count(), 0)
+
+
+class SubscriptionLapseTaskTests(RumiaTestFixtures):
+    """Audit C1 — a paid period that ends must lapse, not stay active forever."""
+
+    def test_manual_subscription_past_period_end_lapses_into_past_due(self):
+        from billing.tasks import process_grace_period_expirations
+
+        user, profile, org = self.create_landlord_with_org(email='lapse-manual@test.com')
+        plan = _make_plan('starter-lapse-manual')
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plan, status='active', billing_mode='manual',
+            current_period_end=timezone.now().date() - timedelta(days=1),
+        )
+
+        result = process_grace_period_expirations()
+
+        self.assertEqual(result['lapsed'], 1)
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.status, 'past_due')
+        self.assertIsNotNone(subscription.grace_period_ends_at)
+
+    def test_auto_subscription_gets_renewal_buffer_before_lapsing(self):
+        from billing.tasks import process_grace_period_expirations
+
+        user, profile, org = self.create_landlord_with_org(email='lapse-auto@test.com')
+        plan = _make_plan('starter-lapse-auto')
+        within_buffer = OrganizationSubscription.objects.create(
+            organization=org, plan=plan, status='active', billing_mode='auto',
+            current_period_end=timezone.now().date() - timedelta(days=2),
+        )
+
+        result = process_grace_period_expirations()
+
+        self.assertEqual(result['lapsed'], 0)
+        within_buffer.refresh_from_db()
+        self.assertEqual(within_buffer.status, 'active')
+
+    def test_active_subscription_without_period_end_is_left_alone(self):
+        from billing.tasks import process_grace_period_expirations
+
+        user, profile, org = self.create_landlord_with_org(email='lapse-none@test.com')
+        plan = _make_plan('starter-lapse-none')
+        OrganizationSubscription.objects.create(
+            organization=org, plan=plan, status='active', billing_mode='manual',
+        )
+
+        self.assertEqual(process_grace_period_expirations()['lapsed'], 0)

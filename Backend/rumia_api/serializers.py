@@ -165,6 +165,21 @@ class ManualPaymentSerializer(serializers.Serializer):
         queryset=RentCharge.objects.all(), required=False, allow_null=True,
     )
 
+    def validate(self, attrs):
+        charge = attrs.get('rent_charge_id')
+        if charge is not None:
+            # The queryset spans every organization, so without this check a
+            # landlord could mark another organization's charge paid (audit C4).
+            if charge.tenancy_id != attrs['tenancy'].id:
+                raise serializers.ValidationError(
+                    {'rent_charge_id': 'This rent charge does not belong to the selected tenancy.'}
+                )
+            if attrs['amount'] > charge.outstanding:
+                raise serializers.ValidationError(
+                    {'amount': f'Amount exceeds the outstanding balance of {charge.outstanding} on this charge.'}
+                )
+        return attrs
+
 
 class TenancyTerminateSerializer(serializers.Serializer):
     move_out_date = serializers.DateField(required=False)

@@ -289,6 +289,10 @@ class PaymentService:
         charge = RentCharge.objects.select_for_update().get(id=rent_charge_id)
         if payment.status != 'success':
             raise ValueError('Cannot allocate non-successful payment')
+        if charge.organization_id != payment.organization_id or (
+            payment.tenancy_id and charge.tenancy_id != payment.tenancy_id
+        ):
+            raise ValueError('Cannot allocate a payment to another tenancy\'s rent charge')
 
         PaymentAllocation.objects.create(
             payment=payment,

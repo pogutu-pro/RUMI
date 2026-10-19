@@ -694,7 +694,9 @@ class PaymentListCreateView(RumiaBaseView):
         if not CanViewFinancials().has_permission(request, self):
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
-        qs = self.filter_by_organization(Payment.objects.select_related('tenant'))
+        qs = self.filter_by_organization(
+            Payment.objects.select_related('tenant').order_by('-created_at')
+        )
         role = get_canonical_role(request.user)
         if role == 'tenant':
             qs = qs.filter(tenant__user=request.user)
@@ -732,7 +734,9 @@ class PaymentListCreateView(RumiaBaseView):
             recorded_by=request.user,
         )
 
-        callback_url = f'{settings.FRONTEND_URL}/payments/{payment.id}/callback'
+        # Must match the Next.js route frontend/src/app/(tenant)/tenant/rental/payments/callback.
+        # Paystack appends its own `trxref`/`reference` query params.
+        callback_url = f'{settings.FRONTEND_URL}/tenant/rental/payments/callback?payment_id={payment.id}'
         result = PaymentService.initiate(payment, callback_url)
 
         if not result.get('success'):

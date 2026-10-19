@@ -1235,3 +1235,100 @@ class CaretakerEndpointTests(RumiaTestFixtures):
             'emergency_contact_name': 'X', 'emergency_contact_phone': '+254733444555',
         }, format='json')
         self.assertEqual(resp.status_code, 400)
+
+
+class PaymentsPhase0RegressionTests(RumiaTestFixtures):
+    """Audit C4/C5 — see docs/roadmap/phase-0-critical-fixes.md."""
+
+    def _org_with_tenancy(self, tag):
+        landlord, _, org = self.create_landlord_with_org(email=f'{tag}-landlord@test.com')
+        prop, unit = self.create_property_with_unit(org, name=f'{tag} Apartments')
+        tenant_user, tenant = self.create_tenant(org, email=f'{tag}-tenant@test.com')
+        tenancy = self.create_tenancy(org, prop, unit, tenant)
+        return landlord, tenant_user, org, tenancy
+
+    def test_manual_payment_cannot_target_another_organizations_charge(self):
+        landlord_a, _, _, tenancy_a = self._org_with_tenancy('a')
+        _, _, _, tenancy_b = self._org_with_tenancy('b')
+        victim_charge = self.create_rent_charge(tenancy_b)
+
+        client = APIClient()
+        client.force_authenticate(user=landlord_a)
+        response = client.post('/api/v1/rent/payments/manual/', {
+            'tenancy': str(tenancy_a.id), 'amount': '22000.00', 'payment_method': 'cash',
+            'rent_charge_id': str(victim_charge.id),
+        }, format='json')
+
+        self.assertEqual(response.status_code, 400)
+        victim_charge.refresh_from_db()
+        self.assertEqual(victim_charge.amount_paid, Decimal('0.00'))
+        self.assertFalse(Payment.objects.filter(tenancy=tenancy_a).exists())
+
+    def test_manual_payment_above_charge_outstanding_is_400_not_500(self):
+        landlord, _, _, tenancy = self._org_with_tenancy('over')
+        charge = self.create_rent_charge(tenancy)
+
+        client = APIClient()
+        client.force_authenticate(user=landlord)
+        response = client.post('/api/v1/rent/payments/manual/', {
+            'tenancy': str(tenancy.id), 'amount': '25000.00', 'payment_method': 'cash',
+            'rent_charge_id': str(charge.id),
+        }, format='json')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('amount', response.data['errors'])
+
+    def test_service_refuses_allocation_to_another_tenancys_charge(self):
+        _, _, org_a, tenancy_a = self._org_with_tenancy('svc-a')
+        _, _, _, tenancy_b = self._org_with_tenancy('svc-b')
+        other_charge = self.create_rent_charge(tenancy_b)
+        payment = Payment.objects.create(
+            organization=org_a, tenancy=tenancy_a, tenant=tenancy_a.tenant, amount=Decimal('100.00'),
+            payment_method='cash', provider='manual', internal_reference='RUMIA-SVC-GUARD',
+        )
+
+        with self.assertRaises(ValueError):
+            PaymentService.record_manual_payment(
+                payment, allocations=[{'rent_charge_id': other_charge.id, 'amount': '100.00'}],
+            )
+        other_charge.refresh_from_db()
+        self.assertEqual(other_charge.amount_paid, Decimal('0.00'))
+
+    @override_settings(PAYSTACK_SECRET_KEY='test_secret_key', FRONTEND_URL='https://app.example.test')
+    @patch.object(PaystackProvider, 'initiate_payment')
+    @patch.object(PaystackProvider, 'get_config_status')
+    def test_paystack_callback_url_points_at_the_real_frontend_route(self, mock_config, mock_initiate):
+        mock_config.return_value = ProviderConfigStatus(provider='paystack', status=ProviderStatus.AVAILABLE)
+        mock_initiate.return_value = InitiatePaymentResult(
+            success=True, provider_reference='PSK-REF-CB', authorization_url='https://checkout.paystack.com/cb',
+        )
+        _, tenant_user, org, tenancy = self._org_with_tenancy('cb')
+        PayoutAccount.objects.create(organization=org, status='active', paystack_subaccount_code='SUB_CB')
+
+        client = APIClient()
+        client.force_authenticate(user=tenant_user)
+        response = client.post('/api/v1/rent/payments/', {'tenancy': str(tenancy.id), 'amount': '22000.00'})
+
+        self.assertEqual(response.status_code, 201)
+        callback_url = mock_initiate.call_args[0][0].callback_url
+        self.assertEqual(
+            callback_url,
+            f'https://app.example.test/tenant/rental/payments/callback?payment_id={response.data["payment_id"]}',
+        )
+
+    def test_payment_list_is_newest_first(self):
+        _, tenant_user, org, tenancy = self._org_with_tenancy('order')
+        now = timezone.now()
+        for i, ref in enumerate(['RUMIA-OLD', 'RUMIA-NEW']):
+            Payment.objects.create(
+                organization=org, tenancy=tenancy, tenant=tenancy.tenant, amount=Decimal('10.00'),
+                payment_method='paystack', provider='paystack', internal_reference=ref,
+                created_at=now - timedelta(days=1 - i),
+            )
+
+        client = APIClient()
+        client.force_authenticate(user=tenant_user)
+        response = client.get('/api/v1/rent/payments/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([p['internal_reference'] for p in response.data], ['RUMIA-NEW', 'RUMIA-OLD'])

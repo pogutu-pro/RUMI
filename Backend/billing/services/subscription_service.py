@@ -17,7 +17,6 @@ from django.utils import timezone
 
 from billing.models import OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
 from billing.providers.paystack_billing import PaystackBillingClient
-from rent.providers.base import PaymentProviderError
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +24,35 @@ logger = logging.getLogger(__name__)
 # only a subscription NOT in one of these statuses is eligible for a fresh subscribe.
 ACTIVE_STATUSES = ('active', 'past_due')
 
+# SubscriptionPayment.metadata['kind'] values.
+KIND_SUBSCRIBE = 'subscribe'
+KIND_SWITCH = 'switch'
+
+
+def _pending_checkout_ttl() -> timedelta:
+    return timedelta(minutes=getattr(settings, 'BILLING_PENDING_CHECKOUT_TTL_MINUTES', 30))
+
 
 class SubscriptionService:
     """Provider-independent subscription orchestration for the `billing` app."""
+
+    @classmethod
+    def _has_live_pending_checkout(cls, subscription: OrganizationSubscription) -> bool:
+        """
+        True when a checkout started less than the TTL ago is still awaiting
+        payment. Older pending payments are marked failed (abandoned) so an
+        organization that walked away from a Paystack checkout can always
+        start a new one — without this, a single abandoned checkout locked
+        the organization out of subscribe AND switch-plan forever (audit C2).
+
+        A late payment against an expired checkout is still honoured: the
+        webhook resolves SubscriptionPayment by reference regardless of status.
+        """
+        now = timezone.now()
+        subscription.payments.filter(
+            status='pending', initiated_at__lt=now - _pending_checkout_ttl(),
+        ).update(status='failed', failed_at=now, failure_reason='Checkout abandoned (expired)')
+        return subscription.payments.filter(status='pending').exists()
 
     @classmethod
     def _initiate_auto_charge(
@@ -35,6 +60,7 @@ class SubscriptionService:
         subscription: OrganizationSubscription,
         plan: SubscriptionPlan,
         requester_email: str,
+        kind: str,
     ) -> dict:
         """
         Create a pending SubscriptionPayment for `plan` and start its Paystack
@@ -45,12 +71,25 @@ class SubscriptionService:
         call this helper instead of duplicating the sequence, which is what
         guarantees a plan switch always bills the new plan's live price,
         never a stale/cached one.
+
+        The target plan is recorded on the payment (`metadata.plan_id`) and is
+        only applied to the subscription by the webhook once Paystack confirms
+        the charge. For a switch, the subscription is left completely
+        untouched here — abandoning the checkout leaves the organization on
+        its current, still-billing plan.
         """
         if not plan.paystack_plan_code:
             raise ValueError('Plan not yet linked to Paystack')
 
         today = timezone.now().date()
         internal_reference = f'SUB-{uuid.uuid4().hex[:10].upper()}'
+
+        metadata = {'kind': kind, 'plan_id': str(plan.id)}
+        if kind == KIND_SWITCH and subscription.paystack_subscription_code:
+            # The webhook disables this Paystack subscription only after the
+            # new plan's first charge succeeds (billing.tasks.disable_replaced_paystack_subscription).
+            metadata['replaces_subscription_code'] = subscription.paystack_subscription_code
+            metadata['replaces_email_token'] = subscription.paystack_email_token
 
         SubscriptionPayment.objects.create(
             subscription=subscription,
@@ -59,6 +98,7 @@ class SubscriptionService:
             status='pending',
             billing_period_start=today,
             billing_period_end=today + timedelta(days=30),
+            metadata=metadata,
         )
 
         # Mirrors the established convention (see rumia_api.views's rent-payment
@@ -82,15 +122,16 @@ class SubscriptionService:
             },
         )
 
-        subscription.plan = plan
-        subscription.billing_mode = 'auto'
-        subscription.status = 'pending'
-        subscription.current_period_start = today
-        subscription.current_period_end = today + timedelta(days=30)
-        subscription.save(update_fields=[
-            'plan', 'billing_mode', 'status',
-            'current_period_start', 'current_period_end', 'updated_at',
-        ])
+        if kind == KIND_SUBSCRIBE:
+            subscription.plan = plan
+            subscription.billing_mode = 'auto'
+            subscription.status = 'pending'
+            subscription.current_period_start = today
+            subscription.current_period_end = today + timedelta(days=30)
+            subscription.save(update_fields=[
+                'plan', 'billing_mode', 'status',
+                'current_period_start', 'current_period_end', 'updated_at',
+            ])
 
         return {
             'mode': 'auto',
@@ -116,15 +157,14 @@ class SubscriptionService:
             if not created and subscription.status in ACTIVE_STATUSES:
                 raise ValueError('Organization already has a subscription — use switch_plan')
 
-            if not created and subscription.status == 'pending':
-                # The auto-charge flow leaves status='pending' until the Paystack
-                # webhook confirms payment — without this guard, a double-submit
-                # (double-click, retry after a slow response) here would create a
-                # SECOND SubscriptionPayment and a second Paystack checkout for the
-                # same organization while the first checkout is still live.
+            if not created and cls._has_live_pending_checkout(subscription):
+                # A double-submit (double-click, retry after a slow response)
+                # must not create a SECOND SubscriptionPayment and a second
+                # Paystack checkout while the first one is still live. Once
+                # the checkout passes its TTL it is treated as abandoned.
                 raise ValueError(
-                    'A subscription is already pending for this organization — '
-                    'complete or wait for the existing checkout before retrying'
+                    'A subscription checkout is already in progress for this organization — '
+                    'complete it, or try again in a few minutes'
                 )
 
             if billing_mode == 'manual':
@@ -141,7 +181,7 @@ class SubscriptionService:
                 return {'mode': 'manual', 'status': 'active'}
 
             if billing_mode == 'auto':
-                return cls._initiate_auto_charge(subscription, plan, requester_email)
+                return cls._initiate_auto_charge(subscription, plan, requester_email, KIND_SUBSCRIBE)
 
             raise ValueError(f'Unknown billing_mode: {billing_mode}')
 
@@ -155,23 +195,13 @@ class SubscriptionService:
         """
         Switch an organization's existing subscription to `new_plan`.
 
-        The Paystack `disable_subscription` call is a real, irreversible external
-        side effect — it must never be made inside the same `transaction.atomic()`
-        block as a later step that can still fail and roll back the DB. Otherwise
-        a failure in `_initiate_auto_charge` (e.g. a second Paystack call raising)
-        would roll the DB back to believing the OLD Paystack subscription is still
-        live, while Paystack itself has already cancelled it — a permanent desync
-        where the org silently never gets billed again.
-
-        To avoid that, this method never opens more than one atomic block around
-        an external call: the "disable" intent is committed to the DB BEFORE the
-        Paystack call is made (so a crash before/after that call always leaves the
-        DB in a state consistent with "we no longer own that Paystack subscription
-        code"), and `_initiate_auto_charge` runs in its own, separate transaction
-        afterwards. If that second step fails, the subscription is left in a safe,
-        retryable state — `paystack_subscription_code` already cleared, no new
-        recurring subscription created yet — and calling `switch_plan` again picks
-        up cleanly from there.
+        Auto mode is "pay first, then switch": this only starts a checkout for
+        the new plan. The subscription keeps its current plan, status and
+        Paystack subscription until the webhook confirms the new charge; the
+        webhook then applies the new plan and disables the old Paystack
+        subscription. Previously the old subscription was disabled up front,
+        so an abandoned checkout left the organization unsubscribed and
+        unable to recover (audit C2).
         """
         with transaction.atomic():
             subscription = OrganizationSubscription.objects.select_for_update().filter(
@@ -188,45 +218,16 @@ class SubscriptionService:
                 raise ValueError('Already subscribed to this plan')
 
             if subscription.billing_mode != 'auto':
-                # Manual mode — no Paystack call, just swap the plan.
+                # Manual mode — no Paystack call, just swap the plan. The view
+                # restricts this branch to super_admin.
                 subscription.plan = new_plan
                 subscription.save(update_fields=['plan', 'updated_at'])
                 return {'mode': 'manual', 'status': subscription.status}
 
-            # Auto mode: capture the old Paystack identifiers and clear them from
-            # the DB record NOW, before the external call — this commits the
-            # "disabling" intent first, per the docstring above.
-            old_subscription_code = subscription.paystack_subscription_code
-            old_email_token = subscription.paystack_email_token
-            if old_subscription_code:
-                subscription.paystack_subscription_code = ''
-                subscription.paystack_email_token = ''
-                subscription.save(update_fields=[
-                    'paystack_subscription_code', 'paystack_email_token', 'updated_at',
-                ])
-        # transaction committed here — DB no longer references the old Paystack
-        # subscription code regardless of what happens next.
-
-        if old_subscription_code:
-            try:
-                PaystackBillingClient().disable_subscription(old_subscription_code, old_email_token)
-            except PaymentProviderError:
-                # The DB write already committed (we no longer track the old
-                # code), but Paystack may still be actively charging the old
-                # subscription. Never swallow this — it needs a human to cancel
-                # it manually in the Paystack dashboard, or the org keeps paying
-                # for a plan our system has already forgotten about.
-                logger.error(
-                    'Failed to disable Paystack subscription %s for organization %s during '
-                    'plan switch — manual cancellation in the Paystack dashboard is required '
-                    'to avoid a stray recurring charge.',
-                    old_subscription_code, organization.id,
+            if cls._has_live_pending_checkout(subscription):
+                raise ValueError(
+                    'A plan change checkout is already in progress — '
+                    'complete it, or try again in a few minutes'
                 )
-                raise
 
-        # Disable-before-initiate ordering: this is what makes double-billing
-        # on a plan switch structurally impossible, not just conventionally
-        # avoided. Runs in its own transaction, separate from the disable call.
-        with transaction.atomic():
-            subscription = OrganizationSubscription.objects.select_for_update().get(pk=subscription.pk)
-            return cls._initiate_auto_charge(subscription, new_plan, requester_email)
+            return cls._initiate_auto_charge(subscription, new_plan, requester_email, KIND_SWITCH)

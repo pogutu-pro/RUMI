@@ -2,28 +2,50 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { rentalApi } from '@/features/rental/api/client';
+import type { Payment } from '@/features/rental/types';
 
 /**
- * Paystack redirects the browser here after checkout (see FRONTEND_URL/payments/{id}/callback
- * built in rumia_api PaymentListCreateView.post). The actual payment confirmation is
- * NEVER decided by this page — only the server-verified Paystack webhook flips a
- * payment to 'success'. This page just polls our own API for the current state.
+ * Paystack redirects the browser here after checkout, to the callback_url built in
+ * rumia_api PaymentListCreateView.post (`?payment_id=<id>`, plus Paystack's own
+ * `reference`/`trxref`). The actual payment confirmation is NEVER decided by this
+ * page — only the server-verified Paystack webhook flips a payment to 'success'.
+ * This page just polls our own API for the current state of THIS payment.
  */
+function findPayment(payments: Payment[] | undefined, paymentId: string | null, reference: string | null) {
+  if (!payments) return undefined;
+  if (paymentId) return payments.find((p) => p.id === paymentId);
+  if (reference) return payments.find((p) => p.internal_reference === reference);
+  return payments[0]; // List is newest first.
+}
+
 export default function PaymentCallbackPage() {
+  return (
+    <React.Suspense fallback={<p className="text-sm text-muted-foreground">Checking…</p>}>
+      <PaymentCallbackStatus />
+    </React.Suspense>
+  );
+}
+
+function PaymentCallbackStatus() {
+  const searchParams = useSearchParams();
+  const paymentId = searchParams.get('payment_id');
+  const reference = searchParams.get('reference') ?? searchParams.get('trxref');
+
   const { data: payments, isLoading } = useQuery({
     queryKey: ['rental', 'payments'],
     queryFn: () => rentalApi.listPayments(),
     refetchInterval: (query) => {
-      const latest = query.state.data?.[0];
-      return latest && latest.status === 'processing' ? 2000 : false;
+      const current = findPayment(query.state.data, paymentId, reference);
+      return current && current.status === 'processing' ? 2000 : false;
     },
   });
 
-  const latest = payments?.[0];
+  const latest = findPayment(payments, paymentId, reference);
 
   return (
     <Card>

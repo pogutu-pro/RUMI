@@ -30,7 +30,9 @@ export const billingApi = {
     });
     return res.data;
   },
-  switchPlan: async (newPlanId: string): Promise<{ mode: string; status: string }> => {
+  switchPlan: async (
+    newPlanId: string,
+  ): Promise<{ mode: string; authorization_url?: string; internal_reference?: string; status?: string }> => {
     const res = await axios.post('/billing/switch-plan/', { new_plan_id: newPlanId });
     return res.data;
   },
