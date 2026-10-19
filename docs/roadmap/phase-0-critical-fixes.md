@@ -3,7 +3,7 @@
 Findings C1–C5 from [audit-findings.md](audit-findings.md). Each fix ships with
 regression tests. Update the checkboxes as work lands.
 
-**Status: implemented (Oct 19, 2026), not yet committed.** Backend suite
+**Status: implemented and committed (`b2cea1f1`, branch `fix/payments-phase-0`).** Backend suite
 239 passed (219 before + 20 regression tests). Regression tests live in
 `billing/tests.py` (`SubscribeFlowTests`, `SwitchPlanTests`),
 `billing/test_webhooks.py` (`PlanSwitchWebhookTests`,

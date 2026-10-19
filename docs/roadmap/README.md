@@ -15,6 +15,7 @@ prior context.
 |------|------------|
 | [audit-findings.md](audit-findings.md) | Every payment/billing defect found in the Oct 2026 audit, ranked, with file references and how each was verified |
 | [phase-0-critical-fixes.md](phase-0-critical-fixes.md) | The 5 critical bugs being fixed first — design of each fix and status checklist |
+| [phase-1-ledger-design.md](phase-1-ledger-design.md) | Phase 1 design (invoices, double-entry journal, tenant credit, receipts, penalties, deposits, reminders) — **draft, needs decisions D1–D7** |
 | [eazzyrent-parity.md](eazzyrent-parity.md) | Competitor comparison, target architecture, and phased roadmap |
 | [bank-integration.md](bank-integration.md) | What is required to connect to M-Pesa (Daraja C2B) and Kenyan banks |
 
@@ -22,8 +23,8 @@ prior context.
 
 | Phase | Scope | Status |
 |-------|-------|--------|
-| 0 | Critical bug fixes (C1–C5) | **Implemented, uncommitted** — see phase-0 doc |
-| 1 | Ledger core: general invoices, receipts, penalties, deposits, tenant credit | Not started — needs design sign-off |
+| 0 | Critical bug fixes (C1–C5) | **Done** — commit `b2cea1f1` on branch `fix/payments-phase-0` (not pushed/merged) |
+| 1 | Ledger core: general invoices, receipts, penalties, deposits, tenant credit | **Design drafted** — waiting on owner decisions D1–D7 |
 | 2 | M-Pesa paybill (Daraja C2B) collection + auto-matching + unmatched queue | Not started |
 | 3 | Agency → many landlords, commissions, landlord statements, expenses | Not started |
 | 4 | Bank IPN integrations (bank by bank) | Not started |
