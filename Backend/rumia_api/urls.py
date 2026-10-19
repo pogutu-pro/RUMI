@@ -8,6 +8,7 @@ from rumia_api.ledger_views import (
     InvoiceDetailView,
     InvoiceDisputeView,
     InvoiceListCreateView,
+    PenaltyPolicyView,
     ReceiptDetailView,
     ReceiptListView,
     ReceiptPdfView,
@@ -68,6 +69,7 @@ urlpatterns = [
     path('invoices/<uuid:pk>/dispute/', InvoiceDisputeView.as_view(), name='rumia-invoice-dispute'),
     path('credit-notes/', CreditNoteListView.as_view(), name='rumia-credit-notes'),
     path('receipts/', ReceiptListView.as_view(), name='rumia-receipts'),
+    path('penalty-policy/', PenaltyPolicyView.as_view(), name='rumia-penalty-policy'),
     path(
         'tenancies/<uuid:pk>/recurring-charges/',
         TenancyRecurringChargeListCreateView.as_view(),

@@ -59,6 +59,16 @@ def send_rent_due_reminders():
     return counts
 
 
+@shared_task(name='rent.tasks.apply_late_penalties')
+def apply_late_penalties():
+    """Daily: issue late-penalty invoices under each organization's enabled PenaltyPolicy."""
+    from rent.services.penalties import PenaltyService
+
+    counts = PenaltyService.run()
+    logger.info('RumiaRent late penalties issued: %s', counts['issued'])
+    return counts
+
+
 @shared_task(name='rent.tasks.escalate_overdue_to_next_of_kin')
 def escalate_overdue_to_next_of_kin():
     """

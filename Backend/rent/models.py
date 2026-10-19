@@ -131,6 +131,11 @@ class Invoice(models.Model):
                 condition=~Q(number=''),
                 name='uniq_invoice_number_per_org',
             ),
+            models.UniqueConstraint(
+                fields=['source_invoice', 'period_start'],
+                condition=Q(invoice_type='penalty'),
+                name='uniq_penalty_per_source_per_day',
+            ),
             models.CheckConstraint(
                 check=Q(amount_paid__lte=F('amount_due') - F('amount_credited')),
                 name='check_invoice_paid_not_exceed_due',
@@ -498,3 +503,67 @@ class ReminderLog(models.Model):
 
     def __str__(self):
         return f'{self.invoice.number} {self.reminder_key}{" (skipped)" if self.skipped else ""}'
+
+
+class PenaltyPolicy(models.Model):
+    """
+    Late-penalty rules for an organization, optionally overridden per property.
+    Off by default (design decision D7). Penalties are separate `penalty`
+    invoices linked to the invoice they penalize, so they can be waived with
+    a credit note without touching the rent invoice.
+    """
+
+    METHOD_CHOICES = [
+        ('fixed', 'Fixed amount'),
+        ('percent', 'Percent of the overdue balance'),
+    ]
+    FREQUENCY_CHOICES = [
+        ('once', 'Once per overdue invoice'),
+        ('monthly', 'Again every month it stays unpaid'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        'organizations.Organization', on_delete=models.CASCADE, related_name='penalty_policies',
+    )
+    parent_property = models.ForeignKey(
+        'properties.Property', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='penalty_policies', db_column='property_id',
+        help_text='Leave empty for the organization-wide policy.',
+    )
+    enabled = models.BooleanField(default=False)
+    method = models.CharField(max_length=10, choices=METHOD_CHOICES, default='fixed')
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    grace_days = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Days after the due date before a penalty; empty = each tenancy's grace period.",
+    )
+    frequency = models.CharField(max_length=10, choices=FREQUENCY_CHOICES, default='once')
+    cap_percent_of_invoice = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text='Maximum total penalties on one invoice, as a percent of that invoice.',
+    )
+    applies_to = models.JSONField(default=list, blank=True, help_text="Invoice types penalized; empty = ['rent'].")
+    notify_tenant = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'rent_penaltypolicy'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['organization'], condition=Q(parent_property__isnull=True), name='uniq_org_penalty_policy',
+            ),
+            models.UniqueConstraint(
+                fields=['organization', 'parent_property'], condition=Q(parent_property__isnull=False),
+                name='uniq_property_penalty_policy',
+            ),
+        ]
+
+    def __str__(self):
+        scope = self.parent_property.name if self.parent_property_id else 'organization'
+        return f'Penalty policy ({scope}): {"on" if self.enabled else "off"}'
+
+    @property
+    def invoice_types(self) -> list:
+        return list(self.applies_to or ['rent'])

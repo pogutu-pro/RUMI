@@ -6,7 +6,16 @@ from rest_framework import serializers
 
 from organizations.models import Organization
 from properties.models import Property, RentalUnit, Tenancy
-from rent.models import CreditNote, Invoice, InvoiceLine, Payment, Receipt, RecurringCharge, RentCharge
+from rent.models import (
+    CreditNote,
+    Invoice,
+    InvoiceLine,
+    Payment,
+    PenaltyPolicy,
+    Receipt,
+    RecurringCharge,
+    RentCharge,
+)
 from tenants.models import EmergencyContact, TenantProfile
 
 
@@ -310,4 +319,33 @@ class RecurringChargeSerializer(serializers.ModelSerializer):
         end = attrs.get('end_date', getattr(self.instance, 'end_date', None))
         if start and end and end < start:
             raise serializers.ValidationError({'end_date': 'End date cannot be before start date.'})
+        return attrs
+
+
+class PenaltyPolicySerializer(serializers.ModelSerializer):
+    property = serializers.PrimaryKeyRelatedField(source='parent_property', read_only=True)
+
+    class Meta:
+        model = PenaltyPolicy
+        fields = [
+            'id', 'property', 'enabled', 'method', 'amount', 'percent', 'grace_days', 'frequency',
+            'cap_percent_of_invoice', 'applies_to', 'notify_tenant', 'updated_at',
+        ]
+        read_only_fields = ['id', 'property', 'updated_at']
+
+    def validate_applies_to(self, value):
+        allowed = {'rent', 'adhoc', 'deposit'}
+        if not isinstance(value, list) or not set(value) <= allowed:
+            raise serializers.ValidationError(f'Choose from: {sorted(allowed)}')
+        return value
+
+    def validate(self, attrs):
+        merged = {**({} if self.instance is None else {
+            f: getattr(self.instance, f) for f in ('enabled', 'method', 'amount', 'percent')
+        }), **attrs}
+        if merged.get('enabled'):
+            if merged.get('method', 'fixed') == 'fixed' and not merged.get('amount'):
+                raise serializers.ValidationError({'amount': 'Set a penalty amount.'})
+            if merged.get('method') == 'percent' and not (Decimal('0') < Decimal(merged.get('percent') or 0) <= 100):
+                raise serializers.ValidationError({'percent': 'Percent must be between 0 and 100.'})
         return attrs

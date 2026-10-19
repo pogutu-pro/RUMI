@@ -6,6 +6,9 @@ rumia_api.views.
 
 from __future__ import annotations
 
+import json
+
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Prefetch
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -16,8 +19,8 @@ from rest_framework.response import Response
 
 from audit.models import log_audit
 from core.permissions.rumia import CanViewFinancials, get_canonical_role
-from properties.models import Tenancy
-from rent.models import CreditNote, Invoice, PaymentAllocation, Receipt, RecurringCharge
+from properties.models import Property, Tenancy
+from rent.models import CreditNote, Invoice, PaymentAllocation, PenaltyPolicy, Receipt, RecurringCharge
 from rent.services.invoicing import InvoiceError, InvoiceService, LineSpec
 from rent.services.receipts import ReceiptService
 from rumia_api.serializers import (
@@ -25,6 +28,7 @@ from rumia_api.serializers import (
     CreditNoteInputSerializer,
     CreditNoteSerializer,
     InvoiceSerializer,
+    PenaltyPolicySerializer,
     ReceiptSerializer,
     RecurringChargeSerializer,
 )
@@ -330,4 +334,62 @@ class RecurringChargeDetailView(RecurringChargeMixin, RumiaBaseView):
         charge = self.get_object(pk)
         charge.is_active = False
         charge.save(update_fields=['is_active', 'updated_at'])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PenaltyPolicyView(RumiaBaseView):
+    """
+    GET/PUT the late-penalty policy. Without `property_id` it is the
+    organization-wide policy; with it, that property's override (DELETE
+    removes the override). Landlord / super_admin only.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def _scope(self, request):
+        role = get_canonical_role(request.user)
+        if role not in ('landlord', 'super_admin'):
+            return None, None, _forbidden()
+        org_ids = self.get_user_organization_ids()
+        org_id = request.query_params.get('organization_id') or (org_ids[0] if org_ids else None)
+        if org_id is None or (org_ids is not None and str(org_id) not in [str(i) for i in org_ids]):
+            return None, None, _forbidden()
+        prop = None
+        property_id = request.query_params.get('property_id')
+        if property_id:
+            prop = get_object_or_404(Property, pk=property_id, organization_id=org_id)
+        return org_id, prop, None
+
+    def get(self, request):
+        org_id, prop, error = self._scope(request)
+        if error:
+            return error
+        policy = PenaltyPolicy.objects.filter(organization_id=org_id, parent_property=prop).first()
+        if policy is None:
+            data = PenaltyPolicySerializer(PenaltyPolicy(organization_id=org_id, parent_property=prop)).data
+            data['id'] = None
+            return Response(data)
+        return Response(PenaltyPolicySerializer(policy).data)
+
+    def put(self, request):
+        org_id, prop, error = self._scope(request)
+        if error:
+            return error
+        policy = PenaltyPolicy.objects.filter(organization_id=org_id, parent_property=prop).first()
+        serializer = PenaltyPolicySerializer(policy, data=request.data, partial=policy is not None)
+        serializer.is_valid(raise_exception=True)
+        policy = serializer.save(organization_id=org_id, parent_property=prop)
+        snapshot = json.loads(json.dumps(PenaltyPolicySerializer(policy).data, cls=DjangoJSONEncoder))
+        log_audit('other', actor=request.user, organization=policy.organization, entity=policy,
+                  new_value=snapshot, metadata={'change': 'penalty_policy'})
+        return Response(PenaltyPolicySerializer(policy).data)
+
+    def delete(self, request):
+        org_id, prop, error = self._scope(request)
+        if error:
+            return error
+        if prop is None:
+            return Response({'detail': 'Disable the organization policy instead of deleting it.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        PenaltyPolicy.objects.filter(organization_id=org_id, parent_property=prop).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
