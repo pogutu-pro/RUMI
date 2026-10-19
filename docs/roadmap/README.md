@@ -47,12 +47,15 @@ git push -u origin fix/payments-phase-0 feature/phase-1-ledger
 gh pr create --base main --head feature/phase-1-ledger   # contains phase 0 too
 # after CI is green (CI now really runs on PostgreSQL):
 gh pr merge --merge          # a push to main auto-deploys via webhook/
-# then on the server, inside the backend container:
-python manage.py migrate
-python manage.py ledger_backfill
-python manage.py ledger_backfill --check   # must say "reconciles"
-python manage.py seed_subscription_plans   # if plans are not linked to Paystack yet
+# Migrations run automatically (Backend/entrypoint.sh). Then, on the server:
+cd /opt/rumi
+docker compose -f docker-compose.prod.yml exec backend python manage.py ledger_backfill
+docker compose -f docker-compose.prod.yml exec backend python manage.py ledger_backfill --check  # "reconciles"
+docker compose -f docker-compose.prod.yml exec backend python manage.py seed_subscription_plans  # links plans to Paystack once keys are set
 ```
+
+Celery beat uses django-celery-beat's DatabaseScheduler, which imports the new
+entries from `CELERY_BEAT_SCHEDULE` on start — no manual schedule setup.
 
 Also needed:
 - Confirm (or change) Phase 1 decisions D1–D7 — see phase-1-ledger-design.md §10.
