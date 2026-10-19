@@ -296,7 +296,17 @@ Every step is a separate, reversible migration with its own tests.
 | 1b | Done | `175e3316` | Invoice/InvoiceLine/CreditNote; credit notes became a separate model (see §3.1 note) |
 | 1c | Done | `1b154ea2` | `rent/services/allocation.py`; `manage.py ledger_backfill [--check]` |
 | 1d | Done | `14e5e5c8` | `rent/services/receipts.py`; org toggles `settings.receipt_sms/receipt_email` |
-| 1e | Next | | |
+| 1e | Done | `d994901a` | Notice period, lease end, proration (D6), `RecurringCharge` |
+| 1f | Done | `3282416e` | `rent/services/reminders.py`, `ReminderLog` |
+| 1g | Done | `4fd190f4` | `rent/services/penalties.py`, `PenaltyPolicy`, task 01:15 |
+| 1h | Done | `b0c392ce` | `rent/services/deposits.py`, `DepositSettlement` |
+| 1i | Done | `fb9d0ee0` | H4–H6; reconciliation task every 15 min; `/rent/payments/<id>/reverse/` |
+| 1j | Done | `3ab71c12` | `rent/services/utilities.py`, `MeterReading`, rates in `Property.settings` |
+| infra | Done | `a658e937`, `590b4123` | PostgreSQL FOR UPDATE+DISTINCT bug; broken prod DB OPTIONS; per-request disconnect middleware removed; CI now really runs on PostgreSQL |
+| frontend | In progress | | |
+
+Backend: 349 tests pass on SQLite and on PostgreSQL 15. Migrations verified
+on both against pre-Phase-1 data (`rent.0002_invoice` data step).
 
 **Deploy steps once merged:** `migrate` → `manage.py ledger_backfill` →
 `manage.py ledger_backfill --check` (must print "reconciles").
