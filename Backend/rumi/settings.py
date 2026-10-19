@@ -83,7 +83,6 @@ AUTH_USER_MODEL = 'accounts.User'
 # Performance-optimized middleware
 MIDDLEWARE = [
     'rumi.middleware.SecurityHeadersMiddleware',
-    'rumi.middleware.DatabaseConnectionMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -144,6 +143,7 @@ DATABASES = get_performance_settings().get('DATABASES', {
         'HOST': os.getenv('DB_HOST', ''),
         'PORT': os.getenv('DB_PORT', ''),
         'CONN_MAX_AGE': 60,  # Persistent connections
+        'CONN_HEALTH_CHECKS': True,
         'ATOMIC_REQUESTS': False,  # Performance optimization
         'AUTOCOMMIT': True,
     }

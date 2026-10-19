@@ -27,17 +27,17 @@ PERFORMANCE_DATABASES = {
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '5432'),
         
-        # Connection Pooling (for PostgreSQL)
+        # Only real libpq parameters may go here — psycopg2 rejects unknown
+        # keys ("invalid connection option MAX_CONNS") and every connection
+        # fails. Server-side timeouts are passed through `options`.
         'OPTIONS': {
-            'MAX_CONNS': int(os.getenv('DB_MAX_CONNS', '100')),
-            'MIN_CONNS': int(os.getenv('DB_MIN_CONNS', '5')),
             'connect_timeout': 10,
-            'statement_timeout': 30000,  # 30 seconds
-            'lock_timeout': 5000,         # 5 seconds
+            'options': '-c statement_timeout=30000 -c lock_timeout=5000',  # 30s / 5s
         },
         
         # Connection settings
         'CONN_MAX_AGE': 60,  # Persistent connections
+        'CONN_HEALTH_CHECKS': True,  # Verify a reused connection before each request
         'ATOMIC_REQUESTS': False,  # Disable for performance (enable per-view as needed)
         'AUTOCOMMIT': True,
     }
