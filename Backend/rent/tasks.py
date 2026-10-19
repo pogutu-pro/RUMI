@@ -48,33 +48,15 @@ def deliver_receipt_task(receipt_id):
 @shared_task(name='rent.tasks.send_rent_due_reminders')
 def send_rent_due_reminders():
     """
-    Daily: remind tenants whose charge is due within 3 days or already overdue,
-    at most once per charge (RentCharge.reminder_sent_at guards against repeats).
+    Daily: send each due step of every organization's EscalationPolicy
+    reminder schedule — before due, on the due date, overdue follow-ups, and
+    caretaker/landlord escalations — each at most once per invoice.
     """
-    from datetime import date, timedelta
+    from rent.services.reminders import ReminderService
 
-    from django.utils import timezone
-
-    from rent.models import RentCharge
-    from rent.services.notifications import send_rent_due_reminder
-
-    today = date.today()
-    horizon = today + timedelta(days=3)
-
-    charges = RentCharge.objects.filter(
-        status__in=['due', 'partially_paid', 'overdue'],
-        due_date__lte=horizon,
-        reminder_sent_at__isnull=True,
-    ).select_related('tenant', 'unit')
-
-    sent = 0
-    for charge in charges:
-        send_rent_due_reminder(charge)
-        RentCharge.objects.filter(pk=charge.pk).update(reminder_sent_at=timezone.now())
-        sent += 1
-
-    logger.info('RumiaRent rent reminders sent: %s', sent)
-    return {'sent': sent}
+    counts = ReminderService.run()
+    logger.info('RumiaRent reminders: %s sent, %s stale steps skipped', counts['sent'], counts['skipped'])
+    return counts
 
 
 @shared_task(name='rent.tasks.escalate_overdue_to_next_of_kin')

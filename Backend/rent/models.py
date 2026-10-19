@@ -106,7 +106,7 @@ class Invoice(models.Model):
     is_disputed = models.BooleanField(default=False)
     currency = models.CharField(max_length=3, default='KES')
     notes = models.TextField(blank=True, default='')
-    reminder_sent_at = models.DateTimeField(null=True, blank=True)
+    reminder_sent_at = models.DateTimeField(null=True, blank=True)  # Deprecated: superseded by ReminderLog.
     next_of_kin_notified_at = models.DateTimeField(null=True, blank=True)
 
     created_at = models.DateTimeField(default=timezone.now)
@@ -472,3 +472,29 @@ class RecurringCharge(models.Model):
         return self.is_active and self.start_date <= period_end and (
             self.end_date is None or self.end_date >= period_start
         )
+
+
+class ReminderLog(models.Model):
+    """
+    One row per reminder step per invoice — guarantees each step of the
+    organization's EscalationPolicy schedule is sent at most once.
+    `skipped` marks earlier steps passed over because a later one was due
+    (e.g. after downtime) so they are never sent late.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='reminder_logs')
+    reminder_key = models.CharField(max_length=40)
+    channels = models.JSONField(default=list, blank=True)
+    skipped = models.BooleanField(default=False)
+    sent_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'rent_reminderlog'
+        ordering = ['sent_at']
+        constraints = [
+            models.UniqueConstraint(fields=['invoice', 'reminder_key'], name='uniq_reminder_step_per_invoice'),
+        ]
+
+    def __str__(self):
+        return f'{self.invoice.number} {self.reminder_key}{" (skipped)" if self.skipped else ""}'
