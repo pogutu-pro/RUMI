@@ -18,6 +18,8 @@ prior context.
 | [phase-1-ledger-design.md](phase-1-ledger-design.md) | Phase 1 design (invoices, double-entry journal, tenant credit, receipts, penalties, deposits, reminders) — **draft, needs decisions D1–D7** |
 | [eazzyrent-parity.md](eazzyrent-parity.md) | Competitor comparison, target architecture, and phased roadmap |
 | [bank-integration.md](bank-integration.md) | What is required to connect to M-Pesa (Daraja C2B) and Kenyan banks |
+| [phase-2-paybill-design.md](phase-2-paybill-design.md) | Phase 2: M-Pesa paybill collection |
+| [phase-3a-statements.md](phase-3a-statements.md) | Phase 3a: expenses and landlord statements |
 
 ## Current status
 
@@ -26,7 +28,8 @@ prior context.
 | 0 | Critical bug fixes (C1–C5) | **Done** — commit `b2cea1f1` on branch `fix/payments-phase-0` (not pushed/merged) |
 | 1 | Ledger core: general invoices, receipts, penalties, deposits, tenant credit, utilities | **Implemented** on branch `feature/phase-1-ledger` (local, not pushed) using the *recommended* D1–D7 — owner to confirm |
 | 2 | M-Pesa paybill (Daraja C2B) collection + auto-matching + unmatched queue | **Implemented** on branch `feature/phase-2-paybill` (local) — not yet tested against Safaricom |
-| 3 | Agency → many landlords, commissions, landlord statements, expenses | Not started |
+| 3a | Expenses + landlord statements (single landlord) | **Implemented** on branch `feature/phase-3-statements` (local) |
+| 3b | Agency → many property owners, commissions, owner remittance | Not started |
 | 4 | Bank IPN integrations (bank by bank) | Not started |
 | 5 | Disbursements, full accounting reports | Not started |
 
@@ -40,14 +43,15 @@ the owner's explicit OK. Branches (each builds on the previous):
 1. `fix/payments-phase-0` — critical fixes C1–C5.
 2. `feature/phase-1-ledger` — Phase 1 backend + frontend, PostgreSQL fixes.
 3. `feature/phase-2-paybill` — M-Pesa paybill collection + stale auth test fix.
+4. `feature/phase-3-statements` — expenses and landlord statements.
 
 The top branch contains everything below it, so one PR is enough.
 
 To ship:
 
 ```bash
-git push -u origin fix/payments-phase-0 feature/phase-1-ledger feature/phase-2-paybill
-gh pr create --base main --head feature/phase-2-paybill   # contains phases 0 and 1 too
+git push -u origin fix/payments-phase-0 feature/phase-1-ledger feature/phase-2-paybill feature/phase-3-statements
+gh pr create --base main --head feature/phase-3-statements   # contains phases 0, 1 and 2 too
 # after CI is green (CI now really runs on PostgreSQL):
 gh pr merge --merge          # a push to main auto-deploys via webhook/
 # Migrations run automatically (Backend/entrypoint.sh). Then, on the server:

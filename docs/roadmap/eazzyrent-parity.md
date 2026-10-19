@@ -32,11 +32,11 @@ in-app channel.
 | Arrears control (reminders, demand notes, quit notices) | Yes | **Reminders + escalations done**; demand notes / quit notices not yet | 1 |
 | Deposits held and refunded | Yes | **Done:** held as liability, move-out settlement, refund recorded | 1 |
 | Tenant credit / advance payments | Yes | **Done:** kept and auto-applied | 1 |
-| Landlord statements | Yes | No | 3 |
+| Landlord statements | Yes | **Done (3a):** monthly statement per org/property, PDF | 3 |
 | Landlord remittance, advances, loans | Yes | Paystack split only | 3, 5 |
 | Agent commissions | Yes | No agent model | 3 |
-| Expenses / suppliers | Yes | No | 3 |
-| Trial balance / P&L / balance sheet | Yes | Income summary only | 5 |
+| Expenses / suppliers | Yes | **Expenses done (3a)**; supplier records not yet | 3 |
+| Trial balance / P&L / balance sheet | Yes | Double-entry journal in place; statement shows cash + accrual; formal reports not yet | 5 |
 | Bulk B2B/B2C disbursements | Yes | No | 5 |
 | USSD | Yes | No — **out of scope for now** | — |
 | Tenant/landlord portals | Yes | Yes | — |

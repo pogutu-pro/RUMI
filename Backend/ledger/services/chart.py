@@ -17,7 +17,21 @@ SERVICE_CHARGE_INCOME = '4010'
 UTILITY_INCOME = '4020'
 PENALTY_INCOME = '4100'
 OTHER_INCOME = '4900'
+REPAIRS_AND_MAINTENANCE = '5000'
+PROPERTY_UTILITIES = '5100'
+SECURITY_AND_CLEANING = '5200'
+MANAGEMENT_FEES = '5300'
+INSURANCE = '5400'
+RATES_AND_TAXES = '5500'
+OTHER_EXPENSES = '5800'
 WAIVERS_AND_DISCOUNTS = '5900'
+
+CHANNEL_ACCOUNTS_CODES = (CASH_ON_HAND, BANK, MPESA_PAYBILL, PAYSTACK_CLEARING)
+INCOME_CODES = (RENT_INCOME, SERVICE_CHARGE_INCOME, UTILITY_INCOME, PENALTY_INCOME, OTHER_INCOME)
+EXPENSE_CODES = (
+    REPAIRS_AND_MAINTENANCE, PROPERTY_UTILITIES, SECURITY_AND_CLEANING, MANAGEMENT_FEES,
+    INSURANCE, RATES_AND_TAXES, OTHER_EXPENSES,
+)
 
 DEFAULT_ACCOUNTS = [
     (CASH_ON_HAND, 'Cash on hand', 'asset'),
@@ -32,6 +46,13 @@ DEFAULT_ACCOUNTS = [
     (UTILITY_INCOME, 'Utility income', 'income'),
     (PENALTY_INCOME, 'Penalty income', 'income'),
     (OTHER_INCOME, 'Other income', 'income'),
+    (REPAIRS_AND_MAINTENANCE, 'Repairs and maintenance', 'expense'),
+    (PROPERTY_UTILITIES, 'Utilities (paid by landlord)', 'expense'),
+    (SECURITY_AND_CLEANING, 'Security and cleaning', 'expense'),
+    (MANAGEMENT_FEES, 'Management fees', 'expense'),
+    (INSURANCE, 'Insurance', 'expense'),
+    (RATES_AND_TAXES, 'Land rates and taxes', 'expense'),
+    (OTHER_EXPENSES, 'Other expenses', 'expense'),
     (WAIVERS_AND_DISCOUNTS, 'Waivers and discounts', 'expense'),
 ]
 

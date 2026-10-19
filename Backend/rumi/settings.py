@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     'rent',
     'ledger',
     'paybill',
+    'accounting',
     'audit',
     'billing',
     'support',

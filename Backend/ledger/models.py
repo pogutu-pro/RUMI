@@ -64,6 +64,7 @@ class JournalEntry(models.Model):
         ('payment', 'Payment'),
         ('allocation', 'Allocation'),
         ('deposit_settlement', 'Deposit Settlement'),
+        ('expense', 'Expense'),
         ('reversal', 'Reversal'),
         ('opening_balance', 'Opening Balance'),
         ('manual', 'Manual'),
