@@ -81,9 +81,9 @@ class TenancySerializer(serializers.ModelSerializer):
             'tenant_name', 'unit_number',
             'start_date', 'end_date', 'move_in_date', 'move_out_date',
             'monthly_rent', 'deposit', 'rent_due_day', 'grace_period_days', 'prorate_final_period',
-            'status', 'renewal_notes', 'notes', 'created_at', 'updated_at',
+            'payment_reference', 'status', 'renewal_notes', 'notes', 'created_at', 'updated_at',
         ]
-        read_only_fields = ['id', 'organization', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'organization', 'payment_reference', 'created_at', 'updated_at']
 
 
 class TenantProfileSerializer(serializers.ModelSerializer):

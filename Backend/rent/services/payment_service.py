@@ -275,6 +275,19 @@ class PaymentService:
 
     @classmethod
     @transaction.atomic
+    def settle_received(cls, payment: Payment, created_by=None, notify: bool = True) -> Payment:
+        """
+        Book a payment already confirmed by an external channel (M-Pesa paybill,
+        bank notification): ledger, oldest-first allocation, credit, receipt.
+        """
+        if payment.status != 'success':
+            raise ValueError('Only a confirmed payment can be settled')
+        cls._receive_and_allocate(payment, None, created_by=created_by, notify=notify)
+        payment.refresh_from_db()
+        return payment
+
+    @classmethod
+    @transaction.atomic
     def record_manual_payment(
         cls,
         payment: Payment,

@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'tenants',
     'rent',
     'ledger',
+    'paybill',
     'audit',
     'billing',
     'support',
@@ -253,6 +254,15 @@ PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
 PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
 PAYSTACK_WEBHOOK_SECRET = os.getenv('PAYSTACK_WEBHOOK_SECRET')
 PAYSTACK_ENV = os.getenv('PAYSTACK_ENV', 'test')  # 'test' or 'live'
+
+# M-Pesa paybill collection (Daraja C2B) — docs/roadmap/phase-2-paybill-design.md
+# Comma-separated Safaricom callback IPs; empty = no IP check (token + shortcode still required).
+MPESA_CALLBACK_ALLOWED_IPS = [ip for ip in os.getenv('MPESA_CALLBACK_ALLOWED_IPS', '').split(',') if ip.strip()]
+# Only enable behind a proxy you control that sets X-Forwarded-For.
+MPESA_TRUST_X_FORWARDED_FOR = os.getenv('MPESA_TRUST_X_FORWARDED_FOR', 'False').lower() == 'true'
+DARAJA_C2B_REGISTER_PATH = os.getenv('DARAJA_C2B_REGISTER_PATH', '/mpesa/c2b/v2/registerurl')
+# Fernet key for stored third-party credentials (paybill/crypto.py). Set in production.
+FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY', '')
 
 # Billing Configuration — days a past_due subscription (failed renewal) has
 # before billing.tasks.process_grace_period_expirations suspends it.
