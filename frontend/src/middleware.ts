@@ -59,6 +59,7 @@ const AUTH_ROUTES = new Set([
 
 const PUBLIC_PREFIXES = [
   '/blog',
+  '/rentals',
   '/hostels',
   '/legal',
   '/verify-email',

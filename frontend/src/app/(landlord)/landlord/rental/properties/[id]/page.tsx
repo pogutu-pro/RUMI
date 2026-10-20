@@ -15,6 +15,7 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Switch } from '@/components/ui/switch';
 import { useProperty, useUnits, useCreateUnit, useUpdateUnit } from '@/features/rental/hooks/use-rental';
 import { GateBanner } from '@/features/rental/components/gate-banner';
 import { isGateRejection } from '@/lib/api/gate';
@@ -270,6 +271,7 @@ export default function PropertyDetailPage() {
               <TableHead>Type</TableHead>
               <TableHead>Rent</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead title="Shown on the public RumiaRent rentals page while vacant">Advertise</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -293,6 +295,14 @@ export default function PropertyDetailPage() {
                       <Pencil className="h-4 w-4" />
                     </Button>
                   </div>
+                </TableCell>
+                <TableCell>
+                  <Switch
+                    checked={u.is_listed !== false}
+                    disabled={updateUnit.isPending}
+                    onCheckedChange={(v) => updateUnit.mutate({ id: u.id, payload: { is_listed: v } })}
+                    aria-label={`Advertise unit ${u.unit_number} while vacant`}
+                  />
                 </TableCell>
               </TableRow>
             ))}

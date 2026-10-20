@@ -2,44 +2,50 @@
 
 import * as React from 'react';
 import {
-  LayoutDashboard,
+  Briefcase,
   Building2,
-  Users,
-  FileText,
-  Wallet,
+  Calculator,
   CreditCard,
-  LifeBuoy,
+  FileSpreadsheet,
+  FileText,
+  Gavel,
   HardHat,
+  LayoutDashboard,
+  LifeBuoy,
+  Megaphone,
+  Receipt,
+  Settings2,
   SlidersHorizontal,
   Smartphone,
-  FileSpreadsheet,
-  Receipt,
-  Briefcase,
-  Gavel,
-  Calculator,
+  Users,
+  Wallet,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth';
 import { UserRole } from '@/features/auth/stores/auth.types';
-import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import { DashboardShell, type DashboardShellNavItem } from '@/components/dashboard/dashboard-shell';
 import { PayoutPendingBanner } from '@/features/payout/components/payout-pending-banner';
+import { attentionBadges, useAttention } from '@/features/attention/hooks';
 
-const NAV = [
+// Grouped so the sidebar stays scannable (shallow navigation): daily money
+// work first, setup last. Badges show only items that need action now.
+const NAV: DashboardShellNavItem[] = [
   { href: '/landlord/rental', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/landlord/rental/properties', label: 'Properties', icon: Building2 },
-  { href: '/landlord/rental/tenants', label: 'Tenants', icon: Users },
-  { href: '/landlord/rental/caretakers', label: 'Caretakers', icon: HardHat },
-  { href: '/landlord/rental/tenancies', label: 'Tenancies', icon: FileText },
-  { href: '/landlord/rental/rent', label: 'Rent & invoices', icon: Wallet },
-  { href: '/landlord/rental/payments', label: 'Payments', icon: CreditCard },
-  { href: '/landlord/rental/debt', label: 'Debt recovery', icon: Gavel },
-  { href: '/landlord/rental/paybill', label: 'M-Pesa paybill', icon: Smartphone },
-  { href: '/landlord/rental/expenses', label: 'Expenses', icon: Receipt },
-  { href: '/landlord/rental/statements', label: 'Statements', icon: FileSpreadsheet },
-  { href: '/landlord/rental/accounts', label: 'Accounts', icon: Calculator },
-  { href: '/landlord/rental/owners', label: 'Property owners', icon: Briefcase },
-  { href: '/landlord/rental/rules', label: 'Rent rules', icon: SlidersHorizontal },
-  { href: '/landlord/rental/billing', label: 'Billing & Payout', icon: CreditCard },
-  { href: '/landlord/rental/support', label: 'Support', icon: LifeBuoy },
+  { section: 'Money', href: '/landlord/rental/rent', label: 'Rent & invoices', icon: Wallet },
+  { section: 'Money', href: '/landlord/rental/payments', label: 'Payments', icon: CreditCard },
+  { section: 'Money', href: '/landlord/rental/paybill', label: 'M-Pesa paybill', icon: Smartphone },
+  { section: 'Money', href: '/landlord/rental/debt', label: 'Debt recovery', icon: Gavel },
+  { section: 'Money', href: '/landlord/rental/expenses', label: 'Expenses', icon: Receipt },
+  { section: 'Property', href: '/landlord/rental/properties', label: 'Properties & vacancies', icon: Building2 },
+  { section: 'Property', href: '/landlord/rental/tenancies', label: 'Tenancies', icon: FileText },
+  { section: 'Property', href: '/landlord/rental/tenants', label: 'Tenants', icon: Users },
+  { section: 'Property', href: '/landlord/rental/messages', label: 'Messages', icon: Megaphone },
+  { section: 'Reports', href: '/landlord/rental/statements', label: 'Statements', icon: FileSpreadsheet },
+  { section: 'Reports', href: '/landlord/rental/accounts', label: 'Accounts', icon: Calculator },
+  { section: 'Reports', href: '/landlord/rental/owners', label: 'Property owners', icon: Briefcase },
+  { section: 'Settings', href: '/landlord/rental/rules', label: 'Rent rules', icon: SlidersHorizontal },
+  { section: 'Settings', href: '/landlord/rental/caretakers', label: 'Caretakers', icon: HardHat },
+  { section: 'Settings', href: '/landlord/rental/billing', label: 'Billing & payout', icon: Settings2 },
+  { section: 'Settings', href: '/landlord/rental/support', label: 'Support', icon: LifeBuoy },
 ];
 
 /**
@@ -50,11 +56,14 @@ const NAV = [
 export default function RentalLandlordLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+  const { data: attention } = useAttention(!isSuperAdmin);
+  const badges = attentionBadges(attention);
+  const nav = NAV.map((item) => ({ ...item, badge: badges[item.href] }));
 
   return (
     <DashboardShell
       allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]}
-      nav={NAV}
+      nav={nav}
       bannerSlot={!isSuperAdmin ? <PayoutPendingBanner /> : null}
     >
       {children}

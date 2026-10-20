@@ -21,6 +21,17 @@ export interface DashboardShellNavItem {
   href: string;
   label: string;
   icon: LucideIcon;
+  /** Group heading; a heading is shown whenever it changes between items. */
+  section?: string;
+  /** Count shown next to the label (e.g. items needing attention). Hidden when 0. */
+  badge?: number;
+}
+
+/** The nav item for the current page: the longest href that prefixes the path. */
+function activeHref(nav: DashboardShellNavItem[], pathname: string) {
+  return nav
+    .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 }
 
 export interface DashboardShellProps {
@@ -42,11 +53,13 @@ function NavLinks({
   pathname: string;
   onNavigate?: () => void;
 }) {
+  const current = activeHref(nav, pathname);
   return (
-    <nav className="flex flex-1 flex-col gap-1 px-3">
-      {nav.map((item) => {
-        const isActive = pathname === item.href;
+    <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3" aria-label="Main">
+      {nav.map((item, index) => {
+        const isActive = item.href === current;
         const Icon = item.icon;
+        const heading = item.section && item.section !== nav[index - 1]?.section ? item.section : null;
         const link = (
           <Link
             key={item.href}
@@ -60,18 +73,46 @@ function NavLinks({
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground',
             )}
           >
-            <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-            {!collapsed && <span className="truncate">{item.label}</span>}
+            <span className="relative">
+              <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+              {collapsed && !!item.badge && (
+                <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-destructive" aria-hidden="true" />
+              )}
+            </span>
+            {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+            {!collapsed && !!item.badge && (
+              <span
+                className={cn(
+                  'min-w-5 rounded-full px-1.5 text-center text-xs font-semibold',
+                  isActive ? 'bg-primary-foreground/20' : 'bg-destructive text-destructive-foreground',
+                )}
+                aria-label={`${item.badge} need attention`}
+              >
+                {item.badge > 99 ? '99+' : item.badge}
+              </span>
+            )}
           </Link>
         );
 
-        if (!collapsed) return link;
-
-        return (
+        const entry = collapsed ? (
           <Tooltip key={item.href} delayDuration={200}>
             <TooltipTrigger asChild>{link}</TooltipTrigger>
-            <TooltipContent side="right">{item.label}</TooltipContent>
+            <TooltipContent side="right">{item.label}{item.badge ? ` (${item.badge})` : ''}</TooltipContent>
           </Tooltip>
+        ) : link;
+
+        if (!heading) return entry;
+        return (
+          <React.Fragment key={item.href}>
+            {collapsed ? (
+              <div className="mx-2 my-2 border-t" aria-hidden="true" />
+            ) : (
+              <p className="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                {heading}
+              </p>
+            )}
+            {entry}
+          </React.Fragment>
         );
       })}
     </nav>

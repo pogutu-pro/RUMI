@@ -68,6 +68,8 @@ export interface RentalUnit {
   monthly_rent: string;
   deposit: string;
   status: UnitStatus;
+  /** Advertised on the public /rentals page while vacant. */
+  is_listed?: boolean;
   notes: string;
   is_active: boolean;
   created_at: string;
