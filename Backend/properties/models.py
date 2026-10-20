@@ -35,6 +35,14 @@ class Property(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(
+        'agency.PropertyOwner',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='properties',
+        help_text='For agencies: the landlord this property is managed for. Empty = the organization owns it.',
+    )
     organization = models.ForeignKey(
         'organizations.Organization',
         on_delete=models.CASCADE,

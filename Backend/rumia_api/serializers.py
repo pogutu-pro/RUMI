@@ -45,11 +45,18 @@ class PropertySerializer(serializers.ModelSerializer):
     class Meta:
         model = Property
         fields = [
-            'id', 'organization', 'name', 'property_type', 'description',
+            'id', 'organization', 'owner', 'name', 'property_type', 'description',
             'address', 'county', 'city', 'status', 'default_monthly_rent',
             'currency', 'total_units', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'organization', 'created_at', 'updated_at']
+
+    def validate_owner(self, owner):
+        # The owner must belong to the property's organization (agency package).
+        org_id = self.instance.organization_id if self.instance else self.context.get('organization_id')
+        if owner is not None and org_id and owner.organization_id != org_id:
+            raise serializers.ValidationError('That owner belongs to another organization.')
+        return owner
 
 
 class RentalUnitSerializer(serializers.ModelSerializer):

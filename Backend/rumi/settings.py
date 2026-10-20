@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'ledger',
     'paybill',
     'accounting',
+    'agency',
     'audit',
     'billing',
     'support',

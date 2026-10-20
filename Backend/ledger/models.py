@@ -65,6 +65,8 @@ class JournalEntry(models.Model):
         ('allocation', 'Allocation'),
         ('deposit_settlement', 'Deposit Settlement'),
         ('expense', 'Expense'),
+        ('owner_statement', 'Owner Statement'),
+        ('owner_transaction', 'Owner Transaction'),
         ('reversal', 'Reversal'),
         ('opening_balance', 'Opening Balance'),
         ('manual', 'Manual'),
@@ -132,6 +134,9 @@ class JournalLine(models.Model):
     )
     unit = models.ForeignKey(
         'properties.RentalUnit', on_delete=models.PROTECT, null=True, blank=True, related_name='journal_lines',
+    )
+    owner = models.ForeignKey(
+        'agency.PropertyOwner', on_delete=models.PROTECT, null=True, blank=True, related_name='journal_lines',
     )
 
     class Meta:

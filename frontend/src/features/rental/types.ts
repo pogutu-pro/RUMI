@@ -41,6 +41,8 @@ export interface Organization {
 export interface Property {
   id: string;
   organization: string;
+  /** Agency package: the property owner it is managed for (null = the organization owns it). */
+  owner?: string | null;
   name: string;
   property_type: string;
   description: string;

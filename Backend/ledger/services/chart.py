@@ -12,10 +12,13 @@ PAYSTACK_CLEARING = '1030'
 TENANT_RECEIVABLES = '1100'
 DEPOSITS_HELD = '2100'
 TENANT_PREPAYMENTS = '2200'
+OWNER_PAYABLES = '2300'
+OWNER_DISTRIBUTIONS = '3900'
 RENT_INCOME = '4000'
 SERVICE_CHARGE_INCOME = '4010'
 UTILITY_INCOME = '4020'
 PENALTY_INCOME = '4100'
+ADVANCE_FEE_INCOME = '4600'
 OTHER_INCOME = '4900'
 REPAIRS_AND_MAINTENANCE = '5000'
 PROPERTY_UTILITIES = '5100'
@@ -41,10 +44,13 @@ DEFAULT_ACCOUNTS = [
     (TENANT_RECEIVABLES, 'Tenant receivables', 'asset'),
     (DEPOSITS_HELD, 'Tenant deposits held', 'liability'),
     (TENANT_PREPAYMENTS, 'Tenant prepayments (credit)', 'liability'),
+    (OWNER_PAYABLES, 'Due to property owners', 'liability'),
+    (OWNER_DISTRIBUTIONS, 'Owner share of income (distributions)', 'equity'),
     (RENT_INCOME, 'Rent income', 'income'),
     (SERVICE_CHARGE_INCOME, 'Service charge income', 'income'),
     (UTILITY_INCOME, 'Utility income', 'income'),
     (PENALTY_INCOME, 'Penalty income', 'income'),
+    (ADVANCE_FEE_INCOME, 'Owner advance fees', 'income'),
     (OTHER_INCOME, 'Other income', 'income'),
     (REPAIRS_AND_MAINTENANCE, 'Repairs and maintenance', 'expense'),
     (PROPERTY_UTILITIES, 'Utilities (paid by landlord)', 'expense'),

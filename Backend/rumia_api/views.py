@@ -263,7 +263,7 @@ class PropertyListCreateView(RumiaBaseView):
             if gate_error:
                 return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
 
-            serializer = PropertySerializer(data=request.data)
+            serializer = PropertySerializer(data=request.data, context={'organization_id': org.pk})
             serializer.is_valid(raise_exception=True)
             prop = serializer.save(organization=org)
         log_audit('property_created', actor=request.user, organization=org, entity=prop)

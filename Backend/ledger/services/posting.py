@@ -46,7 +46,7 @@ class Leg:
         return cls(account_code, credit=Decimal(amount), description=description, dimensions=dimensions)
 
 
-DIMENSION_KEYS = ('tenancy', 'tenant', 'parent_property', 'unit')
+DIMENSION_KEYS = ('tenancy', 'tenant', 'parent_property', 'unit', 'owner')
 
 
 def rental_dimensions(obj) -> dict:
