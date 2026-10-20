@@ -28,6 +28,10 @@ from rent.models import Invoice, Payment
 ZERO = Decimal('0')
 
 
+def _n(count: int, singular: str, plural: str) -> str:
+    return singular if count == 1 else plural
+
+
 def _kes(value) -> str:
     return f'KES {Decimal(value):,.0f}'
 
@@ -41,7 +45,7 @@ def attention_items(org) -> list[dict]:
             items.append({'key': key, 'tone': tone, 'count': count, 'title': title, 'detail': detail, 'href': href})
 
     unmatched = IncomingTransaction.objects.filter(organization=org, status='unmatched')
-    add('paybill_unmatched', 'urgent', unmatched.count(), 'M-Pesa payments to assign',
+    add('paybill_unmatched', 'urgent', unmatched.count(), _n(unmatched.count(), 'M-Pesa payment to assign', 'M-Pesa payments to assign'),
         'Tenants paid but used an account number we could not match. Their balance stays wrong until you assign them.',
         '/landlord/rental/paybill')
 
@@ -50,42 +54,42 @@ def attention_items(org) -> list[dict]:
     owing = [(t, a) for t, a in owing if a > 0]
     open_cases = set(DebtCase.objects.filter(organization=org).exclude(status='closed').values_list('tenancy_id', flat=True))
     no_case = [t for t, _ in owing if t.pk not in open_cases]
-    add('arrears', 'urgent', len(owing), 'Tenants in arrears',
+    add('arrears', 'urgent', len(owing), _n(len(owing), 'tenant in arrears', 'tenants in arrears'),
         f'{_kes(sum((a for _, a in owing), ZERO))} overdue; {len(no_case)} without a follow-up case. '
         'Reminders already go out automatically.', '/landlord/rental/debt')
 
     promises = DebtCase.objects.filter(organization=org, status='promised', promise_date__lt=today)
-    add('broken_promises', 'warning', promises.count(), 'Broken payment promises',
+    add('broken_promises', 'warning', promises.count(), _n(promises.count(), 'broken payment promise', 'broken payment promises'),
         'Promised payment dates have passed. Follow up or escalate.', '/landlord/rental/debt')
 
     disputed = Invoice.objects.filter(organization=org, is_disputed=True).exclude(status__in=('paid', 'waived'))
-    add('disputes', 'warning', disputed.count(), 'Disputed invoices',
+    add('disputes', 'warning', disputed.count(), _n(disputed.count(), 'disputed invoice', 'disputed invoices'),
         'A tenant says an invoice is wrong. Resolve it or issue a credit note.', '/landlord/rental/rent')
 
     flagged = Payment.objects.filter(organization=org, status='disputed')
-    add('payment_flags', 'warning', flagged.count(), 'Payments needing review',
+    add('payment_flags', 'warning', flagged.count(), _n(flagged.count(), 'payment needs review', 'payments need review'),
         'Paystack settled a different amount than expected, or a chargeback was opened.', '/landlord/rental/payments')
 
     lines = StatementLine.objects.filter(statement__organization=org, status='unmatched')
-    add('reconcile', 'info', lines.count(), 'Statement lines to reconcile',
+    add('reconcile', 'info', lines.count(), _n(lines.count(), 'statement line to reconcile', 'statement lines to reconcile'),
         'Money in your bank/M-Pesa statement that is not yet on a tenant’s account.', '/landlord/rental/accounts')
 
     ending = Tenancy.objects.filter(organization=org, status='active', end_date__gte=today,
                                     end_date__lte=today + timedelta(days=30))
-    add('leases_ending', 'info', ending.count(), 'Leases ending within 30 days',
+    add('leases_ending', 'info', ending.count(), _n(ending.count(), 'lease ends within 30 days', 'leases end within 30 days'),
         'Renew, schedule a rent review, or plan the move-out.', '/landlord/rental/tenancies')
 
     leaving = Tenancy.objects.filter(organization=org, status='notice_period', end_date__lte=today + timedelta(days=14))
-    add('move_outs', 'info', leaving.count(), 'Move-outs in the next 14 days',
+    add('move_outs', 'info', leaving.count(), _n(leaving.count(), 'move-out in the next 14 days', 'move-outs in the next 14 days'),
         'Book the inspection and draft the deposit settlement.', '/landlord/rental/tenancies')
 
     enquiries = ListingEnquiry.objects.filter(organization=org, handled=False)
-    add('enquiries', 'info', enquiries.count(), 'New rental enquiries',
+    add('enquiries', 'info', enquiries.count(), _n(enquiries.count(), 'new rental enquiry', 'new rental enquiries'),
         'People asking about your vacant units.', '/landlord/rental/properties')
 
     owners_due = [o for o in PropertyOwner.objects.filter(organization=org, is_active=True)
                   if OwnerStatementService.balance(o) > 0]
-    add('owners_due', 'info', len(owners_due), 'Owners waiting to be paid',
+    add('owners_due', 'info', len(owners_due), _n(len(owners_due), 'owner waiting to be paid', 'owners waiting to be paid'),
         f'{_kes(sum((OwnerStatementService.balance(o) for o in owners_due), ZERO))} approved but not yet remitted.',
         '/landlord/rental/owners')
 

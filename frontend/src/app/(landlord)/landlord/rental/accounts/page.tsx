@@ -80,7 +80,12 @@ function ReportsTab() {
         <div className="space-y-4">
           {rowTable(data.income, 'Income')}
           {rowTable(data.expenses, 'Expenses')}
-          <p className="text-right text-base font-semibold">Net income {formatKes(data.net_income, { cents: true })}</p>
+          <p className="text-right text-base font-semibold">
+            {Number(data.net_income) < 0 ? 'Net loss' : 'Net income'}{' '}
+            <span className={`tabular-nums ${Number(data.net_income) < 0 ? 'text-destructive' : 'text-success'}`}>
+              {formatKes(data.net_income, { cents: true })}
+            </span>
+          </p>
         </div>
       ) : report === 'balance_sheet' ? (
         <div className="space-y-4">

@@ -26,6 +26,7 @@ class AttentionTests(RumiaTestFixtures):
         items = client.get('/api/v1/attention/').data
         keys = [i['key'] for i in items]
         self.assertEqual(keys[:2], ['paybill_unmatched', 'arrears'])
+        self.assertEqual(items[0]['title'], 'M-Pesa payment to assign')
         arrears = next(i for i in items if i['key'] == 'arrears')
         self.assertIn('KES 22,000', arrears['detail'])
         self.assertEqual(arrears['href'], '/landlord/rental/debt')

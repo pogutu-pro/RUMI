@@ -21,9 +21,11 @@ from properties.models import RentalUnit
 
 
 def listed_units():
+    # Exclude any unit with a current tenancy even if its status flag says
+    # vacant — never advertise a home someone lives in.
     return RentalUnit.objects.filter(
         status='vacant', is_active=True, is_listed=True, parent_property__status='active',
-    ).select_related('parent_property', 'organization')
+    ).exclude(tenancies__status__in=('active', 'notice_period')).select_related('parent_property', 'organization')
 
 
 def listing_data(unit: RentalUnit) -> dict:

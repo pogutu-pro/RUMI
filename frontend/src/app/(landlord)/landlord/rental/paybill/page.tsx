@@ -126,9 +126,9 @@ export default function PaybillPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>When</TableHead>
-                  <TableHead>M-Pesa code</TableHead>
+                  <TableHead className="hidden md:table-cell">M-Pesa code</TableHead>
                   <TableHead>Paid by</TableHead>
-                  <TableHead>Account typed</TableHead>
+                  <TableHead className="hidden md:table-cell">Account typed</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                   <TableHead>Tenant</TableHead>
                   <TableHead />
@@ -137,11 +137,16 @@ export default function PaybillPage() {
               <TableBody>
                 {transactions.map((t) => (
                   <TableRow key={t.id}>
-                    <TableCell>{formatDate(t.trans_time)}</TableCell>
-                    <TableCell className="font-mono text-xs">{t.trans_id}</TableCell>
-                    <TableCell>{t.payer_name || '—'}</TableCell>
-                    <TableCell className="font-mono text-xs">{t.bill_ref_number || '(blank)'}</TableCell>
-                    <TableCell className="text-right">{formatKes(t.amount)}</TableCell>
+                    <TableCell className="whitespace-nowrap">{formatDate(t.trans_time)}</TableCell>
+                    <TableCell className="hidden font-mono text-xs md:table-cell">{t.trans_id}</TableCell>
+                    <TableCell>
+                      {t.payer_name || '—'}
+                      <span className="block font-mono text-xs text-muted-foreground md:hidden">
+                        {t.trans_id} · {t.bill_ref_number || '(blank)'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden font-mono text-xs md:table-cell">{t.bill_ref_number || '(blank)'}</TableCell>
+                    <TableCell className="whitespace-nowrap text-right tabular-nums">{formatKes(t.amount)}</TableCell>
                     <TableCell>
                       {t.tenant_name ? (
                         <span>
@@ -158,7 +163,7 @@ export default function PaybillPage() {
                     </TableCell>
                     <TableCell>
                       {t.status === 'unmatched' && (
-                        <div className="flex gap-1">
+                        <div className="flex flex-wrap gap-1">
                           <Button size="sm" onClick={() => setAssigning(t)}>Assign</Button>
                           <Button size="sm" variant="ghost" onClick={() => setIgnoring(t)}>Not rent</Button>
                         </div>

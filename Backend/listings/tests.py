@@ -3,6 +3,7 @@ from django.core.cache import cache
 from rest_framework.test import APIClient
 
 from listings.models import ListingEnquiry
+from properties.models import RentalUnit
 from rumia_api.tests import RumiaTestFixtures
 
 
@@ -19,6 +20,12 @@ class ListingTests(RumiaTestFixtures):
         self.assertNotIn('phone', data[0])
         self.unit.status = 'occupied'
         self.unit.save()
+        self.assertEqual(self.api.get('/api/v1/listings/').data, [])
+
+    def test_unit_with_current_tenancy_is_never_listed_even_if_flagged_vacant(self):
+        _, tenant = self.create_tenant(self.org)
+        self.create_tenancy(self.org, self.prop, self.unit, tenant)
+        RentalUnit.objects.filter(pk=self.unit.pk).update(status='vacant')  # inconsistent legacy data
         self.assertEqual(self.api.get('/api/v1/listings/').data, [])
 
     def test_unlisted_and_filters(self):

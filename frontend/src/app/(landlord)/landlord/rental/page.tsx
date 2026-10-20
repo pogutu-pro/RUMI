@@ -24,8 +24,8 @@ function StatCard({ label, value, hint, href, action }: {
       <CardHeader className="pb-1">
         <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-1">
-        <p className="text-2xl font-semibold tabular-nums">{value}</p>
+      <CardContent className="space-y-1 p-4 pt-0 sm:p-6 sm:pt-0">
+        <p className="text-xl font-semibold tabular-nums sm:text-2xl">{value}</p>
         {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
         {href && action && (
           <Link href={href} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
@@ -62,7 +62,7 @@ export default function LandlordRentalDashboard() {
         <h1 className="text-xl font-semibold">{greeting()}{user?.first_name ? `, ${user.first_name}` : ''}</h1>
         <p className="text-sm text-muted-foreground">
           {new Date().toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long' })} · {properties.length}{' '}
-          {properties.length === 1 ? 'property' : 'properties'}, {units.length} units
+          {properties.length === 1 ? 'property' : 'properties'}, {units.length} {units.length === 1 ? 'unit' : 'units'}
         </p>
       </div>
 

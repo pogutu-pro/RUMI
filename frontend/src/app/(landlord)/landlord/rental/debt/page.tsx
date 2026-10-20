@@ -45,20 +45,27 @@ export default function DebtRecoveryPage() {
               <TableHead>Tenant</TableHead>
               <TableHead className="text-right">Overdue</TableHead>
               <TableHead>Follow-up</TableHead>
-              <TableHead>Assigned to</TableHead>
+              <TableHead className="hidden sm:table-cell">Assigned to</TableHead>
+              <TableHead className="w-0" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.map((r) => (
               <TableRow key={r.tenancy} className="cursor-pointer" onClick={() => setOpenTenancy(r.tenancy)}>
                 <TableCell>{r.tenant_name}<span className="block text-xs text-muted-foreground">{r.unit_number} · {r.property_name}</span></TableCell>
-                <TableCell className="text-right font-medium text-destructive">{formatKes(r.arrears)}</TableCell>
+                <TableCell className="whitespace-nowrap text-right font-medium tabular-nums text-destructive">{formatKes(r.arrears)}</TableCell>
                 <TableCell>
                   {r.case ? <Badge variant={r.case.status === 'escalated' ? 'destructive' : 'secondary'}>{STATUS_LABEL[r.case.status]}</Badge>
                     : <span className="text-xs text-muted-foreground">No case</span>}
                   {r.case?.promise_date && <span className="block text-xs text-muted-foreground">promised {formatDate(r.case.promise_date)}</span>}
                 </TableCell>
-                <TableCell>{r.case?.assigned_to_name ?? '—'}</TableCell>
+                <TableCell className="hidden sm:table-cell">{r.case?.assigned_to_name ?? '—'}</TableCell>
+                <TableCell>
+                  <Button size="sm" variant={r.case ? 'outline' : 'default'}
+                    onClick={(e) => { e.stopPropagation(); setOpenTenancy(r.tenancy); }}>
+                    {r.case ? 'Update' : 'Follow up'}
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

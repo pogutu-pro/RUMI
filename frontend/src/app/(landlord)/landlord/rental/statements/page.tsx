@@ -62,7 +62,11 @@ export default function StatementsPage() {
             <Tile label="Money received" value={formatKes(s.cash.received_total)} />
             <Tile label="Expenses" value={formatKes(s.cash.expenses_total)} />
             <Tile label="Net cash" value={formatKes(s.cash.net_cash)} strong />
-            <Tile label="Tenants owe (end of month)" value={formatKes(s.owed_closing)} />
+            {Number(s.owed_closing) < 0 ? (
+              <Tile label="Tenants in credit (end of month)" value={formatKes(-Number(s.owed_closing))} />
+            ) : (
+              <Tile label="Tenants owe (end of month)" value={formatKes(s.owed_closing)} />
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
