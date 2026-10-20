@@ -3,16 +3,17 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 from decimal import Decimal
 from typing import Optional
 
-from django.db import models, transaction
-from django.db.models import Sum
+from django.db import transaction
 from django.utils import timezone
 
+from ledger.services.posting import LedgerService
 from organizations.models import PayoutAccount
 from organizations.services.notifications import notify_payout_blocked_attempt
-from rent.models import Payment, PaymentAllocation, RentCharge
+from rent.models import Invoice, Payment
 from rent.providers.base import (
     InitiatePaymentRequest,
     PaymentProviderError,
@@ -20,8 +21,15 @@ from rent.providers.base import (
     VerifyPaymentRequest,
 )
 from rent.providers.paystack import PaystackProvider
+from rent.services.allocation import AllocationError, AllocationService
+from rent.services.receipts import ReceiptService
 
 logger = logging.getLogger(__name__)
+
+
+def _allocation_invoice_id(alloc: dict):
+    # 'rent_charge_id' is the pre-Phase-1 key, still accepted from older callers.
+    return alloc.get('invoice_id') or alloc['rent_charge_id']
 
 
 class PaymentService:
@@ -212,6 +220,17 @@ class PaymentService:
             payment.save(update_fields=['status', 'metadata', 'updated_at'])
             return payment
 
+        mismatch = cls._settlement_mismatch(payment, result)
+        if mismatch:
+            # Audit H3: never credit a tenant with more than the provider
+            # actually settled. Flag for a human instead of allocating.
+            payment.status = 'disputed'
+            payment.notes = mismatch
+            payment.provider_reference = result.provider_reference or payment.provider_reference
+            payment.save(update_fields=['status', 'notes', 'provider_reference', 'metadata', 'updated_at'])
+            logger.error('Payment %s settlement mismatch: %s', payment.internal_reference, mismatch)
+            return payment
+
         payment.status = 'success'
         payment.provider_reference = result.provider_reference or payment.provider_reference
         payment.paid_at = timezone.now()
@@ -219,16 +238,52 @@ class PaymentService:
             'status', 'provider_reference', 'paid_at', 'metadata', 'updated_at',
         ])
 
+        cls._receive_and_allocate(payment, allocations)
+        payment.refresh_from_db()
+        return payment
+
+    @staticmethod
+    def _settlement_mismatch(payment: Payment, result) -> str:
+        if result.amount is not None and result.amount != payment.amount:
+            return f'Provider settled {result.amount} but {payment.amount} was expected'
+        currency = (result.raw_response.get('data') or {}).get('currency') if isinstance(result.raw_response, dict) else None
+        if currency and currency != payment.currency:
+            return f'Provider settled in {currency} but {payment.currency} was expected'
+        return ''
+
+    @classmethod
+    def _receive_and_allocate(
+        cls, payment: Payment, allocations: Optional[list[dict]], created_by=None, notify: bool = True,
+    ):
+        """
+        Book the payment as tenant credit, then allocate it: explicitly when
+        allocations are given, otherwise oldest invoice first. Anything left
+        over stays as credit for future invoices (audit H1).
+        """
+        AllocationService.receive(payment, created_by=created_by)
         if allocations:
             for alloc in allocations:
-                cls._create_allocation(
+                AllocationService.allocate(
                     payment,
-                    alloc['rent_charge_id'],
+                    Invoice.objects.get(pk=_allocation_invoice_id(alloc)),
                     Decimal(str(alloc['amount'])),
+                    created_by=created_by,
                 )
         elif payment.tenancy_id:
-            cls._auto_allocate(payment)
+            AllocationService.auto_allocate(payment, created_by=created_by)
+        ReceiptService.issue(payment, notify=notify)
 
+    @classmethod
+    @transaction.atomic
+    def settle_received(cls, payment: Payment, created_by=None, notify: bool = True) -> Payment:
+        """
+        Book a payment already confirmed by an external channel (M-Pesa paybill,
+        bank notification): ledger, oldest-first allocation, credit, receipt.
+        """
+        if payment.status != 'success':
+            raise ValueError('Only a confirmed payment can be settled')
+        cls._receive_and_allocate(payment, None, created_by=created_by, notify=notify)
+        payment.refresh_from_db()
         return payment
 
     @classmethod
@@ -238,8 +293,12 @@ class PaymentService:
         payment: Payment,
         allocations: Optional[list[dict]] = None,
         verified_by=None,
+        notify: bool = True,
     ) -> Payment:
-        """Record a cash/bank payment without external provider verification."""
+        """
+        Record a cash/bank payment without external provider verification.
+        `notify=False` issues the receipt without sending it (historical entries).
+        """
         payment.status = 'success'
         payment.provider = 'manual'
         payment.payment_method = payment.payment_method or 'cash'
@@ -247,21 +306,21 @@ class PaymentService:
         payment.verified_by = verified_by
         payment.save()
 
-        if allocations:
-            for alloc in allocations:
-                cls._create_allocation(
-                    payment,
-                    alloc['rent_charge_id'],
-                    Decimal(str(alloc['amount'])),
-                )
-        elif payment.tenancy_id:
-            cls._auto_allocate(payment)
+        try:
+            cls._receive_and_allocate(payment, allocations, created_by=verified_by, notify=notify)
+        except AllocationError as exc:
+            # Re-raised as ValueError for existing callers; the whole
+            # transaction (including the payment row) rolls back.
+            raise ValueError(str(exc)) from exc
+        payment.refresh_from_db()
         return payment
 
     @classmethod
     @transaction.atomic
-    def reverse_payment(cls, payment: Payment, reversed_by=None) -> Payment:
-        """Reverse a payment and restore outstanding balances on charges."""
+    def reverse_payment(cls, payment: Payment, reversed_by=None, reason: str = '') -> Payment:
+        """Reverse a payment: undo its ledger postings and restore outstanding balances."""
+        Payment.objects.select_for_update().get(pk=payment.pk)  # lock the row
+        payment.refresh_from_db()  # update the caller's instance in place
         if payment.status != 'success':
             raise ValueError('Only successful payments can be reversed')
 
@@ -270,51 +329,97 @@ class PaymentService:
         # payment's allocations must already be excluded before recalculating,
         # or the recompute silently undoes the reversal.
         payment.status = 'reversed'
+        payment.unapplied_amount = Decimal('0.00')
         payment.metadata = {
             **payment.metadata,
             'reversed_at': timezone.now().isoformat(),
             'reversed_by': str(reversed_by.id) if reversed_by else None,
+            'reversal_reason': reason,
         }
-        payment.save(update_fields=['status', 'metadata', 'updated_at'])
+        payment.save(update_fields=['status', 'unapplied_amount', 'metadata', 'updated_at'])
 
-        for allocation in payment.allocations.select_related('rent_charge'):
-            charge = allocation.rent_charge
+        today = timezone.now().date()
+        allocations = list(payment.allocations.select_related('invoice'))
+        for entry in [
+            *LedgerService.entries_for('payment', payment.pk),
+            *[e for a in allocations for e in LedgerService.entries_for('allocation', a.pk)],
+        ]:
+            if not hasattr(entry, 'reversed_by'):
+                LedgerService.reverse(
+                    entry, today, memo=f'Reversal of payment {payment.internal_reference}', created_by=reversed_by,
+                )
+
+        for allocation in allocations:
+            charge = allocation.invoice
             charge.recalculate_status()
             charge.save(update_fields=['amount_paid', 'status', 'updated_at'])
 
         return payment
 
-    @classmethod
-    def _create_allocation(cls, payment: Payment, rent_charge_id, amount: Decimal):
-        charge = RentCharge.objects.select_for_update().get(id=rent_charge_id)
-        if payment.status != 'success':
-            raise ValueError('Cannot allocate non-successful payment')
+    # --- reconciliation, refunds and disputes (audit H4/H5) -----------------
 
-        PaymentAllocation.objects.create(
-            payment=payment,
-            rent_charge=charge,
-            amount=amount,
+    RECONCILE_AFTER = timedelta(minutes=10)
+    ABANDON_AFTER = timedelta(hours=24)
+
+    @classmethod
+    def reconcile_processing(cls) -> dict:
+        now = timezone.now()
+        counts = {'checked': 0, 'settled': 0, 'failed': 0, 'abandoned': 0}
+        stale = Payment.objects.filter(
+            status='processing', provider='paystack', created_at__lt=now - cls.RECONCILE_AFTER,
         )
-        paid = charge.payment_allocations.filter(
-            payment__status='success'
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-        charge.amount_paid = paid
-        charge.recalculate_status()
-        charge.save(update_fields=['amount_paid', 'status', 'updated_at'])
+        for payment in stale:
+            counts['checked'] += 1
+            try:
+                payment = cls.verify_and_allocate(payment, raw_callback={'source': 'reconciliation'})
+            except Exception:
+                logger.exception('Reconciliation failed for payment %s', payment.pk)
+                continue
+            if payment.status == 'success':
+                counts['settled'] += 1
+            elif payment.status == 'failed':
+                counts['failed'] += 1
+            elif payment.status == 'processing' and payment.created_at < now - cls.ABANDON_AFTER:
+                Payment.objects.filter(pk=payment.pk, status='processing').update(
+                    status='failed', notes='Abandoned: checkout not completed within 24 hours',
+                    updated_at=now,
+                )
+                counts['abandoned'] += 1
+        return counts
 
     @classmethod
-    def _auto_allocate(cls, payment: Payment):
-        remaining = payment.amount
-        charges = RentCharge.objects.filter(
-            tenancy=payment.tenancy,
-            status__in=['due', 'partially_paid', 'overdue'],
-        ).order_by('due_date')
+    def handle_refund(cls, payment: Payment, refund_amount_major: Optional[Decimal], payload: dict) -> str:
+        """
+        Paystack refunded (part of) a payment. A full refund reverses it; a
+        partial refund is flagged for the landlord to resolve, never guessed.
+        """
+        payment.refresh_from_db()
+        if payment.status != 'success':
+            return 'ignored'
+        if refund_amount_major is None or refund_amount_major >= payment.amount:
+            cls.reverse_payment(payment, reason='Refunded through Paystack')
+            return 'reversed'
+        payment.metadata = {
+            **payment.metadata,
+            'partial_refunds': [*payment.metadata.get('partial_refunds', []), {
+                'amount': str(refund_amount_major), 'at': timezone.now().isoformat(),
+            }],
+        }
+        payment.notes = f'{payment.notes}\nPartial refund of {refund_amount_major} via Paystack — review.'.strip()
+        payment.save(update_fields=['metadata', 'notes', 'updated_at'])
+        return 'flagged'
 
-        for charge in charges:
-            if remaining <= 0:
-                break
-            outstanding = charge.outstanding
-            alloc_amount = min(remaining, outstanding)
-            if alloc_amount > 0:
-                cls._create_allocation(payment, charge.id, alloc_amount)
-                remaining -= alloc_amount
+    @classmethod
+    def flag_dispute(cls, payment: Payment, event: str, payload: dict) -> str:
+        """Record a chargeback event on the payment; money only moves when a person reverses it."""
+        payment.refresh_from_db()
+        payment.metadata = {
+            **payment.metadata,
+            'disputes': [*payment.metadata.get('disputes', []), {
+                'event': event, 'at': timezone.now().isoformat(),
+                'status': (payload.get('data') or {}).get('status', ''),
+                'resolution': (payload.get('data') or {}).get('resolution', ''),
+            }],
+        }
+        payment.save(update_fields=['metadata', 'updated_at'])
+        return 'flagged'

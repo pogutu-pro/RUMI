@@ -35,6 +35,14 @@ class Property(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(
+        'agency.PropertyOwner',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='properties',
+        help_text='For agencies: the landlord this property is managed for. Empty = the organization owns it.',
+    )
     organization = models.ForeignKey(
         'organizations.Organization',
         on_delete=models.CASCADE,
@@ -205,6 +213,9 @@ class RentalUnit(models.Model):
     amenities = models.JSONField(default=list, blank=True)
     images = models.JSONField(default=list, blank=True)
     is_active = models.BooleanField(default=True)
+    is_listed = models.BooleanField(
+        default=True, help_text='Advertise on the public RumiaRent listings while vacant (removed automatically once let).',
+    )
 
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -279,6 +290,14 @@ class Tenancy(models.Model):
         help_text='Day of month rent is due (1-28)',
     )
     grace_period_days = models.PositiveIntegerField(default=5)
+    prorate_final_period = models.BooleanField(
+        default=True,
+        help_text='Bill the last, partial month by days stayed (true) or as a full month (false).',
+    )
+    payment_reference = models.CharField(
+        max_length=20, blank=True, default='',
+        help_text='Account number tenants type when paying by paybill. Unique per organization.',
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     renewal_notes = models.TextField(blank=True, default='')
     notes = models.TextField(blank=True, default='')
@@ -308,10 +327,47 @@ class Tenancy(models.Model):
                 condition=models.Q(status='active'),
                 name='unique_active_tenancy_per_unit',
             ),
+            models.UniqueConstraint(
+                fields=['organization', 'payment_reference'],
+                condition=~models.Q(payment_reference=''),
+                name='uniq_tenancy_payment_reference_per_org',
+            ),
         ]
 
     def __str__(self):
         return f'{self.tenant.full_name} @ {self.unit.unit_number} ({self.status})'
+
+    def save(self, *args, **kwargs):
+        if not self.payment_reference and self.organization_id and self.unit_id:
+            self.payment_reference = next_payment_reference(self)
+            if kwargs.get('update_fields') is not None:
+                kwargs['update_fields'] = list({*kwargs['update_fields'], 'payment_reference'})
+        super().save(*args, **kwargs)
+
+
+def normalize_payment_reference(value: str) -> str:
+    """Uppercase letters and digits only — how references are stored and matched."""
+    return ''.join(ch for ch in (value or '').upper() if ch.isalnum())
+
+
+def next_payment_reference(tenancy) -> str:
+    """
+    The unit number (normalized), or — when another tenancy in the organization
+    already uses it (e.g. a re-let unit) — the unit number plus X2, X3…, so a
+    former tenant's payment can never land on the new tenant's account.
+    """
+    base = normalize_payment_reference(tenancy.unit.unit_number)[:14] or 'T'
+    taken = set(
+        Tenancy.objects.filter(organization_id=tenancy.organization_id, payment_reference__startswith=base)
+        .exclude(pk=tenancy.pk)
+        .values_list('payment_reference', flat=True)
+    )
+    if base not in taken:
+        return base
+    n = 2
+    while f'{base}X{n}' in taken:
+        n += 1
+    return f'{base}X{n}'
 
 
 class CaretakerPropertyAssignment(models.Model):

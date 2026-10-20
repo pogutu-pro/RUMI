@@ -26,6 +26,7 @@ from organizations.models import Organization, OrganizationMembership
 from properties.models import CaretakerPropertyAssignment, Property, RentalUnit, Tenancy
 from rent.models import Payment, RentCharge
 from rent.services.income_flow import IncomeFlowService
+from rent.services.deposits import DepositService
 from rent.services.payment_service import PaymentService
 from rent.services.rent_generation import RentChargeGenerationService
 from rumia_api.serializers import (
@@ -294,7 +295,7 @@ class PropertyListCreateView(RumiaBaseView):
             if gate_error:
                 return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
 
-            serializer = PropertySerializer(data=request.data)
+            serializer = PropertySerializer(data=request.data, context={'organization_id': org.pk})
             serializer.is_valid(raise_exception=True)
             prop = serializer.save(organization=org)
         log_audit('property_created', actor=request.user, organization=org, entity=prop)
@@ -461,6 +462,13 @@ class TenancyListCreateView(RumiaBaseView):
         if role not in ('landlord', 'super_admin', 'caretaker'):
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
+        if request.data.get('deposit_handling', 'invoice') not in ('invoice', 'already_paid', 'none'):
+            return Response({'deposit_handling': 'Use invoice, already_paid or none.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if request.data.get('deposit_payment_method', 'cash') not in ('cash', 'bank_transfer', 'mpesa_paybill', 'other'):
+            return Response({'deposit_payment_method': 'Use cash, bank_transfer, mpesa_paybill or other.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
         with transaction.atomic():
             # WR-05: missing/unknown/deleted `unit` or `tenant` ids
             # previously raised KeyError/DoesNotExist -> opaque 500;
@@ -499,6 +507,17 @@ class TenancyListCreateView(RumiaBaseView):
             )
             _sync_unit_status(tenancy)
 
+            # Deposit for a new tenancy: invoice it (default), record it as
+            # already paid, or skip ('none').
+            deposit_handling = request.data.get('deposit_handling', 'invoice')
+            if tenancy.deposit > 0 and deposit_handling == 'invoice':
+                DepositService.issue_invoice(tenancy, created_by=request.user)
+            elif tenancy.deposit > 0 and deposit_handling == 'already_paid':
+                DepositService.record_held(
+                    tenancy, tenancy.deposit, method=request.data.get('deposit_payment_method', 'cash'),
+                    created_by=request.user,
+                )
+
         log_audit('tenancy_created', actor=request.user, organization=unit.organization, entity=tenancy)
         # Outside the transaction — this is the point a tenant is actually tied to a
         # property, so it's when they should get their account + login invite.
@@ -511,7 +530,7 @@ class TenancyDetailView(RumiaBaseView):
 
     # Status transitions go through TenancyTerminateView, not a generic PATCH,
     # so the unit-vacancy/one-active-tenancy side effects always happen correctly.
-    PATCHABLE_FIELDS = ('monthly_rent', 'deposit', 'rent_due_day', 'grace_period_days',
+    PATCHABLE_FIELDS = ('monthly_rent', 'deposit', 'rent_due_day', 'grace_period_days', 'prorate_final_period',
                         'end_date', 'renewal_notes', 'notes')
 
     def get_object(self, pk):
@@ -568,6 +587,8 @@ class TenancyTerminateView(RumiaBaseView):
                 tenancy.renewal_notes = serializer.validated_data['renewal_notes']
             tenancy.save(update_fields=['status', 'end_date', 'move_out_date', 'renewal_notes', 'updated_at'])
             _sync_unit_status(tenancy)
+            # Bill anything still owed up to the move-out date (prorated final period).
+            RentChargeGenerationService.generate_for_tenancy(tenancy)
 
         log_audit('tenancy_terminated', actor=request.user, organization=tenancy.organization, entity=tenancy)
         return Response(TenancySerializer(tenancy).data)
@@ -654,7 +675,9 @@ class RentChargeListView(RumiaBaseView):
     property_lookup = 'parent_property'
 
     def get(self, request):
-        qs = self.filter_by_organization(RentCharge.objects.select_related('tenant', 'unit'))
+        qs = self.filter_by_organization(
+            RentCharge.objects.select_related('tenant', 'unit').prefetch_related('lines')
+        )
         role = get_canonical_role(request.user)
         if role == 'tenant':
             qs = qs.filter(tenant__user=request.user)
@@ -672,7 +695,8 @@ class RentBalanceView(RumiaBaseView):
 
     def get(self, request):
         qs = self.filter_by_organization(
-            RentCharge.objects.select_related('tenant', 'unit').exclude(status__in=['paid', 'waived'])
+            RentCharge.objects.select_related('tenant', 'unit').prefetch_related('lines')
+            .exclude(status__in=['paid', 'waived'])
         )
         role = get_canonical_role(request.user)
         if role == 'tenant':
@@ -686,9 +710,22 @@ class RentBalanceView(RumiaBaseView):
         outstanding_total = sum((c.outstanding for c in charges), Decimal('0.00'))
         overdue_total = sum((c.outstanding for c in charges if c.status == 'overdue'), Decimal('0.00'))
 
+        # Tenant credit (overpayments / advance payments not yet applied),
+        # within the same visibility scope as the charges above.
+        credit_qs = self.filter_by_organization(
+            Payment.objects.filter(status='success', unapplied_amount__gt=0)
+        )
+        if role == 'tenant':
+            credit_qs = credit_qs.filter(tenant__user=request.user)
+        if tenancy_id:
+            credit_qs = credit_qs.filter(tenancy_id=tenancy_id)
+        credit_total = sum((p.unapplied_amount for p in credit_qs), Decimal('0.00'))
+
         return Response({
             'outstanding_total': str(outstanding_total),
             'overdue_total': str(overdue_total),
+            'credit_total': str(credit_total),
+            'net_balance': str(outstanding_total - credit_total),
             'charges': RentChargeSerializer(charges, many=True).data,
         })
 
@@ -726,7 +763,9 @@ class PaymentListCreateView(RumiaBaseView):
         if not CanViewFinancials().has_permission(request, self):
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
-        qs = self.filter_by_organization(Payment.objects.select_related('tenant'))
+        qs = self.filter_by_organization(
+            Payment.objects.select_related('tenant').order_by('-created_at')
+        )
         role = get_canonical_role(request.user)
         if role == 'tenant':
             qs = qs.filter(tenant__user=request.user)
@@ -764,7 +803,9 @@ class PaymentListCreateView(RumiaBaseView):
             recorded_by=request.user,
         )
 
-        callback_url = f'{settings.FRONTEND_URL}/payments/{payment.id}/callback'
+        # Must match the Next.js route frontend/src/app/(tenant)/tenant/rental/payments/callback.
+        # Paystack appends its own `trxref`/`reference` query params.
+        callback_url = f'{settings.FRONTEND_URL}/tenant/rental/payments/callback?payment_id={payment.id}'
         result = PaymentService.initiate(payment, callback_url)
 
         if not result.get('success'):
@@ -803,40 +844,38 @@ class ManualPaymentView(RumiaBaseView):
         if role == 'caretaker' and tenancy.parent_property_id not in self.get_user_property_ids():
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
-        payment = Payment.objects.create(
-            organization=tenancy.organization,
-            tenancy=tenancy,
-            tenant=tenancy.tenant,
-            parent_property=tenancy.parent_property,
-            unit=tenancy.unit,
-            amount=serializer.validated_data['amount'],
-            payment_method=serializer.validated_data['payment_method'],
-            provider='manual',
-            internal_reference=f'RUMIA-MANUAL-{uuid.uuid4().hex[:16].upper()}',
-            notes=serializer.validated_data.get('notes', ''),
-            recorded_by=request.user,
-        )
-
         allocations = None
         rent_charge = serializer.validated_data.get('rent_charge_id')
         if rent_charge:
-            allocations = [{'rent_charge_id': rent_charge.id, 'amount': serializer.validated_data['amount']}]
+            allocations = [{'invoice_id': rent_charge.id, 'amount': serializer.validated_data['amount']}]
 
-        PaymentService.record_manual_payment(payment, allocations=allocations, verified_by=request.user)
+        try:
+            # One transaction: a rejected allocation must not leave an orphan payment row.
+            with transaction.atomic():
+                payment = Payment.objects.create(
+                    organization=tenancy.organization,
+                    tenancy=tenancy,
+                    tenant=tenancy.tenant,
+                    parent_property=tenancy.parent_property,
+                    unit=tenancy.unit,
+                    amount=serializer.validated_data['amount'],
+                    payment_method=serializer.validated_data['payment_method'],
+                    provider='manual',
+                    internal_reference=f'RUMIA-MANUAL-{uuid.uuid4().hex[:16].upper()}',
+                    notes=serializer.validated_data.get('notes', ''),
+                    recorded_by=request.user,
+                )
+                payment = PaymentService.record_manual_payment(
+                    payment, allocations=allocations, verified_by=request.user,
+                )
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
         log_audit('payment_recorded', actor=request.user, organization=tenancy.organization, entity=payment,
                    metadata={'action': 'manual'})
-        self._notify_tenant(payment)
+        # SMS/email go out with the receipt (PaymentService); this is the in-app bell.
         _notify_payment_in_app(payment, recorded_by=request.user)
         return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
-
-    @staticmethod
-    def _notify_tenant(payment):
-        """Tell the tenant their cash/bank payment was recorded, like an online one."""
-        try:
-            from rent.tasks import send_payment_confirmation_task
-            send_payment_confirmation_task.delay(str(payment.id))
-        except Exception:
-            logger.exception('Could not queue confirmation for manual payment %s', payment.id)
 
 
 class PaystackWebhookView(APIView):
@@ -853,19 +892,29 @@ class PaystackWebhookView(APIView):
         import hashlib
         import hmac as hmac_module
 
-        secret = (getattr(settings, 'PAYSTACK_WEBHOOK_SECRET', '') or '').encode()
+        # Paystack signs webhooks with the account's secret key. A separately
+        # configured PAYSTACK_WEBHOOK_SECRET is also accepted for backwards
+        # compatibility; either way the signer must hold a server secret.
+        secrets = [
+            value.encode() for value in {
+                getattr(settings, 'PAYSTACK_SECRET_KEY', '') or '',
+                getattr(settings, 'PAYSTACK_WEBHOOK_SECRET', '') or '',
+            } if value
+        ]
         signature = request.headers.get('x-paystack-signature', '')
 
-        if not secret or not signature:
+        if not secrets or not signature:
             return Response({'error': 'Missing signature'}, status=status.HTTP_400_BAD_REQUEST)
 
-        computed = hmac_module.new(secret, request.body, hashlib.sha512).hexdigest()
-        if not hmac_module.compare_digest(computed, signature):
+        if not any(
+            hmac_module.compare_digest(hmac_module.new(secret, request.body, hashlib.sha512).hexdigest(), signature)
+            for secret in secrets
+        ):
             return Response({'error': 'Invalid signature'}, status=status.HTTP_400_BAD_REQUEST)
 
         payload = request.data
-        event = payload.get('event')
-        data = payload.get('data', {})
+        event = payload.get('event') or ''
+        data = payload.get('data', {}) or {}
         reference = data.get('reference')
 
         if event == 'charge.success' and reference:
@@ -878,32 +927,117 @@ class PaystackWebhookView(APIView):
                 payment = PaymentService.verify_and_allocate(payment, raw_callback=payload)
 
                 if payment.status == 'success':
+                    # The tenant is notified by the receipt issued in
+                    # PaymentService (SMS + emailed PDF), after commit.
                     log_audit('payment_recorded', organization=payment.organization, entity=payment,
                                metadata={'action': 'webhook_verified'})
-                    try:
-                        from rent.tasks import send_payment_confirmation_task
-                        send_payment_confirmation_task.delay(str(payment.id))
-                    except Exception:
-                        pass  # Never fail the webhook response over a notification-dispatch problem.
                     _notify_payment_in_app(payment)
 
                 return Response({'status': 'processed', 'payment_status': payment.status})
 
-        # Not a rent-payment reference (unmatched, or the event isn't
-        # charge.success at all) — the only other consumer of this single
+        if event.startswith('refund.') or event.startswith('charge.dispute.'):
+            payment = _payment_for_paystack_event(data)
+            if payment is not None:
+                return Response(_handle_payment_event(payment, event, data, payload))
+
+        # Not a rent-payment event — the only other consumer of this single
         # physical webhook URL is the billing/subscription domain. Paystack
         # never calls a second endpoint for subscription.*/invoice.* events.
+        # handle_billing_event returns 'ignored' for anything it doesn't own;
+        # an exception here is a genuine failure, so answer 500 and let
+        # Paystack retry the delivery (audit H6).
+        from billing.services.webhook import handle_billing_event
         try:
-            from billing.services.webhook import handle_billing_event
             result = handle_billing_event(payload)
         except Exception:
-            # Never surface a 5xx to Paystack over a malformed/unrecognized
-            # billing event — same "ignored -> 200" philosophy as the
-            # unmatched-rent-reference case above.
             logger.exception('Billing webhook dispatch failed for event=%s', event)
-            result = {'status': 'error'}
+            return Response({'status': 'error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response(result, status=status.HTTP_200_OK)
+
+
+def _payment_for_paystack_event(data: dict):
+    """
+    Refund/dispute payloads carry the original transaction reference in
+    different places across Paystack versions — check each.
+    """
+    transaction_data = data.get('transaction')
+    candidates = [
+        data.get('transaction_reference'),
+        transaction_data.get('reference') if isinstance(transaction_data, dict) else None,
+        data.get('reference'),
+    ]
+    for reference in filter(None, candidates):
+        payment = Payment.objects.filter(internal_reference=str(reference)).first()
+        if payment is not None:
+            return payment
+    return None
+
+
+def _handle_payment_event(payment, event: str, data: dict, payload: dict) -> dict:
+    if event == 'refund.processed':
+        raw_amount = data.get('amount')
+        try:
+            amount = Decimal(str(raw_amount)) / Decimal('100') if raw_amount not in (None, '') else None
+        except Exception:
+            amount = None
+        outcome = PaymentService.handle_refund(payment, amount, payload)
+        action = 'payment_reversed' if outcome == 'reversed' else 'payment_edited'
+    elif event.startswith('charge.dispute.'):
+        outcome = PaymentService.flag_dispute(payment, event, payload)
+        action = 'payment_edited'
+        if event == 'charge.dispute.create':
+            _notify_landlord_of_dispute(payment)
+    else:
+        return {'status': 'ignored', 'event': event}
+
+    log_audit(action, organization=payment.organization, entity=payment,
+              metadata={'source': 'paystack_webhook', 'event': event, 'outcome': outcome})
+    return {'status': 'processed', 'event': event, 'outcome': outcome}
+
+
+def _notify_landlord_of_dispute(payment) -> None:
+    from rent.services.notifications import _deliver
+
+    owner = payment.organization.owner
+    text = (
+        f'RumiaRent: a chargeback was opened on payment {payment.internal_reference} '
+        f'(KES {payment.amount}, {payment.tenant.full_name}). Respond in your Paystack dashboard; '
+        f'if you lose it, reverse the payment in RumiaRent.'
+    )
+    try:
+        _deliver(['email', 'sms', 'in_app'], email=owner.email, phone=getattr(owner, 'phone_number', ''), user=owner,
+                 subject=f'Chargeback on {payment.internal_reference}', body=text, sms=text,
+                 kind='payment_dispute', metadata={'payment_id': str(payment.pk)})
+    except Exception:
+        logger.exception('Dispute notification failed for payment %s', payment.pk)
+
+
+class PaymentReverseView(RumiaBaseView):
+    """
+    POST {reason}: reverse a successful payment (bounced cheque, lost
+    chargeback, recorded in error). Owner-side only; unwinds the ledger and
+    restores the invoices it paid.
+    """
+
+    property_lookup = 'parent_property'
+
+    def post(self, request, pk):
+        if get_canonical_role(request.user) not in ('landlord', 'super_admin'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        reason = str(request.data.get('reason', '')).strip()
+        if not reason:
+            return Response({'reason': 'A reason is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        payment = self.filter_by_organization(Payment.objects.all()).filter(pk=pk).first()
+        if payment is None:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            PaymentService.reverse_payment(payment, reversed_by=request.user, reason=reason)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        log_audit('payment_reversed', actor=request.user, organization=payment.organization, entity=payment,
+                  metadata={'reason': reason})
+        return Response(PaymentSerializer(payment).data)
 
 
 class IncomeSummaryView(RumiaBaseView):

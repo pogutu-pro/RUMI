@@ -70,6 +70,11 @@ urlpatterns = [
         path('accounting/', include('accounting.urls')),
         path('billing/', include('billing.urls')),
         path('organizations/', include('organizations.urls')),
+        path('paybill/', include('paybill.urls')),
+        path('agency/', include('agency.urls')),
+        path('leasing/', include('leasing.urls')),
+        path('broadcasts/', include('broadcasts.urls')),
+        path('listings/', include('listings.urls')),
         path('audit/', include('audit.urls')),
 
         # RumiaRent canonical domain APIs

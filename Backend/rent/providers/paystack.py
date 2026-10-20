@@ -154,10 +154,13 @@ class PaystackProvider(BasePaymentProvider):
                 timeout=30,
             )
             data = response.json()
-        except requests.RequestException as exc:
+        except (requests.RequestException, ValueError) as exc:
+            # Audit H4: a network error or unreadable response says nothing
+            # about the payment — keep it pending so it is retried, never
+            # mark a possibly-paid transaction as failed.
             return VerifyPaymentResult(
                 success=False,
-                status='failed',
+                status='pending',
                 error_message=f'Paystack verification failed: {exc}',
             )
 
@@ -173,11 +176,18 @@ class PaystackProvider(BasePaymentProvider):
         paystack_status = txn.get('status', 'failed')
         amount = Decimal(str(txn.get('amount', 0))) / Decimal('100')
 
+        # Paystack transaction statuses. `abandoned` means checkout was opened
+        # but not completed yet — the customer can still come back and pay,
+        # so it stays pending; the reconciliation task gives up after 24h.
         status_map = {
             'success': 'success',
             'failed': 'failed',
-            'abandoned': 'failed',
+            'reversed': 'failed',
+            'abandoned': 'pending',
+            'ongoing': 'pending',
             'pending': 'pending',
+            'processing': 'pending',
+            'queued': 'pending',
         }
 
         return VerifyPaymentResult(

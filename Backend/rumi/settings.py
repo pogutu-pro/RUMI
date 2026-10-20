@@ -71,12 +71,18 @@ INSTALLED_APPS = [
     'properties',
     'tenants',
     'rent',
+    'ledger',
+    'paybill',
+    'accounting',
+    'agency',
+    'leasing',
+    'broadcasts',
+    'listings',
     'audit',
     'billing',
     'support',
     'messaging',
     'platform_settings',
-    'accounting',
 ]
 
 # Custom User Model (matches schema: email as unique identifier)
@@ -85,7 +91,6 @@ AUTH_USER_MODEL = 'accounts.User'
 # Performance-optimized middleware
 MIDDLEWARE = [
     'rumi.middleware.SecurityHeadersMiddleware',
-    'rumi.middleware.DatabaseConnectionMiddleware',
     'platform_settings.middleware.PlatformSettingsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -147,6 +152,7 @@ DATABASES = get_performance_settings().get('DATABASES', {
         'HOST': os.getenv('DB_HOST', ''),
         'PORT': os.getenv('DB_PORT', ''),
         'CONN_MAX_AGE': 60,  # Persistent connections
+        'CONN_HEALTH_CHECKS': True,
         'ATOMIC_REQUESTS': False,  # Performance optimization
         'AUTOCOMMIT': True,
     }
@@ -264,9 +270,24 @@ PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
 PAYSTACK_WEBHOOK_SECRET = os.getenv('PAYSTACK_WEBHOOK_SECRET')
 PAYSTACK_ENV = os.getenv('PAYSTACK_ENV', 'test')  # 'test' or 'live'
 
+# M-Pesa paybill collection (Daraja C2B) — docs/roadmap/phase-2-paybill-design.md
+# Comma-separated Safaricom callback IPs; empty = no IP check (token + shortcode still required).
+MPESA_CALLBACK_ALLOWED_IPS = [ip for ip in os.getenv('MPESA_CALLBACK_ALLOWED_IPS', '').split(',') if ip.strip()]
+# Only enable behind a proxy you control that sets X-Forwarded-For.
+MPESA_TRUST_X_FORWARDED_FOR = os.getenv('MPESA_TRUST_X_FORWARDED_FOR', 'False').lower() == 'true'
+DARAJA_C2B_REGISTER_PATH = os.getenv('DARAJA_C2B_REGISTER_PATH', '/mpesa/c2b/v2/registerurl')
+# Fernet key for stored third-party credentials (paybill/crypto.py). Set in production.
+FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY', '')
+
 # Billing Configuration — days a past_due subscription (failed renewal) has
 # before billing.tasks.process_grace_period_expirations suspends it.
 BILLING_GRACE_PERIOD_DAYS = int(os.getenv('BILLING_GRACE_PERIOD_DAYS', '7'))
+# Minutes an unpaid subscription checkout blocks a new subscribe/switch
+# before it is treated as abandoned.
+BILLING_PENDING_CHECKOUT_TTL_MINUTES = int(os.getenv('BILLING_PENDING_CHECKOUT_TTL_MINUTES', '30'))
+# Days past current_period_end an auto-billed subscription stays active while
+# waiting for Paystack's renewal charge before it lapses into past_due.
+BILLING_AUTO_RENEWAL_BUFFER_DAYS = int(os.getenv('BILLING_AUTO_RENEWAL_BUFFER_DAYS', '3'))
 
 # Webhook URLs (must include /api/v1/ and trailing slash)
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rumiarent.co.ke').rstrip('/')
@@ -311,6 +332,18 @@ CELERY_BEAT_SCHEDULE = {
     'rumia-generate-rent-charges': {
         'task': 'rent.tasks.generate_rent_charges',
         'schedule': _crontab(minute=0, hour=1),  # Daily at 1 AM
+    },
+    'rumia-reconcile-pending-payments': {
+        'task': 'rent.tasks.reconcile_pending_payments',
+        'schedule': _crontab(minute='*/15'),
+    },
+    'rumia-apply-late-penalties': {
+        'task': 'rent.tasks.apply_late_penalties',
+        'schedule': _crontab(minute=15, hour=1),  # Daily at 1:15 AM, after invoicing
+    },
+    'leasing-daily': {
+        'task': 'leasing.tasks.run_daily',
+        'schedule': _crontab(minute=30, hour=7),  # rent reviews, lease expiry, debt cases
     },
     'rumia-send-rent-reminders': {
         'task': 'rent.tasks.send_rent_due_reminders',
@@ -523,7 +556,8 @@ if DEBUG:
 
 # Sentry Error Monitoring (production only)
 SENTRY_DSN = os.getenv('SENTRY_DSN')
-if SENTRY_DSN and not DEBUG:
+_UNDER_TEST = os.getenv('DJANGO_SETTINGS_MODULE', '').endswith('test_settings')
+if SENTRY_DSN and not DEBUG and not _UNDER_TEST:
     import sentry_sdk
     from sentry_sdk.integrations.django import DjangoIntegration
     from sentry_sdk.integrations.celery import CeleryIntegration

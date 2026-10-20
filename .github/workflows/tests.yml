@@ -67,6 +67,14 @@ jobs:
         env:
           DEBUG: 'True'
           SECRET_KEY: 'ci-test-secret-key-not-for-production'
+          # rumi/settings.py reads DB_* — without these the suite silently
+          # ran on SQLite even though a PostgreSQL service is started above.
+          DB_ENGINE: django.db.backends.postgresql
+          DB_NAME: rumi_test_db
+          DB_USER: rumi_user
+          DB_PASSWORD: rumi_password
+          DB_HOST: localhost
+          DB_PORT: 5432
           POSTGRES_SERVER: localhost
           POSTGRES_USER: rumi_user
           POSTGRES_PASSWORD: rumi_password

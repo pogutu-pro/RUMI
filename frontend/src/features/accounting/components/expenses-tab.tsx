@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useProperties } from '@/features/rental/hooks/use-rental';
 import { useExpenses, useSaveExpense, useVoidExpense } from '../hooks/use-accounting';
 import { currentMonthKey, dateLabel, kes } from '../format';
-import { EXPENSE_CATEGORIES, type Expense } from '../types';
+import { EXPENSE_CATEGORIES, EXPENSE_PAID_FROM, type Expense } from '../types';
 import { MonthNav } from './month-nav';
 
 const PAGE_SIZE = 20; // matches the server
@@ -30,6 +30,7 @@ const schema = z.object({
   category: z.enum(['repairs', 'utilities', 'caretaker', 'security', 'cleaning', 'insurance', 'land_rates', 'agent_fees', 'other']),
   incurred_on: z.string().min(1, 'Choose the date').refine((d) => d <= new Date().toISOString().slice(0, 10), 'The date cannot be in the future'),
   property: z.string(),
+  paid_from: z.enum(['cash', 'bank_transfer', 'mpesa_paybill', 'other']),
   vendor: z.string().trim().max(150),
   description: z.string().trim().max(300),
 });
@@ -45,7 +46,7 @@ function ExpenseDialog({ expense, open, onClose }: { expense: Expense | null; op
   const [serverError, setServerError] = React.useState('');
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(schema),
-    defaultValues: { amount: '', category: 'repairs', incurred_on: today(), property: NO_PROPERTY, vendor: '', description: '' },
+    defaultValues: { amount: '', category: 'repairs', incurred_on: today(), property: NO_PROPERTY, paid_from: 'cash', vendor: '', description: '' },
   });
 
   React.useEffect(() => {
@@ -56,9 +57,10 @@ function ExpenseDialog({ expense, open, onClose }: { expense: Expense | null; op
       expense
         ? {
             amount: String(Number(expense.amount)), category: expense.category, incurred_on: expense.incurred_on,
-            property: expense.property ?? NO_PROPERTY, vendor: expense.vendor, description: expense.description,
+            property: expense.property ?? NO_PROPERTY, paid_from: expense.paid_from ?? 'cash',
+            vendor: expense.vendor, description: expense.description,
           }
-        : { amount: '', category: 'repairs', incurred_on: today(), property: NO_PROPERTY, vendor: '', description: '' },
+        : { amount: '', category: 'repairs', incurred_on: today(), property: NO_PROPERTY, paid_from: 'cash', vendor: '', description: '' },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, expense]);
@@ -70,7 +72,8 @@ function ExpenseDialog({ expense, open, onClose }: { expense: Expense | null; op
         id: expense?.id,
         input: {
           amount: String(v.amount), category: v.category, incurred_on: v.incurred_on,
-          property: v.property === NO_PROPERTY ? '' : v.property, vendor: v.vendor, description: v.description, receipt,
+          property: v.property === NO_PROPERTY ? '' : v.property, paid_from: v.paid_from,
+          vendor: v.vendor, description: v.description, receipt,
         },
       });
       onClose();
@@ -132,6 +135,20 @@ function ExpenseDialog({ expense, open, onClose }: { expense: Expense | null; op
                 </FormItem>
               )} />
             </FormRow>
+
+            <FormField control={form.control} name="paid_from" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Paid from</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl><SelectTrigger className="h-11"><SelectValue /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    {EXPENSE_PAID_FROM.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <FormDescription>Keeps your cash, bank and M-Pesa balances right.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
 
             <FormField control={form.control} name="vendor" render={({ field }) => (
               <FormItem>

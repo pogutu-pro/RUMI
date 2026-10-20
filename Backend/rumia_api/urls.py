@@ -2,6 +2,31 @@
 
 from django.urls import path
 
+from rumia_api.attention import AttentionView
+
+from rumia_api.ledger_views import (
+    MeterReadingListCreateView,
+    PropertyUtilityRatesView,
+    TenancyUtilitiesBillNowView,
+    DepositSettlementActionView,
+    TenancyDepositInvoiceView,
+    TenancyDepositRecordHeldView,
+    TenancyDepositSettlementCreateView,
+    TenancyDepositView,
+    CreditNoteListView,
+    InvoiceCreditNoteView,
+    InvoiceDetailView,
+    InvoiceDisputeView,
+    InvoiceListCreateView,
+    PenaltyPolicyView,
+    ReceiptDetailView,
+    ReceiptListView,
+    ReceiptPdfView,
+    ReceiptResendView,
+    RecurringChargeDetailView,
+    TenancyRecurringChargeListCreateView,
+)
+
 from rumia_api.views import (
     CaretakerListCreateView,
     IncomeSummaryView,
@@ -9,6 +34,7 @@ from rumia_api.views import (
     OrganizationListView,
     PaymentListCreateView,
     PaymentProviderStatusView,
+    PaymentReverseView,
     PaystackWebhookView,
     PropertyDetailView,
     PropertyListCreateView,
@@ -45,7 +71,60 @@ urlpatterns = [
     # silently be shadowed by the legacy router/webhook and never get hit.
     path('rent/payments/', PaymentListCreateView.as_view(), name='rumia-payments'),
     path('rent/payments/manual/', ManualPaymentView.as_view(), name='rumia-payment-manual'),
+    path('rent/payments/<uuid:pk>/reverse/', PaymentReverseView.as_view(), name='rumia-payment-reverse'),
     path('rent/payments/webhook/paystack/', PaystackWebhookView.as_view(), name='rumia-paystack-webhook'),
     path('rent/payments/providers/', PaymentProviderStatusView.as_view(), name='rumia-payment-providers'),
     path('income/', IncomeSummaryView.as_view(), name='rumia-income'),
+    path('attention/', AttentionView.as_view(), name='rumia-attention'),
+    path('invoices/', InvoiceListCreateView.as_view(), name='rumia-invoices'),
+    path('invoices/<uuid:pk>/', InvoiceDetailView.as_view(), name='rumia-invoice-detail'),
+    path('invoices/<uuid:pk>/credit-notes/', InvoiceCreditNoteView.as_view(), name='rumia-invoice-credit-note'),
+    path('invoices/<uuid:pk>/dispute/', InvoiceDisputeView.as_view(), name='rumia-invoice-dispute'),
+    path('credit-notes/', CreditNoteListView.as_view(), name='rumia-credit-notes'),
+    path('receipts/', ReceiptListView.as_view(), name='rumia-receipts'),
+    path('penalty-policy/', PenaltyPolicyView.as_view(), name='rumia-penalty-policy'),
+    path('meter-readings/', MeterReadingListCreateView.as_view(), name='rumia-meter-readings'),
+    path(
+        'tenancies/<uuid:pk>/utilities/bill-now/',
+        TenancyUtilitiesBillNowView.as_view(),
+        name='rumia-tenancy-utilities-bill-now',
+    ),
+    path('properties/<uuid:pk>/utility-rates/', PropertyUtilityRatesView.as_view(), name='rumia-utility-rates'),
+    path('tenancies/<uuid:pk>/deposit/', TenancyDepositView.as_view(), name='rumia-tenancy-deposit'),
+    path('tenancies/<uuid:pk>/deposit/invoice/', TenancyDepositInvoiceView.as_view(), name='rumia-deposit-invoice'),
+    path(
+        'tenancies/<uuid:pk>/deposit/record-held/',
+        TenancyDepositRecordHeldView.as_view(),
+        name='rumia-deposit-record-held',
+    ),
+    path(
+        'tenancies/<uuid:pk>/deposit/settlements/',
+        TenancyDepositSettlementCreateView.as_view(),
+        name='rumia-deposit-settlement-create',
+    ),
+    path('deposit-settlements/<uuid:pk>/', DepositSettlementActionView.as_view(), name='rumia-deposit-settlement'),
+    path(
+        'deposit-settlements/<uuid:pk>/approve/',
+        DepositSettlementActionView.as_view(action='approve'),
+        name='rumia-deposit-settlement-approve',
+    ),
+    path(
+        'deposit-settlements/<uuid:pk>/refund/',
+        DepositSettlementActionView.as_view(action='refund'),
+        name='rumia-deposit-settlement-refund',
+    ),
+    path(
+        'deposit-settlements/<uuid:pk>/cancel/',
+        DepositSettlementActionView.as_view(action='cancel'),
+        name='rumia-deposit-settlement-cancel',
+    ),
+    path(
+        'tenancies/<uuid:pk>/recurring-charges/',
+        TenancyRecurringChargeListCreateView.as_view(),
+        name='rumia-tenancy-recurring-charges',
+    ),
+    path('recurring-charges/<uuid:pk>/', RecurringChargeDetailView.as_view(), name='rumia-recurring-charge-detail'),
+    path('receipts/<uuid:pk>/', ReceiptDetailView.as_view(), name='rumia-receipt-detail'),
+    path('receipts/<uuid:pk>/pdf/', ReceiptPdfView.as_view(), name='rumia-receipt-pdf'),
+    path('receipts/<uuid:pk>/resend/', ReceiptResendView.as_view(), name='rumia-receipt-resend'),
 ]

@@ -58,9 +58,15 @@ export const useSwitchPlan = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (newPlanId: string) => billingApi.switchPlan(newPlanId),
-    onSuccess: () => {
+    onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: MY_SUBSCRIPTION_KEY });
-      toast.success('Plan updated');
+      if (result.authorization_url) {
+        // Auto mode: the new plan only applies once this Paystack checkout is
+        // paid — until then the current plan stays in place.
+        window.location.href = result.authorization_url;
+      } else {
+        toast.success('Plan updated');
+      }
     },
     onError: (err) => {
       toast.error(billingErrorMessage(err, 'Could not update your plan'));

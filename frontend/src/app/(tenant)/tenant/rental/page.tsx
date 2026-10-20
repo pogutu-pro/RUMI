@@ -17,7 +17,7 @@ import {
   ShieldCheck,
   Wallet,
 } from 'lucide-react';
-import { buttonVariants } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { ErrorState } from '@/components/ui/error-state';
@@ -25,6 +25,13 @@ import { PageHeader } from '@/components/dashboard/page-header';
 import { cn } from '@/lib/utils/cn';
 import { useTenancies, useRentBalance, usePayments } from '@/features/rental/hooks/use-rental';
 import type { Payment, RentCharge, Tenancy } from '@/features/rental/types';
+import { useInvoices } from '@/features/ledger/hooks/use-ledger';
+import { InvoiceDetailSheet } from '@/features/ledger/components/invoice-detail-sheet';
+import { InvoiceStatusBadge } from '@/features/ledger/components/invoice-status-badge';
+import { ReceiptDownloadButton } from '@/features/ledger/components/receipt-actions';
+import { INVOICE_TYPE_LABEL } from '@/features/ledger/lib/format';
+import { usePaybillInstructions } from '@/features/paybill/hooks';
+import { DocumentList, NoticeDialog } from '@/features/leasing/components';
 
 const PAY_HREF = '/tenant/rental/pay';
 const HISTORY_PAGE_SIZE = 5;
@@ -266,6 +273,7 @@ function PaymentHistory({ payments, isLoading }: { payments: Payment[]; isLoadin
                     <p className="text-sm font-semibold text-foreground">{formatKes(payment.amount)}</p>
                     <PaymentStatusPill status={payment.status} />
                   </div>
+                  {payment.receipt && <ReceiptDownloadButton receipt={payment.receipt} />}
                 </li>
               );
             })}
@@ -317,6 +325,10 @@ export default function TenantRentalDashboard() {
     refetch: refetchBalance,
   } = useRentBalance();
   const { data: payments = [], isLoading: paymentsLoading } = usePayments();
+  const { data: invoices = [] } = useInvoices();
+  const { data: paybills = [] } = usePaybillInstructions();
+  const [openInvoice, setOpenInvoice] = React.useState<string | null>(null);
+  const [noticeOpen, setNoticeOpen] = React.useState(false);
 
   const activeTenancy = tenancies.find((t) => t.status === 'active') ?? tenancies[0];
   const nextCharge = (balance?.charges ?? [])
@@ -359,6 +371,65 @@ export default function TenantRentalDashboard() {
         />
       </div>
 
+      {paybills.filter((p) => p.tenancy === activeTenancy.id).map((p) => (
+        <section key={`${p.tenancy}-${p.shortcode}`} className="rounded-2xl border bg-background p-5 shadow-sm">
+          <h2 className="text-base font-semibold text-foreground">Pay by M-Pesa</h2>
+          <p className="text-xs text-muted-foreground">Paid this way, your payment is recorded and receipted automatically.</p>
+          <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="rounded-xl bg-muted/50 p-3">
+              <dt className="text-xs text-muted-foreground">{p.shortcode_type === 'till' ? 'Till number' : 'Paybill number'}</dt>
+              <dd className="font-mono text-lg font-semibold">{p.shortcode}</dd>
+            </div>
+            {p.account_number && (
+              <div className="rounded-xl bg-muted/50 p-3">
+                <dt className="text-xs text-muted-foreground">Account number</dt>
+                <dd className="font-mono text-lg font-semibold">{p.account_number}</dd>
+              </div>
+            )}
+            <div className="col-span-2 rounded-xl bg-muted/50 p-3 sm:col-span-1">
+              <dt className="text-xs text-muted-foreground">Business</dt>
+              <dd className="text-sm font-medium">{p.business_name}</dd>
+            </div>
+          </dl>
+          <p className="mt-3 text-xs text-muted-foreground">
+            M-Pesa → Lipa na M-Pesa → {p.shortcode_type === 'till' ? 'Buy Goods and Services' : 'Pay Bill'}. Use exactly this
+            account number.
+          </p>
+        </section>
+      ))}
+
+      {invoices.length > 0 && (
+        <section className="rounded-2xl border bg-background shadow-sm">
+          <div className="border-b px-5 py-4">
+            <h2 className="text-base font-semibold text-foreground">Invoices</h2>
+            <p className="text-xs text-muted-foreground">Rent and other charges. Tap one to see what it covers.</p>
+          </div>
+          <ul className="divide-y">
+            {invoices.slice(0, 12).map((invoice) => (
+              <li key={invoice.id}>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-3 px-5 py-3 text-left hover:bg-muted/50"
+                  onClick={() => setOpenInvoice(invoice.id)}
+                >
+                  <span className="min-w-0 text-sm">
+                    <span className="font-medium">{INVOICE_TYPE_LABEL[invoice.invoice_type]}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {[invoice.number, `due ${formatDate(invoice.due_date)}`].filter(Boolean).join(' · ')}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-3 whitespace-nowrap text-sm tabular-nums">
+                    {formatKes(Number(invoice.outstanding) > 0 ? invoice.outstanding : invoice.amount_due)}
+                    <InvoiceStatusBadge status={invoice.status} />
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      <InvoiceDetailSheet invoiceId={openInvoice} onClose={() => setOpenInvoice(null)} audience="tenant" />
+
       <div className="grid gap-6 lg:grid-cols-5">
         <section className="rounded-2xl border bg-background shadow-sm lg:col-span-2">
           <div className="border-b px-5 py-4">
@@ -378,7 +449,18 @@ export default function TenantRentalDashboard() {
               {activeTenancy.end_date ? formatDate(activeTenancy.end_date) : 'Ongoing'}
             </DetailRow>
           </dl>
+          <div className="space-y-3 border-t px-5 py-4">
+            <h3 className="text-sm font-semibold text-foreground">My documents</h3>
+            <DocumentList tenancyId={activeTenancy.id} />
+            {activeTenancy.status === 'active' && (
+              <Button variant="outline" size="sm" onClick={() => setNoticeOpen(true)}>Give notice to vacate</Button>
+            )}
+            {activeTenancy.status === 'notice_period' && activeTenancy.end_date && (
+              <p className="text-sm text-muted-foreground">You are on notice, moving out {formatDate(activeTenancy.end_date)}.</p>
+            )}
+          </div>
         </section>
+        <NoticeDialog tenancyId={activeTenancy.id} open={noticeOpen} onOpenChange={setNoticeOpen} byTenant />
 
         <div className="lg:col-span-3">
           <PaymentHistory payments={payments} isLoading={paymentsLoading} />

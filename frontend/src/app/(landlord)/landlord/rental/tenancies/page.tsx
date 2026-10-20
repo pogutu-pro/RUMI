@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Pencil } from 'lucide-react';
+import { Plus, Pencil, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FormDialogActions, FormRow } from '@/components/ui/form-layout';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ import {
 } from '@/features/rental/hooks/use-rental';
 import { PageHeader } from '@/components/dashboard/page-header';
 import type { Tenancy } from '@/features/rental/types';
+import { TenancyMoneySheet } from '@/features/ledger/components/tenancy-money-sheet';
 import { usePagination } from '@/hooks/use-pagination';
 import { SimplePager } from '@/components/ui/simple-pager';
 
@@ -27,12 +28,18 @@ const tenancySchema = z.object({
   unit: z.string().min(1, 'Choose a unit'),
   tenant: z.string().min(1, 'Choose a tenant'),
   monthly_rent: z.string().min(1, 'Monthly rent is required'),
+  deposit: z.string().optional(),
+  // Backend TenancyListCreateView: invoice the deposit, record it as already
+  // received, or skip it.
+  deposit_handling: z.enum(['invoice', 'already_paid', 'none']),
   start_date: z.string().optional(),
 });
 
 type TenancyFormValues = z.infer<typeof tenancySchema>;
 
-const EMPTY_FORM: TenancyFormValues = { unit: '', tenant: '', monthly_rent: '', start_date: '' };
+const EMPTY_FORM: TenancyFormValues = {
+  unit: '', tenant: '', monthly_rent: '', deposit: '', deposit_handling: 'invoice', start_date: '',
+};
 
 // Mirrors Backend/rumia_api/views.py TenancyDetailView.PATCHABLE_FIELDS exactly —
 // status is deliberately excluded; status transitions go through "Terminate" only.
@@ -67,6 +74,7 @@ export default function TenanciesPage() {
 
   const [open, setOpen] = React.useState(false);
   const [editingTenancy, setEditingTenancy] = React.useState<Tenancy | null>(null);
+  const [moneyTenancy, setMoneyTenancy] = React.useState<Tenancy | null>(null);
 
   const form = useForm<TenancyFormValues>({
     resolver: zodResolver(tenancySchema),
@@ -84,6 +92,7 @@ export default function TenanciesPage() {
     try {
       await createTenancy.mutateAsync({
         ...values,
+        deposit: values.deposit || '0',
         status: 'active',
         start_date: values.start_date || new Date().toISOString().slice(0, 10),
       });
@@ -158,6 +167,7 @@ export default function TenanciesPage() {
                             field.onChange(v);
                             const unit = units.find((u) => u.id === v);
                             if (unit?.monthly_rent) form.setValue('monthly_rent', unit.monthly_rent);
+                            if (unit?.deposit) form.setValue('deposit', unit.deposit);
                           }}
                         >
                           <FormControl>
@@ -212,6 +222,41 @@ export default function TenanciesPage() {
                       </FormItem>
                     )}
                   />
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="deposit"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Deposit (KES)</FormLabel>
+                          <FormControl>
+                            <Input className="h-11" type="number" min="0" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="deposit_handling"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Deposit</FormLabel>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <FormControl>
+                              <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="invoice">Invoice the tenant</SelectItem>
+                              <SelectItem value="already_paid">Already received (cash)</SelectItem>
+                              <SelectItem value="none">Don’t track</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   <FormField
                     control={form.control}
                     name="start_date"
@@ -354,6 +399,7 @@ export default function TenanciesPage() {
             <TableRow>
               <TableHead>Tenant</TableHead>
               <TableHead>Unit</TableHead>
+              <TableHead title="What the tenant types as the account number when paying your paybill">M-Pesa account</TableHead>
               <TableHead>Rent</TableHead>
               <TableHead>Status</TableHead>
               <TableHead />
@@ -364,6 +410,7 @@ export default function TenanciesPage() {
               <TableRow key={t.id}>
                 <TableCell className="font-medium">{t.tenant_name}</TableCell>
                 <TableCell>{t.unit_number}</TableCell>
+                <TableCell className="font-mono text-xs">{t.payment_reference || '—'}</TableCell>
                 <TableCell>KES {t.monthly_rent}</TableCell>
                 <TableCell>
                   <Badge variant={t.status === 'active' ? 'default' : 'secondary'}>{t.status}</Badge>
@@ -378,6 +425,15 @@ export default function TenanciesPage() {
                       onClick={() => openEdit(t)}
                     >
                       <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      leftIcon={<Wallet className="h-4 w-4" />}
+                      onClick={() => setMoneyTenancy(t)}
+                    >
+                      Money
                     </Button>
                     {t.status === 'active' && (
                       <Button
@@ -398,6 +454,8 @@ export default function TenanciesPage() {
         <SimplePager {...tenanciesPager} />
         </>
       )}
+
+      <TenancyMoneySheet tenancy={moneyTenancy} onClose={() => setMoneyTenancy(null)} />
     </div>
   );
 }

@@ -1,38 +1,49 @@
 'use client';
 
 import Link from 'next/link';
-import { Lock } from 'lucide-react';
+import { ArrowRight, Lock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/features/auth';
 import {
   useProperties,
   useUnits,
   useRentBalance,
   useIncomeSummary,
 } from '@/features/rental/hooks/use-rental';
+import { AttentionPanel } from '@/features/attention/attention-panel';
+import { formatKes } from '@/features/ledger/lib/format';
 import { isGateRejection, capitalizeTier } from '@/lib/api/gate';
 
-function StatCard({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
+function StatCard({ label, value, hint, href, action }: {
+  label: string; value: React.ReactNode; hint?: string; href?: string; action?: string;
+}) {
   return (
     <Card className="rounded-2xl">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-1">
         <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="text-2xl font-semibold">{value}</p>
-        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+      <CardContent className="space-y-1 p-4 pt-0 sm:p-6 sm:pt-0">
+        <p className="text-xl font-semibold tabular-nums sm:text-2xl">{value}</p>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+        {href && action && (
+          <Link href={href} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+            {action} <ArrowRight className="h-3 w-3" aria-hidden="true" />
+          </Link>
+        )}
       </CardContent>
     </Card>
   );
 }
 
-function formatKes(amount: string | number) {
-  const n = Number(amount);
-  return `KES ${n.toLocaleString('en-KE', { maximumFractionDigits: 0 })}`;
+function greeting() {
+  const hour = new Date().getHours();
+  return hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 }
 
 export default function LandlordRentalDashboard() {
+  const { user } = useAuth();
   const { data: properties = [] } = useProperties();
   const { data: units = [] } = useUnits();
   const { data: balance } = useRentBalance();
@@ -40,29 +51,56 @@ export default function LandlordRentalDashboard() {
 
   const occupied = units.filter((u) => u.status === 'occupied').length;
   const vacant = units.filter((u) => u.status === 'vacant').length;
-  const overdueCharges = (balance?.charges ?? []).filter((c) => c.status === 'overdue');
-  const unitNumberById = new Map(units.map((u) => [u.id, u.unit_number]));
+  const occupancy = units.length ? Math.round((occupied / units.length) * 100) : null;
   const collectionRate = income ? Math.round(Number(income.summary.collection_rate)) : null;
   const gateError = isGateRejection(incomeError);
+  const owed = Number(balance?.outstanding_total ?? 0);
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Dashboard</h1>
+      <div>
+        <h1 className="text-xl font-semibold">{greeting()}{user?.first_name ? `, ${user.first_name}` : ''}</h1>
+        <p className="text-sm text-muted-foreground">
+          {new Date().toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long' })} · {properties.length}{' '}
+          {properties.length === 1 ? 'property' : 'properties'}, {units.length} {units.length === 1 ? 'unit' : 'units'}
+        </p>
+      </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Properties" value={properties.length} />
-        <StatCard label="Occupied units" value={occupied} />
-        <StatCard label="Vacant units" value={vacant} />
+      <AttentionPanel />
+
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          label="Outstanding rent"
-          value={formatKes(balance?.outstanding_total ?? '0')}
+          label="Collected this month"
+          value={income && !gateError ? formatKes(income.summary.collected_rent) : '—'}
+          hint={income && !gateError ? `of ${formatKes(income.summary.expected_rent)} expected` : undefined}
+          href="/landlord/rental/statements"
+          action="Monthly statement"
+        />
+        <StatCard
+          label="Tenants owe"
+          value={formatKes(owed)}
+          hint={Number(balance?.overdue_total ?? 0) > 0 ? `${formatKes(balance?.overdue_total)} overdue` : 'Nothing overdue'}
+          href={owed > 0 ? '/landlord/rental/debt' : undefined}
+          action="Follow up"
+        />
+        <StatCard
+          label="Occupancy"
+          value={occupancy === null ? '—' : `${occupancy}%`}
+          hint={`${occupied} let · ${vacant} vacant`}
+          href={vacant > 0 ? '/landlord/rental/properties' : undefined}
+          action="Fill vacancies"
+        />
+        <StatCard
+          label="Tenant credit held"
+          value={formatKes(balance?.credit_total ?? 0)}
+          hint="Applied automatically to the next invoices"
         />
       </div>
 
-      {income && !gateError && (
+      {income && !gateError && income.by_property.length > 0 && (
         <Card className="rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base">Rent collected this month</CardTitle>
+            <CardTitle className="text-base">Collection by property this month</CardTitle>
             {collectionRate !== null && (
               <Badge
                 variant="outline"
@@ -78,26 +116,29 @@ export default function LandlordRentalDashboard() {
               </Badge>
             )}
           </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-2xl font-semibold">
-              {formatKes(income.summary.collected_rent)}
-              <span className="ml-1 text-sm font-normal text-muted-foreground">
-                of {formatKes(income.summary.expected_rent)} expected
-              </span>
-            </p>
-
-            {income.by_property.length > 0 && (
-              <ul className="divide-y rounded-xl border">
-                {income.by_property.map((p) => (
-                  <li key={p.property_id} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                    <span className="font-medium">{p.property_name}</span>
-                    <span className="text-muted-foreground">
-                      {formatKes(p.collected_rent)} / {formatKes(p.expected_rent)}
-                    </span>
+          <CardContent>
+            <ul className="space-y-3">
+              {income.by_property.map((p) => {
+                const rate = Math.min(100, Math.round(Number(p.collection_rate)));
+                return (
+                  <li key={p.property_id} className="text-sm">
+                    <div className="mb-1 flex justify-between">
+                      <span className="font-medium">{p.property_name}</span>
+                      <span className="tabular-nums text-muted-foreground">
+                        {formatKes(p.collected_rent)} / {formatKes(p.expected_rent)}
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={rate}
+                      aria-valuemin={0} aria-valuemax={100} aria-label={`${p.property_name} ${rate}% collected`}>
+                      <div
+                        className={`h-full rounded-full ${rate >= 90 ? 'bg-success' : rate >= 60 ? 'bg-warning' : 'bg-destructive'}`}
+                        style={{ width: `${rate}%` }}
+                      />
+                    </div>
                   </li>
-                ))}
-              </ul>
-            )}
+                );
+              })}
+            </ul>
           </CardContent>
         </Card>
       )}
@@ -105,7 +146,7 @@ export default function LandlordRentalDashboard() {
       {gateError && (
         <Card className="rounded-2xl">
           <CardHeader>
-            <CardTitle className="text-xl font-semibold flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-xl font-semibold">
               <Lock className="h-5 w-5 text-warning" />
               Unlock rent-collection analytics
             </CardTitle>
@@ -121,33 +162,6 @@ export default function LandlordRentalDashboard() {
           </CardContent>
         </Card>
       )}
-
-      <Card className="rounded-2xl">
-        <CardHeader>
-          <CardTitle className="text-base">Needs attention — overdue rent</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {overdueCharges.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nothing overdue right now.</p>
-          ) : (
-            <ul className="divide-y">
-              {overdueCharges.map((c) => (
-                <li key={c.id} className="flex items-center justify-between py-2 text-sm">
-                  <span>
-                    Unit {unitNumberById.get(c.unit) ?? c.unit} — due {c.due_date}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <Badge variant="destructive">{formatKes(c.outstanding)}</Badge>
-                    <Link href="/landlord/rental/rent" className="text-primary underline">
-                      View
-                    </Link>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }

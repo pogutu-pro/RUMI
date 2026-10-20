@@ -149,7 +149,13 @@ class APIResponseCacheMiddleware(MiddlewareMixin):
 
 
 class DatabaseConnectionMiddleware(MiddlewareMixin):
-    """Middleware to optimize database connections"""
+    """
+    DEPRECATED — no longer in MIDDLEWARE. Closing the connection on every
+    request defeated CONN_MAX_AGE (a new PostgreSQL connection per request)
+    and broke transactional tests on PostgreSQL. Django already closes stale
+    connections at request start/finish; CONN_HEALTH_CHECKS covers the rest.
+    Kept only so old settings files importing it don't crash.
+    """
     
     def process_request(self, request):
         """Ensure database connection is ready"""

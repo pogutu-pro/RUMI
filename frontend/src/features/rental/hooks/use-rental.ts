@@ -343,7 +343,8 @@ export const useRecordManualPayment = () => {
       qc.invalidateQueries({ queryKey: ['rental', 'payments'] });
       qc.invalidateQueries({ queryKey: ['rental', 'rent-charges'] });
       qc.invalidateQueries({ queryKey: ['rental', 'rent-balance'] });
-      toast.success('Payment recorded');
+      qc.invalidateQueries({ queryKey: ['ledger'] }); // invoices, receipts, deposits
+      toast.success('Payment recorded — receipt sent to the tenant');
     },
     onError: (err) => {
       // Caretakers can only record if the landlord granted them the permission.

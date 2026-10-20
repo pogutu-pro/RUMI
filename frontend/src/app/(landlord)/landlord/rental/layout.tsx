@@ -2,37 +2,55 @@
 
 import * as React from 'react';
 import {
-  LayoutDashboard,
+  Briefcase,
   Building2,
-  Users,
-  FileText,
-  Wallet,
-  CreditCard,
-  LifeBuoy,
   Calculator,
-  MessageSquare,
+  CreditCard,
+  FileSpreadsheet,
+  FileText,
+  Gavel,
   HardHat,
+  LayoutDashboard,
+  LifeBuoy,
+  Megaphone,
+  MessageSquare,
   Settings,
+  Scale,
+  Settings2,
+  SlidersHorizontal,
+  Smartphone,
+  Users,
+  Wallet,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth';
 import { UserRole } from '@/features/auth/stores/auth.types';
-import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import { DashboardShell, type DashboardShellNavItem } from '@/components/dashboard/dashboard-shell';
 import { PayoutPendingBanner } from '@/features/payout/components/payout-pending-banner';
+import { attentionBadges, useAttention } from '@/features/attention/hooks';
 import { TrialBanner } from '@/features/billing/components/trial-banner';
 
-const NAV = [
+// Grouped so the sidebar stays scannable (shallow navigation): daily money
+// work first, setup last. Badges show only items that need action now.
+const NAV: DashboardShellNavItem[] = [
   { href: '/landlord/rental', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/landlord/rental/properties', label: 'Properties', icon: Building2 },
-  { href: '/landlord/rental/tenants', label: 'Tenants', icon: Users },
-  { href: '/landlord/rental/caretakers', label: 'Caretakers', icon: HardHat },
-  { href: '/landlord/rental/tenancies', label: 'Tenancies', icon: FileText },
-  { href: '/landlord/rental/rent', label: 'Rent', icon: Wallet },
-  { href: '/landlord/rental/payments', label: 'Payments', icon: CreditCard },
-  { href: '/landlord/rental/accounting', label: 'Accounting', icon: Calculator },
-  { href: '/landlord/rental/billing', label: 'Billing & Payout', icon: CreditCard },
-  { href: '/landlord/rental/messages', label: 'Messages', icon: MessageSquare },
-  { href: '/landlord/rental/support', label: 'Support', icon: LifeBuoy },
-  { href: '/landlord/rental/settings', label: 'Settings', icon: Settings },
+  { section: 'Money', href: '/landlord/rental/rent', label: 'Rent & invoices', icon: Wallet },
+  { section: 'Money', href: '/landlord/rental/payments', label: 'Payments', icon: CreditCard },
+  { section: 'Money', href: '/landlord/rental/paybill', label: 'M-Pesa paybill', icon: Smartphone },
+  { section: 'Money', href: '/landlord/rental/debt', label: 'Debt recovery', icon: Gavel },
+  { section: 'Property', href: '/landlord/rental/properties', label: 'Properties & vacancies', icon: Building2 },
+  { section: 'Property', href: '/landlord/rental/tenancies', label: 'Tenancies', icon: FileText },
+  { section: 'Property', href: '/landlord/rental/tenants', label: 'Tenants', icon: Users },
+  { section: 'Property', href: '/landlord/rental/messages', label: 'Messages', icon: MessageSquare },
+  { section: 'Property', href: '/landlord/rental/broadcasts', label: 'Bulk SMS & email', icon: Megaphone },
+  { section: 'Books', href: '/landlord/rental/accounting', label: 'Accounting & tax', icon: Calculator },
+  { section: 'Books', href: '/landlord/rental/statements', label: 'Statements', icon: FileSpreadsheet },
+  { section: 'Books', href: '/landlord/rental/accounts', label: 'Accounts & reconciliation', icon: Scale },
+  { section: 'Books', href: '/landlord/rental/owners', label: 'Property owners', icon: Briefcase },
+  { section: 'Settings', href: '/landlord/rental/rules', label: 'Rent rules', icon: SlidersHorizontal },
+  { section: 'Settings', href: '/landlord/rental/caretakers', label: 'Caretakers', icon: HardHat },
+  { section: 'Settings', href: '/landlord/rental/billing', label: 'Billing & payout', icon: Settings2 },
+  { section: 'Settings', href: '/landlord/rental/settings', label: 'Settings', icon: Settings },
+  { section: 'Settings', href: '/landlord/rental/support', label: 'Support', icon: LifeBuoy },
 ];
 
 /**
@@ -43,11 +61,14 @@ const NAV = [
 export default function RentalLandlordLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+  const { data: attention } = useAttention(!isSuperAdmin);
+  const badges = attentionBadges(attention);
+  const nav = NAV.map((item) => ({ ...item, badge: badges[item.href] }));
 
   return (
     <DashboardShell
       allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]}
-      nav={NAV}
+      nav={nav}
       settingsHref="/landlord/rental/settings"
       bannerSlot={
         !isSuperAdmin ? (

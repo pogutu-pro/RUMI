@@ -57,12 +57,14 @@ class SubscribeFlowTests(RumiaTestFixtures):
     def test_manual_subscribe_never_calls_paystack(self):
         plans = self._seed_plans()
         user, profile, org = self.create_landlord_with_org()
+        admin = self.create_super_admin()
 
         client = APIClient()
-        client.force_authenticate(user=user)
+        client.force_authenticate(user=admin)
         with patch.object(PaystackBillingClient, 'initialize_subscription_transaction') as mock_init:
             response = client.post('/api/v1/billing/subscribe/', {
                 'plan_id': str(plans['starter'].id), 'billing_mode': 'manual',
+                'organization_id': str(org.id),
             })
 
         self.assertEqual(response.status_code, 201)
@@ -71,6 +73,63 @@ class SubscribeFlowTests(RumiaTestFixtures):
         subscription = OrganizationSubscription.objects.get(organization=org)
         self.assertEqual(subscription.status, 'active')
         self.assertEqual(subscription.billing_mode, 'manual')
+
+    def test_landlord_cannot_self_activate_manual_billing(self):
+        """Audit C1: manual mode activates with no payment, so landlords may never choose it."""
+        plans = self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.post('/api/v1/billing/subscribe/', {
+            'plan_id': str(plans['enterprise'].id), 'billing_mode': 'manual',
+        })
+
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(OrganizationSubscription.objects.filter(organization=org).exists())
+
+    @patch.object(PaystackBillingClient, 'initialize_subscription_transaction')
+    def test_live_pending_checkout_blocks_a_second_subscribe(self, mock_init):
+        plans = self._seed_plans()
+        plan = plans['pro']
+        plan.paystack_plan_code = 'PLN_pro'
+        plan.save(update_fields=['paystack_plan_code'])
+        mock_init.return_value = {'authorization_url': 'https://checkout.paystack.com/a', 'access_code': '', 'raw': {}}
+        user, profile, org = self.create_landlord_with_org()
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        first = client.post('/api/v1/billing/subscribe/', {'plan_id': str(plan.id), 'billing_mode': 'auto'})
+        second = client.post('/api/v1/billing/subscribe/', {'plan_id': str(plan.id), 'billing_mode': 'auto'})
+
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(second.status_code, 400)
+        self.assertEqual(SubscriptionPayment.objects.filter(subscription__organization=org).count(), 1)
+
+    @patch.object(PaystackBillingClient, 'initialize_subscription_transaction')
+    def test_abandoned_subscribe_checkout_expires_and_can_be_retried(self, mock_init):
+        """Audit C2: an abandoned checkout must never lock the organization out."""
+        plans = self._seed_plans()
+        plan = plans['pro']
+        plan.paystack_plan_code = 'PLN_pro'
+        plan.save(update_fields=['paystack_plan_code'])
+        mock_init.return_value = {'authorization_url': 'https://checkout.paystack.com/a', 'access_code': '', 'raw': {}}
+        user, profile, org = self.create_landlord_with_org()
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        client.post('/api/v1/billing/subscribe/', {'plan_id': str(plan.id), 'billing_mode': 'auto'})
+        SubscriptionPayment.objects.filter(subscription__organization=org).update(
+            initiated_at=timezone.now() - timedelta(hours=1),
+        )
+        retry = client.post('/api/v1/billing/subscribe/', {'plan_id': str(plan.id), 'billing_mode': 'auto'})
+
+        self.assertEqual(retry.status_code, 201)
+        statuses = list(
+            SubscriptionPayment.objects.filter(subscription__organization=org)
+            .order_by('initiated_at').values_list('status', flat=True)
+        )
+        self.assertEqual(statuses, ['failed', 'pending'])
 
     @patch.object(PaystackBillingClient, 'initialize_subscription_transaction')
     def test_auto_subscribe_creates_pending_payment_and_returns_authorization_url(self, mock_init):
@@ -117,16 +176,19 @@ class SubscribeFlowTests(RumiaTestFixtures):
     def test_second_subscribe_for_already_active_org_is_rejected(self):
         plans = self._seed_plans()
         user, profile, org = self.create_landlord_with_org()
+        admin = self.create_super_admin()
 
         client = APIClient()
-        client.force_authenticate(user=user)
+        client.force_authenticate(user=admin)
         first = client.post('/api/v1/billing/subscribe/', {
             'plan_id': str(plans['starter'].id), 'billing_mode': 'manual',
+            'organization_id': str(org.id),
         })
         self.assertEqual(first.status_code, 201)
 
         second = client.post('/api/v1/billing/subscribe/', {
             'plan_id': str(plans['pro'].id), 'billing_mode': 'manual',
+            'organization_id': str(org.id),
         })
         self.assertEqual(second.status_code, 400)
         self.assertEqual(OrganizationSubscription.objects.filter(organization=org).count(), 1)
@@ -149,7 +211,8 @@ class SwitchPlanTests(RumiaTestFixtures):
             current_period_end=timezone.now().date(),
         )
 
-    def test_switch_disables_old_subscription_before_initiating_new_one(self):
+    def test_switch_starts_checkout_without_touching_current_subscription(self):
+        """Audit C2: pay first, then switch — nothing changes until the new charge succeeds."""
         plans = self._seed_plans()
         starter, pro = plans['starter'], plans['pro']
         pro.paystack_plan_code = 'PLN_pro'
@@ -157,11 +220,9 @@ class SwitchPlanTests(RumiaTestFixtures):
         user, profile, org = self.create_landlord_with_org()
         subscription = self._active_auto_subscription(org, starter)
 
-        call_order = []
         with patch.object(PaystackBillingClient, 'disable_subscription') as mock_disable, \
                 patch.object(PaystackBillingClient, 'initialize_subscription_transaction') as mock_init:
-            mock_disable.side_effect = lambda *a, **k: call_order.append('disable') or {}
-            mock_init.side_effect = lambda *a, **k: call_order.append('initiate') or {
+            mock_init.return_value = {
                 'authorization_url': 'https://checkout.paystack.com/switch',
                 'access_code': '',
                 'raw': {},
@@ -172,13 +233,49 @@ class SwitchPlanTests(RumiaTestFixtures):
             response = client.post('/api/v1/billing/switch-plan/', {'new_plan_id': str(pro.id)})
 
         self.assertEqual(response.status_code, 200)
-        mock_disable.assert_called_once()
+        self.assertEqual(response.data['authorization_url'], 'https://checkout.paystack.com/switch')
+        mock_disable.assert_not_called()
         mock_init.assert_called_once()
-        self.assertEqual(call_order, ['disable', 'initiate'])
 
         subscription.refresh_from_db()
-        self.assertEqual(subscription.plan_id, pro.id)
-        self.assertEqual(subscription.paystack_subscription_code, '')
+        self.assertEqual(subscription.plan_id, starter.id)
+        self.assertEqual(subscription.status, 'active')
+        self.assertEqual(subscription.paystack_subscription_code, 'SUB_code_123')
+
+        payment = SubscriptionPayment.objects.get(subscription=subscription)
+        self.assertEqual(payment.amount, pro.price)
+        self.assertEqual(payment.metadata['kind'], 'switch')
+        self.assertEqual(payment.metadata['plan_id'], str(pro.id))
+        self.assertEqual(payment.metadata['replaces_subscription_code'], 'SUB_code_123')
+
+    def test_abandoned_switch_keeps_plan_and_can_be_retried(self):
+        """Audit C2: previously both recovery calls returned 400 forever."""
+        plans = self._seed_plans()
+        starter, pro = plans['starter'], plans['pro']
+        pro.paystack_plan_code = 'PLN_pro'
+        pro.save(update_fields=['paystack_plan_code'])
+        user, profile, org = self.create_landlord_with_org()
+        subscription = self._active_auto_subscription(org, starter)
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        with patch.object(PaystackBillingClient, 'initialize_subscription_transaction', return_value={
+            'authorization_url': 'https://checkout.paystack.com/switch', 'access_code': '', 'raw': {},
+        }):
+            first = client.post('/api/v1/billing/switch-plan/', {'new_plan_id': str(pro.id)})
+            while_live = client.post('/api/v1/billing/switch-plan/', {'new_plan_id': str(pro.id)})
+            SubscriptionPayment.objects.filter(subscription=subscription).update(
+                initiated_at=timezone.now() - timedelta(hours=1),
+            )
+            after_expiry = client.post('/api/v1/billing/switch-plan/', {'new_plan_id': str(pro.id)})
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(while_live.status_code, 400)
+        self.assertEqual(after_expiry.status_code, 200)
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.plan_id, starter.id)
+        self.assertEqual(subscription.status, 'active')
+        self.assertEqual(GatingService.get_effective_plan(org).id, starter.id)
 
     def test_switch_to_same_plan_is_rejected(self):
         plans = self._seed_plans()
@@ -241,17 +338,37 @@ class SwitchPlanTests(RumiaTestFixtures):
             current_period_start=timezone.now().date(), current_period_end=timezone.now().date(),
         )
 
+        admin = self.create_super_admin()
         with patch.object(
             PaystackBillingClient, '__init__',
             side_effect=AssertionError('PaystackBillingClient must never be instantiated for a manual switch'),
         ):
             client = APIClient()
-            client.force_authenticate(user=user)
-            response = client.post('/api/v1/billing/switch-plan/', {'new_plan_id': str(pro.id)})
+            client.force_authenticate(user=admin)
+            response = client.post('/api/v1/billing/switch-plan/', {
+                'new_plan_id': str(pro.id), 'organization_id': str(org.id),
+            })
 
         self.assertEqual(response.status_code, 200)
         subscription.refresh_from_db()
         self.assertEqual(subscription.plan_id, pro.id)
+
+    def test_landlord_cannot_switch_manual_plan_for_free(self):
+        """Audit C1: a manual-mode switch has no charge, so it is support-only."""
+        plans = self._seed_plans()
+        starter, enterprise = plans['starter'], plans['enterprise']
+        user, profile, org = self.create_landlord_with_org()
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=starter, status='active', billing_mode='manual',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.post('/api/v1/billing/switch-plan/', {'new_plan_id': str(enterprise.id)})
+
+        self.assertEqual(response.status_code, 403)
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.plan_id, starter.id)
 
     def test_successful_auto_switch_leaves_exactly_one_subscription_row(self):
         plans = self._seed_plans()

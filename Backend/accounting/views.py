@@ -18,7 +18,8 @@ from organizations.models import Organization
 from properties.models import Property
 
 from . import services
-from .models import Expense, MriFiling, OrganizationTaxProfile, TaxRateConfig
+from .books import ExpenseError, ExpenseService
+from .models import Expense, MriFiling, OrganizationTaxProfile, Supplier, TaxRateConfig
 
 MAX_RECEIPT_BYTES = 5 * 1024 * 1024
 ALLOWED_RECEIPT_TYPES = {'.jpg', '.jpeg', '.png', '.pdf', '.webp'}
@@ -176,6 +177,9 @@ def _expense_data(expense, request) -> dict:
         'vendor': expense.vendor,
         'description': expense.description,
         'receipt_url': request.build_absolute_uri(expense.receipt.url) if expense.receipt else None,
+        'paid_from': expense.paid_from,
+        'reference': expense.reference,
+        'supplier_ref': str(expense.supplier_ref_id) if expense.supplier_ref_id else None,
         'is_void': expense.is_void,
         'void_reason': expense.void_reason,
         'created_at': expense.created_at,
@@ -210,7 +214,7 @@ class ExpenseListCreateView(_LandlordAccountingView):
         errors = _apply_expense(expense, request.data, request.FILES, self.org, partial=False)
         if errors:
             return Response({'detail': 'Please fix the highlighted fields.', 'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
-        expense.save()
+        ExpenseService.save_new(expense, request.user)
         log_audit('expense_recorded', actor=request.user, organization=self.org, entity=expense,
                   metadata={'amount': str(expense.amount), 'category': expense.category})
         return Response(_expense_data(expense, request), status=status.HTTP_201_CREATED)
@@ -234,7 +238,10 @@ class ExpenseDetailView(_LandlordAccountingView):
         errors = _apply_expense(expense, request.data, request.FILES, self.org, partial=True)
         if errors:
             return Response({'detail': 'Please fix the highlighted fields.', 'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
-        expense.save()
+        try:
+            ExpenseService.update(expense, request.user)
+        except ExpenseError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         log_audit('expense_updated', actor=request.user, organization=self.org, entity=expense)
         return Response(_expense_data(expense, request))
 
@@ -247,10 +254,10 @@ class ExpenseDetailView(_LandlordAccountingView):
         if not reason:
             return Response({'detail': 'Say why you are removing this expense.', 'errors': {'reason': 'Required.'}},
                             status=status.HTTP_400_BAD_REQUEST)
-        expense.is_void = True
-        expense.void_reason = reason[:300]
-        expense.voided_at = timezone.now()
-        expense.save(update_fields=['is_void', 'void_reason', 'voided_at', 'updated_at'])
+        try:
+            expense = ExpenseService.void(expense, reason, request.user)
+        except ExpenseError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         log_audit('expense_voided', actor=request.user, organization=self.org, entity=expense, metadata={'reason': reason[:300]})
         return Response(_expense_data(expense, request))
 
@@ -291,12 +298,30 @@ def _apply_expense(expense, data, files, org, partial: bool) -> dict:
                 errors['property'] = 'Choose one of your properties.'
             else:
                 expense.parent_property = prop
-    for field, limit in (('vendor', 150), ('description', 300)):
+    if not partial or 'paid_from' in data:
+        paid_from = data.get('paid_from') or 'cash'
+        if paid_from not in dict(Expense.PAID_FROM_CHOICES):
+            errors['paid_from'] = 'Choose how it was paid.'
+        else:
+            expense.paid_from = paid_from
+    for field, limit in (('vendor', 150), ('description', 300), ('reference', 100)):
         if field in data:
             value = str(data.get(field) or '').strip()
             if len(value) > limit:
                 errors[field] = f'Keep this under {limit} characters.'
             setattr(expense, field, value)
+    if 'supplier_ref' in data:
+        raw = data.get('supplier_ref')
+        if raw in (None, '', 'null'):
+            expense.supplier_ref = None
+        else:
+            supplier = Supplier.objects.filter(organization=org, pk=raw).first() if _is_uuid(raw) else None
+            if supplier is None:
+                errors['supplier_ref'] = 'Choose one of your suppliers.'
+            else:
+                expense.supplier_ref = supplier
+                if not str(data.get('vendor') or '').strip():
+                    expense.vendor = supplier.name
     upload = files.get('receipt') if files else None
     if upload is not None:
         extension = os.path.splitext(upload.name)[1].lower()

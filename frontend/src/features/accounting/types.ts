@@ -71,14 +71,27 @@ export interface Expense {
   incurred_on: string;
   vendor: string;
   description: string;
+  paid_from: ExpensePaidFrom;
+  reference: string;
   receipt_url: string | null;
   is_void: boolean;
   void_reason: string;
 }
 
+export type ExpensePaidFrom = 'cash' | 'bank_transfer' | 'mpesa_paybill' | 'other';
+
+/** Which account the money left; the ledger credits it so cash, bank and M-Pesa balances stay right. */
+export const EXPENSE_PAID_FROM: { value: ExpensePaidFrom; label: string }[] = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'bank_transfer', label: 'Bank' },
+  { value: 'mpesa_paybill', label: 'M-Pesa' },
+  { value: 'other', label: 'Other' },
+];
+
 export interface ExpenseInput {
   amount: string;
   category: ExpenseCategory;
+  paid_from: ExpensePaidFrom;
   incurred_on: string;
   property: string;
   vendor: string;

@@ -34,36 +34,53 @@ def send_payment_confirmation_task(payment_id):
     send_payment_confirmation(payment)
 
 
+@shared_task(name='rent.tasks.deliver_receipt_task')
+def deliver_receipt_task(receipt_id):
+    """Render a receipt PDF and send it by SMS/email — scheduled after the payment commits."""
+    from rent.models import Receipt
+    from rent.services.receipts import ReceiptService
+
+    receipt = Receipt.objects.filter(pk=receipt_id).first()
+    if receipt is not None:
+        ReceiptService.deliver(receipt)
+
+
 @shared_task(name='rent.tasks.send_rent_due_reminders')
 def send_rent_due_reminders():
     """
-    Daily: remind tenants whose charge is due within 3 days or already overdue,
-    at most once per charge (RentCharge.reminder_sent_at guards against repeats).
+    Daily: send each due step of every organization's EscalationPolicy
+    reminder schedule — before due, on the due date, overdue follow-ups, and
+    caretaker/landlord escalations — each at most once per invoice.
     """
-    from datetime import date, timedelta
+    from rent.services.reminders import ReminderService
 
-    from django.utils import timezone
+    counts = ReminderService.run()
+    logger.info('RumiaRent reminders: %s sent, %s stale steps skipped', counts['sent'], counts['skipped'])
+    return counts
 
-    from rent.models import RentCharge
-    from rent.services.notifications import send_rent_due_reminder
 
-    today = date.today()
-    horizon = today + timedelta(days=3)
+@shared_task(name='rent.tasks.reconcile_pending_payments')
+def reconcile_pending_payments():
+    """
+    Every 15 minutes: re-verify Paystack payments still `processing` (lost or
+    late webhook, transient error) and settle them; give up on checkouts not
+    completed within 24 hours (audit H4).
+    """
+    from rent.services.payment_service import PaymentService
 
-    charges = RentCharge.objects.filter(
-        status__in=['due', 'partially_paid', 'overdue'],
-        due_date__lte=horizon,
-        reminder_sent_at__isnull=True,
-    ).select_related('tenant', 'unit')
+    counts = PaymentService.reconcile_processing()
+    logger.info('RumiaRent payment reconciliation: %s', counts)
+    return counts
 
-    sent = 0
-    for charge in charges:
-        send_rent_due_reminder(charge)
-        RentCharge.objects.filter(pk=charge.pk).update(reminder_sent_at=timezone.now())
-        sent += 1
 
-    logger.info('RumiaRent rent reminders sent: %s', sent)
-    return {'sent': sent}
+@shared_task(name='rent.tasks.apply_late_penalties')
+def apply_late_penalties():
+    """Daily: issue late-penalty invoices under each organization's enabled PenaltyPolicy."""
+    from rent.services.penalties import PenaltyService
+
+    counts = PenaltyService.run()
+    logger.info('RumiaRent late penalties issued: %s', counts['issued'])
+    return counts
 
 
 @shared_task(name='rent.tasks.escalate_overdue_to_next_of_kin')

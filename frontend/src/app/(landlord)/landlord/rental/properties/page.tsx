@@ -19,6 +19,7 @@ import { GateBanner } from '@/features/rental/components/gate-banner';
 import { isGateRejection } from '@/lib/api/gate';
 import { PageHeader } from '@/components/dashboard/page-header';
 import type { Property } from '@/features/rental/types';
+import { EnquiriesCard } from '@/features/listings/enquiries-card';
 import { usePagination } from '@/hooks/use-pagination';
 import { SimplePager } from '@/components/ui/simple-pager';
 
@@ -76,7 +77,7 @@ export default function PropertiesPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Properties"
+        title="Properties & vacancies"
         action={(
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -140,6 +141,8 @@ export default function PropertiesPage() {
           </Dialog>
         )}
       />
+
+      <EnquiriesCard />
 
       <Dialog open={!!editingProperty} onOpenChange={(v) => { if (!v) setEditingProperty(null); }}>
         <DialogContent>
