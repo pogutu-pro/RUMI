@@ -16,6 +16,7 @@ import { InvoiceStatusBadge } from '@/features/ledger/components/invoice-status-
 import { ReceiptDownloadButton } from '@/features/ledger/components/receipt-actions';
 import { INVOICE_TYPE_LABEL, formatDate } from '@/features/ledger/lib/format';
 import { usePaybillInstructions } from '@/features/paybill/hooks';
+import { DocumentList, NoticeDialog } from '@/features/leasing/components';
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = {
   success: 'default',
@@ -101,6 +102,7 @@ export default function TenantRentalDashboard() {
   const { data: paybills = [] } = usePaybillInstructions();
   const [page, setPage] = React.useState(1);
   const [openInvoice, setOpenInvoice] = React.useState<string | null>(null);
+  const [noticeOpen, setNoticeOpen] = React.useState(false);
 
   const activeTenancy = tenancies.find((t) => t.status === 'active') ?? tenancies[0];
   const nextCharge = (balance?.charges ?? [])
@@ -261,6 +263,22 @@ export default function TenantRentalDashboard() {
           </dl>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>My documents</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <DocumentList tenancyId={activeTenancy.id} />
+          {activeTenancy.status === 'active' && (
+            <Button variant="outline" size="sm" onClick={() => setNoticeOpen(true)}>Give notice to vacate</Button>
+          )}
+          {activeTenancy.status === 'notice_period' && activeTenancy.end_date && (
+            <p className="text-sm text-muted-foreground">You are on notice — moving out {formatDate(activeTenancy.end_date)}.</p>
+          )}
+        </CardContent>
+      </Card>
+      <NoticeDialog tenancyId={activeTenancy.id} open={noticeOpen} onOpenChange={setNoticeOpen} byTenant />
 
       <div>
         <h2 className="mb-2 font-medium">Payment history</h2>

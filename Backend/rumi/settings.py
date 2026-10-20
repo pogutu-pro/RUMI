@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     'paybill',
     'accounting',
     'agency',
+    'leasing',
     'audit',
     'billing',
     'support',
@@ -327,6 +328,10 @@ CELERY_BEAT_SCHEDULE = {
     'rumia-apply-late-penalties': {
         'task': 'rent.tasks.apply_late_penalties',
         'schedule': _crontab(minute=15, hour=1),  # Daily at 1:15 AM, after invoicing
+    },
+    'leasing-daily': {
+        'task': 'leasing.tasks.run_daily',
+        'schedule': _crontab(minute=30, hour=7),  # rent reviews, lease expiry, debt cases
     },
     'rumia-send-rent-reminders': {
         'task': 'rent.tasks.send_rent_due_reminders',

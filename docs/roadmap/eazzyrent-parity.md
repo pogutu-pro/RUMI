@@ -49,18 +49,18 @@ product not inspected). Build order for the remaining gaps is top to bottom.
 | EazzyRent feature | RumiaRent | Branch / plan |
 |---|---|---|
 | Landlords → properties → units → tenants | Done (single landlord per org) | — |
-| Agent package: many landlords, properties accounted separately | **Building** — PropertyOwner, owner ledger | feature/eazzyrent-parity |
-| Commissions (management + letting fees, automatic) | **Building** | feature/eazzyrent-parity |
-| Landlord advances / loans (early payout, tracking, interest) | **Building** — advances with optional fee | feature/eazzyrent-parity |
-| Remittance statements (collections, expenses, advances, payable) | **Building** — owner statements + remittances | feature/eazzyrent-parity |
+| Agent package: many landlords, properties accounted separately | **Done (3b)** | feature/eazzyrent-parity |
+| Commissions (management + letting fees, automatic) | **Done (3b)** | feature/eazzyrent-parity |
+| Landlord advances / loans (early payout, tracking, interest) | **Done (3b)** — advances + fee/interest, auto-recovered | feature/eazzyrent-parity |
+| Remittance statements (collections, expenses, advances, payable) | **Done (3b)** — emailed PDF | feature/eazzyrent-parity |
 | Invoicing rent / service / utilities / repairs | Done (Phase 1) | — |
 | Receipts by SMS + email in real time | Done | — |
 | Late penalties, vacating tenants, deposit refunds | Done | — |
 | Debt control: reminders | Done | — |
-| Debt control: demand notes, quit notices, recovery task workflow | **Building** | feature/eazzyrent-parity |
-| Notice to vacate (tenant-initiated) | **Building** | feature/eazzyrent-parity |
-| Lease management: expiry reminders, automatic rent increments, document generation | **Building** | feature/eazzyrent-parity |
-| Document management (uploads) | **Building** | feature/eazzyrent-parity |
+| Debt control: demand notes, quit notices, recovery task workflow | **Done (3c)** | feature/eazzyrent-parity |
+| Notice to vacate (tenant-initiated) | **Done (3c)** | feature/eazzyrent-parity |
+| Lease management: expiry reminders, automatic rent increments, document generation | **Done (3c)** | feature/eazzyrent-parity |
+| Document management (uploads) | **Done (3c)** | feature/eazzyrent-parity |
 | Accounts: chart, journal entries, suppliers, reconciliation, TB / P&L / balance sheet | Chart + journal done; **building** suppliers, manual journals, reports, statement-import reconciliation | feature/eazzyrent-parity |
 | M-Pesa paybill integration | Done (Phase 2, untested with Safaricom) | — |
 | Bank integrations (7 banks, real time) | Not possible without bank agreements; **building CSV statement import** as interim | feature/eazzyrent-parity |

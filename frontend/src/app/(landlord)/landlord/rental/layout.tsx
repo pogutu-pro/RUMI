@@ -15,6 +15,7 @@ import {
   FileSpreadsheet,
   Receipt,
   Briefcase,
+  Gavel,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth';
 import { UserRole } from '@/features/auth/stores/auth.types';
@@ -29,6 +30,7 @@ const NAV = [
   { href: '/landlord/rental/tenancies', label: 'Tenancies', icon: FileText },
   { href: '/landlord/rental/rent', label: 'Rent & invoices', icon: Wallet },
   { href: '/landlord/rental/payments', label: 'Payments', icon: CreditCard },
+  { href: '/landlord/rental/debt', label: 'Debt recovery', icon: Gavel },
   { href: '/landlord/rental/paybill', label: 'M-Pesa paybill', icon: Smartphone },
   { href: '/landlord/rental/expenses', label: 'Expenses', icon: Receipt },
   { href: '/landlord/rental/statements', label: 'Statements', icon: FileSpreadsheet },

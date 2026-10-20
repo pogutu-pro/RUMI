@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Tenancy } from '@/features/rental/types';
+import { LeaseTab } from '@/features/leasing/components';
 import {
   useBillUtilitiesNow,
   useCreateDepositSettlement,
@@ -59,14 +60,16 @@ export function TenancyMoneySheet({ tenancy, onClose }: { tenancy: Tenancy | nul
               <SheetDescription>Rent {formatKes(tenancy.monthly_rent)} / month · deposit {formatKes(tenancy.deposit)}</SheetDescription>
             </SheetHeader>
             <Tabs defaultValue="extras">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="extras">Monthly extras</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="extras">Extras</TabsTrigger>
                 <TabsTrigger value="deposit">Deposit</TabsTrigger>
                 <TabsTrigger value="meters">Meters</TabsTrigger>
+                <TabsTrigger value="lease">Lease</TabsTrigger>
               </TabsList>
               <TabsContent value="extras"><RecurringChargesTab tenancy={tenancy} /></TabsContent>
               <TabsContent value="deposit"><DepositTab tenancy={tenancy} /></TabsContent>
               <TabsContent value="meters"><MetersTab tenancy={tenancy} /></TabsContent>
+              <TabsContent value="lease"><LeaseTab tenancyId={tenancy.id} monthlyRent={tenancy.monthly_rent} /></TabsContent>
             </Tabs>
           </div>
         )}
