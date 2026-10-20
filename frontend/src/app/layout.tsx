@@ -9,6 +9,7 @@ import NetworkStatus from '@/components/pwa/NetworkStatus';
 import DevServiceWorkerCleaner from '@/components/pwa/DevServiceWorkerCleaner';
 import ServiceWorkerUpdater from '@/components/pwa/ServiceWorkerUpdater';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { InitialSplash } from '@/components/ui/initial-splash';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -132,7 +133,7 @@ export default function RootLayout({
     '@type': 'Organization',
     name: 'RumiaRent',
     url: process.env.NEXT_PUBLIC_APP_URL || 'https://rumiarent.co.ke',
-    logo: `${process.env.NEXT_PUBLIC_APP_URL}/images/logo/logo.svg`,
+    logo: `${process.env.NEXT_PUBLIC_APP_URL}/images/logo/logo.png`,
     description:
       'Rental management platform helping Kenyan landlords and agents manage properties, tenants, and rent collection.',
     address: {
@@ -142,18 +143,10 @@ export default function RootLayout({
     },
     contactPoint: {
       '@type': 'ContactPoint',
-      telephone: '+254-757-901596',
       contactType: 'customer service',
       email: 'info@rumiarent.co.ke',
       availableLanguage: ['en', 'sw'],
     },
-    sameAs: [
-      'https://twitter.com/rumiplatform',
-      'https://facebook.com/rumiplatform',
-      'https://tiktok.com/rumiplatform',
-      'https://instagram.com/rumiplatform',
-      'https://linkedin.com/company/rumi-platform',
-    ],
   };
 
   return (
@@ -179,9 +172,10 @@ export default function RootLayout({
 
       <body
         className={cn(
-          'min-h-screen bg-background font-sans antialiased overflow-x-hidden scroll-smooth',
+          'min-h-screen bg-background font-sans antialiased overflow-x-clip scroll-smooth',
         )}
       >
+        <InitialSplash />
         <ErrorBoundary>
           <Providers>
             {children}

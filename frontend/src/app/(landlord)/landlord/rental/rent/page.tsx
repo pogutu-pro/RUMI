@@ -21,6 +21,8 @@ import { InvoiceDetailSheet } from '@/features/ledger/components/invoice-detail-
 import { InvoiceStatusBadge } from '@/features/ledger/components/invoice-status-badge';
 import { INVOICE_TYPE_LABEL, formatDate, formatKes } from '@/features/ledger/lib/format';
 import type { Invoice } from '@/features/ledger/types';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 type Filter = 'open' | 'overdue' | 'disputed' | 'all';
 
@@ -43,6 +45,7 @@ export default function InvoicesPage() {
     if (filter === 'disputed') return i.is_disputed;
     return true;
   });
+  const { pageItems, pagerProps } = usePagination(visible, 20, filter);
 
   return (
     <div className="space-y-4">
@@ -97,7 +100,7 @@ export default function InvoicesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visible.map((invoice) => (
+              {pageItems.map((invoice) => (
                 <TableRow key={invoice.id} className="cursor-pointer" onClick={() => setSelected(invoice.id)}>
                   <TableCell>
                     <span className="font-mono text-xs">{invoice.number}</span>
@@ -122,6 +125,7 @@ export default function InvoicesPage() {
               ))}
             </TableBody>
           </Table>
+          <SimplePager {...pagerProps} />
         </div>
       )}
 

@@ -2,7 +2,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Shell } from '@/components/layouts/shell';
-import { Icon } from '@/components/ui/icons';
+import { SocialLinks } from '@/components/layouts/social-links';
 
 const FOOTER_LINKS = [
   {
@@ -62,7 +62,7 @@ export const Footer = React.memo(function Footer() {
                 className="inline-flex items-center space-x-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950 rounded-xl transition-all hover:opacity-90"
               >
                 <Image
-                  src="/images/logo/logo.svg"
+                  src="/images/logo/logo.png"
                   alt="RumiaRent Logo"
                   width={56}
                   height={56}
@@ -73,61 +73,7 @@ export const Footer = React.memo(function Footer() {
               <p className="text-lg text-gray-400 max-w-lg leading-relaxed">
                 Rental management for Kenyan landlords and agents. Properties, tenants, rent, and payments in one place.
               </p>
-              
-              {/* Social Media */}
-              <div className="pt-6">
-                <p className="text-sm font-medium text-gray-500 mb-6 uppercase tracking-wider">Connect With Us</p>
-                <div className="flex items-center space-x-5">
-                  <a
-                    href="https://twitter.com/rumia"
-                    aria-label="RumiaRent on Twitter"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex items-center justify-center w-12 h-12 rounded-xl bg-gray-900 border border-gray-800 text-gray-400 hover:border-gray-700 hover:text-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950"
-                  >
-                    <Icon
-                      name="Twitter"
-                      className="h-6 w-6"
-                    />
-                  </a>
-                  <a
-                    href="https://instagram.com/rumia"
-                    aria-label="RumiaRent on Instagram"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex items-center justify-center w-12 h-12 rounded-xl bg-gray-900 border border-gray-800 text-gray-400 hover:border-gray-700 hover:text-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950"
-                  >
-                    <Icon
-                      name="Instagram"
-                      className="h-6 w-6"
-                    />
-                  </a>
-                  <a
-                    href="https://facebook.com/rumia"
-                    aria-label="RumiaRent on Facebook"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex items-center justify-center w-12 h-12 rounded-xl bg-gray-900 border border-gray-800 text-gray-400 hover:border-gray-700 hover:text-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950"
-                  >
-                    <Icon
-                      name="Facebook"
-                      className="h-6 w-6"
-                    />
-                  </a>
-                  <a
-                    href="https://linkedin.com/company/rumia"
-                    aria-label="RumiaRent on LinkedIn"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex items-center justify-center w-12 h-12 rounded-xl bg-gray-900 border border-gray-800 text-gray-400 hover:border-gray-700 hover:text-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950"
-                  >
-                    <Icon
-                      name="Linkedin"
-                      className="h-6 w-6"
-                    />
-                  </a>
-                </div>
-              </div>
+              <SocialLinks />
             </div>
 
             {/* Navigation Links - Clean 2x2 grid with proper spacing */}

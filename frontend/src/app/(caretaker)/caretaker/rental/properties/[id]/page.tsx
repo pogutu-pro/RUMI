@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { Wrench } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { FormDialogActions, FormRow } from '@/components/ui/form-layout';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,8 +16,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { PageHeader } from '@/components/dashboard/page-header';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
-} from '@/components/ui/dialog';
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -25,6 +25,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useProperty, useUnits } from '@/features/rental/hooks/use-rental';
 import { useCreateTicket } from '@/features/support/hooks/use-support';
 import type { TicketPriority } from '@/features/support/types/types';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 const PRIORITY_LABEL: Record<TicketPriority, string> = {
   low: 'Low',
@@ -51,6 +53,7 @@ export default function CaretakerPropertyDetailPage() {
   const propertyId = params.id;
   const { data: property, isError, refetch } = useProperty(propertyId);
   const { data: units = [], isLoading: unitsLoading } = useUnits(propertyId);
+  const { pageItems: pagedUnits, pagerProps: unitsPager } = usePagination(units, 10);
   const createTicket = useCreateTicket();
   const [open, setOpen] = React.useState(false);
 
@@ -83,15 +86,18 @@ export default function CaretakerPropertyDetailPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Log maintenance request</DialogTitle>
+            <DialogDescription>
+              Report an issue at this property so it can be tracked through to resolution.
+            </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={handleCreate} className="space-y-3">
+            <form onSubmit={handleCreate} className="space-y-5">
               <FormField
                 control={form.control}
                 name="subject"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-semibold">Subject</FormLabel>
+                    <FormLabel>Subject</FormLabel>
                     <FormControl>
                       <Input className="h-11" {...field} />
                     </FormControl>
@@ -104,7 +110,7 @@ export default function CaretakerPropertyDetailPage() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-semibold">Describe the issue</FormLabel>
+                    <FormLabel>Describe the issue</FormLabel>
                     <FormControl>
                       <Textarea rows={4} {...field} />
                     </FormControl>
@@ -117,7 +123,7 @@ export default function CaretakerPropertyDetailPage() {
                 name="unit"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-semibold">Unit</FormLabel>
+                    <FormLabel>Unit</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="h-11">
@@ -139,7 +145,7 @@ export default function CaretakerPropertyDetailPage() {
                 name="priority"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-semibold">Priority</FormLabel>
+                    <FormLabel>Priority</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="h-11">
@@ -156,11 +162,7 @@ export default function CaretakerPropertyDetailPage() {
                   </FormItem>
                 )}
               />
-              <DialogFooter>
-                <Button type="submit" disabled={createTicket.isPending}>
-                  Log request
-                </Button>
-              </DialogFooter>
+              <FormDialogActions submitLabel="Log request" isPending={createTicket.isPending} />
             </form>
           </Form>
         </DialogContent>
@@ -179,6 +181,7 @@ export default function CaretakerPropertyDetailPage() {
           description="Units for this property haven't been added yet."
         />
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -189,7 +192,7 @@ export default function CaretakerPropertyDetailPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {units.map((u) => (
+            {pagedUnits.map((u) => (
               <TableRow key={u.id}>
                 <TableCell className="font-medium">{u.unit_number}</TableCell>
                 <TableCell>{u.unit_type.replace('_', ' ')}</TableCell>
@@ -203,6 +206,8 @@ export default function CaretakerPropertyDetailPage() {
             ))}
           </TableBody>
         </Table>
+        <SimplePager {...unitsPager} />
+        </>
       )}
     </div>
   );

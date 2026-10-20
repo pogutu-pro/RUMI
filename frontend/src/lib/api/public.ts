@@ -72,9 +72,15 @@ export const getBlogPosts = async (params?: PaginationParams) => {
 };
 
 export const getBlogPost = async (slug: string) => {
-  const response = await api.axios.get<ApiResponse<BlogPost>>(`/home/blog/${slug}/`);
-  if (!response.data.data) throw new Error('Post not found');
-  return response.data.data;
+  // BlogDetailView (Backend/home/views.py) returns the post FLAT at the
+  // top level ({post_id, title, content, ...}) — never wrapped in a
+  // `data` key. Typing this as ApiResponse<BlogPost> and always reading
+  // response.data.data meant .data was undefined on every real response,
+  // so this always threw 'Post not found', even for a published post the
+  // list page correctly showed.
+  const response = await api.axios.get<BlogPost>(`/home/blog/${slug}/`);
+  if (!response.data) throw new Error('Post not found');
+  return response.data;
 };
 
 export const subscribeNewsletter = async (email: string) => {

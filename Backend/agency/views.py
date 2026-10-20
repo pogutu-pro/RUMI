@@ -7,8 +7,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
 from rest_framework.response import Response
 
-from accounting.services import month_bounds
-from accounting.views import OwnerScopedView
+from accounting.books import month_bounds
+from accounting.books_views import OwnerScopedView
 from agency.models import OwnerStatement, OwnerTransaction, PropertyOwner
 from agency.services import AgencyError, OwnerStatementService, OwnerTransactionService
 from audit.models import log_audit

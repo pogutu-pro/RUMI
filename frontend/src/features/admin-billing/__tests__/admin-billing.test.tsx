@@ -2,11 +2,13 @@ import '@testing-library/jest-dom';
 import * as React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import userEvent from '@testing-library/user-event';
 
-import AdminBillingListPage from '@/app/(super-admin)/admin/billing/page';
-import AdminBillingDetailPage from '@/app/(super-admin)/admin/billing/[id]/page';
-import AdminLayout from '@/app/(super-admin)/admin/layout';
+import AdminOrganizationsPage from '@/app/(super-admin)/platform/organizations/page';
+import AdminBillingDetailPage from '@/app/(super-admin)/platform/billing/[id]/page';
+import AdminLayout from '@/app/(super-admin)/platform/layout';
 import { adminBillingApi } from '@/features/admin-billing/api/admin-billing';
+import { OrganizationsTable } from '@/features/admin-billing/components/organizations-table';
 import { UserRole } from '@/features/auth/stores/auth.types';
 import type { AdminBillingDetail } from '@/features/admin-billing/types';
 
@@ -123,15 +125,15 @@ function renderWithClient(ui: React.ReactElement) {
   return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
 
-describe('AdminBillingListPage — search wiring', () => {
+describe('AdminOrganizationsPage — search wiring', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockedListOrganizations.mockResolvedValue([]);
+    mockedListOrganizations.mockResolvedValue({ count: 0, results: [] });
   });
 
   it('debounces the SearchInput 300ms then calls adminBillingApi.listOrganizations with the typed search string', async () => {
     jest.useFakeTimers();
-    renderWithClient(<AdminBillingListPage />);
+    renderWithClient(<AdminOrganizationsPage />);
 
     const input = screen.getByPlaceholderText('Search by organization name…');
     fireEvent.change(input, { target: { value: 'Acme' } });
@@ -140,13 +142,13 @@ describe('AdminBillingListPage — search wiring', () => {
     await act(async () => {
       jest.advanceTimersByTime(200);
     });
-    expect(mockedListOrganizations).not.toHaveBeenCalledWith('Acme');
+    expect(mockedListOrganizations).not.toHaveBeenCalledWith('Acme', 1);
 
     await act(async () => {
       jest.advanceTimersByTime(150);
     });
 
-    expect(mockedListOrganizations).toHaveBeenCalledWith('Acme');
+    expect(mockedListOrganizations).toHaveBeenCalledWith('Acme', 1);
     jest.useRealTimers();
   });
 });
@@ -207,5 +209,23 @@ describe('AdminLayout — role restriction', () => {
     expect(allowedRoles).toEqual([UserRole.SUPER_ADMIN]);
     expect(allowedRoles).not.toContain(UserRole.LANDLORD);
     expect(allowedRoles).not.toContain(UserRole.CARETAKER);
+  });
+});
+
+describe('AdminOrganizationsPage - paging', () => {
+  it('lets the admin reach organizations beyond the first server page', async () => {
+    const row = (n: number) => ({
+      id: `org-${n}`, name: `Org ${n}`, plan_name: 'Pro', subscription_status: 'active', payout_status: 'active',
+    });
+    mockedListOrganizations.mockImplementation(async (_search: string | undefined, page: number) => ({
+      count: 25,
+      results: page === 1 ? Array.from({ length: 20 }, (_, i) => row(i + 1)) : Array.from({ length: 5 }, (_, i) => row(21 + i)),
+    }));
+
+    renderWithClient(<OrganizationsTable />);
+    expect(await screen.findByText('1–20 of 25')).toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText('Next page'));
+    expect(await screen.findByText('21–25 of 25')).toBeInTheDocument();
+    expect(mockedListOrganizations).toHaveBeenLastCalledWith(undefined, 2);
   });
 });

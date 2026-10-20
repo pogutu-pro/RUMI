@@ -14,6 +14,8 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
+from accounting.books import ExpenseService
+from accounting.models import Expense
 from ledger.models import JournalEntry
 from ledger.services import chart
 from ledger.services.posting import LedgerService, Leg
@@ -31,14 +33,14 @@ def _posted(source_type, pk):
 
 
 class Command(BaseCommand):
-    help = 'Backfill ledger journal entries for pre-ledger invoices, credit notes, payments and allocations.'
+    help = 'Backfill ledger journal entries for pre-ledger invoices, credit notes, payments, allocations and expenses.'
 
     def add_arguments(self, parser):
         parser.add_argument('--check', action='store_true', help='Only reconcile; post nothing.')
 
     def handle(self, *args, **options):
         if not options['check']:
-            counts = {'invoices': 0, 'credit_notes': 0, 'payments': 0, 'allocations': 0, 'receipts': 0}
+            counts = {'invoices': 0, 'credit_notes': 0, 'payments': 0, 'allocations': 0, 'receipts': 0, 'expenses': 0}
             for org in Organization.objects.all():
                 with transaction.atomic():
                     self._backfill_org(org, counts)
@@ -100,6 +102,12 @@ class Command(BaseCommand):
                 # Past payments get a receipt for the record — never sent.
                 ReceiptService.issue(payment, notify=False)
                 counts['receipts'] += 1
+
+        # Expenses recorded before they were booked (voided ones never touch the books).
+        for expense in Expense.objects.filter(organization=org, is_void=False).order_by('incurred_on', 'created_at'):
+            if not _posted('expense', expense.pk):
+                ExpenseService._post(expense, expense.recorded_by)
+                counts['expenses'] += 1
 
     def _reconcile(self):
         """Per tenancy: ledger receivable == Σ invoice balances, ledger prepayments == Σ unapplied."""

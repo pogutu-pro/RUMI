@@ -7,12 +7,7 @@ import {
   FileText,
   Shield,
   Briefcase,
-  Facebook,
-  Twitter,
-  Instagram,
-  Linkedin,
   Download,
-  Phone,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -117,13 +112,6 @@ export default function MorePage() {
               description="Get in touch with our support team"
             />
             <MenuItem
-              href="tel:+254700000000"
-              icon={<Phone className="h-6 w-6 text-primary" />}
-              title="Call Us"
-              description="Speak to our customer service"
-              external
-            />
-            <MenuItem
               href="/blog"
               icon={<FileText className="h-6 w-6 text-primary" />}
               title="Blog"
@@ -148,51 +136,6 @@ export default function MorePage() {
               title="Privacy Policy"
               description="Learn how we protect your data"
             />
-          </div>
-        </div>
-
-        {/* Social Media Section */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Connect With Us
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <a
-              href="https://facebook.com/rumi"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex flex-col items-center gap-3 p-4 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors"
-            >
-              <Facebook className="h-8 w-8 text-blue-600" />
-              <span className="text-sm font-medium text-gray-900">Facebook</span>
-            </a>
-            <a
-              href="https://twitter.com/rumi"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex flex-col items-center gap-3 p-4 rounded-lg bg-sky-50 hover:bg-sky-100 transition-colors"
-            >
-              <Twitter className="h-8 w-8 text-sky-600" />
-              <span className="text-sm font-medium text-gray-900">Twitter</span>
-            </a>
-            <a
-              href="https://instagram.com/rumi"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex flex-col items-center gap-3 p-4 rounded-lg bg-pink-50 hover:bg-pink-100 transition-colors"
-            >
-              <Instagram className="h-8 w-8 text-pink-600" />
-              <span className="text-sm font-medium text-gray-900">Instagram</span>
-            </a>
-            <a
-              href="https://linkedin.com/company/rumi"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex flex-col items-center gap-3 p-4 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors"
-            >
-              <Linkedin className="h-8 w-8 text-blue-700" />
-              <span className="text-sm font-medium text-gray-900">LinkedIn</span>
-            </a>
           </div>
         </div>
 

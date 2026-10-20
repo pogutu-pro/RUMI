@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { adminBillingApi } from '../api/admin-billing';
-import type { AdminOverridePayload } from '../types';
+import type { AdminOverridePayload, AdminPlanUpdate } from '../types';
 
 // Same normalized-ApiError shape convention as use-rental.ts/use-payout.ts —
 // the axios interceptor already computes `.message`, never `.response`.
@@ -17,10 +17,25 @@ function errorMessage(err: unknown, fallback: string): string {
  * SearchInput's debounce trigger a backend-filtered refetch (?search=...)
  * rather than a client-side filter of already-loaded rows.
  */
-export function useAdminBillingList(search: string) {
+export function useAdminRevenueSummary() {
   return useQuery({
-    queryKey: ['admin-billing', 'list', search],
-    queryFn: () => adminBillingApi.listOrganizations(search || undefined),
+    queryKey: ['admin-billing', 'revenue'],
+    queryFn: adminBillingApi.getRevenueSummary,
+  });
+}
+
+export function useAdminPlatformOverview() {
+  return useQuery({
+    queryKey: ['admin-billing', 'overview'],
+    queryFn: adminBillingApi.getPlatformOverview,
+  });
+}
+
+export function useAdminBillingList(search: string, page = 1) {
+  return useQuery({
+    queryKey: ['admin-billing', 'list', search, page],
+    queryFn: () => adminBillingApi.listOrganizations(search || undefined, page),
+    placeholderData: (previous) => previous,
   });
 }
 
@@ -43,5 +58,25 @@ export function useOverrideSubscription() {
       toast.success('Override applied');
     },
     onError: (err) => toast.error(errorMessage(err, 'Could not apply override')),
+  });
+}
+
+export function useAdminPlans() {
+  return useQuery({
+    queryKey: ['admin-billing', 'plans'],
+    queryFn: adminBillingApi.listPlans,
+  });
+}
+
+export function useUpdateAdminPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: AdminPlanUpdate }) =>
+      adminBillingApi.updatePlan(id, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-billing'] });
+      // Every place that shows prices (homepage, pricing page, onboarding, landlord billing).
+      qc.invalidateQueries({ queryKey: ['billing', 'plans'] });
+    },
   });
 }

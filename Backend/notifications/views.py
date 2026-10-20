@@ -471,9 +471,13 @@ class NotificationPreferencesView(APIView):
                 'error': 'Failed to update preferences'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Update allowed fields
+        # Update allowed fields. sms_enabled is deliberately excluded — SMS
+        # rent reminders are how RumiaRent gets a tenant's attention when
+        # email goes unread, and letting a tenant silently opt out defeats
+        # the point of the reminder for both them and their landlord. The
+        # field is still readable (always true) but not settable here.
         allowed_fields = [
-            'email_enabled', 'sms_enabled', 'marketing_emails',
+            'email_enabled', 'marketing_emails',
             'booking_updates', 'marketplace_updates', 'roommate_updates'
         ]
 
@@ -482,6 +486,10 @@ class NotificationPreferencesView(APIView):
             if field in request.data:
                 setattr(prefs, field, request.data[field])
                 updated = True
+
+        if not prefs.sms_enabled:
+            prefs.sms_enabled = True
+            updated = True
 
         if updated:
             prefs.save()
@@ -605,8 +613,14 @@ class AdminEmailTemplateListView(APIView):
                 'subject': template.subject,
                 'variables': template.variables,
                 'created_at': template.created_at,
-                'updated_at': template.updated_at
+                'updated_at': template.updated_at,
+                'source': 'custom',
             })
+
+        # The platform's own emails are written in code; list them too so this
+        # page shows every message that actually goes out.
+        from .catalog import EMAIL_CATALOG
+        templates_data.extend({**entry, 'source': 'built_in'} for entry in EMAIL_CATALOG)
 
         return Response({
             'total_templates': len(templates_data),
@@ -726,8 +740,12 @@ class AdminSMSTemplateListView(APIView):
                 'name': template.name,
                 'message': template.message,
                 'variables': template.variables,
-                'created_at': template.created_at
+                'created_at': template.created_at,
+                'source': 'custom',
             })
+
+        from .catalog import SMS_CATALOG
+        templates_data.extend({**entry, 'source': 'built_in'} for entry in SMS_CATALOG)
 
         return Response({
             'total_templates': len(templates_data),
@@ -876,3 +894,57 @@ class AdminNotificationStatsView(APIView):
             },
             'top_failed_types': list(failed_by_type)
         }, status=status.HTTP_200_OK)
+
+
+class AdminDeliveryLogView(APIView):
+    """
+    Admin delivery log: the most recent email and SMS attempts, with outcome.
+
+    GET /notifications/admin/deliveries/?channel=email|sms&status=sent|failed&page=1
+
+    Newest first, 20 per page (the standard paginated envelope), so every
+    delivery ever recorded can be reached, not just the latest few.
+
+    Tech support and super admins only. Message bodies are never stored, so
+    this exposes who was contacted, when, the email subject and any failure
+    reason - not codes or links.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role not in ['tech_support', 'super_admin']:
+            return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+
+        from rest_framework.pagination import PageNumberPagination
+
+        from .delivery_log import DELIVERY_TYPES
+
+        rows = Notification.objects.filter(notification_type__in=DELIVERY_TYPES)
+        channel = request.query_params.get('channel')
+        if channel in ('email', 'sms'):
+            rows = rows.filter(channel=channel)
+        outcome = request.query_params.get('status')
+        if outcome in ('sent', 'failed'):
+            rows = rows.filter(status=outcome)
+
+        class DeliveryPagination(PageNumberPagination):
+            page_size = 20
+
+        paginator = DeliveryPagination()
+        page = paginator.paginate_queryset(rows.select_related('recipient').order_by('-created_at', '-id'), request, view=self)
+        return paginator.get_paginated_response([
+                {
+                    'id': row.id,
+                    'channel': row.channel,
+                    'status': row.status,
+                    'recipient_address': row.recipient_address,
+                    'recipient_name': (
+                        row.recipient.get_full_name().strip() if row.recipient_id else ''
+                    ),
+                    'subject': row.subject or '',
+                    'error_message': row.error_message or '',
+                    'created_at': row.created_at,
+                }
+                for row in page
+        ])

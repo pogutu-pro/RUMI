@@ -6,12 +6,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Pencil, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { FormDialogActions, FormRow } from '@/components/ui/form-layout';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
-} from '@/components/ui/dialog';
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,6 +21,8 @@ import {
 import { PageHeader } from '@/components/dashboard/page-header';
 import type { Tenancy } from '@/features/rental/types';
 import { TenancyMoneySheet } from '@/features/ledger/components/tenancy-money-sheet';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 const tenancySchema = z.object({
   unit: z.string().min(1, 'Choose a unit'),
@@ -63,6 +65,7 @@ const EMPTY_EDIT_FORM = {
 
 export default function TenanciesPage() {
   const { data: tenancies = [], isLoading } = useTenancies();
+  const { pageItems: pagedTenancies, pagerProps: tenanciesPager } = usePagination(tenancies, 10);
   const { data: units = [] } = useUnits();
   const { data: tenants = [] } = useTenants();
   const createTenancy = useCreateTenancy();
@@ -142,12 +145,16 @@ export default function TenanciesPage() {
             <DialogTrigger asChild>
               <Button leftIcon={<Plus className="h-4 w-4" />}>New tenancy</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-xl">
               <DialogHeader>
                 <DialogTitle>New tenancy</DialogTitle>
+                <DialogDescription>
+                  Attach a tenant to a vacant unit. Rent charges are generated from the start date.
+                </DialogDescription>
               </DialogHeader>
               <Form {...form}>
-                <form onSubmit={handleCreate} className="space-y-3">
+                <form onSubmit={handleCreate} className="space-y-5">
+                  <FormRow>
                   <FormField
                     control={form.control}
                     name="unit"
@@ -200,6 +207,8 @@ export default function TenanciesPage() {
                       </FormItem>
                     )}
                   />
+                  </FormRow>
+                  <FormRow>
                   <FormField
                     control={form.control}
                     name="monthly_rent"
@@ -261,11 +270,8 @@ export default function TenanciesPage() {
                       </FormItem>
                     )}
                   />
-                  <DialogFooter>
-                    <Button type="submit" disabled={createTenancy.isPending}>
-                      Save
-                    </Button>
-                  </DialogFooter>
+                  </FormRow>
+                  <FormDialogActions submitLabel="Create tenancy" isPending={createTenancy.isPending} />
                 </form>
               </Form>
             </DialogContent>
@@ -274,12 +280,14 @@ export default function TenanciesPage() {
       />
 
       <Dialog open={!!editingTenancy} onOpenChange={(v) => { if (!v) setEditingTenancy(null); }}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Edit tenancy</DialogTitle>
+            <DialogDescription>Changes apply to future rent charges. Charges already generated are not rewritten.</DialogDescription>
           </DialogHeader>
           <Form {...editForm}>
-            <form onSubmit={handleEdit} className="space-y-3">
+            <form onSubmit={handleEdit} className="space-y-5">
+              <FormRow>
               <FormField
                 control={editForm.control}
                 name="monthly_rent"
@@ -306,6 +314,8 @@ export default function TenanciesPage() {
                   </FormItem>
                 )}
               />
+              </FormRow>
+              <FormRow>
               <FormField
                 control={editForm.control}
                 name="rent_due_day"
@@ -332,6 +342,7 @@ export default function TenanciesPage() {
                   </FormItem>
                 )}
               />
+              </FormRow>
               <FormField
                 control={editForm.control}
                 name="end_date"
@@ -352,7 +363,7 @@ export default function TenanciesPage() {
                   <FormItem>
                     <FormLabel>Renewal notes</FormLabel>
                     <FormControl>
-                      <Textarea {...field} />
+                      <Textarea rows={3} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -365,17 +376,13 @@ export default function TenanciesPage() {
                   <FormItem>
                     <FormLabel>Notes</FormLabel>
                     <FormControl>
-                      <Textarea {...field} />
+                      <Textarea rows={3} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <DialogFooter>
-                <Button type="submit" disabled={updateTenancy.isPending} className="rounded-full">
-                  Save changes
-                </Button>
-              </DialogFooter>
+              <FormDialogActions submitLabel="Save changes" isPending={updateTenancy.isPending} />
             </form>
           </Form>
         </DialogContent>
@@ -386,6 +393,7 @@ export default function TenanciesPage() {
       ) : tenancies.length === 0 ? (
         <p className="text-sm text-muted-foreground">No tenancies yet.</p>
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -398,7 +406,7 @@ export default function TenanciesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tenancies.map((t) => (
+            {pagedTenancies.map((t) => (
               <TableRow key={t.id}>
                 <TableCell className="font-medium">{t.tenant_name}</TableCell>
                 <TableCell>{t.unit_number}</TableCell>
@@ -443,6 +451,8 @@ export default function TenanciesPage() {
             ))}
           </TableBody>
         </Table>
+        <SimplePager {...tenanciesPager} />
+        </>
       )}
 
       <TenancyMoneySheet tenancy={moneyTenancy} onClose={() => setMoneyTenancy(null)} />

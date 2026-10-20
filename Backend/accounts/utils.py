@@ -96,6 +96,33 @@ def reset_login_rate_limit(email):
     cache.delete(cache_key)
 
 
+PASSWORD_RESET_COOLDOWN_SECONDS = 60
+
+
+def check_password_reset_cooldown(email):
+    """
+    Return the remaining cooldown in seconds if a password reset was
+    recently requested for this email (0 if not rate limited). Applied
+    unconditionally to both existing and non-existing emails by the caller,
+    so the cooldown itself never leaks whether an account exists — without
+    this, a user could spam-click "resend" indefinitely and email-bomb any
+    address.
+    """
+    cache_key = f"password_reset_cooldown:{email}"
+    expires_at = cache.get(cache_key)
+    if expires_at is None:
+        return 0
+    remaining = expires_at - timezone.now().timestamp()
+    return max(0, int(remaining))
+
+
+def set_password_reset_cooldown(email):
+    """Start the cooldown window for this email's next reset request."""
+    cache_key = f"password_reset_cooldown:{email}"
+    expires_at = timezone.now().timestamp() + PASSWORD_RESET_COOLDOWN_SECONDS
+    cache.set(cache_key, expires_at, timeout=PASSWORD_RESET_COOLDOWN_SECONDS)
+
+
 def check_otp_rate_limit(email):
     """
     Limit OTP requests to 3 per 15 minutes
@@ -172,184 +199,90 @@ def create_paystack_subaccount(landlord):
     }
 
 
+BRAND_GREEN = '#027F53'
+BRAND_SITE = 'https://rumiarent.com'
+BRAND_LOGO_URL = f'{BRAND_SITE}/images/logo/logo.png'
+_URL_RE = re.compile(r'(https?://[^\s<]+)')
+
+
 def create_branded_email_html(subject, plain_message, recipient_name=None):
     """
-    Convert plain text email to branded HTML email with RUMI branding
+    Wrap a plain-text message in the RumiaRent email layout.
+
+    Inline styles and tables on purpose: Gmail and Outlook strip or mangle
+    <style> blocks, and gradients/transforms don't render reliably in mail
+    clients. All user-supplied text is HTML-escaped; bare URLs become links.
     """
-    # Split message into paragraphs
+    import html as html_lib
+    from django.utils import timezone
+
+    def render_paragraph(text):
+        escaped = html_lib.escape(text).replace('\n', '<br>')
+        linked = _URL_RE.sub(
+            lambda m: f'<a href="{m.group(1)}" style="color:{BRAND_GREEN};word-break:break-all;">{m.group(1)}</a>',
+            escaped,
+        )
+        return (
+            f'<p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;color:#1f2937;">{linked}</p>'
+        )
+
     paragraphs = [p.strip() for p in plain_message.split('\n\n') if p.strip()]
+    body_html = ''.join(render_paragraph(p) for p in paragraphs)
 
-    # Convert plain text to HTML paragraphs
-    html_content = ""
-    for paragraph in paragraphs:
-        # Handle line breaks within paragraphs
-        paragraph = paragraph.replace('\n', '<br>')
-        html_content += f"<p>{paragraph}</p>"
+    # Most message bodies already open with their own "Hi <name>," — adding a
+    # second one from the wrapper printed the greeting twice.
+    already_greeted = bool(paragraphs) and paragraphs[0].lower().startswith(
+        ('hi ', 'hi,', 'hello', 'dear ', 'hey ')
+    )
 
-    # Branded HTML template
-    html_template = f"""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{subject}</title>
-        <style>
-            body {{
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                max-width: 600px;
-                margin: 0 auto;
-                background-color: #f8f9fa;
-                padding: 20px;
-            }}
-            .email-container {{
-                background-color: #ffffff;
-                border-radius: 8px;
-                overflow: hidden;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            }}
-            .header {{
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                padding: 30px 20px;
-                text-align: center;
-                color: white;
-            }}
-            .logo {{
-                max-width: 150px;
-                height: auto;
-                margin-bottom: 10px;
-            }}
-            .brand-name {{
-                font-size: 24px;
-                font-weight: bold;
-                margin: 0;
-                letter-spacing: 2px;
-            }}
-            .content {{
-                padding: 30px;
-            }}
-            .greeting {{
-                font-size: 18px;
-                font-weight: 600;
-                color: #667eea;
-                margin-bottom: 20px;
-            }}
-            .message {{
-                margin-bottom: 30px;
-            }}
-            .message p {{
-                margin-bottom: 15px;
-                font-size: 16px;
-            }}
-            .cta-button {{
-                display: inline-block;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 12px 30px;
-                text-decoration: none;
-                border-radius: 5px;
-                font-weight: 600;
-                margin: 20px 0;
-                transition: transform 0.2s;
-            }}
-            .cta-button:hover {{
-                transform: translateY(-2px);
-            }}
-            .footer {{
-                background-color: #f8f9fa;
-                padding: 20px;
-                text-align: center;
-                border-top: 1px solid #e9ecef;
-            }}
-            .footer-content {{
-                color: #6c757d;
-                font-size: 14px;
-            }}
-            .footer-links {{
-                margin: 15px 0;
-            }}
-            .footer-links a {{
-                color: #667eea;
-                text-decoration: none;
-                margin: 0 10px;
-            }}
-            .contact-info {{
-                margin-top: 15px;
-                font-size: 13px;
-            }}
-            .social-links {{
-                margin-top: 15px;
-            }}
-            .social-links a {{
-                display: inline-block;
-                margin: 0 5px;
-                color: #667eea;
-                text-decoration: none;
-                font-size: 18px;
-            }}
-            @media (max-width: 600px) {{
-                body {{
-                    padding: 10px;
-                }}
-                .content {{
-                    padding: 20px;
-                }}
-                .header {{
-                    padding: 20px;
-                }}
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="email-container">
-            <div class="header">
-                <img src="https://rumi.co.ke/static/images/logo.png" alt="RUMI Logo" class="logo">
-                <h1 class="brand-name">RUMI</h1>
-                <p>Connecting Students with Quality Accommodation</p>
-            </div>
+    greeting = ''
+    if recipient_name and not already_greeted:
+        greeting = (
+            f'<p style="margin:0 0 16px 0;font-size:18px;font-weight:600;color:#111827;">'
+            f'Hi {html_lib.escape(recipient_name)},</p>'
+        )
 
-            <div class="content">
-                {"<div class='greeting'>Hi " + recipient_name + ",</div>" if recipient_name else ""}
-                <div class="message">
-                    {html_content}
-                </div>
-            </div>
+    year = timezone.now().year
+    title = html_lib.escape(subject)
 
-            <div class="footer">
-                <div class="footer-content">
-                    <div class="footer-links">
-                        <a href="https://rumi.co.ke">Visit Website</a> |
-                        <a href="https://rumi.co.ke/dashboard">Dashboard</a> |
-                        <a href="https://rumi.co.ke/support">Support</a>
-                    </div>
-
-                    <div class="contact-info">
-                        <strong>RUMI Platform</strong><br>
-                        Email: info@rumiarent.co.ke | Phone: +254 700 000 000<br>
-                        Nairobi, Kenya
-                    </div>
-
-                    <div class="social-links">
-                        <a href="#"> Facebook</a>
-                        <a href="#"> Twitter</a>
-                        <a href="#"> Instagram</a>
-                        <a href="#"> LinkedIn</a>
-                    </div>
-
-                    <p style="margin-top: 20px; font-size: 12px; color: #adb5bd;">
-                        This email was sent to you because you are a valued member of the RUMI community.<br>
-                        © 2025 RUMI. All rights reserved.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-
-    return html_template
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{title}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:24px 12px;">
+  <tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+      <tr><td style="height:4px;background-color:{BRAND_GREEN};font-size:0;line-height:0;">&nbsp;</td></tr>
+      <tr><td style="padding:28px 32px 20px 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+          <td style="vertical-align:middle;padding-right:12px;">
+            <img src="{BRAND_LOGO_URL}" alt="RumiaRent" width="44" height="48" style="display:block;border:0;height:48px;width:auto;">
+          </td>
+          <td style="vertical-align:middle;font-size:22px;font-weight:700;color:#111827;letter-spacing:-0.2px;">RumiaRent</td>
+        </tr></table>
+      </td></tr>
+      <tr><td style="padding:8px 32px 28px 32px;">
+        {greeting}{body_html}
+      </td></tr>
+      <tr><td style="padding:20px 32px 28px 32px;background-color:#f9fafb;border-top:1px solid #e5e7eb;">
+        <p style="margin:0 0 6px 0;font-size:14px;font-weight:600;color:#111827;">RumiaRent</p>
+        <p style="margin:0 0 10px 0;font-size:13px;line-height:1.5;color:#6b7280;">Rental management for Kenyan landlords and agents.</p>
+        <p style="margin:0 0 14px 0;font-size:13px;color:#6b7280;">
+          <a href="{BRAND_SITE}" style="color:{BRAND_GREEN};text-decoration:none;">rumiarent.com</a>
+          &nbsp;&middot;&nbsp;
+          <a href="mailto:info@rumiarent.com" style="color:{BRAND_GREEN};text-decoration:none;">info@rumiarent.com</a>
+        </p>
+        <p style="margin:0;font-size:12px;line-height:1.5;color:#9ca3af;">You are receiving this email because of activity on your RumiaRent account. &copy; {year} RumiaRent. All rights reserved.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>"""
 
 
 def send_branded_email(subject, message, from_email, recipient_list, recipient_name=None, **kwargs):
@@ -357,6 +290,12 @@ def send_branded_email(subject, message, from_email, recipient_list, recipient_n
     Send branded HTML email using Django's EmailMessage
     """
     from django.core.mail import EmailMessage
+
+    # fail_silently is an argument to .send(), not to EmailMessage() — passing
+    # it through **kwargs into the constructor raised TypeError on every call,
+    # so no branded email (verification code, password reset, ...) was ever
+    # actually sent.
+    fail_silently = kwargs.pop('fail_silently', False)
 
     html_message = create_branded_email_html(subject, message, recipient_name)
 
@@ -371,4 +310,4 @@ def send_branded_email(subject, message, from_email, recipient_list, recipient_n
     email.content_subtype = "html"  # Main content is HTML
     email.body = html_message  # Set HTML as main content
 
-    return email.send(fail_silently=kwargs.get('fail_silently', False))
+    return email.send(fail_silently=fail_silently)

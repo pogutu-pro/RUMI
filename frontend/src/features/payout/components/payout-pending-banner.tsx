@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { usePayoutStatus } from '../hooks/use-payout';
 
@@ -33,11 +34,21 @@ export function PayoutPendingBanner() {
         </button>
       </div>
       {expanded && (
-        <p className="mt-2 text-sm text-muted-foreground">
-          {data.status === 'not_started'
-            ? 'Add your bank details so rent payments can route to you.'
-            : "Your bank details are submitted and being verified. Rent payments won't route to you until this completes."}
-        </p>
+        <div className="mt-2 space-y-3">
+          <p className="text-sm text-muted-foreground">
+            {data.status === 'not_started'
+              ? 'Add your bank details so rent payments can route to you.'
+              : "Your bank details are submitted and being verified. Rent payments won't route to you until this completes."}
+          </p>
+          {data.status === 'not_started' && (
+            <Link
+              href="/landlord/rental/billing"
+              className="inline-block text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
+            >
+              Add bank details
+            </Link>
+          )}
+        </div>
       )}
     </div>
   );

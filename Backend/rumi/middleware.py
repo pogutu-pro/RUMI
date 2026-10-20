@@ -40,6 +40,12 @@ class APIResponseCacheMiddleware(MiddlewareMixin):
             '/metrics/',
         ])
     
+    # The server keeps its own copy (Redis) so most public requests never reach
+    # the database, and every edit clears that copy at once. Browsers must NOT
+    # also keep one for minutes: a price, job or social link an admin has just
+    # changed has to show up on the next visit, not five minutes later.
+    BROWSER_CACHE_CONTROL = 'public, no-cache'
+
     def _has_auth_credentials(self, request):
         """Check if request carries authentication credentials.
 
@@ -88,6 +94,7 @@ class APIResponseCacheMiddleware(MiddlewareMixin):
             response['Content-Type'] = cached_response.get('content_type', 'application/json')
             response['X-Cache'] = 'HIT'
             response['X-Cache-TTL'] = str(cached_response.get('ttl', self.default_timeout))
+            response['Cache-Control'] = self.BROWSER_CACHE_CONTROL
             return response
 
         # Add cache miss header
@@ -136,7 +143,7 @@ class APIResponseCacheMiddleware(MiddlewareMixin):
 
         # Add cache headers
         response['X-Cache'] = 'MISS'
-        response['Cache-Control'] = f'public, max-age={self.default_timeout}'
+        response['Cache-Control'] = self.BROWSER_CACHE_CONTROL
 
         return response
 

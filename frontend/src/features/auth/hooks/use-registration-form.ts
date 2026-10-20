@@ -22,7 +22,7 @@ export function useRegistrationForm<T extends FieldValues>({
   schema,
   defaultValues,
   role,
-  successMessage = 'Registration successful! Please check your email to verify your account.',
+  successMessage = 'Account created. Enter the 6-digit code we emailed you to verify your address.',
 }: UseRegistrationFormOptions<T>) {
   const router = useRouter();
   
@@ -45,9 +45,12 @@ export function useRegistrationForm<T extends FieldValues>({
           throw new Error('Invalid role');
       }
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       toast.success(successMessage);
-      router.push('/login');
+      // The verification email carries a 6-digit code; send the user to the
+      // screen where they can enter it rather than to login.
+      const email = (variables as { email?: string }).email;
+      router.push(email ? `/verify-email?email=${encodeURIComponent(email)}` : '/verify-email');
     },
     onError: (error: any) => {
       const apiErrorResponse = mapApiError(error);

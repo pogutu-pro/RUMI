@@ -13,8 +13,8 @@ import { PageHeader } from '@/components/dashboard/page-header';
 import { useTenancies } from '@/features/rental/hooks/use-rental';
 import {
   useAssignLine, useCreateSupplier, useIgnoreLine, useImportStatement, usePostJournal, useReport, useStatementLines, useSuppliers,
-} from '@/features/accounting/hooks';
-import type { ReportRow } from '@/features/accounting/types';
+} from '@/features/books/hooks';
+import type { ReportRow } from '@/features/books/types';
 import { formatDate, formatKes } from '@/features/ledger/lib/format';
 
 const today = () => new Date().toISOString().slice(0, 10);

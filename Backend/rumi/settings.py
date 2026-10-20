@@ -81,6 +81,8 @@ INSTALLED_APPS = [
     'audit',
     'billing',
     'support',
+    'messaging',
+    'platform_settings',
 ]
 
 # Custom User Model (matches schema: email as unique identifier)
@@ -89,6 +91,7 @@ AUTH_USER_MODEL = 'accounts.User'
 # Performance-optimized middleware
 MIDDLEWARE = [
     'rumi.middleware.SecurityHeadersMiddleware',
+    'platform_settings.middleware.PlatformSettingsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -242,6 +245,9 @@ CORS_ALLOW_METHODS = [
 
 # Email Configuration (Mailtrap)
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+# Route real SMTP through the logging backend so the admin delivery log sees it.
+if EMAIL_BACKEND == 'django.core.mail.backends.smtp.EmailBackend':
+    EMAIL_BACKEND = 'notifications.email_backend.LoggingSMTPEmailBackend'
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.mailtrap.io')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
@@ -253,6 +259,10 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@rumiarent.co.ke')
 # SMS Configuration (Africa's Talking)
 AFRICASTALKING_USERNAME = os.getenv('AFRICASTALKING_USERNAME', 'sandbox')
 AFRICASTALKING_API_KEY = os.getenv('AFRICASTALKING_API_KEY')
+# Hard ceiling on SMS sent per calendar month (counter reset by
+# notifications.tasks.reset_sms_monthly_counter) — protects the prepaid
+# balance from a runaway loop. ~KES 0.80 per SMS.
+SMS_MONTHLY_LIMIT = int(os.getenv('SMS_MONTHLY_LIMIT', '500'))
 
 # Paystack Configuration
 PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
@@ -346,6 +356,10 @@ CELERY_BEAT_SCHEDULE = {
     'billing-process-grace-period-expirations': {
         'task': 'billing.tasks.process_grace_period_expirations',
         'schedule': _crontab(minute=30, hour=1),  # Daily at 1:30 AM
+    },
+    'accounting-send-mri-reminders': {
+        'task': 'accounting.tasks.send_mri_reminders',
+        'schedule': _crontab(minute=15, hour=8),  # Daily at 8:15 AM
     },
     'billing-send-manual-renewal-reminders': {
         'task': 'billing.tasks.send_manual_renewal_reminders',

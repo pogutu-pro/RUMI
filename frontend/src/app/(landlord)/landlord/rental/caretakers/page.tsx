@@ -6,18 +6,20 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { FormDialogActions, FormRow, FormSection } from '@/components/ui/form-layout';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
-} from '@/components/ui/dialog';
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useCaretakers, useCreateCaretaker, useProperties } from '@/features/rental/hooks/use-rental';
 import { GateBanner } from '@/features/rental/components/gate-banner';
 import { isGateRejection } from '@/lib/api/gate';
 import { PageHeader } from '@/components/dashboard/page-header';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 const KENYAN_PHONE_REGEX = /^(\+254|0)[17]\d{8}$/;
 
@@ -46,10 +48,14 @@ const EMPTY_FORM = {
 
 export default function CaretakersPage() {
   const { data: caretakers = [], isLoading } = useCaretakers();
+  const { pageItems: pagedCaretakers, pagerProps: caretakersPager } = usePagination(caretakers, 10);
   const { data: properties = [] } = useProperties();
   const createCaretaker = useCreateCaretaker();
   const [open, setOpen] = React.useState(false);
   const [propertyIds, setPropertyIds] = React.useState<string[]>([]);
+  // On by default: a caretaker usually signs tenants up and collects their rent.
+  const [canHandlePayments, setCanHandlePayments] = React.useState(true);
+  const [canManageTenants, setCanManageTenants] = React.useState(true);
   const gateError = isGateRejection(createCaretaker.error);
 
   const form = useForm<z.infer<typeof caretakerSchema>>({
@@ -68,10 +74,16 @@ export default function CaretakersPage() {
         phone: normalizeKenyanPhone(values.phone),
         emergency_contact_phone: normalizeKenyanPhone(values.emergency_contact_phone),
         property_ids: propertyIds,
+        permissions: {
+          ...(canHandlePayments ? { can_view_payments: true, can_record_payments: true } : {}),
+          ...(canManageTenants ? { can_manage_tenants: true } : {}),
+        },
       });
       setOpen(false);
       form.reset();
       setPropertyIds([]);
+      setCanHandlePayments(true);
+      setCanManageTenants(true);
     } catch {
       // handled via createCaretaker.error / isGateRejection in render
     }
@@ -86,12 +98,15 @@ export default function CaretakersPage() {
             <DialogTrigger asChild>
               <Button leftIcon={<Plus className="h-4 w-4" />}>Add caretaker</Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[85vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-xl">
               <DialogHeader>
                 <DialogTitle>Add caretaker</DialogTitle>
+                <DialogDescription>
+                  Give a caretaker access to manage the properties you choose. They&apos;ll be emailed a link to set their password.
+                </DialogDescription>
               </DialogHeader>
               <Form {...form}>
-                <form onSubmit={handleCreate} className="space-y-3">
+                <form onSubmit={handleCreate} className="space-y-5">
                   <FormField
                     control={form.control}
                     name="full_name"
@@ -99,12 +114,13 @@ export default function CaretakersPage() {
                       <FormItem>
                         <FormLabel>Full name</FormLabel>
                         <FormControl>
-                          <Input {...field} className="h-11" />
+                          <Input {...field} placeholder="e.g. Peter Otieno" className="h-11" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  <FormRow>
                   <FormField
                     control={form.control}
                     name="email"
@@ -112,11 +128,8 @@ export default function CaretakersPage() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input {...field} type="email" className="h-11" />
+                          <Input {...field} type="email" placeholder="name@example.com" className="h-11" />
                         </FormControl>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          They&apos;ll get an email to set up their password.
-                        </p>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -128,16 +141,16 @@ export default function CaretakersPage() {
                       <FormItem>
                         <FormLabel>Phone</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="+254712345678" className="h-11" />
+                          <Input {...field} type="tel" placeholder="0712 345 678" className="h-11" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  </FormRow>
 
-                  <div className="pt-2 border-t">
-                    <p className="mb-2 text-sm font-semibold">Emergency contact</p>
-                    <div className="space-y-3">
+                  <FormSection title="Emergency contact" description="Who we call if the caretaker can&apos;t be reached.">
+                    <FormRow>
                       <FormField
                         control={form.control}
                         name="emergency_contact_name"
@@ -158,21 +171,20 @@ export default function CaretakersPage() {
                           <FormItem>
                             <FormLabel>Phone</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="+254712345678" className="h-11" />
+                              <Input {...field} placeholder="0712 345 678" className="h-11" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                    </div>
-                  </div>
+                    </FormRow>
+                  </FormSection>
 
                   {properties.length > 0 && (
-                    <div className="pt-2 border-t">
-                      <p className="mb-2 text-sm font-semibold">Assign to properties</p>
+                    <FormSection title="Assign to properties" description="They can only see and manage the properties you tick.">
                       <div className="space-y-2">
                         {properties.map((p) => (
-                          <label key={p.id} className="flex items-center gap-2 text-sm">
+                          <label key={p.id} className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40">
                             <Checkbox
                               checked={propertyIds.includes(p.id)}
                               onCheckedChange={() => togglePropertyId(p.id)}
@@ -181,14 +193,40 @@ export default function CaretakersPage() {
                           </label>
                         ))}
                       </div>
-                    </div>
+                    </FormSection>
                   )}
+                  <FormSection title="Permissions" description="What this caretaker is allowed to do.">
+                    <div className="space-y-2">
+                    <label className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40">
+                      <Checkbox
+                        className="mt-0.5"
+                        checked={canManageTenants}
+                        onCheckedChange={(v) => setCanManageTenants(v === true)}
+                      />
+                      <span>
+                        <span className="font-medium">Add and manage tenants</span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                          Lets them register new tenants for the properties they look after.
+                        </span>
+                      </span>
+                    </label>
+                    <label className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/40">
+                      <Checkbox
+                        className="mt-0.5"
+                        checked={canHandlePayments}
+                        onCheckedChange={(v) => setCanHandlePayments(v === true)}
+                      />
+                      <span>
+                        <span className="font-medium">See rent and record payments</span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                          Lets them view who owes rent and record cash, bank or M-Pesa payments received from tenants.
+                        </span>
+                      </span>
+                    </label>
+                    </div>
+                  </FormSection>
                   {gateError && <GateBanner gate={gateError} onDismiss={() => createCaretaker.reset()} />}
-                  <DialogFooter>
-                    <Button type="submit" disabled={createCaretaker.isPending} className="rounded-full">
-                      Save
-                    </Button>
-                  </DialogFooter>
+                  <FormDialogActions submitLabel="Save" isPending={createCaretaker.isPending} />
                 </form>
               </Form>
             </DialogContent>
@@ -201,6 +239,7 @@ export default function CaretakersPage() {
       ) : caretakers.length === 0 ? (
         <p className="text-sm text-muted-foreground">No caretakers yet — add the first one above.</p>
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -212,7 +251,7 @@ export default function CaretakersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {caretakers.map((c) => (
+            {pagedCaretakers.map((c) => (
               <TableRow key={c.id}>
                 <TableCell className="font-medium">{c.full_name}</TableCell>
                 <TableCell>{c.phone}</TableCell>
@@ -231,6 +270,8 @@ export default function CaretakersPage() {
             ))}
           </TableBody>
         </Table>
+        <SimplePager {...caretakersPager} />
+        </>
       )}
     </div>
   );

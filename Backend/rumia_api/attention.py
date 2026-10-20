@@ -14,7 +14,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from accounting.models import StatementLine
-from accounting.views import OwnerScopedView
+from accounting.books_views import OwnerScopedView
 from agency.models import PropertyOwner
 from agency.services import OwnerStatementService
 from leasing.models import DebtCase

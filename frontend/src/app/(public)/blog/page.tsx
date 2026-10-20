@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { ArrowRight, Clock, Users, BookOpen, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 type BlogCategory =
   | 'all'
-  | 'students'
+  | 'tenants'
   | 'landlords'
   | 'caretakers'
   | 'product'
@@ -36,6 +37,7 @@ interface BlogPost {
   publishedAt: string;
   meta?: string;
   hasVideo?: boolean;
+  featuredImage?: string;
 }
 
 interface ApiBlogPost {
@@ -58,18 +60,18 @@ interface ApiBlogPost {
 
 function transformApiPost(apiPost: ApiBlogPost): BlogPost {
   const categoryMap: Record<string, BlogCategory> = {
-    'student_stories': 'students',
+    'student_stories': 'tenants',
     'landlord_tips': 'landlords',
-    'housing_guides': 'students',
+    'housing_guides': 'tenants',
     'company_news': 'product',
     'product_updates': 'product',
     'marketplace_highlights': 'product',
   };
 
   const audienceLabels: Record<string, string> = {
-    'student_stories': 'For Students',
+    'student_stories': 'For Tenants',
     'landlord_tips': 'For Landlords',
-    'housing_guides': 'For Students',
+    'housing_guides': 'For Tenants',
     'company_news': 'News',
     'product_updates': 'Updates',
     'marketplace_highlights': 'Featured',
@@ -86,12 +88,13 @@ function transformApiPost(apiPost: ApiBlogPost): BlogPost {
     publishedAt: apiPost.published_at,
     meta: apiPost.tags.join(' • '),
     hasVideo: !!apiPost.video_url,
+    featuredImage: apiPost.featured_image,
   };
 }
 
 const filters: { id: BlogCategory; label: string }[] = [
   { id: 'all', label: 'All' },
-  { id: 'students', label: 'Students' },
+  { id: 'tenants', label: 'Tenants' },
   { id: 'landlords', label: 'Landlords' },
   { id: 'caretakers', label: 'Caretakers' },
   { id: 'product', label: 'Updates' },
@@ -108,12 +111,19 @@ export default function BlogPage() {
       try {
         setLoading(true);
         const response = await getBlogPosts({ limit: 20 });
-        // Handle different possible API response structures
-         
+        // Handle different possible API response structures. The real one
+        // — BlogListView in Backend/home/views.py — returns
+        // {total_posts, posts}, a hand-rolled shape, not DRF's standard
+        // {count, results} pagination envelope. Checking only `data` and
+        // `results` (never `posts`) meant this branch never matched
+        // anything real: the list silently rendered empty regardless of
+        // how many posts were actually published.
         const responseAny = response as any;
         let postsData: ApiBlogPost[] = [];
         if (Array.isArray(responseAny)) {
           postsData = responseAny;
+        } else if (responseAny?.posts && Array.isArray(responseAny.posts)) {
+          postsData = responseAny.posts;
         } else if (responseAny?.data && Array.isArray(responseAny.data)) {
           postsData = responseAny.data;
         } else if (responseAny?.results && Array.isArray(responseAny.results)) {
@@ -200,11 +210,11 @@ export default function BlogPage() {
             <h1 className="mb-5 text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl leading-tight">
               Insights for better
               <br />
-              campus living.
+              rental living.
             </h1>
             <p className="mb-6 text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-              Guides, stories, and updates for students, landlords, and
-              caretakers building safer, better managed hostels.
+              Guides, stories, and updates for tenants, landlords, and
+              caretakers building safer, better managed rentals.
             </p>
             <div className="flex flex-wrap justify-center gap-4 text-base text-muted-foreground">
               <div className="inline-flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-full">
@@ -253,6 +263,22 @@ export default function BlogPage() {
             <FadeIn className="mb-10">
               <Link href={`/blog/${featured.slug}`} className="block group">
                 <Card className="overflow-hidden border-border bg-card hover:border-primary/50 hover:shadow-lg transition-all duration-300 p-0">
+                  {featured.featuredImage && (
+                    <div className="relative aspect-[2/1] w-full overflow-hidden bg-muted">
+                      {/* unoptimized: this path is served by Caddy straight from the
+                          backend's media volume, not the Next.js server, so the
+                          built-in image optimizer can't fetch it and 400s. */}
+                      <Image
+                        src={featured.featuredImage}
+                        alt={featured.title}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, 768px"
+                        priority
+                        unoptimized
+                      />
+                    </div>
+                  )}
                   <div className="p-6 md:p-8">
                     <div className="flex flex-wrap items-center gap-3 mb-4">
                       <Badge className="bg-primary/10 text-primary border-primary/20 text-sm font-semibold px-3 py-1">
@@ -314,44 +340,60 @@ export default function BlogPage() {
                 {rest.map((post) => (
                   <FadeInItem key={post.slug}>
                     <Link href={`/blog/${post.slug}`} className="block group">
-                      <Card className="border-border bg-card hover:border-primary/50 hover:shadow-md transition-all duration-200">
-                        <CardHeader className="pb-2">
-                          <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <Badge variant="outline" className="text-sm font-medium">
-                              {post.audienceLabel}
-                            </Badge>
-                            <span className="text-sm text-muted-foreground flex items-center gap-1">
-                              <Clock className="h-3.5 w-3.5" />
-                              {post.readTime}
-                            </span>
-                            {post.hasVideo && (
-                              <Badge variant="outline" className="text-xs font-medium text-blue-600 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
-                                Video
-                              </Badge>
-                            )}
+                      <Card className="border-border bg-card hover:border-primary/50 hover:shadow-md transition-all duration-200 overflow-hidden">
+                        <div className="flex gap-4 p-0">
+                          {post.featuredImage && (
+                            <div className="relative hidden h-full w-36 shrink-0 overflow-hidden bg-muted sm:block">
+                              <Image
+                                src={post.featuredImage}
+                                alt={post.title}
+                                fill
+                                className="object-cover"
+                                sizes="144px"
+                                unoptimized
+                              />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <CardHeader className="pb-2">
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <Badge variant="outline" className="text-sm font-medium">
+                                  {post.audienceLabel}
+                                </Badge>
+                                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                                  <Clock className="h-3.5 w-3.5" />
+                                  {post.readTime}
+                                </span>
+                                {post.hasVideo && (
+                                  <Badge variant="outline" className="text-xs font-medium text-blue-600 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
+                                    Video
+                                  </Badge>
+                                )}
+                              </div>
+                              <CardTitle className="text-xl font-bold text-foreground group-hover:text-primary transition-colors leading-snug">
+                                {post.title}
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                              <CardDescription className="text-base text-muted-foreground leading-relaxed line-clamp-2 mb-3">
+                                {post.description}
+                              </CardDescription>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">
+                                  {new Date(post.publishedAt).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  })}
+                                </span>
+                                <span className="text-sm font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                  Read
+                                  <ArrowRight className="h-4 w-4" />
+                                </span>
+                              </div>
+                            </CardContent>
                           </div>
-                          <CardTitle className="text-xl font-bold text-foreground group-hover:text-primary transition-colors leading-snug">
-                            {post.title}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          <CardDescription className="text-base text-muted-foreground leading-relaxed line-clamp-2 mb-3">
-                            {post.description}
-                          </CardDescription>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">
-                              {new Date(post.publishedAt).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                              })}
-                            </span>
-                            <span className="text-sm font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                              Read
-                              <ArrowRight className="h-4 w-4" />
-                            </span>
-                          </div>
-                        </CardContent>
+                        </div>
                       </Card>
                     </Link>
                   </FadeInItem>

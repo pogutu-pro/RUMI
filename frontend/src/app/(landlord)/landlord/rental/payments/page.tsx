@@ -18,6 +18,8 @@ import { useReversePayment } from '@/features/ledger/hooks/use-ledger';
 import { ReceiptDownloadButton, ReceiptResendButton } from '@/features/ledger/components/receipt-actions';
 import { formatDate, formatKes } from '@/features/ledger/lib/format';
 import type { Payment } from '@/features/rental/types';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = {
   success: 'default',
@@ -41,6 +43,7 @@ export default function PaymentsPage() {
   const { data: payments = [], isLoading } = usePayments();
   const [recording, setRecording] = React.useState(false);
   const [reversing, setReversing] = React.useState<Payment | null>(null);
+  const { pageItems: pagedPayments, pagerProps: paymentsPager } = usePagination(payments, 10);
 
   return (
     <div className="space-y-4">
@@ -74,7 +77,7 @@ export default function PaymentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {payments.map((p) => (
+              {pagedPayments.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>{formatDate(p.paid_at ?? p.created_at)}</TableCell>
                   <TableCell className="font-mono text-xs">{p.internal_reference}</TableCell>
@@ -111,6 +114,7 @@ export default function PaymentsPage() {
               ))}
             </TableBody>
           </Table>
+          <SimplePager {...paymentsPager} />
         </div>
       )}
 

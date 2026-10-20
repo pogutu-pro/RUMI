@@ -15,7 +15,7 @@ Does NOT touch, import from, or depend on the pre-existing broken
 seed_test_users.py command in this same directory.
 """
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -25,28 +25,50 @@ from django.db import transaction
 from django.utils import timezone
 
 from accounts.models import CaretakerProfile, LandlordProfile
+from accounts.utils import generate_strong_password
 from organizations.models import Organization, OrganizationMembership, PayoutAccount
 from properties.models import CaretakerPropertyAssignment, Property, RentalUnit, Tenancy
-from rent.models import RentCharge
+from rent.models import Payment, PaymentAllocation, RentCharge
 from tenants.models import EscalationPolicy, TenantProfile
 
 User = get_user_model()
 
-# Fixed demo credentials — hardcoded on purpose, never read from
-# environment or settings, so the printed table is always accurate.
+# Fixed demo credentials — hardcoded on purpose (never read from environment
+# or settings) so the printed table is always accurate for local dev, where
+# this fixed, memorable password is genuinely fine. --password overrides it
+# for anywhere that isn't local dev (see add_arguments) — this file's known
+# password must never be used on a reachable-from-the-internet environment.
 TEST_PASSWORD = 'Test@Rumia2026'
 
-LANDLORD_EMAIL = 'landlord@demo.rumiarent.co.ke'
-CARETAKER_EMAIL = 'caretaker@demo.rumiarent.co.ke'
-TENANT_EMAIL = 'tenant@demo.rumiarent.co.ke'
-TECH_SUPPORT_EMAIL = 'techsupport@demo.rumiarent.co.ke'
-SUPER_ADMIN_EMAIL = 'superadmin@demo.rumiarent.co.ke'
+LANDLORD_EMAIL = 'landlord@demo.rumiarent.com'
+CARETAKER_EMAIL = 'caretaker@demo.rumiarent.com'
+TENANT_EMAIL = 'tenant@demo.rumiarent.com'
+TECH_SUPPORT_EMAIL = 'techsupport@demo.rumiarent.com'
+SUPER_ADMIN_EMAIL = 'superadmin@demo.rumiarent.com'
 
 
 class Command(BaseCommand):
     help = "Seed one loggable-in demo account per role, with connected domain data (idempotent)."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--password',
+            default=None,
+            help=(
+                "Override the fixed local-dev demo password. Required in "
+                "practice anywhere reachable from the internet — the "
+                "hardcoded TEST_PASSWORD in this file is public (it's in "
+                "the repo). Pass --password random to have one generated "
+                "and printed instead of choosing one yourself."
+            ),
+        )
+
     def handle(self, *args, **options):
+        password = options.get('password')
+        if password == 'random':
+            password = generate_strong_password(16)
+        self.password = password or TEST_PASSWORD
+
         with transaction.atomic():
             # 1. Subscription plans first — gate-checked endpoints (GatingService)
             # fall back to this catalog for any org with no OrganizationSubscription.
@@ -172,22 +194,57 @@ class Command(BaseCommand):
                     status='active',
                 )
 
+            # Paid-up, not owing — a demo account that greets every reviewer
+            # with "you owe rent" undermines the whole point of a rent
+            # platform being trustworthy. Last month and this month are both
+            # fully paid, so the tenant dashboard shows the confident
+            # "you're paid up" state with real payment history to browse,
+            # not a manufactured overdue balance.
             today = timezone.now().date()
-            RentCharge.objects.get_or_create(
-                organization=org,
-                tenancy=tenancy,
-                parent_property=prop,
-                unit=unit,
-                tenant=tenant_profile,
-                period_start=today.replace(day=1),
-                period_end=today.replace(day=28),
-                due_date=today.replace(day=5),
-                defaults={
-                    'amount_due': Decimal('22000.00'),
-                    'amount_paid': Decimal('0.00'),
-                    'status': 'due',
-                },
-            )
+            last_month_start = (today.replace(day=1) - timedelta(days=1)).replace(day=1)
+            for period_start in (last_month_start, today.replace(day=1)):
+                period_end = period_start.replace(day=28)
+                due_date = period_start.replace(day=5)
+                charge, _ = RentCharge.objects.get_or_create(
+                    organization=org,
+                    tenancy=tenancy,
+                    parent_property=prop,
+                    unit=unit,
+                    tenant=tenant_profile,
+                    period_start=period_start,
+                    period_end=period_end,
+                    due_date=due_date,
+                    defaults={
+                        'amount_due': Decimal('22000.00'),
+                        'amount_paid': Decimal('0.00'),
+                        'status': 'due',
+                    },
+                )
+                if charge.status != 'paid':
+                    payment, _ = Payment.objects.get_or_create(
+                        internal_reference=f'DEMO-RENT-{tenancy.id}-{period_start.isoformat()}',
+                        defaults={
+                            'organization': org,
+                            'tenancy': tenancy,
+                            'tenant': tenant_profile,
+                            'parent_property': prop,
+                            'unit': unit,
+                            'amount': charge.amount_due,
+                            'currency': 'KES',
+                            'payment_method': 'paystack',
+                            'provider': 'paystack',
+                            'provider_reference': f'DEMO-PSK-{tenancy.id}-{period_start.isoformat()}',
+                            'status': 'success',
+                            'paid_at': timezone.make_aware(datetime.combine(due_date, datetime.min.time())),
+                        },
+                    )
+                    PaymentAllocation.objects.get_or_create(
+                        payment=payment,
+                        rent_charge=charge,
+                        defaults={'amount': charge.amount_due},
+                    )
+                    charge.recalculate_status()
+                    charge.save()
 
             # 9. Tech support — no organization or supporting data.
             self._get_or_reset_user(
@@ -218,7 +275,7 @@ class Command(BaseCommand):
                 'onboarding_stage': 'COMPLETED',
             },
         )
-        user.set_password(TEST_PASSWORD)
+        user.set_password(self.password)
         user.role = role
         user.is_verified = True
         user.onboarding_stage = 'COMPLETED'
@@ -242,13 +299,13 @@ class Command(BaseCommand):
         if user is None:
             user = User.objects.create_superuser(
                 email=SUPER_ADMIN_EMAIL,
-                password=TEST_PASSWORD,
+                password=self.password,
                 first_name='Demo',
                 last_name='SuperAdmin',
                 phone_number='+254766666666',
             )
         else:
-            user.set_password(TEST_PASSWORD)
+            user.set_password(self.password)
             user.role = 'super_admin'
             user.is_staff = True
             user.is_superuser = True
@@ -273,5 +330,5 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('-' * len(header)))
         for role, email in rows:
             self.stdout.write(
-                self.style.SUCCESS(f"{role:<14} {email:<40} {TEST_PASSWORD}")
+                self.style.SUCCESS(f"{role:<14} {email:<40} {self.password}")
             )

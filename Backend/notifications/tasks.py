@@ -5,6 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.template import Template, Context
 from accounts.utils import send_branded_email
+from .delivery_log import DELIVERY_TYPES, log_delivery, suppressed
 
 
 @shared_task
@@ -68,15 +69,15 @@ def send_notification(recipient_id, notification_type, channel, context):
             status='pending'
         )
 
-        # Send via appropriate service
+        # Send via appropriate service. This task keeps its own Notification
+        # row, so the automatic delivery log is suppressed to avoid a duplicate.
         try:
-            if channel == 'email':
-                _send_email_via_mailtrap(recipient.email, subject, message)
-            elif channel == 'sms':
-                send_sms_via_africastalking(recipient.phone_number, message)
-            elif channel == 'in_app':
-                # Already stored in DB, no external service needed
-                pass
+            # in_app needs no external service: it is already stored in the DB.
+            with suppressed():
+                if channel == 'email':
+                    _send_email_via_mailtrap(recipient.email, subject, message)
+                elif channel == 'sms':
+                    send_sms_via_africastalking(recipient.phone_number, message)
 
             notification.status = 'sent'
             notification.sent_at = timezone.now()
@@ -168,9 +169,59 @@ def _send_email_via_mailtrap(recipient, subject, html_content):
     return email.send(fail_silently=False)
 
 
+class SMSDeliveryError(Exception):
+    """Africa's Talking accepted the HTTP request but refused the recipient."""
+
+
+# Africa's Talking per-recipient status codes that mean the message was
+# taken for delivery. Everything else (401 RiskHold, 403 InvalidPhoneNumber,
+# 405 InsufficientBalance, 406 UserInBlacklist, 407 CouldNotRoute, ...) is a
+# refusal — the API still answers HTTP 201 for those.
+_AT_ACCEPTED_STATUS_CODES = {100, 101, 102}
+
+SMS_COUNTER_KEY = 'sms:monthly_count'
+
+
+def normalize_kenyan_phone(phone_number):
+    """
+    Turn the ways a Kenyan number gets stored (0712…, 0101…, 254712…,
+    +254 712 …) into E.164 (+254712…). Anything else is returned stripped
+    but otherwise untouched, so Africa's Talking rejects it visibly rather
+    than us guessing a country.
+    """
+    cleaned = ''.join(ch for ch in str(phone_number) if ch.isdigit() or ch == '+')
+    if cleaned.startswith('+'):
+        return cleaned
+    if cleaned.startswith('254') and len(cleaned) == 12:
+        return '+' + cleaned
+    if cleaned.startswith('0') and len(cleaned) == 10:
+        return '+254' + cleaned[1:]
+    return cleaned
+
+
 def send_sms_via_africastalking(phone_number, message):
     """
-    Send SMS via Africa's Talking, with a simple monthly rate limit.
+    Send SMS via Africa's Talking and record the outcome in the delivery log.
+
+    Thin wrapper over `_deliver_sms`, which holds the actual sending rules.
+    """
+    try:
+        result = _deliver_sms(phone_number, message)
+    except Exception as exc:
+        log_delivery(channel='sms', address=str(phone_number or ''), ok=False, error=exc)
+        raise
+    log_delivery(channel='sms', address=str(phone_number or ''), ok=True)
+    return result
+
+
+def _deliver_sms(phone_number, message):
+    """
+    Send SMS via Africa's Talking, with a monthly ceiling
+    (settings.SMS_MONTHLY_LIMIT).
+
+    Raises on any failure — including Africa's Talking answering HTTP 201 but
+    refusing the recipient (blacklisted, invalid number, no balance) — so
+    callers never record a refused message as sent.
 
     Public (no leading underscore) so other apps — e.g. the RumiaRent rental
     domain — can call this directly without depending on the DB-template
@@ -178,16 +229,17 @@ def send_sms_via_africastalking(phone_number, message):
     """
     if not phone_number:
         raise ValueError("Phone number required for SMS")
+    phone_number = normalize_kenyan_phone(phone_number)
 
-    # Check monthly SMS limit
-    monthly_count = cache.get('sms:monthly_count', 0)
-    if monthly_count >= 50:  # Configurable limit
+    monthly_count = cache.get(SMS_COUNTER_KEY, 0)
+    if monthly_count >= settings.SMS_MONTHLY_LIMIT:
         raise Exception("SMS monthly limit reached")
 
     if not settings.AFRICASTALKING_API_KEY:
         # No credentials configured (e.g. local dev) — mock instead of failing.
         print(f"MOCK SMS to {phone_number}: {message}")
-        cache.incr('sms:monthly_count')
+        cache.add(SMS_COUNTER_KEY, 0, timeout=None)
+        cache.incr(SMS_COUNTER_KEY)
         return {"mock": True}
 
     import africastalking
@@ -199,7 +251,14 @@ def send_sms_via_africastalking(phone_number, message):
 
     response = sms.send(message, [phone_number])
 
-    cache.incr('sms:monthly_count')
+    recipients = (response or {}).get('SMSMessageData', {}).get('Recipients', [])
+    refused = [r for r in recipients if r.get('statusCode') not in _AT_ACCEPTED_STATUS_CODES]
+    if refused or not recipients:
+        detail = ', '.join(f"{r.get('status')} ({r.get('statusCode')})" for r in refused) or 'no recipient result'
+        raise SMSDeliveryError(f"Africa's Talking did not accept the message: {detail}")
+
+    cache.add(SMS_COUNTER_KEY, 0, timeout=None)
+    cache.incr(SMS_COUNTER_KEY)
     return response
 
 
@@ -251,10 +310,12 @@ def retry_failed_notifications():
 
     # Get failed notifications from last 24 hours
     cutoff_time = timezone.now() - timedelta(hours=24)
+    # Delivery-log rows are a record, not a work queue: retrying them here
+    # would flip real failures back to 'pending' and hide them.
     failed_notifications = Notification.objects.filter(
         status='failed',
         created_at__gte=cutoff_time
-    )
+    ).exclude(notification_type__in=DELIVERY_TYPES)
 
     retried_count = 0
     for notification in failed_notifications:
@@ -301,7 +362,7 @@ def send_notification_digest():
             context = {
                 'first_name': user.first_name,
                 'unread_count': unread_notifications.count(),
-                'login_url': 'https://rumi.co.ke/login'
+                'login_url': f'{settings.FRONTEND_URL}/login'
             }
 
             send_notification.delay(

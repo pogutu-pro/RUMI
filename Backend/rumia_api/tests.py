@@ -24,7 +24,7 @@ from accounts.models import CaretakerProfile, LandlordProfile, PasswordResetToke
 from audit.models import AuditLog
 from organizations.models import Organization, OrganizationMembership, PayoutAccount
 from properties.models import Property, RentalUnit, Tenancy, CaretakerPropertyAssignment
-from rent.models import Payment, PaymentAllocation, RentCharge
+from rent.models import Payment, PaymentAllocation, Receipt, RentCharge
 from rent.providers.base import InitiatePaymentResult, ProviderConfigStatus, ProviderStatus, VerifyPaymentResult
 from rent.providers.paystack import PaystackProvider
 from rent.services.income_flow import IncomeFlowService
@@ -1173,6 +1173,45 @@ class CaretakerEndpointTests(RumiaTestFixtures):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn('caretaker', mail.outbox[0].body.lower())
 
+    def test_invited_caretaker_can_set_a_password_and_sign_in(self):
+        """
+        Regression: the whole invite journey. A caretaker added by a landlord
+        must be able to use the emailed token to set a password and then sign
+        in, with nothing left to onboard (they were once bounced between
+        /onboarding and their dashboard forever) and no email-code step (the
+        invite link already proved they own the address).
+        """
+        landlord, _, org = self.create_landlord_with_org()
+        client = APIClient()
+        client.force_authenticate(user=landlord)
+        resp = client.post('/api/v1/caretakers/', {
+            'full_name': 'Jane Caretaker',
+            'email': 'jane.invited@test.com',
+            'phone': '+254722333444',
+            'emergency_contact_name': 'Peter Kin',
+            'emergency_contact_phone': '+254733444555',
+        }, format='json')
+        self.assertEqual(resp.status_code, 201)
+
+        caretaker = User.objects.get(email='jane.invited@test.com')
+        self.assertEqual(caretaker.onboarding_stage, 'COMPLETED')
+        self.assertFalse(caretaker.is_verified)
+
+        token = PasswordResetToken.objects.get(user=caretaker)
+        anon = APIClient()
+        confirm = anon.post('/api/v1/accounts/password/reset/confirm/', {
+            'token': str(token.token),
+            'new_password': 'Caretaker#2026x',
+            'confirm_password': 'Caretaker#2026x',
+        }, format='json')
+        self.assertEqual(confirm.status_code, 200)
+
+        login = anon.post('/api/v1/accounts/login/', {
+            'email': 'jane.invited@test.com', 'password': 'Caretaker#2026x',
+        }, format='json')
+        self.assertEqual(login.status_code, 200)
+        self.assertEqual(login.data['user']['onboarding_stage'], 'COMPLETED')
+
     def test_caretaker_creation_requires_valid_phone_format(self):
         landlord, _, org = self.create_landlord_with_org()
         client = APIClient()
@@ -1332,3 +1371,85 @@ class PaymentsPhase0RegressionTests(RumiaTestFixtures):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual([p['internal_reference'] for p in response.data], ['RUMIA-NEW', 'RUMIA-OLD'])
+
+
+class ManualPaymentRecordingTests(RumiaTestFixtures):
+    """Cash / bank payments recorded by a landlord or a permitted caretaker."""
+
+    def setUp(self):
+        self.landlord, _, self.org = self.create_landlord_with_org()
+        self.prop, self.unit = self.create_property_with_unit(self.org)
+        _, self.tenant = self.create_tenant(self.org)
+        self.tenancy = self.create_tenancy(self.org, self.prop, self.unit, self.tenant)
+        self.charge = self.create_rent_charge(self.tenancy)
+
+    def _caretaker(self, permissions, assigned=True, email='ct@test.com'):
+        user = User.objects.create_user(
+            email=email, password='TestPass123!', first_name='Care', last_name='Taker',
+            role='caretaker', phone_number='+254733333333',
+        )
+        profile = CaretakerProfile.objects.create(
+            user=user, landlord=LandlordProfile.objects.get(user=self.landlord),
+            emergency_contact_name='E', emergency_contact_phone='+254744444444',
+            created_by=self.landlord, permissions=permissions,
+        )
+        OrganizationMembership.objects.get_or_create(
+            organization=self.org, user=user, defaults={'role': 'caretaker'},
+        )
+        if assigned:
+            CaretakerPropertyAssignment.objects.create(
+                caretaker_profile=profile, property_assignment=self.prop,
+                organization=self.org, assigned_by=self.landlord,
+            )
+        return user
+
+    def _record(self, user, **overrides):
+        client = APIClient()
+        client.force_authenticate(user=user)
+        payload = {'tenancy': str(self.tenancy.id), 'amount': '22000.00', 'payment_method': 'cash'}
+        payload.update(overrides)
+        return client.post('/api/v1/rent/payments/manual/', payload, format='json')
+
+    def test_landlord_cash_payment_settles_the_oldest_charge(self):
+        resp = self._record(self.landlord, notes='Receipt 0042')
+        self.assertEqual(resp.status_code, 201)
+        self.charge.refresh_from_db()
+        self.assertEqual(self.charge.status, 'paid')
+        payment = Payment.objects.get()
+        self.assertEqual((payment.provider, payment.payment_method, payment.status), ('manual', 'cash', 'success'))
+        self.assertEqual(payment.notes, 'Receipt 0042')
+        self.assertEqual(payment.recorded_by, self.landlord)
+
+    def test_partial_cash_payment_leaves_the_balance(self):
+        self._record(self.landlord, amount='5000.00')
+        self.charge.refresh_from_db()
+        self.assertEqual(self.charge.status, 'partially_paid')
+        self.assertEqual(self.charge.outstanding, Decimal('17000.00'))
+
+    def test_caretaker_with_permission_can_record_on_an_assigned_property(self):
+        caretaker = self._caretaker({'can_view_payments': True, 'can_record_payments': True})
+        self.assertEqual(self._record(caretaker).status_code, 201)
+        self.assertEqual(Payment.objects.get().recorded_by, caretaker)
+
+    def test_caretaker_without_permission_is_refused(self):
+        caretaker = self._caretaker({'can_view_payments': True})
+        self.assertEqual(self._record(caretaker).status_code, 403)
+        self.assertEqual(Payment.objects.count(), 0)
+
+    def test_caretaker_cannot_record_on_a_property_they_are_not_assigned_to(self):
+        caretaker = self._caretaker({'can_record_payments': True}, assigned=False)
+        self.assertEqual(self._record(caretaker).status_code, 403)
+        self.assertEqual(Payment.objects.count(), 0)
+
+    def test_tenant_cannot_record_a_payment_for_themselves(self):
+        tenant_user = self.tenant.user
+        self.assertEqual(self._record(tenant_user).status_code, 403)
+
+    def test_recording_issues_a_receipt_to_the_tenant(self):
+        from unittest import mock
+        with mock.patch('rent.tasks.deliver_receipt_task.delay') as queued, \
+                self.captureOnCommitCallbacks(execute=True):
+            self._record(self.landlord)
+        payment = Payment.objects.get()
+        self.assertTrue(Receipt.objects.filter(payment=payment).exists())
+        queued.assert_called_once()

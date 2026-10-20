@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Loader2, AlertCircle, ChevronLeft } from 'lucide-react';
 
 import { FormField, PasswordField } from '@/components/ui/form-fields';
@@ -33,6 +35,7 @@ export function LoginForm({
   showRegisterLink = true,
   redirectTo,
 }: LoginFormProps) {
+  const router = useRouter();
   const { mutate: login, isPending } = useLogin();
   const { mutate: checkEmail, isPending: isCheckingEmail } = useCheckEmail();
   const [serverError, setServerError] = useState<string | null>(null);
@@ -79,6 +82,14 @@ export function LoginForm({
         onSuccess?.();
       },
       onError: (err: any) => {
+        // The password was right but the email was never verified. The server
+        // has already emailed a fresh code; take the user to enter it.
+        if (err?.error === 'email_not_verified') {
+          toast.info('Please verify your email. We have sent you a new code.');
+          router.push(`${AUTH_ROUTES.VERIFY_EMAIL}?email=${encodeURIComponent(data.email)}`);
+          return;
+        }
+
         // 1. Identify status code from multiple possible locations
         const status = err?.statusCode || err?.status || err?.response?.status;
         
@@ -125,18 +136,14 @@ export function LoginForm({
 
       {step === 'email' ? (
         <div className="space-y-4">
-          <div className="text-center mb-8 border-b-2 border-primary/10 pb-4">
-            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter">Identity Check</h2>
-          </div>
-
           <FormField
             label="Email"
             type="email"
-            placeholder="enter your email"
+            placeholder="you@example.com"
             autoComplete="email"
             error={errors.email?.message}
             required
-            className="h-12 text-base rounded-none border-2 focus:border-primary"
+            className="h-12 text-base"
             aria-invalid={!!errors.email}
             {...register('email')}
           />
@@ -144,7 +151,7 @@ export function LoginForm({
           <Button
             type="button"
             onClick={handleContinue}
-            className="w-full h-12 text-base font-black bg-primary hover:bg-primary/90 text-white rounded-none uppercase tracking-widest"
+            className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 text-white"
             disabled={isCheckingEmail}
           >
             {isCheckingEmail ? (
@@ -160,7 +167,7 @@ export function LoginForm({
           {showRegisterLink && (
             <div className="text-center mt-4">
               <p className="text-sm text-gray-600">
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <Link
                   href={AUTH_ROUTES.REGISTER}
                   className="font-semibold text-primary hover:text-primary/80 transition-colors"

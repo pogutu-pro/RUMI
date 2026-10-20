@@ -10,12 +10,16 @@ import { UserRole } from '@/features/auth/stores/auth.types';
 import { UnifiedThemeProvider } from '@/components/providers/unified-theme-provider';
 import { useUiStore } from '@/stores/ui.store';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getUserInitials } from '@/lib/utils/user';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { getUserInitials } from '@/lib/utils/user';
 import { cn } from '@/lib/utils/cn';
+import { RumiaLoader } from '@/components/ui/rumia-loader';
 import { OrganizationSwitcher } from '@/features/rental/components/organization-switcher';
+import { AccountMenu } from '@/components/dashboard/account-menu';
+import { NotificationBell } from '@/features/notifications';
+import { useUnreadMessageCount } from '@/features/messaging';
 
 export interface DashboardShellNavItem {
   href: string;
@@ -37,8 +41,15 @@ function activeHref(nav: DashboardShellNavItem[], pathname: string) {
 export interface DashboardShellProps {
   allowedRoles: UserRole[];
   nav: DashboardShellNavItem[];
+  /** Where the top-right account menu's "Settings" item links to. */
+  settingsHref: string;
   maxWidth?: string;
   bannerSlot?: React.ReactNode;
+  /** OrganizationSwitcher writes to a landlord-scoped store (SelectedOrgStore)
+   * — meaningless in shells whose sections are already platform-wide, not
+   * org-scoped (e.g. the super-admin shell's own Users/Support sections).
+   * Defaults true so every existing caller keeps today's behavior. */
+  showOrgSwitcher?: boolean;
   children: React.ReactNode;
 }
 
@@ -47,11 +58,14 @@ function NavLinks({
   collapsed,
   pathname,
   onNavigate,
+  badges = {},
 }: {
   nav: DashboardShellNavItem[];
   collapsed: boolean;
   pathname: string;
   onNavigate?: () => void;
+  /** Unread counts keyed by nav href. */
+  badges?: Record<string, number>;
 }) {
   const current = activeHref(nav, pathname);
   return (
@@ -60,6 +74,8 @@ function NavLinks({
         const isActive = item.href === current;
         const Icon = item.icon;
         const heading = item.section && item.section !== nav[index - 1]?.section ? item.section : null;
+        // Attention counts come with the nav item; unread chat counts arrive keyed by href.
+        const count = (item.badge ?? 0) + (badges[item.href] ?? 0);
         const link = (
           <Link
             key={item.href}
@@ -75,20 +91,20 @@ function NavLinks({
           >
             <span className="relative">
               <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-              {collapsed && !!item.badge && (
-                <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-destructive" aria-hidden="true" />
+              {collapsed && count > 0 && (
+                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background" aria-hidden="true" />
               )}
             </span>
             {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
-            {!collapsed && !!item.badge && (
+            {!collapsed && count > 0 && (
               <span
+                aria-label={`${count} need attention`}
                 className={cn(
-                  'min-w-5 rounded-full px-1.5 text-center text-xs font-semibold',
-                  isActive ? 'bg-primary-foreground/20' : 'bg-destructive text-destructive-foreground',
+                  'ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold',
+                  isActive ? 'bg-primary-foreground text-primary' : 'bg-destructive text-destructive-foreground',
                 )}
-                aria-label={`${item.badge} need attention`}
               >
-                {item.badge > 99 ? '99+' : item.badge}
+                {count > 99 ? '99+' : count}
               </span>
             )}
           </Link>
@@ -97,7 +113,7 @@ function NavLinks({
         const entry = collapsed ? (
           <Tooltip key={item.href} delayDuration={200}>
             <TooltipTrigger asChild>{link}</TooltipTrigger>
-            <TooltipContent side="right">{item.label}{item.badge ? ` (${item.badge})` : ''}</TooltipContent>
+            <TooltipContent side="right">{item.label}{count ? ` (${count})` : ''}</TooltipContent>
           </Tooltip>
         ) : link;
 
@@ -119,44 +135,62 @@ function NavLinks({
   );
 }
 
-function SidebarUserFooter({
-  collapsed,
+/**
+ * Pinned to the bottom-left of the sidebar: who is signed in, and the one-click
+ * way out. Collapses to a lone logout icon when the sidebar is collapsed.
+ */
+function SidebarFooter({
   name,
   email,
+  photoUrl,
+  collapsed,
   onLogout,
 }: {
-  collapsed: boolean;
   name: string;
   email: string;
+  photoUrl: string | null;
+  collapsed: boolean;
   onLogout: () => void;
 }) {
+  const logoutButton = (
+    <button
+      type="button"
+      onClick={onLogout}
+      aria-label="Log out"
+      className={cn(
+        'flex items-center gap-2 rounded-xl text-sm font-medium text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-400',
+        collapsed ? 'h-10 w-10 justify-center' : 'w-full px-3 py-2.5',
+      )}
+    >
+      <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
+      {!collapsed && <span>Log out</span>}
+    </button>
+  );
+
   return (
-    <div className="border-t px-3 py-3">
-      <div className={cn('flex items-center gap-3', collapsed && 'flex-col')}>
-        <Avatar className="h-9 w-9 shrink-0">
-          <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
-            {getUserInitials(name) || 'U'}
-          </AvatarFallback>
-        </Avatar>
-        {!collapsed && (
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-foreground">{name}</p>
+    <div className={cn('mt-auto space-y-2 border-t p-3', collapsed && 'flex flex-col items-center')}>
+      {!collapsed && (
+        <div className="flex items-center gap-3 px-1 py-1">
+          <Avatar className="h-9 w-9 shrink-0">
+            {photoUrl && <AvatarImage src={photoUrl} alt={name} />}
+            <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
+              {getUserInitials(name) || 'U'}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-foreground">{name}</p>
             <p className="truncate text-xs text-muted-foreground">{email}</p>
           </div>
-        )}
+        </div>
+      )}
+      {collapsed ? (
         <Tooltip delayDuration={200}>
-          <TooltipTrigger asChild>
-            <button
-              onClick={onLogout}
-              aria-label="Log out"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </TooltipTrigger>
+          <TooltipTrigger asChild>{logoutButton}</TooltipTrigger>
           <TooltipContent side="right">Log out</TooltipContent>
         </Tooltip>
-      </div>
+      ) : (
+        logoutButton
+      )}
     </div>
   );
 }
@@ -172,7 +206,15 @@ function SidebarUserFooter({
  * authorization boundary is the backend RBAC in
  * `Backend/core/permissions/rumia.py`, unchanged by this component.
  */
-export function DashboardShell({ allowedRoles, nav, maxWidth, bannerSlot, children }: DashboardShellProps) {
+export function DashboardShell({
+  allowedRoles,
+  nav,
+  settingsHref,
+  maxWidth,
+  bannerSlot,
+  showOrgSwitcher = true,
+  children,
+}: DashboardShellProps) {
   const { user, status, isAuthenticated, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -180,6 +222,11 @@ export function DashboardShell({ allowedRoles, nav, maxWidth, bannerSlot, childr
   const isSidebarOpen = useUiStore((s) => s.isSidebarOpen);
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen);
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
+  const { data: unreadMessages = 0 } = useUnreadMessageCount(isAuthenticated);
+  const navBadges = React.useMemo(
+    () => Object.fromEntries(nav.filter((n) => n.href.endsWith('/messages')).map((n) => [n.href, unreadMessages])),
+    [nav, unreadMessages],
+  );
 
   const collapsed = isDesktop && !isSidebarOpen;
 
@@ -195,22 +242,28 @@ export function DashboardShell({ allowedRoles, nav, maxWidth, bannerSlot, childr
   }, [status, isAuthenticated, user, router, allowedRoles]);
 
   if (status === 'checking' || status === 'idle' || !isAuthenticated) {
-    return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Loading…</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <RumiaLoader size={96} label="Loading your dashboard" />
+      </div>
+    );
   }
 
   const name = user ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || user.email : '';
+  const firstName = user?.first_name?.trim() || name;
   const email = user?.email ?? '';
+  const photoUrl = user?.profile_picture ?? null;
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
 
   return (
-    <UnifiedThemeProvider forcedTheme="light">
+    <UnifiedThemeProvider>
       <TooltipProvider>
         <div className="flex min-h-screen bg-muted/40">
           {/* Desktop sidebar */}
           {isDesktop && (
             <aside
               className={cn(
-                'sticky top-0 flex h-screen shrink-0 flex-col border-r bg-background transition-all duration-200',
+                'sticky top-0 flex h-screen shrink-0 flex-col self-start border-r bg-background transition-all duration-200',
                 collapsed ? 'w-[76px]' : 'w-64',
               )}
             >
@@ -228,13 +281,13 @@ export function DashboardShell({ allowedRoles, nav, maxWidth, bannerSlot, childr
                 </button>
               </div>
 
-              {isSuperAdmin && <OrganizationSwitcher collapsed={collapsed} />}
+              {isSuperAdmin && showOrgSwitcher && <OrganizationSwitcher collapsed={collapsed} />}
 
               <div className="flex-1 overflow-y-auto py-2">
-                <NavLinks nav={nav} collapsed={collapsed} pathname={pathname} />
+                <NavLinks nav={nav} collapsed={collapsed} pathname={pathname} badges={navBadges} />
               </div>
 
-              <SidebarUserFooter collapsed={collapsed} name={name} email={email} onLogout={logout} />
+              <SidebarFooter name={name} email={email} photoUrl={photoUrl} collapsed={collapsed} onLogout={logout} />
             </aside>
           )}
 
@@ -250,6 +303,10 @@ export function DashboardShell({ allowedRoles, nav, maxWidth, bannerSlot, childr
                   <Menu className="h-5 w-5" />
                 </button>
                 <span className="text-base font-semibold text-foreground">RumiaRent</span>
+                <div className="ml-auto flex items-center gap-1">
+                  <NotificationBell />
+                  <AccountMenu name={name} email={email} photoUrl={photoUrl} settingsHref={settingsHref} onLogout={logout} />
+                </div>
               </header>
               <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
                 <SheetContent side="left" className="flex w-72 flex-col p-0">
@@ -257,17 +314,26 @@ export function DashboardShell({ allowedRoles, nav, maxWidth, bannerSlot, childr
                   <div className="flex h-16 items-center px-4">
                     <span className="text-lg font-semibold text-foreground">RumiaRent</span>
                   </div>
-                  {isSuperAdmin && <OrganizationSwitcher collapsed={false} />}
+                  {isSuperAdmin && showOrgSwitcher && <OrganizationSwitcher collapsed={false} />}
                   <div className="flex-1 overflow-y-auto py-2">
-                    <NavLinks nav={nav} collapsed={false} pathname={pathname} onNavigate={() => setMobileNavOpen(false)} />
+                    <NavLinks nav={nav} collapsed={false} pathname={pathname} badges={navBadges} onNavigate={() => setMobileNavOpen(false)} />
                   </div>
-                  <SidebarUserFooter collapsed={false} name={name} email={email} onLogout={logout} />
+                  <SidebarFooter name={name} email={email} photoUrl={photoUrl} collapsed={false} onLogout={logout} />
                 </SheetContent>
               </Sheet>
             </>
           )}
 
           <div className="min-w-0 flex-1">
+            {isDesktop && (
+              <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-background px-6">
+                <p className="truncate text-sm font-medium text-foreground">Welcome back, {firstName}</p>
+                <div className="flex items-center gap-1">
+                  <NotificationBell />
+                  <AccountMenu name={name} email={email} photoUrl={photoUrl} settingsHref={settingsHref} onLogout={logout} />
+                </div>
+              </header>
+            )}
             <main className={cn('mx-auto space-y-6 px-4 py-6 md:py-8', maxWidth ?? 'max-w-5xl', !isDesktop && 'pt-[4.5rem]')}>
               {bannerSlot}
               {children}

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
@@ -21,6 +22,14 @@ import { AUTH_ROUTES } from '@/lib/constants/routes';
 export default function ForgotPasswordPage() {
   const [emailSent, setEmailSent] = React.useState<string | null>(null);
   const [resendSuccess, setResendSuccess] = React.useState(false);
+  // Seconds left before another request can be sent. Previously there was
+  // no cooldown at all: once the mutation resolved (usually well under a
+  // second), the button was immediately clickable again, so a user could
+  // just keep clicking "Resend" and queue an unbounded number of emails.
+  // The backend now enforces this too (accounts/views.py
+  // PasswordResetRequestView), so this is UI feedback for a real limit,
+  // not just a client-side nicety.
+  const [cooldown, setCooldown] = React.useState(0);
   const forgotPassword = useForgotPassword();
 
   const {
@@ -34,22 +43,56 @@ export default function ForgotPasswordPage() {
 
   const loading = forgotPassword.isPending || isSubmitting;
   const hasError = Boolean(forgotPassword.error);
+  const canSubmit = !loading && cooldown === 0;
+
+  React.useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown((seconds) => (seconds <= 1 ? 0 : seconds - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
+  // A successful request always starts the cooldown (the backend sends
+  // retry_after_seconds on every 200; 60s is just a defensive fallback).
+  const startCooldown = (seconds: number | undefined) => {
+    setCooldown(typeof seconds === 'number' && seconds > 0 ? seconds : 60);
+  };
+
+  // An error only starts a cooldown when it's actually the 429 rate-limit
+  // response carrying one — a genuine failure (network blip, 500) must NOT
+  // block the user from retrying immediately.
+  const startCooldownFromError = (error: unknown) => {
+    const retryAfter = (
+      error as { response?: { data?: { retry_after_seconds?: number } } }
+    )?.response?.data?.retry_after_seconds;
+    if (typeof retryAfter === 'number' && retryAfter > 0) {
+      setCooldown(retryAfter);
+    }
+  };
 
   const onSubmit = handleSubmit((data) => {
+    if (!canSubmit) return;
     forgotPassword.mutate(data, {
-      onSuccess: () => {
+      onSuccess: (response) => {
         setEmailSent(data.email);
         setResendSuccess(false);
+        startCooldown(response.retry_after_seconds);
       },
+      onError: startCooldownFromError,
     });
   });
 
   const handleResend = () => {
-    if (!emailSent) return;
+    if (!emailSent || !canSubmit) return;
     forgotPassword.mutate(
       { email: emailSent },
       {
-        onSuccess: () => setResendSuccess(true),
+        onSuccess: (response) => {
+          setResendSuccess(true);
+          startCooldown(response.retry_after_seconds);
+        },
+        onError: startCooldownFromError,
       },
     );
   };
@@ -59,12 +102,15 @@ export default function ForgotPasswordPage() {
       <motion.section
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full"
+        className="mx-auto w-full max-w-md"
       >
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-8 space-y-6">
+        <Link href="/" className="mb-6 flex justify-center">
+          <Image src="/images/logo/logo.png" alt="RumiaRent" width={40} height={40} />
+        </Link>
+        <div className="bg-white rounded-2xl border border-border/70 shadow-sm p-6 sm:p-8 space-y-6">
           <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle2 className="w-9 h-9 text-green-600" />
+            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+              <CheckCircle2 className="w-7 h-7 text-primary" />
             </div>
           </div>
 
@@ -76,9 +122,9 @@ export default function ForgotPasswordPage() {
             <p className="font-medium text-gray-900">{emailSent}</p>
           </header>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
-            <h3 className="font-medium text-blue-900">Next steps</h3>
-            <ol className="list-decimal list-inside text-sm text-blue-800 space-y-1">
+          <div className="bg-muted/50 border border-border rounded-xl p-4 space-y-2">
+            <h3 className="text-sm font-semibold text-foreground">Next steps</h3>
+            <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-1">
               <li>Check your email (and spam folder)</li>
               <li>Open the reset link</li>
               <li>Create your new password</li>
@@ -88,7 +134,7 @@ export default function ForgotPasswordPage() {
 
           <div className="space-y-4">
             {resendSuccess && (
-              <p className="text-center text-sm text-green-600">
+              <p className="text-center text-sm text-primary">
                 Reset link resent successfully
               </p>
             )}
@@ -96,7 +142,7 @@ export default function ForgotPasswordPage() {
             <Button
               variant="outline"
               className="w-full"
-              disabled={loading}
+              disabled={!canSubmit}
               onClick={handleResend}
             >
               {loading ? (
@@ -104,6 +150,8 @@ export default function ForgotPasswordPage() {
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Resending...
                 </>
+              ) : cooldown > 0 ? (
+                `Resend in ${cooldown}s`
               ) : (
                 'Resend reset link'
               )}
@@ -113,7 +161,7 @@ export default function ForgotPasswordPage() {
           <div className="pt-4 border-t text-center">
             <Link
               href={AUTH_ROUTES.LOGIN}
-              className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+              className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to login
@@ -132,12 +180,15 @@ export default function ForgotPasswordPage() {
     <motion.section
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full"
+      className="mx-auto w-full max-w-md"
     >
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-8 space-y-6">
+      <Link href="/" className="mb-6 flex justify-center">
+        <Image src="/images/logo/logo.png" alt="RumiaRent" width={40} height={40} />
+      </Link>
+      <div className="bg-white rounded-2xl border border-border/70 shadow-sm p-6 sm:p-8 space-y-6">
         <header className="text-center space-y-2">
-          <div className="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center">
-            <Mail className="w-6 h-6 text-blue-600" />
+          <div className="w-12 h-12 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+            <Mail className="w-6 h-6 text-primary" />
           </div>
           <h1 className="text-2xl font-semibold text-gray-900">
             Forgot your password?
@@ -173,7 +224,7 @@ export default function ForgotPasswordPage() {
                 placeholder="you@example.com"
                 disabled={loading}
                 className={cn(
-                  'pl-10 transition-all',
+                  'h-11 pl-10 transition-all',
                   errors.email && 'border-red-500 focus-visible:ring-red-500',
                 )}
                 {...register('email')}
@@ -185,12 +236,14 @@ export default function ForgotPasswordPage() {
             )}
           </div>
 
-          <Button disabled={loading} className="w-full h-11">
+          <Button disabled={!canSubmit} className="w-full h-11">
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Sending instructions...
               </>
+            ) : cooldown > 0 ? (
+              `Try again in ${cooldown}s`
             ) : (
               'Send reset instructions'
             )}
@@ -200,7 +253,7 @@ export default function ForgotPasswordPage() {
         <div className="pt-4 border-t text-center">
           <Link
             href={AUTH_ROUTES.LOGIN}
-            className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to login

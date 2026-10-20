@@ -13,6 +13,15 @@ const PAYOUT_STATUS_KEY = ['payout', 'status'] as const;
 export const usePayoutStatus = () =>
   useQuery({ queryKey: PAYOUT_STATUS_KEY, queryFn: payoutApi.getStatus });
 
+/** Live Paystack bank list — long staleTime since this changes rarely and
+ * every landlord hitting the payout form would otherwise refetch it. */
+export const useBankList = () =>
+  useQuery({
+    queryKey: ['payout', 'banks'],
+    queryFn: payoutApi.listBanks,
+    staleTime: 1000 * 60 * 30,
+  });
+
 export const useSubmitPayoutDetails = () => {
   const qc = useQueryClient();
   return useMutation({

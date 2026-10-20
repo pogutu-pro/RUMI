@@ -9,6 +9,8 @@ from core.permissions.rumia import get_canonical_role
 from organizations.models import Organization
 from properties.models import RentalUnit
 
+from notifications.in_app import display_name, notify_in_app, role_url
+
 from .models import SupportTicket, TicketMessage
 from .serializers import (
     SupportTicketDetailSerializer,
@@ -19,6 +21,45 @@ from .serializers import (
 
 def _is_staff_role(role: str) -> bool:
     return role in ('tech_support', 'tech_support_admin', 'super_admin')
+
+
+def _notify_staff_of_new_ticket(ticket, author) -> None:
+    from django.contrib.auth import get_user_model
+
+    staff = get_user_model().objects.filter(
+        is_active=True, role__in=['tech_support', 'tech_support_admin', 'super_admin'],
+    ).exclude(id=author.id)
+    for person in staff:
+        notify_in_app(
+            person, notification_type='ticket',
+            subject=f'New support ticket from {display_name(author)}',
+            message=ticket.subject,
+            url=role_url(person, 'support'),
+        )
+
+
+def _notify_ticket_reply(ticket, author, text: str) -> None:
+    """A staff reply tells the requester; a requester reply tells whoever is handling it."""
+    if _is_staff_role(get_canonical_role(author)):
+        recipients = [ticket.created_by]
+    else:
+        from django.contrib.auth import get_user_model
+
+        recipients = [ticket.assigned_to] if ticket.assigned_to_id else list(
+            get_user_model().objects.filter(
+                is_active=True, role__in=['tech_support', 'tech_support_admin', 'super_admin'],
+            )
+        )
+    for person in recipients:
+        if person is None or person.id == author.id:
+            continue
+        notify_in_app(
+            person, notification_type='ticket',
+            subject=f'New reply on "{ticket.subject[:60]}"',
+            message=f'{display_name(author)}: {text[:120]}',
+            url=role_url(person, 'support'),
+            dedupe_key=f'ticket-reply:{ticket.id}',
+        )
 
 
 def _user_organization_id(user):
@@ -196,6 +237,7 @@ class SupportTicketListCreateView(APIView):
             priority=priority,
             unit_id=unit_id,
         )
+        _notify_staff_of_new_ticket(ticket, request.user)
         return Response(SupportTicketSerializer(ticket).data, status=status.HTTP_201_CREATED)
 
 
@@ -235,6 +277,14 @@ class SupportTicketDetailView(APIView):
             ticket.assigned_to_id = request.data.get('assigned_to') or None
 
         ticket.save(update_fields=['status', 'assigned_to', 'updated_at'])
+        if new_status:
+            notify_in_app(
+                ticket.created_by, notification_type='ticket',
+                subject=f'Your ticket is now {ticket.get_status_display().lower()}',
+                message=ticket.subject,
+                url=role_url(ticket.created_by, 'support'),
+                dedupe_key=f'ticket-status:{ticket.id}',
+            )
         return Response(SupportTicketSerializer(ticket).data)
 
 
@@ -269,4 +319,5 @@ class TicketMessageListCreateView(APIView):
             ticket.status = 'open'
             ticket.save(update_fields=['status', 'updated_at'])
 
+        _notify_ticket_reply(ticket, request.user, message)
         return Response(TicketMessageSerializer(msg).data, status=status.HTTP_201_CREATED)

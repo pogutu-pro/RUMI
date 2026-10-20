@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusPill, type StatusPillProps } from '@/components/ui/status-pill';
@@ -7,12 +8,14 @@ import { PriceDisplay } from '@/components/ui/price-display';
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
 import {
+  useBillingAccess,
   useMySubscription,
   useSubscribe,
   useSwitchPlan,
 } from '@/features/billing/hooks/use-subscription';
 import { usePlans } from '@/features/billing/hooks/use-plans';
 import { usePayoutStatus } from '@/features/payout/hooks/use-payout';
+import { PayoutDetailsForm } from '@/features/payout/components/payout-details-form';
 import type { OrganizationSubscription } from '@/features/billing/types';
 import type { PayoutStatus } from '@/features/payout/types';
 
@@ -46,11 +49,13 @@ const PAYOUT_STATUS_VARIANT: Record<PayoutStatus, NonNullable<StatusPillProps['s
 export default function BillingPayoutPage() {
   const { data: subscription, isLoading: subscriptionLoading, error: subscriptionError } =
     useMySubscription();
+  const { data: access } = useBillingAccess();
   const { data: payout, isLoading: payoutLoading } = usePayoutStatus();
   const { data: plans, isLoading: plansLoading, isError: plansError, refetch: refetchPlans } =
     usePlans();
   const subscribeMutation = useSubscribe();
   const switchPlanMutation = useSwitchPlan();
+  const [editingPayout, setEditingPayout] = React.useState(false);
 
   const subscriptionNotFound =
     (subscriptionError as { statusCode?: number } | undefined)?.statusCode === 404;
@@ -80,10 +85,28 @@ export default function BillingPayoutPage() {
               </StatusPill>
             </div>
           ) : subscriptionNotFound ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="text-sm text-muted-foreground">No active subscription yet</p>
-              <StatusPill status="neutral">No subscription</StatusPill>
-            </div>
+            access?.on_trial ? (
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="text-lg font-semibold">Enterprise · free trial</p>
+                  <StatusPill status="success">
+                    {access.trial_days_left} {access.trial_days_left === 1 ? 'day' : 'days'} left
+                  </StatusPill>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Every feature is unlocked until your trial ends. Choose a plan below to carry on without a break.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-sm text-muted-foreground">
+                  {access?.trial_expired
+                    ? 'Your free trial has ended. You are on the Starter plan limits.'
+                    : 'No active subscription yet'}
+                </p>
+                <StatusPill status="neutral">No subscription</StatusPill>
+              </div>
+            )
           ) : (
             <p className="text-sm text-muted-foreground">
               Something went wrong. Please try again.
@@ -96,20 +119,45 @@ export default function BillingPayoutPage() {
         <CardHeader>
           <CardTitle className="text-base">Payout</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-5">
           {payoutLoading ? (
             <div className="skeleton h-16 rounded-xl" />
           ) : payout ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <StatusPill status={PAYOUT_STATUS_VARIANT[payout.status]}>
-                {payout.status.replace(/_/g, ' ')}
-              </StatusPill>
-              {payout.status !== 'not_started' && (
-                <p className="text-sm text-muted-foreground">
-                  {payout.bank_name} · {payout.bank_account_number_masked}
-                </p>
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <StatusPill status={PAYOUT_STATUS_VARIANT[payout.status]}>
+                    {payout.status.replace(/_/g, ' ')}
+                  </StatusPill>
+                  {payout.status !== 'not_started' && (
+                    <p className="text-sm text-muted-foreground">
+                      {payout.bank_name} · {payout.bank_account_number_masked}
+                    </p>
+                  )}
+                </div>
+                {payout.status !== 'not_started' && !editingPayout && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => setEditingPayout(true)}>
+                    Edit bank details
+                  </Button>
+                )}
+              </div>
+
+              {payout.status === 'not_started' && (
+                <div>
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    This is where tenant rent payments actually get paid out to you — add your
+                    bank details so Paystack can settle rent into your account.
+                  </p>
+                  <PayoutDetailsForm />
+                </div>
               )}
-            </div>
+
+              {payout.status !== 'not_started' && editingPayout && (
+                <div className="border-t pt-5">
+                  <PayoutDetailsForm onSuccess={() => setEditingPayout(false)} />
+                </div>
+              )}
+            </>
           ) : (
             <p className="text-sm text-muted-foreground">
               Something went wrong. Please try again.
@@ -149,11 +197,11 @@ export default function BillingPayoutPage() {
                 key={plan.id}
                 className={`rounded-3xl border p-8 ${
                   isCurrentPlan
-                    ? 'border-primary bg-white shadow-xl'
-                    : 'border-gray-100 bg-white shadow-sm'
+                    ? 'border-primary bg-card shadow-xl'
+                    : 'border-border bg-card shadow-sm'
                 }`}
               >
-                <h3 className="text-2xl font-semibold text-gray-900">{plan.name}</h3>
+                <h3 className="text-2xl font-semibold text-foreground">{plan.name}</h3>
                 <div className="mt-2 flex items-baseline gap-1">
                   <PriceDisplay amount={plan.price} size="lg" />
                   <span className="text-sm text-muted-foreground">/month</span>

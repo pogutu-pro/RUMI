@@ -10,7 +10,7 @@ from rest_framework.test import APIClient
 
 from accounting.models import StatementLine, Supplier
 from accounting.reports import ManualJournalService, ReconciliationService, ReportError, Reports
-from accounting.services import ExpenseError, ExpenseService
+from accounting.books import ExpenseError, ExpenseService
 from paybill.models import PaybillAccount
 from paybill.services import PaybillService
 from rent.models import Payment
@@ -35,7 +35,7 @@ class ReportFixtures(RumiaTestFixtures):
         InvoiceService.create_invoice(self.tenancy, 'deposit', [LineSpec('deposit', D('20000'))],
                                       period_start=TODAY, period_end=TODAY, due_date=TODAY)
         ExpenseService.record(self.org, parent_property=self.prop, category='repairs', description='Paint',
-                              amount=D('5000'), expense_date=TODAY, paid_from='cash')
+                              amount=D('5000'), incurred_on=TODAY, paid_from='cash')
 
     def tearDown(self):
         self.sms.stop()
@@ -83,13 +83,13 @@ class SupplierTests(ReportFixtures):
     def test_supplier_on_expense_and_isolation(self):
         supplier = Supplier.objects.create(organization=self.org, name='Juma Hardware')
         expense = ExpenseService.record(self.org, supplier_ref=supplier, category='repairs', description='Taps',
-                                        amount=D('900'), expense_date=TODAY, paid_from='cash')
-        self.assertEqual(expense.supplier, 'Juma Hardware')
+                                        amount=D('900'), incurred_on=TODAY, paid_from='cash')
+        self.assertEqual(expense.vendor, 'Juma Hardware')
         _, _, other = self.create_landlord_with_org('o@test.com')
         foreign = Supplier.objects.create(organization=other, name='X')
         with self.assertRaises(ExpenseError):
             ExpenseService.record(self.org, supplier_ref=foreign, category='repairs', description='x',
-                                  amount=D('1'), expense_date=TODAY, paid_from='cash')
+                                  amount=D('1'), incurred_on=TODAY, paid_from='cash')
         c = self.api()
         self.assertEqual(c.post('/api/v1/accounting/suppliers/', {'name': 'juma hardware'}, format='json').status_code, 400)
 

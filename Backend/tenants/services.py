@@ -53,6 +53,7 @@ def onboard_tenant_user(profile: TenantProfile, property_name: str = '') -> Tena
             last_name=last_name,
             role='tenant',
             phone_number=profile.phone or None,
+            onboarding_stage='COMPLETED',  # invited: no onboarding wizard exists for tenants
         )
 
         profile.user = user

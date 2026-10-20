@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 
 from core.permissions.rumia import IsOrganizationOwner, OrganizationScopedMixin, get_canonical_role
 from rent.providers.base import PaymentProviderError
+from rent.providers.paystack import PaystackProvider
 
 from .models import Organization, PayoutAccount
 from .serializers import PayoutAccountSerializer, PayoutBankDetailsInputSerializer
@@ -116,3 +117,32 @@ class PayoutAccountView(APIView):
             return Response({'error': str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
 
         return Response(PayoutAccountSerializer(payout_account).data, status=status.HTTP_200_OK)
+
+
+class PayoutBankListView(APIView):
+    """
+    GET -> the live list of Kenyan banks from Paystack ({name, code} pairs),
+    so a landlord picks their bank from a dropdown instead of typing a
+    settlement bank code by hand. Landlord/super_admin only — same
+    audience as PayoutAccountView, no organization scoping needed since
+    this is informational, not org-specific data.
+
+    Returns 200 with an empty `banks` list and a `detail` message when
+    Paystack isn't configured yet (PAYSTACK_SECRET_KEY unset, e.g. while an
+    account application is still under review) — not a 502, since an empty
+    bank list on a not-yet-configured payment provider is an expected
+    state, not a provider error mid-request.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        role = get_canonical_role(request.user)
+        if role not in ('landlord', 'super_admin'):
+            return Response({'error': 'Not permitted'}, status=status.HTTP_403_FORBIDDEN)
+
+        banks, error = PaystackProvider().list_banks()
+        if error:
+            return Response({'banks': [], 'detail': error}, status=status.HTTP_200_OK)
+
+        return Response({'banks': banks, 'detail': None}, status=status.HTTP_200_OK)

@@ -7,9 +7,12 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useProperties } from '@/features/rental/hooks/use-rental';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 export default function CaretakerPropertiesPage() {
   const { data: properties = [], isLoading } = useProperties();
+  const { pageItems: pagedProperties, pagerProps: propertiesPager } = usePagination(properties, 10);
 
   return (
     <div className="space-y-4">
@@ -28,6 +31,7 @@ export default function CaretakerPropertiesPage() {
           description="Once a landlord assigns you to a property, its units will appear here."
         />
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -39,7 +43,7 @@ export default function CaretakerPropertiesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {properties.map((p) => (
+            {pagedProperties.map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="truncate font-medium">{p.name}</TableCell>
                 <TableCell>{p.city}</TableCell>
@@ -56,6 +60,8 @@ export default function CaretakerPropertiesPage() {
             ))}
           </TableBody>
         </Table>
+        <SimplePager {...propertiesPager} />
+        </>
       )}
     </div>
   );

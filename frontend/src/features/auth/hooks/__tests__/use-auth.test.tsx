@@ -45,8 +45,8 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe('useProfile — recovering a store stuck at "checking"', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // The session hint is the JS-readable role cookie (lib/auth/token.ts
-    // hasSessionHint) — the real access token is httpOnly and invisible here.
+    // The JWT cookies are httpOnly in production, so useProfile keys off the
+    // JS-readable role cookie (hasSessionHint) to decide whether to fetch.
     document.cookie = 'rumi_user_role=tenant; Path=/;';
     useAuthStore.setState({
       status: 'checking',

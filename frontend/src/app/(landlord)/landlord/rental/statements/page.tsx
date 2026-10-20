@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { useProperties } from '@/features/rental/hooks/use-rental';
-import { useDownloadStatement, useStatement } from '@/features/accounting/hooks';
+import { useDownloadStatement, useStatement } from '@/features/books/hooks';
 import { formatDate, formatKes } from '@/features/ledger/lib/format';
 
 const thisMonth = () => new Date().toISOString().slice(0, 7);

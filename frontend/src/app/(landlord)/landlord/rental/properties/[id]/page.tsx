@@ -7,11 +7,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { FormDialogActions, FormRow } from '@/components/ui/form-layout';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
-} from '@/components/ui/dialog';
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,6 +21,8 @@ import { GateBanner } from '@/features/rental/components/gate-banner';
 import { isGateRejection } from '@/lib/api/gate';
 import { PageHeader } from '@/components/dashboard/page-header';
 import type { RentalUnit } from '@/features/rental/types';
+import { usePagination } from '@/hooks/use-pagination';
+import { SimplePager } from '@/components/ui/simple-pager';
 
 const UNIT_TYPES = ['studio', 'bedsitter', '1_bedroom', '2_bedroom', '3_bedroom', '4_bedroom', 'house', 'other'] as const;
 const UNIT_STATUSES = ['vacant', 'occupied', 'reserved', 'maintenance'] as const;
@@ -40,6 +42,7 @@ export default function PropertyDetailPage() {
   const propertyId = params.id;
   const { data: property } = useProperty(propertyId);
   const { data: units = [], isLoading } = useUnits(propertyId);
+  const { pageItems: pagedUnits, pagerProps: unitsPager } = usePagination(units, 10);
   const createUnit = useCreateUnit();
   const updateUnit = useUpdateUnit();
 
@@ -108,9 +111,13 @@ export default function PropertyDetailPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add unit</DialogTitle>
+                <DialogDescription>
+                  Add a rentable unit to this property. Tenants are attached to units.
+                </DialogDescription>
               </DialogHeader>
               <Form {...form}>
-                <form onSubmit={handleCreate} className="space-y-3">
+                <form onSubmit={handleCreate} className="space-y-5">
+                  <FormRow>
                   <FormField
                     control={form.control}
                     name="unit_number"
@@ -138,7 +145,7 @@ export default function PropertyDetailPage() {
                           </FormControl>
                           <SelectContent>
                             {UNIT_TYPES.map((t) => (
-                              <SelectItem key={t} value={t}>{t.replace('_', ' ')}</SelectItem>
+                              <SelectItem key={t} value={t} className="capitalize">{t.replace('_', ' ')}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -146,6 +153,7 @@ export default function PropertyDetailPage() {
                       </FormItem>
                     )}
                   />
+                  </FormRow>
                   <FormField
                     control={form.control}
                     name="monthly_rent"
@@ -160,11 +168,7 @@ export default function PropertyDetailPage() {
                     )}
                   />
                   {gateError && <GateBanner gate={gateError} onDismiss={() => createUnit.reset()} />}
-                  <DialogFooter>
-                    <Button type="submit" disabled={createUnit.isPending} className="rounded-full">
-                      Save
-                    </Button>
-                  </DialogFooter>
+                  <FormDialogActions submitLabel="Save" isPending={createUnit.isPending} />
                 </form>
               </Form>
             </DialogContent>
@@ -176,9 +180,11 @@ export default function PropertyDetailPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit unit</DialogTitle>
+            <DialogDescription>Update this unit&apos;s details or availability.</DialogDescription>
           </DialogHeader>
           <Form {...editForm}>
-            <form onSubmit={handleEdit} className="space-y-3">
+            <form onSubmit={handleEdit} className="space-y-5">
+              <FormRow>
               <FormField
                 control={editForm.control}
                 name="unit_number"
@@ -206,7 +212,7 @@ export default function PropertyDetailPage() {
                       </FormControl>
                       <SelectContent>
                         {UNIT_TYPES.map((t) => (
-                          <SelectItem key={t} value={t}>{t.replace('_', ' ')}</SelectItem>
+                          <SelectItem key={t} value={t} className="capitalize">{t.replace('_', ' ')}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -214,6 +220,8 @@ export default function PropertyDetailPage() {
                   </FormItem>
                 )}
               />
+              </FormRow>
+              <FormRow>
               <FormField
                 control={editForm.control}
                 name="monthly_rent"
@@ -241,7 +249,7 @@ export default function PropertyDetailPage() {
                       </FormControl>
                       <SelectContent>
                         {UNIT_STATUSES.map((s) => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                          <SelectItem key={s} value={s} className="capitalize">{s.replace('_', ' ')}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -249,11 +257,8 @@ export default function PropertyDetailPage() {
                   </FormItem>
                 )}
               />
-              <DialogFooter>
-                <Button type="submit" disabled={updateUnit.isPending} className="rounded-full">
-                  Save changes
-                </Button>
-              </DialogFooter>
+              </FormRow>
+              <FormDialogActions submitLabel="Save changes" isPending={updateUnit.isPending} />
             </form>
           </Form>
         </DialogContent>
@@ -264,6 +269,7 @@ export default function PropertyDetailPage() {
       ) : units.length === 0 ? (
         <p className="text-sm text-muted-foreground">No units yet — add the first one above.</p>
       ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
@@ -275,7 +281,7 @@ export default function PropertyDetailPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {units.map((u) => (
+            {pagedUnits.map((u) => (
               <TableRow key={u.id}>
                 <TableCell className="font-medium">{u.unit_number}</TableCell>
                 <TableCell>{u.unit_type.replace('_', ' ')}</TableCell>
@@ -308,6 +314,8 @@ export default function PropertyDetailPage() {
             ))}
           </TableBody>
         </Table>
+        <SimplePager {...unitsPager} />
+        </>
       )}
     </div>
   );

@@ -1,0 +1,54 @@
+/** Mirrors AdminEmailTemplateListView's response (Backend/notifications/views.py). */
+export interface AdminEmailTemplate {
+  /** A database id for custom templates, a slug for the built-in messages. */
+  template_id: number | string;
+  name: string;
+  subject: string;
+  variables: string[];
+  /** Built-in messages only: the full text and when it is sent. */
+  body?: string;
+  trigger?: string;
+  source: 'built_in' | 'custom';
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** Mirrors AdminSMSTemplateListView's response. */
+export interface AdminSMSTemplate {
+  template_id: number | string;
+  name: string;
+  message: string;
+  variables: string[];
+  trigger?: string;
+  source: 'built_in' | 'custom';
+  created_at?: string;
+}
+
+/** Mirrors AdminNotificationStatsView's actual return payload — its
+ * docstring advertises far more (revenue_impact, compliance, ...) than the
+ * view body computes; only these fields are real. */
+export interface AdminNotificationStats {
+  period: string;
+  total_notifications: number;
+  successful_deliveries: number;
+  failed_deliveries: number;
+  delivery_rate: number;
+  by_channel: {
+    email: number;
+    sms: number;
+    in_app: number;
+  };
+  top_failed_types: { notification_type: string; count: number }[];
+}
+
+/** One email or SMS attempt from GET /notifications/admin/deliveries/. */
+export interface AdminDelivery {
+  id: number;
+  channel: 'email' | 'sms';
+  status: 'sent' | 'failed';
+  recipient_address: string;
+  recipient_name: string;
+  subject: string;
+  error_message: string;
+  created_at: string;
+}

@@ -59,7 +59,7 @@ export function OTPInput({
       if (!isControlled) setInternal(trimmed);
       onChange?.(trimmed);
 
-      if (trimmed.length === length && !trimmed.includes('')) {
+      if (trimmed.length === length) {
         onComplete?.(trimmed);
       }
     },

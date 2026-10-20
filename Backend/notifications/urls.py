@@ -12,4 +12,5 @@ urlpatterns = [
     path('admin/templates/email/', views.AdminEmailTemplateListView.as_view(), name='admin_email_templates'),
     path('admin/templates/sms/', views.AdminSMSTemplateListView.as_view(), name='admin_sms_templates'),
     path('admin/stats/', views.AdminNotificationStatsView.as_view(), name='admin_notification_stats'),
+    path('admin/deliveries/', views.AdminDeliveryLogView.as_view(), name='admin_delivery_log'),
 ]

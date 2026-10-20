@@ -1,5 +1,14 @@
 import { axiosInstance as axios } from '@/lib/api/client';
-import type { AdminBillingDetail, AdminBillingListRow, AdminOverridePayload } from '../types';
+import type {
+  AdminBillingDetail,
+  AdminBillingListRow,
+  AdminPlan,
+  AdminPlanUpdate,
+  AdminPlanUpdateResult,
+  AdminOverridePayload,
+  AdminPlatformOverview,
+  AdminRevenueSummary,
+} from '../types';
 
 /** Shape of a DRF PageNumberPagination response envelope. */
 interface PaginatedResponse<T> {
@@ -17,11 +26,23 @@ interface PaginatedResponse<T> {
  * with a plain array.
  */
 export const adminBillingApi = {
-  listOrganizations: async (search?: string): Promise<AdminBillingListRow[]> => {
+  getRevenueSummary: async (): Promise<AdminRevenueSummary> => {
+    const res = await axios.get<AdminRevenueSummary>('/billing/admin/revenue/');
+    return res.data;
+  },
+  getPlatformOverview: async (): Promise<AdminPlatformOverview> => {
+    const res = await axios.get<AdminPlatformOverview>('/billing/admin/overview/');
+    return res.data;
+  },
+  /** One server page (20 rows) plus the total, so the table can page through every organization. */
+  listOrganizations: async (
+    search?: string,
+    page = 1,
+  ): Promise<{ count: number; results: AdminBillingListRow[] }> => {
     const res = await axios.get<PaginatedResponse<AdminBillingListRow>>('/billing/admin/organizations/', {
-      params: search ? { search } : undefined,
+      params: { ...(search ? { search } : {}), page },
     });
-    return res.data.results;
+    return { count: res.data.count, results: res.data.results };
   },
   getOrganization: async (id: string): Promise<AdminBillingDetail> => {
     const res = await axios.get<AdminBillingDetail>(`/billing/admin/organizations/${id}/`);
@@ -29,6 +50,14 @@ export const adminBillingApi = {
   },
   overrideSubscription: async (id: string, payload: AdminOverridePayload): Promise<AdminBillingDetail> => {
     const res = await axios.post<AdminBillingDetail>(`/billing/admin/organizations/${id}/override/`, payload);
+    return res.data;
+  },
+  listPlans: async (): Promise<AdminPlan[]> => {
+    const res = await axios.get<AdminPlan[]>('/billing/admin/plans/');
+    return res.data;
+  },
+  updatePlan: async (id: string, payload: AdminPlanUpdate): Promise<AdminPlanUpdateResult> => {
+    const res = await axios.patch<AdminPlanUpdateResult>(`/billing/admin/plans/${id}/`, payload);
     return res.data;
   },
 };

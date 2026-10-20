@@ -100,6 +100,7 @@ export interface Tenancy {
   tenant: string;
   tenant_name: string;
   unit_number: string;
+  property_name: string;
   start_date: string;
   end_date: string | null;
   move_in_date: string | null;

@@ -92,6 +92,7 @@ export interface ResetPasswordRequest {
 export interface VerifyEmailRequest {
   token: string;
   otp?: string;
+  email?: string;
 }
 
 
@@ -130,6 +131,7 @@ export interface PermissionsResponse {
 
 export interface MessageResponse {
     message: string;
+    retry_after_seconds?: number;
 }
 
 export interface RefreshTokenRequest {

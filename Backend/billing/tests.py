@@ -745,7 +745,7 @@ class CaretakerSeatGateTests(RumiaTestFixtures):
         two_seat_plan = SubscriptionPlan.objects.create(
             slug='test-two-seat', name='Test Two Seat', price=Decimal('0.00'),
             max_properties=0, max_units=0, max_caretaker_seats=2,
-            features={'analytics': True, 'branded_receipts': False},
+            features={'analytics': True},
         )
         user, profile, org = self.create_landlord_with_org()
         OrganizationSubscription.objects.create(
@@ -1055,6 +1055,111 @@ class AdminOrganizationBillingListViewTests(RumiaTestFixtures):
         self.assertIsInstance(response.data['results'], list)
 
 
+class AdminRevenueSummaryViewTests(RumiaTestFixtures):
+    """Real numbers from SubscriptionPayment/OrganizationSubscription —
+    distinct from AdminOrganizationBillingListView, which shows each org's
+    own status, not what the platform has actually earned in total."""
+
+    def _seed_plans(self):
+        call_command('seed_subscription_plans')
+        return {p.slug: p for p in SubscriptionPlan.objects.all()}
+
+    def test_landlord_gets_403(self):
+        self._seed_plans()
+        user, profile, org = self.create_landlord_with_org()
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.get('/api/v1/billing/admin/revenue/')
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_only_successful_payments_count_toward_revenue(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plans['pro'], status='active',
+        )
+        SubscriptionPayment.objects.create(
+            subscription=subscription, amount=Decimal('7999.00'),
+            internal_reference='SUB-1', status='success', paid_at=timezone.now(),
+        )
+        SubscriptionPayment.objects.create(
+            subscription=subscription, amount=Decimal('7999.00'),
+            internal_reference='SUB-2', status='failed',
+        )
+        SubscriptionPayment.objects.create(
+            subscription=subscription, amount=Decimal('7999.00'),
+            internal_reference='SUB-3', status='pending',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/revenue/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Decimal(response.data['total_revenue']), Decimal('7999.00'))
+        self.assertEqual(response.data['total_successful_payments'], 1)
+
+    def test_mrr_sums_active_subscriptions_plan_price_only(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org_active = self.create_landlord_with_org(email='active@test.com')
+        OrganizationSubscription.objects.create(
+            organization=org_active, plan=plans['pro'], status='active',
+        )
+        _, _, org_cancelled = self.create_landlord_with_org(email='cancelled@test.com')
+        OrganizationSubscription.objects.create(
+            organization=org_cancelled, plan=plans['enterprise'], status='cancelled',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/revenue/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Decimal(response.data['mrr']), plans['pro'].price)
+        self.assertEqual(response.data['active_subscriptions_count'], 1)
+
+    def test_revenue_this_month_excludes_prior_months(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plans['starter'], status='active',
+        )
+        SubscriptionPayment.objects.create(
+            subscription=subscription, amount=Decimal('2999.00'),
+            internal_reference='SUB-THIS-MONTH', status='success', paid_at=timezone.now(),
+        )
+        SubscriptionPayment.objects.create(
+            subscription=subscription, amount=Decimal('2999.00'),
+            internal_reference='SUB-LAST-MONTH', status='success',
+            paid_at=timezone.now() - timedelta(days=45),
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/revenue/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Decimal(response.data['revenue_this_month']), Decimal('2999.00'))
+        self.assertEqual(Decimal(response.data['total_revenue']), Decimal('5998.00'))
+
+    def test_no_payments_returns_zero_not_error(self):
+        self._seed_plans()
+        admin = self.create_super_admin()
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/revenue/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Decimal(response.data['total_revenue']), Decimal('0'))
+        self.assertEqual(response.data['monthly_revenue'], [])
+
+
 class AdminOverrideServiceTests(RumiaTestFixtures):
     """
     Plan 06-03 Task 3 (RED) — AdminOverrideService.override_subscription()
@@ -1286,3 +1391,305 @@ class AdminSubscriptionOverrideViewTests(RumiaTestFixtures):
         subscription.refresh_from_db()
         self.assertEqual(subscription.paystack_subscription_code, 'sub_original')
         self.assertEqual(subscription.billing_mode, 'auto')
+
+
+class AdminPlatformOverviewViewTests(RumiaTestFixtures):
+    """One-call platform snapshot for the super-admin Overview page —
+    users by role, organizations, revenue, and open support tickets."""
+
+    def _seed_plans(self):
+        call_command('seed_subscription_plans')
+        return {p.slug: p for p in SubscriptionPlan.objects.all()}
+
+    def test_landlord_gets_403(self):
+        user, profile, org = self.create_landlord_with_org()
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.get('/api/v1/billing/admin/overview/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_anonymous_gets_401(self):
+        client = APIClient()
+        response = client.get('/api/v1/billing/admin/overview/')
+        self.assertEqual(response.status_code, 401)
+
+    def test_counts_users_by_role(self):
+        admin = self.create_super_admin()
+        self.create_landlord_with_org(email='l1@test.com')
+        _, _, org2 = self.create_landlord_with_org(email='l2@test.com')
+        self.create_tenant(org2, email='t1@test.com')
+        self.create_tenant(org2, email='t2@test.com')
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/overview/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['users_by_role'].get('landlord'), 2)
+        self.assertEqual(response.data['users_by_role'].get('tenant'), 2)
+        self.assertEqual(response.data['users_by_role'].get('super_admin'), 1)
+        self.assertEqual(response.data['total_users'], 5)
+
+    def test_counts_organizations(self):
+        admin = self.create_super_admin()
+        self.create_landlord_with_org(email='l1@test.com')
+        self.create_landlord_with_org(email='l2@test.com')
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/overview/')
+
+        self.assertEqual(response.data['total_organizations'], 2)
+
+    def test_revenue_matches_admin_revenue_summary(self):
+        plans = self._seed_plans()
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        subscription = OrganizationSubscription.objects.create(
+            organization=org, plan=plans['pro'], status='active',
+        )
+        SubscriptionPayment.objects.create(
+            subscription=subscription, amount=Decimal('7999.00'),
+            internal_reference='SUB-OVERVIEW-1', status='success', paid_at=timezone.now(),
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/overview/')
+
+        self.assertEqual(Decimal(response.data['total_revenue']), Decimal('7999.00'))
+        self.assertEqual(Decimal(response.data['mrr']), plans['pro'].price)
+        self.assertEqual(response.data['paying_organizations'], 1)
+
+    def test_counts_open_and_in_progress_tickets_as_open(self):
+        from support.models import SupportTicket
+
+        admin = self.create_super_admin()
+        _, _, org = self.create_landlord_with_org()
+        SupportTicket.objects.create(
+            organization=org, created_by=admin, subject='A', description='x', status='open',
+        )
+        SupportTicket.objects.create(
+            organization=org, created_by=admin, subject='B', description='x', status='in_progress',
+        )
+        SupportTicket.objects.create(
+            organization=org, created_by=admin, subject='C', description='x', status='resolved',
+        )
+        SupportTicket.objects.create(
+            organization=org, created_by=admin, subject='D', description='x', status='closed',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        response = client.get('/api/v1/billing/admin/overview/')
+
+        self.assertEqual(response.data['open_support_tickets'], 2)
+        self.assertEqual(response.data['total_support_tickets'], 4)
+
+
+class TrialAccessSummaryTests(RumiaTestFixtures):
+    """A new landlord gets Enterprise free for the trial window, and can see it."""
+
+    def setUp(self):
+        call_command('seed_subscription_plans')
+        self.landlord, _, self.org = self.create_landlord_with_org()
+
+    def _backdate(self, days):
+        self.org.created_at = timezone.now() - timedelta(days=days)
+        self.org.save(update_fields=['created_at'])
+        self.org.refresh_from_db()
+
+    def _get(self, user):
+        client = APIClient()
+        client.force_authenticate(user=user)
+        return client.get('/api/v1/billing/access/')
+
+    def test_brand_new_landlord_is_on_an_enterprise_trial_for_the_full_window(self):
+        summary = GatingService.get_access_summary(self.org)
+        self.assertEqual(summary['effective_plan'], 'enterprise')
+        self.assertTrue(summary['on_trial'])
+        self.assertFalse(summary['trial_expired'])
+        self.assertEqual(summary['trial_days_left'], 30)
+
+    def test_days_left_counts_down(self):
+        self._backdate(20)
+        self.assertEqual(GatingService.get_access_summary(self.org)['trial_days_left'], 10)
+
+    def test_after_the_window_they_fall_to_starter_and_are_told_so(self):
+        self._backdate(31)
+        summary = GatingService.get_access_summary(self.org)
+        self.assertEqual(summary['effective_plan'], 'starter')
+        self.assertFalse(summary['on_trial'])
+        self.assertTrue(summary['trial_expired'])
+        self.assertEqual(summary['trial_days_left'], 0)
+
+    def test_a_paying_landlord_is_not_shown_as_on_trial(self):
+        plans = {p.slug: p for p in SubscriptionPlan.objects.all()}
+        OrganizationSubscription.objects.create(
+            organization=self.org, plan=plans['pro'], status='active', billing_mode='manual',
+        )
+        from organizations.models import Organization
+        summary = GatingService.get_access_summary(Organization.objects.get(pk=self.org.pk))
+        self.assertEqual(summary['effective_plan'], 'pro')
+        self.assertFalse(summary['on_trial'])
+        self.assertFalse(summary['trial_expired'])
+
+    def test_trial_length_follows_the_setting(self):
+        from django.test import override_settings
+        self._backdate(10)
+        with override_settings(SUBSCRIPTION_TRIAL_DAYS=14):
+            self.assertEqual(GatingService.get_access_summary(self.org)['trial_days_left'], 4)
+
+    def test_endpoint_returns_the_landlords_own_summary(self):
+        resp = self._get(self.landlord)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.data['on_trial'])
+        self.assertEqual(resp.data['effective_plan'], 'enterprise')
+
+    def test_endpoint_is_not_for_tenants(self):
+        _, tenant = self.create_tenant(self.org)
+        self.assertEqual(self._get(tenant.user).status_code, 403)
+
+
+class AdminPlanEditingTests(RumiaTestFixtures):
+    """A super admin edits tier prices/limits; the public catalog follows at once."""
+
+    def setUp(self):
+        call_command('seed_subscription_plans')
+        self.admin = self.create_super_admin()
+        self.landlord, _, self.org = self.create_landlord_with_org()
+        self.pro = SubscriptionPlan.objects.get(slug='pro')
+
+    def _client(self, user):
+        client = APIClient()
+        client.force_authenticate(user=user)
+        return client
+
+    def _patch(self, user, plan, payload):
+        return self._client(user).patch(f'/api/v1/billing/admin/plans/{plan.id}/', payload, format='json')
+
+    def test_admin_lists_all_tiers_with_subscriber_counts(self):
+        OrganizationSubscription.objects.create(
+            organization=self.org, plan=self.pro, status='active', billing_mode='manual',
+        )
+        resp = self._client(self.admin).get('/api/v1/billing/admin/plans/')
+        self.assertEqual(resp.status_code, 200)
+        by_slug = {p['slug']: p for p in resp.json()}
+        self.assertEqual(set(by_slug), {'starter', 'pro', 'enterprise'})
+        self.assertEqual(by_slug['pro']['active_subscribers'], 1)
+        self.assertNotIn('paystack_plan_code', by_slug['pro'])
+
+    def test_only_super_admin_may_view_or_edit(self):
+        for user in (self.landlord,):
+            self.assertEqual(self._client(user).get('/api/v1/billing/admin/plans/').status_code, 403)
+            self.assertEqual(self._patch(user, self.pro, {'price': '1'}).status_code, 403)
+        self.assertIn(APIClient().get('/api/v1/billing/admin/plans/').status_code, (401, 403))
+
+    def test_price_change_shows_on_the_public_catalog_immediately(self):
+        resp = self._patch(self.admin, self.pro, {'price': '8499.00', 'max_units': 60})
+        self.assertEqual(resp.status_code, 200)
+        self.pro.refresh_from_db()
+        self.assertEqual(self.pro.price, Decimal('8499.00'))
+        public = {p['slug']: p for p in APIClient().get('/api/v1/billing/plans/').json()}
+        self.assertEqual(Decimal(public['pro']['price']), Decimal('8499.00'))
+        self.assertEqual(public['pro']['max_units'], 60)
+
+    def test_saving_clears_the_cached_public_plan_list(self):
+        from unittest import mock
+        with mock.patch('rumi.cache_utils.api_cache.cache_manager.delete') as delete:
+            self._patch(self.admin, self.pro, {'price': '8000'})
+        delete.assert_called()
+
+    def test_validation_rejects_bad_input_and_changes_nothing(self):
+        for payload in ({'price': '0'}, {'price': '-5'}, {'price': '99999999'}, {'name': '  '},
+                        {'max_units': -1}, {'features': {'made_up': True}}, {'features': {'analytics': 'yes'}}):
+            with self.subTest(payload=payload):
+                self.assertEqual(self._patch(self.admin, self.pro, payload).status_code, 400)
+        self.pro.refresh_from_db()
+        self.assertEqual(self.pro.price, Decimal('7999.00'))
+
+    def test_feature_switches_merge_rather_than_replace(self):
+        self._patch(self.admin, self.pro, {'features': {'analytics': False}})
+        self.pro.refresh_from_db()
+        self.assertEqual(self.pro.features, {'analytics': False})
+        self._patch(self.admin, self.pro, {'features': {'analytics': True}})
+        self.pro.refresh_from_db()
+        self.assertEqual(self.pro.features, {'analytics': True})
+
+    def test_the_slug_cannot_be_changed(self):
+        self._patch(self.admin, self.pro, {'slug': 'hacked', 'interval': 'yearly'})
+        self.pro.refresh_from_db()
+        self.assertEqual((self.pro.slug, self.pro.interval), ('pro', 'monthly'))
+
+    def test_edit_is_audit_logged_with_before_and_after(self):
+        from audit.models import AuditLog
+        self._patch(self.admin, self.pro, {'price': '8000'})
+        entry = AuditLog.objects.filter(action='subscription_plan_updated').latest('id')
+        self.assertEqual(entry.actor, self.admin)
+        self.assertIn('7999', str(entry.old_value))
+        self.assertIn('8000', str(entry.new_value))
+
+    def test_paystack_is_updated_when_the_plan_is_linked(self):
+        from unittest import mock
+        self.pro.paystack_plan_code = 'PLN_test'
+        self.pro.save()
+        with mock.patch('billing.views.PaystackBillingClient.update_plan') as update:
+            resp = self._patch(self.admin, self.pro, {'price': '8000'})
+        update.assert_called_once_with('PLN_test', 'Pro', Decimal('8000.00'))
+        self.assertEqual(resp.json()['paystack_sync']['status'], 'updated')
+
+    def test_a_paystack_failure_still_saves_and_says_so(self):
+        from unittest import mock
+        from rent.providers.base import PaymentProviderError
+        self.pro.paystack_plan_code = 'PLN_test'
+        self.pro.save()
+        with mock.patch(
+            'billing.views.PaystackBillingClient.update_plan',
+            side_effect=PaymentProviderError('boom', 'paystack', recoverable=True),
+        ):
+            resp = self._patch(self.admin, self.pro, {'price': '8000'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['paystack_sync']['status'], 'failed')
+        self.pro.refresh_from_db()
+        self.assertEqual(self.pro.price, Decimal('8000.00'))
+
+    def test_unlinked_plan_is_saved_and_reported_as_skipped(self):
+        self.pro.paystack_plan_code = ''
+        self.pro.save()
+        resp = self._patch(self.admin, self.pro, {'price': '8000'})
+        self.assertEqual(resp.json()['paystack_sync']['status'], 'skipped')
+
+    def test_changing_only_limits_does_not_touch_paystack(self):
+        from unittest import mock
+        self.pro.paystack_plan_code = 'PLN_test'
+        self.pro.save()
+        with mock.patch('billing.views.PaystackBillingClient.update_plan') as update:
+            resp = self._patch(self.admin, self.pro, {'max_units': 75})
+        update.assert_not_called()
+        self.assertEqual(resp.json()['paystack_sync']['status'], 'not_needed')
+
+    def test_new_price_applies_to_later_trials_and_gating_reads_the_new_limits(self):
+        self._patch(self.admin, self.pro, {'max_properties': 9})
+        OrganizationSubscription.objects.create(
+            organization=self.org, plan=SubscriptionPlan.objects.get(slug='pro'),
+            status='active', billing_mode='manual',
+        )
+        from organizations.models import Organization
+        fresh = Organization.objects.get(pk=self.org.pk)
+        self.assertEqual(GatingService.get_effective_plan(fresh).max_properties, 9)
+
+    def test_no_plan_advertises_a_feature_that_does_not_exist(self):
+        """Branded receipts were never built; the public catalog must not list them."""
+        public = APIClient().get('/api/v1/billing/plans/').json()
+        for plan in public:
+            self.assertEqual(set(plan['features']), {'analytics'})
+        self.assertEqual(self._patch(self.admin, self.pro, {'features': {'branded_receipts': True}}).status_code, 400)
+
+    def test_the_migration_strips_the_flag_from_existing_plans(self):
+        import importlib
+        from django.apps import apps
+        migration = importlib.import_module('billing.migrations.0002_remove_branded_receipts_feature')
+        SubscriptionPlan.objects.filter(slug='pro').update(features={'analytics': True, 'branded_receipts': True})
+        migration.drop_branded_receipts(apps, None)
+        self.assertEqual(SubscriptionPlan.objects.get(slug='pro').features, {'analytics': True})
+

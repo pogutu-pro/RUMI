@@ -112,10 +112,10 @@ export default function VerifyPhonePage() {
 
   if (verifyHook?.isSuccess) {
     return (
-      <section className="w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <section className="mx-auto w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex justify-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center animate-bounce">
+            <div className="h-14 w-14 bg-primary/10 rounded-full flex items-center justify-center animate-bounce">
               <CheckCircle2 className="w-8 h-8 text-green-600" />
             </div>
           </div>
@@ -123,7 +123,7 @@ export default function VerifyPhonePage() {
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-bold text-gray-900">Phone verified</h1>
             <p className="text-gray-600">
-              You&apos;re all set — redirecting to your dashboard.
+              You&apos;re all set. Redirecting to your dashboard.
             </p>
           </div>
 
@@ -194,11 +194,11 @@ export default function VerifyPhonePage() {
           )}
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center space-y-1">
-          <p className="text-sm text-blue-800">
+        <div className="bg-muted/50 border border-border rounded-xl p-4 text-center space-y-1">
+          <p className="text-sm text-muted-foreground">
             Expires in <span className="font-semibold">5 minutes</span>
           </p>
-          <p className="text-xs text-blue-700">Standard SMS rates may apply</p>
+          <p className="text-xs text-muted-foreground">Standard SMS rates may apply</p>
         </div>
 
         <Button
@@ -223,7 +223,7 @@ export default function VerifyPhonePage() {
             variant="ghost"
             onClick={handleResend}
             disabled={loading || resendCooldown > 0 || resendHook?.isPending}
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            className="text-primary hover:text-primary/80 hover:bg-primary/5"
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             {resendCooldown > 0

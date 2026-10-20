@@ -13,7 +13,9 @@ import {
   LayoutDashboard,
   LifeBuoy,
   Megaphone,
-  Receipt,
+  MessageSquare,
+  Settings,
+  Scale,
   Settings2,
   SlidersHorizontal,
   Smartphone,
@@ -25,6 +27,7 @@ import { UserRole } from '@/features/auth/stores/auth.types';
 import { DashboardShell, type DashboardShellNavItem } from '@/components/dashboard/dashboard-shell';
 import { PayoutPendingBanner } from '@/features/payout/components/payout-pending-banner';
 import { attentionBadges, useAttention } from '@/features/attention/hooks';
+import { TrialBanner } from '@/features/billing/components/trial-banner';
 
 // Grouped so the sidebar stays scannable (shallow navigation): daily money
 // work first, setup last. Badges show only items that need action now.
@@ -34,17 +37,19 @@ const NAV: DashboardShellNavItem[] = [
   { section: 'Money', href: '/landlord/rental/payments', label: 'Payments', icon: CreditCard },
   { section: 'Money', href: '/landlord/rental/paybill', label: 'M-Pesa paybill', icon: Smartphone },
   { section: 'Money', href: '/landlord/rental/debt', label: 'Debt recovery', icon: Gavel },
-  { section: 'Money', href: '/landlord/rental/expenses', label: 'Expenses', icon: Receipt },
   { section: 'Property', href: '/landlord/rental/properties', label: 'Properties & vacancies', icon: Building2 },
   { section: 'Property', href: '/landlord/rental/tenancies', label: 'Tenancies', icon: FileText },
   { section: 'Property', href: '/landlord/rental/tenants', label: 'Tenants', icon: Users },
-  { section: 'Property', href: '/landlord/rental/messages', label: 'Messages', icon: Megaphone },
-  { section: 'Reports', href: '/landlord/rental/statements', label: 'Statements', icon: FileSpreadsheet },
-  { section: 'Reports', href: '/landlord/rental/accounts', label: 'Accounts', icon: Calculator },
-  { section: 'Reports', href: '/landlord/rental/owners', label: 'Property owners', icon: Briefcase },
+  { section: 'Property', href: '/landlord/rental/messages', label: 'Messages', icon: MessageSquare },
+  { section: 'Property', href: '/landlord/rental/broadcasts', label: 'Bulk SMS & email', icon: Megaphone },
+  { section: 'Books', href: '/landlord/rental/accounting', label: 'Accounting & tax', icon: Calculator },
+  { section: 'Books', href: '/landlord/rental/statements', label: 'Statements', icon: FileSpreadsheet },
+  { section: 'Books', href: '/landlord/rental/accounts', label: 'Accounts & reconciliation', icon: Scale },
+  { section: 'Books', href: '/landlord/rental/owners', label: 'Property owners', icon: Briefcase },
   { section: 'Settings', href: '/landlord/rental/rules', label: 'Rent rules', icon: SlidersHorizontal },
   { section: 'Settings', href: '/landlord/rental/caretakers', label: 'Caretakers', icon: HardHat },
   { section: 'Settings', href: '/landlord/rental/billing', label: 'Billing & payout', icon: Settings2 },
+  { section: 'Settings', href: '/landlord/rental/settings', label: 'Settings', icon: Settings },
   { section: 'Settings', href: '/landlord/rental/support', label: 'Support', icon: LifeBuoy },
 ];
 
@@ -64,7 +69,15 @@ export default function RentalLandlordLayout({ children }: { children: React.Rea
     <DashboardShell
       allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]}
       nav={nav}
-      bannerSlot={!isSuperAdmin ? <PayoutPendingBanner /> : null}
+      settingsHref="/landlord/rental/settings"
+      bannerSlot={
+        !isSuperAdmin ? (
+          <div className="space-y-3">
+            <TrialBanner />
+            <PayoutPendingBanner />
+          </div>
+        ) : null
+      }
     >
       {children}
     </DashboardShell>

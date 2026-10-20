@@ -13,20 +13,28 @@ explicit `organization_id` to act on behalf of that organization.
 """
 from __future__ import annotations
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db.models import Count, Sum
+from django.db.models.functions import TruncMonth
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from audit.models import log_audit
 from core.permissions.rumia import OrganizationScopedMixin, get_canonical_role
 from organizations.models import Organization
 from rent.providers.base import PaymentProviderError
+from support.models import SupportTicket
 
 from .models import OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
+from .providers.paystack_billing import PaystackBillingClient
 from .serializers import (
     AdminOrganizationBillingDetailSerializer,
+    AdminPlanSerializer,
     AdminOrganizationBillingListSerializer,
     OrganizationSubscriptionSerializer,
     SubscriptionPlanSerializer,
@@ -371,3 +379,213 @@ class AdminSubscriptionOverrideView(APIView):
 
         payload = _build_admin_billing_detail(organization)
         return Response(AdminOrganizationBillingDetailSerializer(payload).data)
+
+
+class AdminRevenueSummaryView(APIView):
+    """
+    GET -> platform-wide revenue summary, super_admin only. Real numbers
+    from SubscriptionPayment (the actual payment ledger) and
+    OrganizationSubscription — never estimated or fabricated. Distinct from
+    AdminOrganizationBillingListView, which shows each org's own
+    status/payout, not what the *platform* has actually earned.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        successful_payments = SubscriptionPayment.objects.filter(status='success')
+
+        total_revenue = successful_payments.aggregate(total=Sum('amount'))['total'] or 0
+
+        now = timezone.now()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        revenue_this_month = successful_payments.filter(
+            paid_at__gte=month_start
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        # MRR: sum of the plan price for every currently-active subscription.
+        # All plans bill monthly today (SubscriptionPlan.interval defaults
+        # to 'monthly' and nothing else seeds a different interval), so this
+        # is a direct sum, not a normalized-to-monthly estimate.
+        active_subscriptions = OrganizationSubscription.objects.filter(
+            status='active'
+        ).select_related('plan')
+        mrr = sum((sub.plan.price for sub in active_subscriptions), start=0)
+
+        # Last 12 months of successful-payment revenue, oldest first — a
+        # simple trend, not a forecast.
+        twelve_months_ago = (month_start - timezone.timedelta(days=365)).replace(day=1)
+        monthly = (
+            successful_payments.filter(paid_at__gte=twelve_months_ago)
+            .annotate(month=TruncMonth('paid_at'))
+            .values('month')
+            .annotate(total=Sum('amount'))
+            .order_by('month')
+        )
+
+        return Response({
+            'total_revenue': total_revenue,
+            'revenue_this_month': revenue_this_month,
+            'mrr': mrr,
+            'active_subscriptions_count': active_subscriptions.count(),
+            'total_successful_payments': successful_payments.count(),
+            'monthly_revenue': [
+                {'month': row['month'].date().isoformat(), 'total': row['total']}
+                for row in monthly
+            ],
+        })
+
+
+class AdminPlatformOverviewView(APIView):
+    """
+    GET -> single-call platform snapshot for the super-admin Overview page:
+    every user broken down by role, every organization, open support
+    tickets, and the same revenue figures AdminRevenueSummaryView computes
+    (kept in sync here rather than making the frontend fire two requests
+    for one landing page).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        User = get_user_model()
+        role_counts = dict(
+            User.objects.values_list('role').annotate(count=Count('id')).order_by()
+        )
+        total_users = sum(role_counts.values())
+
+        successful_payments = SubscriptionPayment.objects.filter(status='success')
+        total_revenue = successful_payments.aggregate(total=Sum('amount'))['total'] or 0
+
+        now = timezone.now()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        revenue_this_month = successful_payments.filter(
+            paid_at__gte=month_start
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        active_subscriptions = OrganizationSubscription.objects.filter(status='active')
+        mrr = sum((sub.plan.price for sub in active_subscriptions.select_related('plan')), start=0)
+
+        ticket_counts = dict(
+            SupportTicket.objects.values_list('status').annotate(count=Count('id')).order_by()
+        )
+        open_tickets = ticket_counts.get('open', 0) + ticket_counts.get('in_progress', 0)
+
+        return Response({
+            'total_users': total_users,
+            'users_by_role': role_counts,
+            'total_organizations': Organization.objects.count(),
+            'total_revenue': total_revenue,
+            'revenue_this_month': revenue_this_month,
+            'mrr': mrr,
+            'paying_organizations': active_subscriptions.count(),
+            'open_support_tickets': open_tickets,
+            'total_support_tickets': sum(ticket_counts.values()),
+        })
+
+
+class BillingAccessView(APIView):
+    """
+    GET -> what the caller's organization may use right now: the effective
+    plan, and whether that is the free new-landlord trial (and when it ends).
+    Powers the trial banner. Own organization only, resolved server-side.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from organizations.models import Organization
+
+        if get_canonical_role(request.user) not in MUTATING_ROLES:
+            return Response({'error': 'Not permitted'}, status=status.HTTP_403_FORBIDDEN)
+        org_ids = _OrgResolver(request).get_user_organization_ids()
+        organization = Organization.objects.filter(id__in=org_ids or []).order_by('created_at').first()
+        if organization is None:
+            return Response({'error': 'No organization found for this user'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(GatingService.get_access_summary(organization))
+
+
+def _invalidate_public_plans_cache():
+    """
+    The anonymous plan list is cached by APIResponseCacheMiddleware for up to
+    5 minutes, keyed only on the URL. Without this, a price a super admin has
+    just changed would keep showing the old figure on the public site.
+    """
+    from rumi.cache_utils import api_cache
+
+    for path in ('/api/v1/billing/plans/',):
+        api_cache.cache_manager.delete(api_cache.cache_manager.get_cache_key('api', path, 'GET'))
+
+
+class AdminPlanListView(APIView):
+    """GET -> every tier with its price, limits, features and subscriber count. Super admin only."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        plans = SubscriptionPlan.objects.order_by('sort_order')
+        return Response(AdminPlanSerializer(plans, many=True).data)
+
+
+class AdminPlanDetailView(APIView):
+    """
+    PATCH -> edit a tier's name, price, limits and feature switches.
+
+    The change is saved first and is audit-logged. Paystack is then updated so
+    that NEW subscribers are charged the new amount; if that call cannot be
+    made the save still stands and the response says so, rather than the admin
+    thinking a price is live when Paystack disagrees.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        if get_canonical_role(request.user) != 'super_admin':
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            plan = SubscriptionPlan.objects.get(pk=pk)
+        except (SubscriptionPlan.DoesNotExist, ValueError, ValidationError):
+            return Response({'detail': 'Plan not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        before = AdminPlanSerializer(plan).data
+        serializer = AdminPlanSerializer(plan, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        plan = serializer.save()
+        after = AdminPlanSerializer(plan).data
+
+        changed = {k: {'from': str(before[k]), 'to': str(after[k])} for k in after if before.get(k) != after[k] and k != 'updated_at'}
+        if changed:
+            log_audit(
+                'subscription_plan_updated', actor=request.user, entity=plan,
+                old_value={k: str(v['from']) for k, v in changed.items()},
+                new_value={k: str(v['to']) for k, v in changed.items()},
+                metadata={'plan': plan.slug},
+            )
+        _invalidate_public_plans_cache()
+
+        paystack = self._sync_paystack(plan, name_or_price_changed=('name' in changed or 'price' in changed))
+        return Response({**after, 'paystack_sync': paystack})
+
+    @staticmethod
+    def _sync_paystack(plan, name_or_price_changed: bool) -> dict:
+        if not name_or_price_changed:
+            return {'status': 'not_needed'}
+        if not plan.paystack_plan_code:
+            return {
+                'status': 'skipped',
+                'detail': 'Saved. This tier is not linked to a Paystack plan yet, so automatic billing '
+                          'will use the new price once Paystack is connected.',
+            }
+        try:
+            PaystackBillingClient().update_plan(plan.paystack_plan_code, plan.name, plan.price)
+        except PaymentProviderError as exc:
+            return {'status': 'failed', 'detail': f'Saved, but Paystack was not updated: {exc}'}
+        return {'status': 'updated', 'detail': 'Paystack updated. Existing subscribers keep their current price.'}

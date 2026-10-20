@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Clock, Users, BookOpen, Video } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +21,7 @@ import { use } from 'react';
 
 type BlogCategory =
   | 'all'
-  | 'students'
+  | 'tenants'
   | 'landlords'
   | 'caretakers'
   | 'product'
@@ -66,18 +67,18 @@ interface ApiBlogPost {
 
 function transformApiPost(apiPost: ApiBlogPost): BlogPost {
   const categoryMap: Record<string, BlogCategory> = {
-    'student_stories': 'students',
+    'student_stories': 'tenants',
     'landlord_tips': 'landlords',
-    'housing_guides': 'students',
+    'housing_guides': 'tenants',
     'company_news': 'product',
     'product_updates': 'product',
     'marketplace_highlights': 'product',
   };
 
   const audienceLabels: Record<string, string> = {
-    'student_stories': 'For Students',
+    'student_stories': 'For Tenants',
     'landlord_tips': 'For Landlords',
-    'housing_guides': 'For Students',
+    'housing_guides': 'For Tenants',
     'company_news': 'News',
     'product_updates': 'Updates',
     'marketplace_highlights': 'Featured',
@@ -128,10 +129,14 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
         const allPosts = await getBlogPosts({ limit: 10 });
         // Handle different possible API response structures
          
+        // Same shape as the list page (blog/page.tsx) — the real response
+        // is {total_posts, posts}, not {data: [...]} or {results: [...]}.
         const allPostsAny = allPosts as any;
         let allPostsData: ApiBlogPost[] = [];
         if (Array.isArray(allPostsAny)) {
           allPostsData = allPostsAny;
+        } else if (allPostsAny?.posts && Array.isArray(allPostsAny.posts)) {
+          allPostsData = allPostsAny.posts;
         } else if (allPostsAny?.data && Array.isArray(allPostsAny.data)) {
           allPostsData = allPostsAny.data;
         } else if (allPostsAny?.results && Array.isArray(allPostsAny.results)) {
@@ -286,6 +291,25 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
               </span>
             </div>
           </header>
+
+          {/* Cover image — only when there's no video, which already shows
+              this same image as its own thumbnail (see below). */}
+          {post.coverImage && !post.videoUrl && (
+            <div className="relative mb-10 aspect-[2/1] w-full overflow-hidden rounded-xl bg-muted">
+              {/* unoptimized: this path is served by Caddy straight from the
+                  backend's media volume, not the Next.js server, so the
+                  built-in image optimizer can't fetch it and 400s. */}
+              <Image
+                src={post.coverImage}
+                alt={post.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 768px"
+                priority
+                unoptimized
+              />
+            </div>
+          )}
 
           {/* Video Section */}
           {post.videoUrl && (

@@ -9,6 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Mail, CheckCircle2, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { AuthCard } from '@/features/auth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { OTPInput } from '@/components/ui/otp-input';
@@ -32,6 +33,7 @@ export default function VerifyEmailPage() {
     setError,
     clearErrors,
     setValue,
+    getValues,
   } = useForm<VerifyEmailFormData>({
     resolver: zodResolver(verifyEmailSchema),
     defaultValues: { otp: '', email: emailFromQuery },
@@ -43,6 +45,13 @@ export default function VerifyEmailPage() {
   const resendHook = useResendVerification();
 
   const loading = verifyHook.isPending || resendHook.isPending;
+
+  // Verifying returns the user to sign in — they are not logged in yet.
+  React.useEffect(() => {
+    if (!verifyHook.isSuccess) return;
+    const id = window.setTimeout(() => router.push(AUTH_ROUTES.LOGIN as Route), 2000);
+    return () => window.clearTimeout(id);
+  }, [verifyHook.isSuccess, router]);
 
   React.useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -56,14 +65,28 @@ export default function VerifyEmailPage() {
   const onSubmit = (data: VerifyEmailFormData) => {
     verifyHook.mutate({
       ...data,
+      email: data.email || emailFromQuery,
       token: tokenFromQuery,
     });
+  };
+
+  // Submit the moment the sixth digit lands (typed or pasted) instead of
+  // making the user find the button. A wrong code is cleared so they can
+  // retype straight away; without an email there is nothing to check against,
+  // so the manual button and email field remain.
+  const handleComplete = (code: string) => {
+    const email = getValues('email') || emailFromQuery;
+    if (!email || verifyHook.isPending) return;
+    verifyHook.mutate(
+      { otp: code, email, token: tokenFromQuery },
+      { onError: () => setValue('otp', '') },
+    );
   };
 
   const handleResend = async () => {
     if (resendCooldown > 0 || resendHook.isPending) return;
     try {
-      const payload: ResendOtpRequest = { email: emailFromQuery };
+      const payload: ResendOtpRequest = { email: getValues('email') || emailFromQuery };
       await resendHook.mutateAsync(payload);
       setResendCooldown(60);
       clearErrors('otp');
@@ -76,10 +99,10 @@ export default function VerifyEmailPage() {
 
   if (verifyHook.isSuccess) {
     return (
-      <section className="w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6 border border-gray-100">
+      <section className="mx-auto w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 space-y-6 border border-gray-100">
           <div className="flex justify-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+            <div className="h-14 w-14 bg-primary/10 rounded-full flex items-center justify-center">
               <CheckCircle2 className="w-8 h-8 text-green-600" />
             </div>
           </div>
@@ -89,7 +112,7 @@ export default function VerifyEmailPage() {
               Email verified!
             </h1>
             <p className="text-gray-600">
-              Your email has been verified. Redirecting to your dashboard…
+              Your email has been verified. Taking you to sign in…
             </p>
           </header>
 
@@ -116,6 +139,30 @@ export default function VerifyEmailPage() {
           </AlertDescription>
         </Alert>
 
+        {!emailFromQuery && (
+          <div className="space-y-1.5">
+            <label htmlFor="verify-email-address" className="block text-sm font-medium text-gray-700">
+              Email address
+            </label>
+            <Controller
+              control={control}
+              name="email"
+              render={({ field }) => (
+                <Input
+                  id="verify-email-address"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  className="h-11"
+                  {...field}
+                  value={field.value ?? ''}
+                />
+              )}
+            />
+            {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
+          </div>
+        )}
+
         <div className="space-y-3">
           <label className="block text-sm font-medium text-gray-700 text-center">
             Enter verification code
@@ -127,6 +174,8 @@ export default function VerifyEmailPage() {
             render={({ field }) => (
               <OTPInput
                 length={6}
+                autoFocus
+                onComplete={handleComplete}
                 value={field.value}
                 onChange={(value: string) => {
                   field.onChange(value);
@@ -145,10 +194,10 @@ export default function VerifyEmailPage() {
           )}
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-          <p className="text-sm text-blue-800">
+        <div className="bg-muted/50 border border-border rounded-xl p-4 text-center">
+          <p className="text-sm text-muted-foreground">
             The code will expire in{' '}
-            <span className="font-semibold">10 minutes</span>
+            <span className="font-semibold">5 minutes</span>
           </p>
         </div>
 
@@ -170,7 +219,7 @@ export default function VerifyEmailPage() {
             variant="ghost"
             onClick={handleResend}
             disabled={loading || resendCooldown > 0}
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            className="text-primary hover:text-primary/80 hover:bg-primary/5"
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             {resendCooldown > 0

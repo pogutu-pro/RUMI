@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
 from rest_framework.response import Response
 
-from accounting.views import OwnerScopedView
+from accounting.books_views import OwnerScopedView
 from audit.models import log_audit
 from broadcasts.models import Broadcast
 from broadcasts.services import BroadcastError, preview

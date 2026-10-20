@@ -5,6 +5,31 @@
  */
 import type { OrganizationSubscription, SubscriptionPlan } from '@/features/billing/types';
 
+/** Mirrors AdminRevenueSummaryView's response (Backend/billing/views.py) —
+ * real numbers from the SubscriptionPayment ledger, never estimated. */
+export interface AdminRevenueSummary {
+  total_revenue: string;
+  revenue_this_month: string;
+  mrr: string;
+  active_subscriptions_count: number;
+  total_successful_payments: number;
+  monthly_revenue: { month: string; total: string }[];
+}
+
+/** Mirrors AdminPlatformOverviewView's response (Backend/billing/views.py) —
+ * the single-call snapshot behind the super-admin Overview page. */
+export interface AdminPlatformOverview {
+  total_users: number;
+  users_by_role: Record<string, number>;
+  total_organizations: number;
+  total_revenue: string;
+  revenue_this_month: string;
+  mrr: string;
+  paying_organizations: number;
+  open_support_tickets: number;
+  total_support_tickets: number;
+}
+
 /** Flat summary row for the super-admin organization list (ADMIN-01/ADMIN-02). */
 export interface AdminBillingListRow {
   id: string;
@@ -68,4 +93,35 @@ export interface AdminOverridePayload {
   plan_id?: string;
   status?: string;
   reason: string;
+}
+
+/** Mirrors Backend billing AdminPlanSerializer. */
+export interface AdminPlan {
+  id: string;
+  name: string;
+  slug: 'starter' | 'pro' | 'enterprise' | string;
+  price: string;
+  interval: string;
+  /** 0 means unlimited for each of the three limits. */
+  max_properties: number;
+  max_units: number;
+  max_caretaker_seats: number;
+  features: { analytics?: boolean };
+  sort_order: number;
+  paystack_linked: boolean;
+  active_subscribers: number;
+  updated_at: string;
+}
+
+export interface AdminPlanUpdate {
+  name?: string;
+  price?: number | string;
+  max_properties?: number;
+  max_units?: number;
+  max_caretaker_seats?: number;
+  features?: { analytics?: boolean };
+}
+
+export interface AdminPlanUpdateResult extends AdminPlan {
+  paystack_sync: { status: 'updated' | 'skipped' | 'failed' | 'not_needed'; detail?: string };
 }

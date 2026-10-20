@@ -4,14 +4,17 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
-from .models import Page, TeamMember, ContactInquiry, FAQ, BlogPost, Newsletter, Testimonial, Statistics
+from .models import Page, TeamMember, ContactInquiry, FAQ, BlogPost, JobPosting, Newsletter, Testimonial, Statistics
+from rumi.cache_utils import api_cache
 
 
 
@@ -25,19 +28,18 @@ class AboutUsView(APIView):
         return Response({
             'mission': {
                 'title': 'Our Mission',
-                'content': 'To revolutionize student accommodation in Kenya by providing a transparent, secure, and user-friendly platform that connects students with verified landlords and fosters a supportive community.'
+                'content': 'To give Kenyan landlords and property agents a single, trustworthy place to manage properties, tenants, and rent — replacing WhatsApp threads and spreadsheets with a platform built for how landlords actually work.'
             },
             'vision': {
                 'title': 'Our Vision',
-                'content': 'To become the leading student accommodation platform in kenya, empowering students to find safe, affordable housing while helping landlords efficiently manage their properties.'
+                'content': 'To become the platform every Kenyan landlord trusts to reliably collect and route their rent, with every dashboard, form, and payment path provably correct.'
             },
             'story': {
                 'title': 'Our Story',
-                'content': 'Founded in 2025 by university students who experienced the challenges of finding safe accommodation in some of Kenyan universities, RUMI was born from the need for a transparent and trustworthy platform.',
+                'content': 'RumiaRent was built for the landlord running a handful of units without dedicated staff — not for enterprise property managers. We start with what one landlord needs, then make it work for every landlord who needs the same thing.',
                 'milestones': [
-                    {'year': '2025', 'event': 'Platform launched at various University across Kenya'},
-                    {'year': '2025', 'event': 'Expanded to 5 universities across Kenya'},
-                    {'year': '2025', 'event': 'Launched integrated student marketplace'}
+                    {'year': '2025', 'event': 'RumiaRent launched for Kenyan landlords and agents'},
+                    {'year': '2026', 'event': 'Paystack-based rent collection and SMS reminders shipped'},
                 ]
             },
             'values': [
@@ -46,12 +48,12 @@ class AboutUsView(APIView):
                     'description': 'Clear pricing, verified information, no hidden fees'
                 },
                 {
-                    'title': 'Safety',
-                    'description': 'Verified hostels, secure payments, trusted landlords'
+                    'title': 'Trust',
+                    'description': 'Secure Paystack payments, correct payouts, no surprises'
                 },
                 {
-                    'title': 'Community',
-                    'description': 'Building connections between students and landlords'
+                    'title': 'Simplicity',
+                    'description': 'Built for a landlord with a handful of units, not an enterprise back office'
                 }
             ]
         }, status=status.HTTP_200_OK)
@@ -213,19 +215,9 @@ class ContactInfoView(APIView):
         return Response({
             'email': 'info@rumiarent.co.ke',
             'support_email': 'info@rumiarent.co.ke',
-            'phone': '+254 700 000 000',
-            'whatsapp': '+254 700 000 000',
             'address': {
-                'street': '123 University Way',
                 'city': 'Nairobi',
                 'country': 'Kenya',
-                'postal_code': '00100'
-            },
-            'social_media': {
-                'facebook': 'https://facebook.com/rumikenya',
-                'twitter': 'https://twitter.com/rumikenya',
-                'instagram': 'https://instagram.com/rumikenya',
-                'linkedin': 'https://linkedin.com/company/rumikenya'
             },
             'office_hours': {
                 'weekdays': '8:00 AM - 6:00 PM EAT',
@@ -253,7 +245,7 @@ class FAQView(APIView):
         # Define category labels
         category_labels = {
             'getting_started': 'Getting Started',
-            'students': 'For Students',
+            'students': 'For Tenants',
             'landlords': 'For Landlords',
             'payments': 'Payments & Billing',
             'safety': 'Safety & Security',
@@ -447,6 +439,281 @@ class BlogDetailView(APIView):
             'view_count': post.view_count,
             'related_posts': related_data
         }, status=status.HTTP_200_OK)
+
+
+def _is_blog_staff_role(role):
+    """Same three roles the support-ticket queue is scoped to (support/views.py
+    _is_staff_role) — tech support owns blog content the same way it owns
+    tickets, not a separate permission concept."""
+    return role in ('tech_support', 'tech_support_admin', 'super_admin')
+
+
+def _blog_post_admin_data(post):
+    """Full representation, including draft-only fields the public
+    BlogListView/BlogDetailView never expose (is_published, meta_*)."""
+    return {
+        'id': post.id,
+        'title': post.title,
+        'slug': post.slug,
+        'excerpt': post.excerpt,
+        'content': post.content,
+        'featured_image': post.featured_image,
+        'author': {
+            'id': post.author_id,
+            'name': post.author.get_full_name(),
+        },
+        'category': post.category,
+        'tags': post.tags or [],
+        'meta_title': post.meta_title,
+        'meta_description': post.meta_description,
+        'is_published': post.is_published,
+        'is_featured': post.is_featured,
+        'read_time_minutes': post.read_time_minutes,
+        'view_count': post.view_count,
+        'published_at': post.published_at,
+        'created_at': post.created_at,
+        'updated_at': post.updated_at,
+    }
+
+
+def _unique_blog_slug(title, exclude_pk=None):
+    from django.utils.text import slugify
+    base = slugify(title)[:190] or 'post'
+    slug = base
+    n = 2
+    qs = BlogPost.objects.filter(slug=slug)
+    if exclude_pk:
+        qs = qs.exclude(pk=exclude_pk)
+    while qs.exists():
+        slug = f'{base}-{n}'
+        n += 1
+        qs = BlogPost.objects.filter(slug=slug)
+        if exclude_pk:
+            qs = qs.exclude(pk=exclude_pk)
+    return slug
+
+
+def _invalidate_public_blog_cache(slug=None, old_slug=None):
+    """
+    APIResponseCacheMiddleware (rumi/middleware.py) caches every anonymous
+    GET for up to 5 minutes, keyed on request.path alone (no query string,
+    no awareness of the underlying data) — it has no way to know a blog
+    post was just created/published/edited/deleted, so without this, a
+    newly published post — or an edit, or an unpublish/delete — would
+    silently keep serving the old cached response for up to 5 minutes.
+
+    Reconstructs the exact same cache key the middleware computes
+    (rumi.cache_utils.APIResponseCache.cache_api_response with
+    endpoint=request.path, method='GET') and deletes it directly, rather
+    than a pattern match — the middleware's keys are MD5 hashes with no
+    human-readable substring to pattern-match against.
+    """
+    keys_to_clear = ['/api/v1/home/blog/']
+    if slug:
+        keys_to_clear.append(f'/api/v1/home/blog/{slug}/')
+    if old_slug and old_slug != slug:
+        keys_to_clear.append(f'/api/v1/home/blog/{old_slug}/')
+
+    for path in keys_to_clear:
+        cache_key = api_cache.cache_manager.get_cache_key('api', path, 'GET')
+        api_cache.cache_manager.delete(cache_key)
+
+
+class AdminBlogPostListCreateView(APIView):
+    """Tech support's own blog queue — every post regardless of publish
+    status, unlike the public BlogListView which only ever shows published
+    ones."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from core.permissions.rumia import get_canonical_role
+        role = get_canonical_role(request.user)
+        if not _is_blog_staff_role(role):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        qs = BlogPost.objects.select_related('author').order_by('-created_at')
+
+        is_published = request.query_params.get('is_published')
+        if is_published is not None:
+            qs = qs.filter(is_published=is_published.lower() == 'true')
+
+        category = request.query_params.get('category')
+        if category:
+            qs = qs.filter(category=category)
+
+        search = request.query_params.get('search')
+        if search:
+            qs = qs.filter(title__icontains=search)
+
+        return Response([_blog_post_admin_data(p) for p in qs[:200]], status=status.HTTP_200_OK)
+
+    def post(self, request):
+        from core.permissions.rumia import get_canonical_role
+        role = get_canonical_role(request.user)
+        if not _is_blog_staff_role(role):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        title = (request.data.get('title') or '').strip()
+        content = (request.data.get('content') or '').strip()
+        category = request.data.get('category')
+
+        if not title:
+            return Response({'detail': 'Title is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not content:
+            return Response({'detail': 'Content is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if category not in dict(BlogPost.CATEGORY_CHOICES):
+            return Response({'detail': 'Invalid category.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        tags = request.data.get('tags') or []
+        if not isinstance(tags, list):
+            return Response({'detail': 'tags must be a list.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        is_published = bool(request.data.get('is_published', False))
+
+        post = BlogPost.objects.create(
+            title=title,
+            slug=_unique_blog_slug(title),
+            excerpt=(request.data.get('excerpt') or '').strip() or None,
+            content=content,
+            featured_image=(request.data.get('featured_image') or '').strip() or None,
+            author=request.user,
+            category=category,
+            tags=tags,
+            meta_title=(request.data.get('meta_title') or '').strip() or None,
+            meta_description=(request.data.get('meta_description') or '').strip() or None,
+            is_published=is_published,
+            is_featured=bool(request.data.get('is_featured', False)),
+            read_time_minutes=request.data.get('read_time_minutes') or None,
+            published_at=timezone.now() if is_published else None,
+        )
+        if is_published:
+            _invalidate_public_blog_cache(slug=post.slug)
+        return Response(_blog_post_admin_data(post), status=status.HTTP_201_CREATED)
+
+
+class AdminBlogPostDetailView(APIView):
+    """Edit/publish/delete a single post — draft or published."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _get_post_or_403(self, request, pk):
+        from core.permissions.rumia import get_canonical_role
+        role = get_canonical_role(request.user)
+        if not _is_blog_staff_role(role):
+            return None, Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            return BlogPost.objects.select_related('author').get(pk=pk), None
+        except BlogPost.DoesNotExist:
+            return None, Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    def get(self, request, pk):
+        post, error = self._get_post_or_403(request, pk)
+        if error:
+            return error
+        return Response(_blog_post_admin_data(post), status=status.HTTP_200_OK)
+
+    def patch(self, request, pk):
+        post, error = self._get_post_or_403(request, pk)
+        if error:
+            return error
+
+        was_published = post.is_published
+        old_slug = post.slug
+
+        data = request.data
+        if 'title' in data:
+            title = (data.get('title') or '').strip()
+            if not title:
+                return Response({'detail': 'Title cannot be empty.'}, status=status.HTTP_400_BAD_REQUEST)
+            if title != post.title:
+                post.title = title
+                post.slug = _unique_blog_slug(title, exclude_pk=post.pk)
+        if 'content' in data:
+            content = (data.get('content') or '').strip()
+            if not content:
+                return Response({'detail': 'Content cannot be empty.'}, status=status.HTTP_400_BAD_REQUEST)
+            post.content = content
+        if 'excerpt' in data:
+            post.excerpt = (data.get('excerpt') or '').strip() or None
+        if 'featured_image' in data:
+            post.featured_image = (data.get('featured_image') or '').strip() or None
+        if 'category' in data:
+            if data.get('category') not in dict(BlogPost.CATEGORY_CHOICES):
+                return Response({'detail': 'Invalid category.'}, status=status.HTTP_400_BAD_REQUEST)
+            post.category = data.get('category')
+        if 'tags' in data:
+            tags = data.get('tags') or []
+            if not isinstance(tags, list):
+                return Response({'detail': 'tags must be a list.'}, status=status.HTTP_400_BAD_REQUEST)
+            post.tags = tags
+        if 'meta_title' in data:
+            post.meta_title = (data.get('meta_title') or '').strip() or None
+        if 'meta_description' in data:
+            post.meta_description = (data.get('meta_description') or '').strip() or None
+        if 'is_featured' in data:
+            post.is_featured = bool(data.get('is_featured'))
+        if 'read_time_minutes' in data:
+            post.read_time_minutes = data.get('read_time_minutes') or None
+        if 'is_published' in data:
+            new_is_published = bool(data.get('is_published'))
+            if new_is_published and not post.is_published:
+                post.published_at = timezone.now()
+            post.is_published = new_is_published
+
+        post.save()
+
+        # Only matters if the post was ever visible publicly — a pure draft
+        # edit (never published, still not published) was never cached.
+        if was_published or post.is_published:
+            _invalidate_public_blog_cache(slug=post.slug, old_slug=old_slug)
+
+        return Response(_blog_post_admin_data(post), status=status.HTTP_200_OK)
+
+    def delete(self, request, pk):
+        post, error = self._get_post_or_403(request, pk)
+        if error:
+            return error
+        was_published = post.is_published
+        slug = post.slug
+        post.delete()
+        if was_published:
+            _invalidate_public_blog_cache(slug=slug)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AdminBlogCoverUploadView(APIView):
+    """Cover-image upload for a blog post — mirrors
+    accounts.views.ProfilePictureUploadView's storage pattern (works with
+    either local disk or S3, per USE_S3)."""
+
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        from core.permissions.rumia import get_canonical_role
+        from django.core.files.storage import default_storage
+        role = get_canonical_role(request.user)
+        if not _is_blog_staff_role(role):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        file_obj = request.FILES.get('file')
+        if not file_obj:
+            return Response({'detail': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        allowed_types = ['image/jpeg', 'image/png', 'image/webp']
+        if file_obj.content_type not in allowed_types:
+            return Response(
+                {'detail': 'Invalid file type. Only JPEG, PNG, and WebP allowed.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if file_obj.size > 5 * 1024 * 1024:
+            return Response({'detail': 'File too large. Maximum size is 5MB.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        file_extension = file_obj.name.split('.')[-1]
+        filename = f'blog_covers/{uuid.uuid4().hex}.{file_extension}'
+        default_storage.save(filename, file_obj)
+        return Response({'featured_image': default_storage.url(filename)}, status=status.HTTP_201_CREATED)
 
 
 class NewsletterSubscribeView(APIView):
@@ -647,4 +914,203 @@ class PrometheusMetricsProxyView(APIView):
             return Response({
                 'error': f'Unexpected error: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# --------------------------------------------------------------------------
+# Careers: public openings + tech-support management
+# --------------------------------------------------------------------------
+
+def _job_data(job, *, admin=False):
+    data = {
+        'id': job.id,
+        'title': job.title,
+        'slug': job.slug,
+        'department': job.department,
+        'location': job.location,
+        'employment_type': job.employment_type,
+        'employment_type_label': job.get_employment_type_display(),
+        'summary': job.summary,
+        'description': job.description,
+        'requirements': job.requirements,
+        'apply_email': job.apply_email,
+        'closing_date': job.closing_date,
+        'published_at': job.published_at,
+    }
+    if admin:
+        data.update({
+            'status': job.status,
+            'is_open': job.is_open,
+            'created_at': job.created_at,
+            'updated_at': job.updated_at,
+        })
+    return data
+
+
+def _invalidate_public_careers_cache():
+    """Same reason as the blog: the anonymous list is cached by URL for minutes."""
+    api_cache.cache_manager.delete(api_cache.cache_manager.get_cache_key('api', '/api/v1/home/careers/', 'GET'))
+
+
+def _unique_job_slug(title, exclude_pk=None):
+    from django.utils.text import slugify
+
+    base = slugify(title)[:190] or 'role'
+    slug, n = base, 2
+    while JobPosting.objects.filter(slug=slug).exclude(pk=exclude_pk).exists():
+        slug = f'{base}-{n}'
+        n += 1
+    return slug
+
+
+class CareerListView(APIView):
+    """Public: roles currently open."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        today = timezone.localdate()
+        jobs = JobPosting.objects.filter(status='published').filter(
+            Q(closing_date__isnull=True) | Q(closing_date__gte=today)
+        ).order_by('-published_at')
+        return Response({'results': [_job_data(j) for j in jobs]})
+
+
+class _CareerStaffMixin:
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _forbidden(self, request):
+        from core.permissions.rumia import get_canonical_role
+
+        if not _is_blog_staff_role(get_canonical_role(request.user)):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        return None
+
+    @staticmethod
+    def _apply(job, data, partial):
+        """Validate and copy editable fields onto `job`. Returns an error dict or None."""
+        errors = {}
+        text_limits = {'title': 200, 'department': 100, 'location': 150, 'summary': 300}
+        for field, limit in text_limits.items():
+            if field in data:
+                value = (data.get(field) or '').strip()
+                if len(value) > limit:
+                    errors[field] = f'Keep this under {limit} characters.'
+                setattr(job, field, value)
+        for field in ('description', 'requirements'):
+            if field in data:
+                setattr(job, field, (data.get(field) or '').strip())
+
+        if not partial or 'title' in data:
+            if not job.title:
+                errors['title'] = 'Title is required.'
+        if not partial or 'description' in data:
+            if not job.description:
+                errors['description'] = 'Describe the role.'
+
+        if 'employment_type' in data:
+            if data['employment_type'] not in dict(JobPosting.TYPE_CHOICES):
+                errors['employment_type'] = 'Choose a valid type.'
+            else:
+                job.employment_type = data['employment_type']
+        if 'apply_email' in data:
+            from django.core.validators import validate_email
+            try:
+                validate_email(data['apply_email'])
+                job.apply_email = data['apply_email']
+            except Exception:
+                errors['apply_email'] = 'Enter a valid email address.'
+        if 'closing_date' in data:
+            raw = data['closing_date']
+            if raw in (None, ''):
+                job.closing_date = None
+            else:
+                from django.utils.dateparse import parse_date
+                parsed = parse_date(str(raw))
+                if parsed is None:
+                    errors['closing_date'] = 'Use a valid date.'
+                else:
+                    job.closing_date = parsed
+        if 'status' in data:
+            if data['status'] not in dict(JobPosting.STATUS_CHOICES):
+                errors['status'] = 'Choose draft, published or closed.'
+            else:
+                if data['status'] == 'published' and job.status != 'published':
+                    job.published_at = timezone.now()
+                job.status = data['status']
+        return errors or None
+
+
+class AdminCareerListCreateView(_CareerStaffMixin, APIView):
+    """Every posting, whatever its status. Tech support, tech support admin and super admin."""
+
+    def get(self, request):
+        denied = self._forbidden(request)
+        if denied:
+            return denied
+        jobs = JobPosting.objects.order_by('-created_at')
+        return Response({'results': [_job_data(j, admin=True) for j in jobs]})
+
+    def post(self, request):
+        denied = self._forbidden(request)
+        if denied:
+            return denied
+        job = JobPosting(created_by=request.user)
+        errors = self._apply(job, request.data, partial=False)
+        if errors:
+            return Response({'errors': errors, 'detail': 'Please fix the highlighted fields.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        job.slug = _unique_job_slug(job.title)
+        job.save()
+        _invalidate_public_careers_cache()
+        return Response(_job_data(job, admin=True), status=status.HTTP_201_CREATED)
+
+
+class AdminCareerDetailView(_CareerStaffMixin, APIView):
+    def _get(self, pk):
+        return JobPosting.objects.filter(pk=pk).first()
+
+    def patch(self, request, pk):
+        denied = self._forbidden(request)
+        if denied:
+            return denied
+        job = self._get(pk)
+        if job is None:
+            return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        old_title = job.title
+        errors = self._apply(job, request.data, partial=True)
+        if errors:
+            return Response({'errors': errors, 'detail': 'Please fix the highlighted fields.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if job.title != old_title:
+            job.slug = _unique_job_slug(job.title, exclude_pk=job.pk)
+        job.save()
+        _invalidate_public_careers_cache()
+        return Response(_job_data(job, admin=True))
+
+    def delete(self, request, pk):
+        denied = self._forbidden(request)
+        if denied:
+            return denied
+        job = self._get(pk)
+        if job is None:
+            return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        job.delete()
+        _invalidate_public_careers_cache()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def invalidate_public_social_cache():
+    """The anonymous list is cached by URL for minutes; clear it whenever a link changes."""
+    api_cache.cache_manager.delete(api_cache.cache_manager.get_cache_key('api', '/api/v1/home/social-links/', 'GET'))
+
+
+class SocialLinkListView(APIView):
+    """Public: the social profiles a super admin has added (none until they do)."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        from .models import SocialLink
+
+        return Response({'results': [{'platform': l.platform, 'url': l.url} for l in SocialLink.objects.all()]})
 

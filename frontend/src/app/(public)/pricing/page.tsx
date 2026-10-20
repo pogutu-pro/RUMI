@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { Landmark, Receipt, MessageCircle, Headset } from 'lucide-react';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 import { PricingContent } from './_components/pricing-content';
 
@@ -8,6 +9,13 @@ export const metadata: Metadata = {
   title: 'Pricing',
   description: 'RumiaRent rental management pricing. Simple, flat monthly billing.',
 };
+
+const PRICING_HIGHLIGHTS = [
+  { icon: Landmark, label: 'Bank, M-Pesa, and card payments' },
+  { icon: Receipt, label: 'Automated invoicing and billing' },
+  { icon: MessageCircle, label: 'Built-in communication module' },
+  { icon: Headset, label: 'Dedicated customer support' },
+];
 
 export default function PricingPage() {
   return (
@@ -22,6 +30,22 @@ export default function PricingPage() {
             Flat monthly pricing, from Starter to Enterprise. No per-unit surprises.
             Notifications included.
           </p>
+        </div>
+      </section>
+
+      {/* Highlights */}
+      <section className="py-16 px-4 bg-white border-b border-gray-100">
+        <div className="container mx-auto max-w-5xl">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {PRICING_HIGHLIGHTS.map(({ icon: Icon, label }) => (
+              <div key={label} className="flex flex-col items-center text-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+                  <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
+                </div>
+                <p className="text-sm font-semibold text-gray-900">{label}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -57,7 +81,7 @@ export default function PricingPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Billing Model</p>
-                <p className="text-sm text-gray-600">Billed monthly per selected plan — flat pricing, no per-unit metering.</p>
+                <p className="text-sm text-gray-600">Billed monthly per selected plan: flat pricing, no per-unit metering.</p>
               </div>
               <div>
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Multiple properties</p>

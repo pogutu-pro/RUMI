@@ -71,8 +71,8 @@ class OwnerStatementService:
                 entry__entry_date__gte=period_start, entry__entry_date__lte=period_end,
             ).aggregate(t=Sum('credit'))['t'] or ZERO
             expenses = Expense.objects.filter(
-                organization=owner.organization, parent_property=prop, voided_at__isnull=True,
-                expense_date__gte=period_start, expense_date__lte=period_end,
+                organization=owner.organization, parent_property=prop, is_void=False,
+                incurred_on__gte=period_start, incurred_on__lte=period_end,
             ).aggregate(t=Sum('amount'))['t'] or ZERO
             commissionable = collected if owner.commission_on_penalties else collected - penalties
             management_fee = _q(commissionable * owner.management_fee_percent / 100)

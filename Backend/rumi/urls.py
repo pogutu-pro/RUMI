@@ -65,14 +65,17 @@ urlpatterns = [
         path('notifications/', include('notifications.urls')),
         path('home/', include('home.urls')),
         path('support/', include('support.urls')),
+        path('messaging/', include('messaging.urls')),
+        path('platform-settings/', include('platform_settings.urls')),
+        path('accounting/', include('accounting.urls')),
         path('billing/', include('billing.urls')),
         path('organizations/', include('organizations.urls')),
         path('paybill/', include('paybill.urls')),
-        path('accounting/', include('accounting.urls')),
         path('agency/', include('agency.urls')),
         path('leasing/', include('leasing.urls')),
         path('broadcasts/', include('broadcasts.urls')),
         path('listings/', include('listings.urls')),
+        path('audit/', include('audit.urls')),
 
         # RumiaRent canonical domain APIs
         path('', include('rumia_api.urls')),

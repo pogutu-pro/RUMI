@@ -8,8 +8,10 @@ classmethod-only style (no instantiation).
 """
 from __future__ import annotations
 
+import math
 from datetime import timedelta
 
+from django.conf import settings
 from django.utils import timezone
 
 from billing.models import SubscriptionPlan
@@ -74,9 +76,50 @@ class GatingService:
             ):
                 return subscription.plan
 
-        if timezone.now() <= organization.created_at + timedelta(days=30):
+        if timezone.now() <= cls.trial_ends_at(organization):
             return cls._get_floor_plan('enterprise')
         return cls._get_floor_plan('starter')
+
+    @staticmethod
+    def trial_days() -> int:
+        return int(getattr(settings, 'SUBSCRIPTION_TRIAL_DAYS', 30))
+
+    @classmethod
+    def trial_ends_at(cls, organization):
+        """Every new organization gets the top tier free for this long from signup."""
+        return organization.created_at + timedelta(days=cls.trial_days())
+
+    @classmethod
+    def get_access_summary(cls, organization) -> dict:
+        """
+        What the landlord is entitled to right now and why, for the trial banner.
+
+        `on_trial` is true only while access comes from the free window rather
+        than from a paid/in-grace subscription.
+        """
+        subscription = getattr(organization, 'subscription', None)
+        plan = cls.get_effective_plan(organization)
+        ends_at = cls.trial_ends_at(organization)
+        now = timezone.now()
+
+        paying = subscription is not None and (
+            subscription.status == 'active'
+            or (
+                subscription.status == 'past_due'
+                and subscription.grace_period_ends_at is not None
+                and now <= subscription.grace_period_ends_at
+            )
+        )
+        on_trial = not paying and now <= ends_at
+        return {
+            'effective_plan': plan.slug,
+            'effective_plan_name': plan.name,
+            'on_trial': on_trial,
+            'trial_expired': (not paying) and now > ends_at,
+            'trial_ends_at': ends_at,
+            'trial_days_left': max(math.ceil((ends_at - now).total_seconds() / 86400), 0) if on_trial else 0,
+            'subscription_status': subscription.status if subscription is not None else None,
+        }
 
     @classmethod
     def check_property_limit(cls, organization) -> dict | None:
@@ -134,8 +177,10 @@ class GatingService:
     @classmethod
     def check_analytics_feature(cls, organization) -> dict | None:
         """
-        D-08 — features.branded_receipts stays untouched and unenforced this
-        phase (D-09): no feature exists behind that flag yet.
+        Analytics is the one feature switch a plan carries: the landlord income
+        summary (expected, collected, outstanding and overdue rent, collection
+        rate and a per-property breakdown) is refused with a gate response on a
+        plan that does not include it.
         """
         plan = cls.get_effective_plan(organization)
         if plan.features.get('analytics', False):

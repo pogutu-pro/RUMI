@@ -1,381 +1,301 @@
-"""
-Expenses (posted to the ledger) and landlord statements (computed from it).
+"""Calculation layer: MRI figures, income and expense summaries, CSV export."""
 
-A statement is derived entirely from journal lines, so it always reconciles:
-for every tenancy, closing = opening + invoiced − credited − paid
-− paid from deposit + reversed, where each column is the movement of
-(receivables − prepayments) by journal source.
-"""
-
-from __future__ import annotations
-
+import csv
 import io
-from collections import defaultdict
-from dataclasses import dataclass, field
-from datetime import date, timedelta
-from decimal import Decimal
+from datetime import date, datetime, timedelta
+from decimal import ROUND_HALF_UP, Decimal
 
-from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Count, Sum
 from django.utils import timezone
 
-from accounting.models import Expense
-from ledger.models import Account, JournalLine
-from ledger.services import chart
-from ledger.services.posting import LedgerService, Leg
-from properties.models import Tenancy
+from rent.models import Payment
 
-ZERO = Decimal('0.00')
+from .models import Expense, MriFiling, TaxRateConfig
 
-CATEGORY_ACCOUNTS = {
-    'repairs': chart.REPAIRS_AND_MAINTENANCE,
-    'utilities': chart.PROPERTY_UTILITIES,
-    'security_cleaning': chart.SECURITY_AND_CLEANING,
-    'management_fees': chart.MANAGEMENT_FEES,
-    'insurance': chart.INSURANCE,
-    'rates_taxes': chart.RATES_AND_TAXES,
-    'other': chart.OTHER_EXPENSES,
+CENT = Decimal('0.01')
+
+
+def money(value) -> Decimal:
+    return Decimal(value or 0).quantize(CENT, rounding=ROUND_HALF_UP)
+
+
+def month_start(year: int, month: int) -> date:
+    return date(year, month, 1)
+
+
+def next_month(d: date) -> date:
+    return date(d.year + (d.month == 12), 1 if d.month == 12 else d.month + 1, 1)
+
+
+def _aware_start(d: date) -> datetime:
+    return timezone.make_aware(datetime(d.year, d.month, d.day))
+
+
+def filing_deadline(month: date, config: TaxRateConfig) -> date:
+    """Rent for a month is declared by the due day of the FOLLOWING month."""
+    following = next_month(month)
+    return date(following.year, following.month, min(config.filing_due_day, 28))
+
+
+def rent_received(organization, start: date, end: date) -> dict:
+    """
+    Gross rent actually received between `start` (inclusive) and `end`
+    (exclusive), on the Nairobi calendar. Cash basis, which is what MRI is
+    charged on: a successful payment counts in the month it was paid; a
+    reversed one does not count at all.
+    """
+    payments = Payment.objects.filter(
+        organization=organization, status='success',
+        paid_at__gte=_aware_start(start), paid_at__lt=_aware_start(end),
+    )
+    total = payments.aggregate(t=Sum('amount'), n=Count('id'))
+    by_property = (
+        payments.values('parent_property_id', 'parent_property__name')
+        .annotate(amount=Sum('amount'), count=Count('id'))
+        .order_by('-amount')
+    )
+    return {
+        'total': money(total['t']),
+        'count': total['n'] or 0,
+        'by_property': [
+            {
+                'property_id': str(row['parent_property_id']) if row['parent_property_id'] else None,
+                'property_name': row['parent_property__name'] or 'Not linked to a property',
+                'amount': money(row['amount']),
+                'payments': row['count'],
+            }
+            for row in by_property
+        ],
+    }
+
+
+def mri_for_month(organization, month: date, config: TaxRateConfig | None = None) -> dict:
+    config = config or TaxRateConfig.get()
+    received = rent_received(organization, month, next_month(month))
+    gross = received['total']
+    tax = money(gross * config.mri_rate / Decimal('100'))
+
+    # Rolling twelve months up to and including this one, to show which band
+    # the landlord is in. Informational only: the landlord decides.
+    window_start = date(month.year - 1, month.month, 1)
+    window_start = next_month(window_start)
+    rolling = rent_received(organization, window_start, next_month(month))['total']
+
+    deadline = filing_deadline(month, config)
+    filing = MriFiling.objects.filter(organization=organization, month=month).first()
+    today = timezone.localdate()
+    if filing:
+        status = 'filed'
+    elif month >= today.replace(day=1):
+        status = 'in_progress'  # the month has not finished
+    elif today > deadline:
+        status = 'overdue'
+    else:
+        status = 'due'
+
+    if rolling < config.mri_annual_min:
+        band = 'below'
+    elif rolling > config.mri_annual_max:
+        band = 'above'
+    else:
+        band = 'within'
+
+    return {
+        'month': month.isoformat(),
+        'gross_rent': str(gross),
+        'payments': received['count'],
+        'rate': str(config.mri_rate),
+        'mri_due': str(tax),
+        'is_nil': gross == 0,
+        'by_property': [{**p, 'amount': str(p['amount']), 'mri': str(money(p['amount'] * config.mri_rate / 100))}
+                        for p in received['by_property']],
+        'deadline': deadline.isoformat(),
+        'status': status,
+        'rolling_12_months': str(rolling),
+        'band': band,
+        'annual_min': str(config.mri_annual_min),
+        'annual_max': str(config.mri_annual_max),
+        'filing': None if not filing else {
+            'filed_on': filing.filed_on.isoformat(),
+            'reference': filing.reference,
+            'gross_rent_at_filing': str(filing.gross_rent),
+            'mri_at_filing': str(filing.mri_amount),
+            'changed_since': money(filing.gross_rent) != gross,
+        },
+    }
+
+
+def mri_for_year(organization, year: int) -> dict:
+    config = TaxRateConfig.get()
+    months = [mri_for_month(organization, month_start(year, m), config) for m in range(1, 13)]
+    total_gross = sum((Decimal(m['gross_rent']) for m in months), Decimal('0'))
+    total_tax = sum((Decimal(m['mri_due']) for m in months), Decimal('0'))
+    return {
+        'year': year,
+        'months': months,
+        'total_gross_rent': str(money(total_gross)),
+        'total_mri_due': str(money(total_tax)),
+    }
+
+
+def summary(organization, start: date, end: date) -> dict:
+    """Income, expenses and net for [start, end), overall and per property."""
+    income = rent_received(organization, start, end)
+    expenses = Expense.objects.filter(
+        organization=organization, is_void=False, incurred_on__gte=start, incurred_on__lt=end,
+    )
+    spent = money(expenses.aggregate(t=Sum('amount'))['t'])
+    by_category = {
+        row['category']: money(row['t'])
+        for row in expenses.values('category').annotate(t=Sum('amount'))
+    }
+    category_rows = [
+        {'category': key, 'label': label, 'amount': str(by_category.get(key, Decimal('0.00')))}
+        for key, label in Expense.CATEGORIES if by_category.get(key)
+    ]
+
+    props = {}
+    for row in income['by_property']:
+        props.setdefault(row['property_id'], {'property_id': row['property_id'], 'property_name': row['property_name'],
+                                                'income': Decimal('0'), 'expenses': Decimal('0')})
+        props[row['property_id']]['income'] += row['amount']
+    for row in expenses.values('parent_property_id', 'parent_property__name').annotate(t=Sum('amount')):
+        pid = str(row['parent_property_id']) if row['parent_property_id'] else None
+        props.setdefault(pid, {'property_id': pid, 'property_name': row['parent_property__name'] or 'General (no property)',
+                                'income': Decimal('0'), 'expenses': Decimal('0')})
+        props[pid]['expenses'] += money(row['t'])
+
+    return {
+        'start': start.isoformat(),
+        'end': (end - timedelta(days=1)).isoformat(),
+        'income': str(income['total']),
+        'expenses': str(spent),
+        'net': str(money(income['total'] - spent)),
+        'expenses_by_category': category_rows,
+        'by_property': [
+            {**p, 'income': str(money(p['income'])), 'expenses': str(money(p['expenses'])),
+             'net': str(money(p['income'] - p['expenses']))}
+            for p in props.values()
+        ],
+    }
+
+
+# --- CSV ---------------------------------------------------------------------
+
+def _safe(cell):
+    """
+    Stop a spreadsheet treating text a user typed as a formula (CSV injection).
+    Real numbers are passed through untouched: a negative amount starts with
+    '-' and must stay a number, or QuickBooks would read it as text.
+    """
+    if isinstance(cell, (int, float, Decimal)) and not isinstance(cell, bool):
+        return str(cell)
+    text = '' if cell is None else str(cell)
+    return "'" + text if text[:1] in ('=', '+', '-', '@', '\t', '\r') else text
+
+
+def _csv(rows) -> str:
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    for row in rows:
+        writer.writerow([_safe(c) for c in row])
+    return buffer.getvalue()
+
+
+def mri_year_csv(organization, year: int) -> str:
+    data = mri_for_year(organization, year)
+    rows = [['Month', 'Gross rent received (KES)', 'MRI rate (%)', 'MRI due (KES)', 'File and pay by', 'Status', 'Filed on', 'Reference']]
+    for m in data['months']:
+        filing = m['filing'] or {}
+        rows.append([m['month'][:7], m['gross_rent'], m['rate'], m['mri_due'], m['deadline'], m['status'],
+                     filing.get('filed_on', ''), filing.get('reference', '')])
+    rows.append(['Total', data['total_gross_rent'], '', data['total_mri_due'], '', '', '', ''])
+    return _csv(rows)
+
+
+def ledger_csv(organization, start: date, end: date) -> str:
+    """Every rent payment and every expense in the range, oldest first."""
+    entries = []
+    payments = Payment.objects.filter(
+        organization=organization, status='success',
+        paid_at__gte=_aware_start(start), paid_at__lt=_aware_start(end),
+    ).select_related('tenant', 'unit', 'parent_property')
+    for p in payments:
+        entries.append((timezone.localtime(p.paid_at).date(), 'Income', 'Rent',
+                        p.parent_property.name if p.parent_property else '',
+                        f'{p.tenant.full_name} ({p.unit.unit_number})' if p.unit else p.tenant.full_name,
+                        p.get_payment_method_display(), money(p.amount), p.internal_reference))
+    for e in Expense.objects.filter(organization=organization, is_void=False,
+                                    incurred_on__gte=start, incurred_on__lt=end).select_related('parent_property'):
+        entries.append((e.incurred_on, 'Expense', e.get_category_display(),
+                        e.parent_property.name if e.parent_property else '',
+                        ' - '.join(x for x in (e.vendor, e.description) if x), '', -money(e.amount), ''))
+    entries.sort(key=lambda r: (r[0], r[1]))
+    rows = [['Date', 'Type', 'Category', 'Property', 'Details', 'Method', 'Amount (KES)', 'Reference']]
+    rows += [[d.isoformat(), t, c, prop, det, meth, amt, ref] for d, t, c, prop, det, meth, amt, ref in entries]
+    return _csv(rows)
+
+
+# --- QuickBooks-ready exports ------------------------------------------------
+# QuickBooks Online imports bank transactions from a CSV with exactly Date,
+# Description, Amount (money out is negative) and recommends dd/mm/yyyy. The
+# journal format follows its journal-entry import template; that import is not
+# available in every region, so QuickBooks' own sample file is the reference.
+
+QB_INCOME_ACCOUNT = 'Rental Income'
+QB_BANK_ACCOUNT = 'Bank Account'
+QB_EXPENSE_ACCOUNTS = {
+    'repairs': 'Repairs and Maintenance',
+    'utilities': 'Utilities',
+    'caretaker': 'Caretaker Pay',
+    'security': 'Security',
+    'cleaning': 'Cleaning and Garbage',
+    'insurance': 'Insurance',
+    'land_rates': 'Land Rates and Permits',
+    'agent_fees': 'Agent and Management Fees',
+    'other': 'Other Expenses',
 }
-PAID_FROM_ACCOUNTS = {
-    'cash': chart.CASH_ON_HAND,
-    'bank_transfer': chart.BANK,
-    'mpesa_paybill': chart.MPESA_PAYBILL,
-    'other': chart.CASH_ON_HAND,
-}
-CHANNEL_LABELS = {
-    chart.CASH_ON_HAND: 'Cash',
-    chart.BANK: 'Bank',
-    chart.MPESA_PAYBILL: 'M-Pesa paybill',
-    chart.PAYSTACK_CLEARING: 'Paystack',
-}
 
 
-class ExpenseError(ValueError):
-    pass
+def _ledger_entries(organization, start: date, end: date) -> list:
+    """(date, kind, category_key, description, amount) - income positive, expenses negative."""
+    entries = []
+    payments = Payment.objects.filter(
+        organization=organization, status='success',
+        paid_at__gte=_aware_start(start), paid_at__lt=_aware_start(end),
+    ).select_related('tenant', 'unit')
+    for p in payments:
+        who = f'{p.tenant.full_name} {p.unit.unit_number}'.strip() if p.unit else p.tenant.full_name
+        entries.append((timezone.localtime(p.paid_at).date(), 'income', 'rent', f'Rent from {who}', money(p.amount)))
+    expenses = Expense.objects.filter(
+        organization=organization, is_void=False, incurred_on__gte=start, incurred_on__lt=end,
+    )
+    for e in expenses:
+        label = ' - '.join(x for x in (e.get_category_display(), e.vendor, e.description) if x)
+        entries.append((e.incurred_on, 'expense', e.category, label, -money(e.amount)))
+    entries.sort(key=lambda r: (r[0], r[1]))
+    return entries
 
 
-class ExpenseService:
-    @classmethod
-    @transaction.atomic
-    def record(cls, organization, created_by=None, **fields) -> Expense:
-        prop = fields.get('parent_property')
-        if prop is not None and prop.organization_id != organization.id:
-            raise ExpenseError('That property belongs to another organization.')
-        supplier = fields.get('supplier_ref')
-        if supplier is not None:
-            if supplier.organization_id != organization.id:
-                raise ExpenseError('That supplier belongs to another organization.')
-            if not fields.get('supplier'):
-                fields['supplier'] = supplier.name
-        expense = Expense.objects.create(organization=organization, created_by=created_by, **fields)
-        dims = {'parent_property': expense.parent_property} if expense.parent_property_id else {}
-        if expense.unit_id:
-            dims['unit'] = expense.unit
-        LedgerService.post(
-            organization,
-            expense.expense_date,
-            [
-                Leg.dr(CATEGORY_ACCOUNTS[expense.category], expense.amount, expense.description, **dims),
-                Leg.cr(PAID_FROM_ACCOUNTS[expense.paid_from], expense.amount, expense.supplier or expense.description, **dims),
-            ],
-            source_type='expense',
-            source_id=str(expense.pk),
-            memo=f'Expense: {expense.description}'[:255],
-            created_by=created_by,
-        )
-        return expense
-
-    @classmethod
-    @transaction.atomic
-    def void(cls, expense: Expense, reason: str, voided_by=None) -> Expense:
-        expense = Expense.objects.select_for_update().get(pk=expense.pk)
-        if expense.voided_at:
-            raise ExpenseError('This expense is already voided.')
-        if not (reason or '').strip():
-            raise ExpenseError('Give a reason for voiding the expense.')
-        for entry in LedgerService.entries_for('expense', expense.pk):
-            if not hasattr(entry, 'reversed_by'):
-                LedgerService.reverse(entry, timezone.now().date(), memo=f'Void expense: {reason}', created_by=voided_by)
-        expense.voided_at = timezone.now()
-        expense.void_reason = reason.strip()[:255]
-        expense.save(update_fields=['voided_at', 'void_reason'])
-        return expense
+def quickbooks_bank_csv(organization, start: date, end: date) -> str:
+    """Upload under Banking > Upload transactions. Choose dd/mm/yyyy as the date format."""
+    rows = [['Date', 'Description', 'Amount']]
+    for day, _kind, _cat, description, amount in _ledger_entries(organization, start, end):
+        rows.append([day.strftime('%d/%m/%Y'), description, amount])
+    return _csv(rows)
 
 
-# ----------------------------------------------------------------- statements
-
-
-@dataclass
-class TenantRow:
-    tenancy_id: str
-    tenant_name: str
-    unit_number: str
-    property_name: str
-    opening: Decimal = ZERO
-    invoiced: Decimal = ZERO
-    credited: Decimal = ZERO
-    paid: Decimal = ZERO
-    paid_from_deposit: Decimal = ZERO
-    reversed: Decimal = ZERO
-    closing: Decimal = ZERO
-
-
-@dataclass
-class Statement:
-    organization_name: str
-    property_name: str
-    period_start: date
-    period_end: date
-    received_by_channel: dict = field(default_factory=dict)
-    received_total: Decimal = ZERO
-    deposits_refunded: Decimal = ZERO
-    expenses_by_category: dict = field(default_factory=dict)
-    expenses_total: Decimal = ZERO
-    net_cash: Decimal = ZERO
-    income_by_type: dict = field(default_factory=dict)
-    waivers: Decimal = ZERO
-    tenants: list = field(default_factory=list)
-    owed_opening: Decimal = ZERO
-    owed_closing: Decimal = ZERO
-    deposits_held_closing: Decimal = ZERO
-    expenses: list = field(default_factory=list)
-
-
-def _sum(lines, column):
-    return lines.aggregate(total=Sum(column))['total'] or ZERO
-
-
-class StatementService:
-    @classmethod
-    def build(cls, organization, period_start: date, period_end: date, property_obj=None) -> Statement:
-        if period_end < period_start:
-            raise ValueError('period_end is before period_start')
-        accounts = {a.code: a for a in Account.objects.filter(organization=organization)}
-
-        def lines(codes, **filters):
-            qs = JournalLine.objects.filter(entry__organization=organization, account__code__in=codes, **filters)
-            if property_obj is not None:
-                qs = qs.filter(parent_property=property_obj)
-            return qs
-
-        in_period = {'entry__entry_date__gte': period_start, 'entry__entry_date__lte': period_end}
-        statement = Statement(
-            organization_name=organization.name,
-            property_name=property_obj.name if property_obj else 'All properties',
-            period_start=period_start,
-            period_end=period_end,
-        )
-
-        # Money in: payments landing in a channel account, less reversals of payments.
-        for code in chart.CHANNEL_ACCOUNTS_CODES:
-            received = _sum(lines([code], entry__source_type='payment', **in_period), 'debit')
-            reversed_out = _sum(
-                lines([code], entry__source_type='reversal', entry__reverses__source_type='payment', **in_period),
-                'credit',
-            )
-            net = received - reversed_out
-            if net:
-                statement.received_by_channel[CHANNEL_LABELS[code]] = net
-        statement.received_total = sum(statement.received_by_channel.values(), ZERO)
-        statement.deposits_refunded = _sum(
-            lines(chart.CHANNEL_ACCOUNTS_CODES, entry__source_type='deposit_settlement', **in_period), 'credit',
-        )
-
-        # Money out: expenses net of voids, by category.
-        for category, code in CATEGORY_ACCOUNTS.items():
-            expense_lines = lines([code], **in_period)
-            amount = _sum(expense_lines, 'debit') - _sum(expense_lines, 'credit')
-            if amount:
-                statement.expenses_by_category[dict(Expense.CATEGORY_CHOICES)[category]] = amount
-        statement.expenses_total = sum(statement.expenses_by_category.values(), ZERO)
-        statement.net_cash = statement.received_total - statement.deposits_refunded - statement.expenses_total
-
-        # Income earned (accrual), by account.
-        for code in chart.INCOME_CODES:
-            income_lines = lines([code], **in_period)
-            amount = _sum(income_lines, 'credit') - _sum(income_lines, 'debit')
-            if amount and code in accounts:
-                statement.income_by_type[accounts[code].name] = amount
-        waiver_lines = lines([chart.WAIVERS_AND_DISCOUNTS], **in_period)
-        statement.waivers = _sum(waiver_lines, 'debit') - _sum(waiver_lines, 'credit')
-
-        statement.tenants = cls._tenant_rows(organization, period_start, period_end, property_obj)
-        statement.owed_opening = sum((r.opening for r in statement.tenants), ZERO)
-        statement.owed_closing = sum((r.closing for r in statement.tenants), ZERO)
-        held = lines([chart.DEPOSITS_HELD], entry__entry_date__lte=period_end)
-        statement.deposits_held_closing = _sum(held, 'credit') - _sum(held, 'debit')
-
-        expenses = Expense.objects.filter(
-            organization=organization, expense_date__gte=period_start, expense_date__lte=period_end, voided_at__isnull=True,
-        ).select_related('parent_property')
-        if property_obj is not None:
-            expenses = expenses.filter(parent_property=property_obj)
-        statement.expenses = list(expenses)
-        return statement
-
-    @classmethod
-    def _tenant_rows(cls, organization, period_start, period_end, property_obj) -> list[TenantRow]:
-        codes = (chart.TENANT_RECEIVABLES, chart.TENANT_PREPAYMENTS)
-        base = JournalLine.objects.filter(
-            entry__organization=organization, account__code__in=codes, tenancy__isnull=False,
-        )
-        if property_obj is not None:
-            base = base.filter(tenancy__parent_property=property_obj)
-
-        def net(qs):
-            """
-            Movement of what the tenant owes = receivables − prepayments. With
-            receivables debit-normal and prepayments credit-normal, that is
-            simply debit − credit summed over both accounts.
-            """
-            totals = defaultdict(lambda: ZERO)
-            for row in qs.values('tenancy_id').annotate(dr=Sum('debit'), cr=Sum('credit')):
-                totals[row['tenancy_id']] += row['dr'] - row['cr']
-            return totals
-
-        opening = net(base.filter(entry__entry_date__lt=period_start))
-        period = base.filter(entry__entry_date__gte=period_start, entry__entry_date__lte=period_end)
-        by_source = {source: net(period.filter(entry__source_type=source)) for source in (
-            'invoice', 'credit_note', 'payment', 'allocation', 'reversal', 'deposit_settlement', 'opening_balance',
-        )}
-        deposit_payment_ids = set(
-            JournalLine.objects.filter(
-                entry__organization=organization, entry__source_type='payment', account__code=chart.DEPOSITS_HELD,
-                entry__entry_date__gte=period_start, entry__entry_date__lte=period_end,
-            ).values_list('entry_id', flat=True)
-        )
-        from_deposit = net(period.filter(entry__source_type='payment', entry_id__in=deposit_payment_ids))
-
-        tenancy_ids = set(opening) | {tid for totals in by_source.values() for tid in totals}
-        tenancies = Tenancy.objects.filter(pk__in=tenancy_ids).select_related('tenant', 'unit', 'parent_property')
-        rows = []
-        for tenancy in tenancies:
-            tid = tenancy.pk
-            payments_total = by_source['payment'].get(tid, ZERO)  # negative: payments reduce what is owed
-            deposit_part = from_deposit.get(tid, ZERO)
-            row = TenantRow(
-                tenancy_id=str(tid),
-                tenant_name=tenancy.tenant.full_name,
-                unit_number=tenancy.unit.unit_number,
-                property_name=tenancy.parent_property.name,
-                opening=opening.get(tid, ZERO),
-                invoiced=by_source['invoice'].get(tid, ZERO) + by_source['opening_balance'].get(tid, ZERO),
-                credited=-by_source['credit_note'].get(tid, ZERO),
-                paid=-(payments_total - deposit_part),
-                paid_from_deposit=-deposit_part,
-                reversed=by_source['reversal'].get(tid, ZERO),
-            )
-            row.closing = (
-                row.opening + row.invoiced - row.credited - row.paid - row.paid_from_deposit + row.reversed
-                + by_source['allocation'].get(tid, ZERO) + by_source['deposit_settlement'].get(tid, ZERO)
-            )
-            if any((row.opening, row.invoiced, row.credited, row.paid, row.paid_from_deposit, row.reversed, row.closing)):
-                rows.append(row)
-        return sorted(rows, key=lambda r: (r.property_name, r.unit_number))
-
-    # ------------------------------------------------------------- output
-
-    @staticmethod
-    def as_dict(s: Statement) -> dict:
-        money = lambda v: str(Decimal(v).quantize(Decimal('0.01')))  # noqa: E731
-        return {
-            'organization_name': s.organization_name,
-            'property_name': s.property_name,
-            'period_start': s.period_start.isoformat(),
-            'period_end': s.period_end.isoformat(),
-            'cash': {
-                'received_by_channel': {k: money(v) for k, v in s.received_by_channel.items()},
-                'received_total': money(s.received_total),
-                'deposits_refunded': money(s.deposits_refunded),
-                'expenses_total': money(s.expenses_total),
-                'net_cash': money(s.net_cash),
-            },
-            'income_by_type': {k: money(v) for k, v in s.income_by_type.items()},
-            'waivers': money(s.waivers),
-            'expenses_by_category': {k: money(v) for k, v in s.expenses_by_category.items()},
-            'owed_opening': money(s.owed_opening),
-            'owed_closing': money(s.owed_closing),
-            'deposits_held_closing': money(s.deposits_held_closing),
-            'tenants': [
-                {
-                    'tenancy_id': r.tenancy_id, 'tenant_name': r.tenant_name, 'unit_number': r.unit_number,
-                    'property_name': r.property_name, 'opening': money(r.opening), 'invoiced': money(r.invoiced),
-                    'credited': money(r.credited), 'paid': money(r.paid),
-                    'paid_from_deposit': money(r.paid_from_deposit), 'reversed': money(r.reversed),
-                    'closing': money(r.closing),
-                }
-                for r in s.tenants
-            ],
-            'expenses': [
-                {
-                    'id': str(e.id), 'date': e.expense_date.isoformat(), 'category': e.get_category_display(),
-                    'description': e.description, 'supplier': e.supplier, 'amount': money(e.amount),
-                    'property': e.parent_property.name if e.parent_property_id else '',
-                }
-                for e in s.expenses
-            ],
-        }
-
-    @staticmethod
-    def render_pdf(s: Statement) -> bytes:
-        from reportlab.lib import colors
-        from reportlab.lib.pagesizes import A4
-        from reportlab.lib.styles import getSampleStyleSheet
-        from reportlab.lib.units import mm
-        from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
-
-        def kes(v):
-            return f'{Decimal(v):,.2f}'
-
-        styles = getSampleStyleSheet()
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=14 * mm, rightMargin=14 * mm,
-                                topMargin=14 * mm, bottomMargin=14 * mm, title='Landlord statement')
-        grid = TableStyle([
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('LINEBELOW', (0, 0), (-1, 0), 0.5, colors.grey),
-            ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
-            ('FONTSIZE', (0, 0), (-1, -1), 8),
-        ])
-        story = [
-            Paragraph(s.organization_name, styles['Title']),
-            Paragraph(f'Statement · {s.property_name} · {s.period_start:%d %b %Y} – {s.period_end:%d %b %Y}', styles['Heading3']),
-            Spacer(1, 4 * mm),
-        ]
-        cash_rows = [['Money in and out', 'KES']]
-        cash_rows += [[f'Received — {k}', kes(v)] for k, v in s.received_by_channel.items()]
-        cash_rows += [['Deposits refunded', f'−{kes(s.deposits_refunded)}'], ['Expenses', f'−{kes(s.expenses_total)}'],
-                      ['Net cash', kes(s.net_cash)]]
-        cash_table = Table(cash_rows, colWidths=[120 * mm, 50 * mm])
-        cash_table.setStyle(grid)
-        story += [cash_table, Spacer(1, 5 * mm)]
-
-        tenant_rows = [['Unit', 'Tenant', 'Opening', 'Invoiced', 'Credited', 'Paid', 'From deposit', 'Closing']]
-        for r in s.tenants:
-            tenant_rows.append([r.unit_number, r.tenant_name[:22], kes(r.opening), kes(r.invoiced), kes(r.credited),
-                                kes(r.paid), kes(r.paid_from_deposit), kes(r.closing)])
-        tenant_rows.append(['', 'Total owed', kes(s.owed_opening), '', '', '', '', kes(s.owed_closing)])
-        tenant_table = Table(tenant_rows, repeatRows=1)
-        tenant_table.setStyle(grid)
-        story += [Paragraph('Tenant balances', styles['Heading4']), tenant_table, Spacer(1, 5 * mm)]
-
-        if s.expenses:
-            expense_rows = [['Date', 'Category', 'Description', 'Amount']]
-            expense_rows += [[f'{e.expense_date:%d %b}', e.get_category_display(), e.description[:40], kes(e.amount)]
-                             for e in s.expenses]
-            expense_table = Table(expense_rows, repeatRows=1)
-            expense_table.setStyle(grid)
-            story += [Paragraph('Expenses', styles['Heading4']), expense_table, Spacer(1, 5 * mm)]
-
-        story.append(Paragraph(
-            f'Deposits held at {s.period_end:%d %b %Y}: KES {kes(s.deposits_held_closing)}. Generated by RumiaRent.',
-            styles['Italic'],
-        ))
-        doc.build(story)
-        return buffer.getvalue()
-
-
-def month_bounds(year: int, month: int) -> tuple[date, date]:
-    start = date(year, month, 1)
-    end = (date(year + (month == 12), month % 12 + 1, 1) - timedelta(days=1))
-    return start, end
+def quickbooks_journal_csv(organization, start: date, end: date) -> str:
+    """One balanced journal entry per transaction: the bank account against income or an expense account."""
+    rows = [['Journal No', 'Journal Date', 'Account Name', 'Debits', 'Credits', 'Description', 'Name']]
+    for number, (day, kind, category, description, amount) in enumerate(_ledger_entries(organization, start, end), 1):
+        journal_no = f'RR-{number:05d}'
+        when = day.strftime('%d/%m/%Y')
+        value = abs(amount)
+        if kind == 'income':
+            rows.append([journal_no, when, QB_BANK_ACCOUNT, value, '', description, ''])
+            rows.append([journal_no, when, QB_INCOME_ACCOUNT, '', value, description, ''])
+        else:
+            rows.append([journal_no, when, QB_EXPENSE_ACCOUNTS.get(category, 'Other Expenses'), value, '', description, ''])
+            rows.append([journal_no, when, QB_BANK_ACCOUNT, '', value, description, ''])
+    return _csv(rows)

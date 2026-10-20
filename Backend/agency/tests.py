@@ -7,7 +7,7 @@ from unittest.mock import patch
 from django.core import mail
 from rest_framework.test import APIClient
 
-from accounting.services import ExpenseService, month_bounds
+from accounting.books import ExpenseService, month_bounds
 from agency.models import PropertyOwner
 from agency.services import AgencyError, OwnerStatementService, OwnerTransactionService
 from ledger.tests import assert_ledger_balanced
@@ -48,7 +48,7 @@ class AgencyFixtures(RumiaTestFixtures):
         with patch(SMS):
             PaymentService.record_manual_payment(payment)
         ExpenseService.record(self.org, parent_property=self.prop, category='repairs', description='Plumbing',
-                              amount=D('3000'), expense_date=TODAY, paid_from='cash')
+                              amount=D('3000'), incurred_on=TODAY, paid_from='cash')
         self.invoice = invoice
 
 

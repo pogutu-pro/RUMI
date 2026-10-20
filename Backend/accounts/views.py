@@ -22,7 +22,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from drf_yasg.utils import swagger_auto_schema
 
 from .models import (
-    User, StudentProfile, LandlordProfile, CaretakerProfile,
+    User, LandlordProfile, CaretakerProfile,
     OTPVerification, PasswordResetToken, UserActivityLog,
     Conversation, Message
 )
@@ -45,7 +45,9 @@ from .utils import (
     generate_6_digit_otp, generate_strong_password, validate_password_strength,
     is_disposable_email, check_login_rate_limit, log_failed_login_attempt,
     reset_login_rate_limit, check_otp_rate_limit, get_client_ip,
-    detect_device_type, detect_browser, create_paystack_subaccount
+    detect_device_type, detect_browser, create_paystack_subaccount,
+    check_password_reset_cooldown, set_password_reset_cooldown,
+    PASSWORD_RESET_COOLDOWN_SECONDS,
 )
 
 
@@ -62,10 +64,8 @@ class UserRegistrationView(APIView):
     
     Authentication Required: None (Public endpoint)
     
-    This endpoint allows new users to register accounts with different roles:
-    - student: Student looking for accommodation
-    - landlord: Property owner/manager
-    - caretaker: Property management staff
+    This endpoint allows new landlords to self-register. Tenants are invited
+    by their landlord (see tenants/services.py) and never self-register.
     
     Features:
     - Automatic OTP generation for email verification
@@ -89,7 +89,7 @@ class UserRegistrationView(APIView):
         - password: Strong password (minimum requirements enforced)
         - first_name: User's first name
         - last_name: User's last name
-        - role: User role (student, landlord, caretaker)
+        - role: User role (only 'landlord' is accepted for self-registration)
         
         Optional Fields:
         - phone_number: Contact phone number
@@ -139,13 +139,7 @@ class UserRegistrationView(APIView):
                 )
 
                 # Create role-specific profile
-                if role == 'student':
-                    StudentProfile.objects.create(
-                        user=user,
-                        university=serializer.validated_data.get('university'),
-                        preferred_room_number=serializer.validated_data.get('room_number')
-                    )
-                elif role == 'landlord':
+                if role == 'landlord':
                     LandlordProfile.objects.create(
                         user=user,
                         company_name=serializer.validated_data.get('company_name'),
@@ -325,6 +319,30 @@ class EmailVerificationView(APIView):
             }, status=status.HTTP_200_OK)
 
 
+def issue_email_otp(user, request, verification_type='email'):
+    """
+    Create a fresh 5-minute OTP for `user` and email it (async).
+
+    Shared by the resend endpoint and by the login gate, so a user turned
+    away for an unverified email is sent a live code straight away instead of
+    having to find the resend button first.
+    """
+    otp = OTPVerification.objects.create(
+        user=user,
+        otp_code=generate_6_digit_otp(),
+        verification_type=verification_type,
+        expires_at=timezone.now() + timezone.timedelta(minutes=5),
+        ip_address=get_client_ip(request),
+    )
+    from .tasks import send_verification_email
+    send_verification_email.delay(
+        user_id=user.id,
+        otp_code=otp.otp_code,
+        first_name=user.first_name,
+    )
+    return otp
+
+
 @swagger_auto_schema(
     tags=['Authentication']
 )
@@ -357,22 +375,7 @@ class ResendOTPView(APIView):
                 'expires_in_seconds': 300
             }, status=status.HTTP_200_OK)
 
-        # Generate new OTP
-        otp = OTPVerification.objects.create(
-            user=user,
-            otp_code=generate_6_digit_otp(),
-            verification_type=verification_type,
-            expires_at=timezone.now() + timezone.timedelta(minutes=5),
-            ip_address=get_client_ip(request)
-        )
-
-        # Send email (async)
-        from .tasks import send_verification_email
-        send_verification_email.delay(
-            user_id=user.id,
-            otp_code=otp.otp_code,
-            first_name=user.first_name
-        )
+        issue_email_otp(user, request, verification_type)
 
         return Response({
             'message': 'OTP sent successfully',
@@ -463,11 +466,17 @@ class UserLoginView(APIView):
                 'error': 'Account deactivated'
             }, status=status.HTTP_403_FORBIDDEN)
 
-        # Optional: Check verification
-        # if not user.is_verified:
-        #     return Response({
-        #         'error': 'Email not verified'
-        #     }, status=status.HTTP_403_FORBIDDEN)
+        # The password was right, so revealing that this address still needs
+        # verifying leaks nothing. Send a fresh code (unless the resend rate
+        # limit is hit) so the verify screen the frontend opens next is usable.
+        if not user.is_verified:
+            if not check_otp_rate_limit(email):
+                issue_email_otp(user, request)
+            return Response({
+                'error': 'email_not_verified',
+                'detail': 'Please verify your email address to sign in.',
+                'email': user.email,
+            }, status=status.HTTP_403_FORBIDDEN)
 
         # Generate tokens
         refresh = RefreshToken.for_user(user)
@@ -681,6 +690,16 @@ class PasswordResetRequestView(APIView):
 
         email = serializer.validated_data['email']
 
+        # Checked before anything else, on the raw email — a user spamming
+        # "resend" (or a script hitting this endpoint directly) had no limit
+        # at all before this: every click queued a fresh Celery email task.
+        remaining = check_password_reset_cooldown(email)
+        if remaining > 0:
+            return Response({
+                'error': 'Please wait before requesting another reset link.',
+                'retry_after_seconds': remaining,
+            }, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
         # Always return success (security best practice)
         try:
             user = User.objects.get(email=email)
@@ -709,9 +728,15 @@ class PasswordResetRequestView(APIView):
         except User.DoesNotExist:
             pass  # Don't reveal if user exists
 
+        # Set unconditionally (existing-user and non-existing-user branches
+        # alike) so the cooldown itself never becomes a side channel that
+        # reveals whether the email has an account.
+        set_password_reset_cooldown(email)
+
         return Response({
             'message': 'Password reset link sent to your email',
-            'expires_in_hours': 24
+            'expires_in_hours': 24,
+            'retry_after_seconds': PASSWORD_RESET_COOLDOWN_SECONDS,
         }, status=status.HTTP_200_OK)
 
 
@@ -787,6 +812,10 @@ class PasswordResetConfirmView(APIView):
 
         # Update password
         user.set_password(new_password)
+        # The reset/invite link was delivered to this address, so using it
+        # proves ownership. Invited tenants and caretakers are created
+        # unverified and would otherwise be locked out by the login gate.
+        user.is_verified = True
         user.save()
 
         # Mark token as used
@@ -905,6 +934,7 @@ class UserProfileView(APIView):
 class ProfilePictureUploadView(APIView):
     """Upload profile picture"""
 
+    permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):
@@ -2111,23 +2141,20 @@ class GoogleOAuthView(APIView):
     
     def post(self, request):
         access_token = request.data.get('access_token')
-        role = request.data.get('role', 'student')
+        role = request.data.get('role', 'landlord')
         gender = request.data.get('gender')
         date_of_birth = request.data.get('date_of_birth')
         phone_number = request.data.get('phone_number')
-        
-        # Student specific fields
-        university = request.data.get('university')
-        room_number = request.data.get('room_number')
-        
+
         # Landlord specific fields
         company_name = request.data.get('company_name')
         total_units = request.data.get('total_units')
-        
-        # Only allow student and landlord roles for Google OAuth
-        if role and role not in ['student', 'landlord']:
+
+        # Google OAuth self-registration only creates landlord accounts —
+        # tenants are invited by their landlord, never self-register.
+        if role and role != 'landlord':
             return Response({
-                'error': 'Google OAuth only supports student and landlord roles'
+                'error': 'Google OAuth only supports landlord accounts'
             }, status=status.HTTP_400_BAD_REQUEST)
         
         if not access_token:
@@ -2179,7 +2206,7 @@ class GoogleOAuthView(APIView):
                     email=email,
                     first_name=user_info.get('given_name', ''),
                     last_name=user_info.get('family_name', ''),
-                    role=role if role else 'student',
+                    role='landlord',
                     gender=gender,
                     date_of_birth=date_of_birth,
                     phone_number=phone_number,
@@ -2188,23 +2215,14 @@ class GoogleOAuthView(APIView):
                     profile_picture=user_info.get('picture'),
                     onboarding_stage='ROLE_SELECTED'
                 )
-                
-                # Create role-specific profile with all captured data
-                if user.role == 'student':
-                    StudentProfile.objects.create(
-                        user=user,
-                        university=university,
-                        preferred_room_number=room_number,
-                        is_profile_complete=False
-                    )
-                elif user.role == 'landlord':
-                    LandlordProfile.objects.create(
-                        user=user,
-                        company_name=company_name,
-                        total_units=total_units if total_units is not None else 0,
-                        is_verified=False,
-                        total_hostels=0
-                    )
+
+                LandlordProfile.objects.create(
+                    user=user,
+                    company_name=company_name,
+                    total_units=total_units if total_units is not None else 0,
+                    is_verified=False,
+                    total_hostels=0
+                )
                 
                 is_new_user = True
             

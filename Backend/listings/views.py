@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
-from accounting.views import OwnerScopedView
+from accounting.books_views import OwnerScopedView
 from listings.models import ListingEnquiry
 from properties.models import RentalUnit
 

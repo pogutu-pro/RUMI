@@ -13,16 +13,12 @@ class UserRegistrationSerializer(serializers.Serializer):
     confirm_password = serializers.CharField(write_only=True, min_length=8)
     first_name = serializers.CharField(max_length=150)
     last_name = serializers.CharField(max_length=150)
-    role = serializers.ChoiceField(choices=['student', 'landlord'])
+    role = serializers.ChoiceField(choices=['landlord'])
     # Common fields
     phone_number = serializers.CharField(max_length=15, required=True)
-    
-    # Student specific fields
     gender = serializers.ChoiceField(choices=['male', 'female', 'other'], required=False)
     date_of_birth = serializers.DateField(required=False)
-    university = serializers.CharField(max_length=255, required=False)
-    room_number = serializers.CharField(max_length=20, required=False)
-    
+
     # Landlord specific fields
     company_name = serializers.CharField(max_length=255, required=False)
     total_units = serializers.IntegerField(required=False)
@@ -32,14 +28,7 @@ class UserRegistrationSerializer(serializers.Serializer):
         if data['password'] != data['confirm_password']:
             raise serializers.ValidationError("Passwords do not match")
 
-        # Role-specific validation (Minimal for registration)
-        role = data.get('role')
-        if role == 'student':
-            if not data.get('gender'):
-                raise serializers.ValidationError({"gender": "Gender is required for students"})
-            if not data.get('date_of_birth'):
-                raise serializers.ValidationError({"date_of_birth": "Date of birth is required for students"})
-        # Note: university and company_name are now deferred to onboarding stage
+        # Note: company_name is deferred to onboarding stage
 
         # Validate password strength
         validate_password_strength(data['password'])
