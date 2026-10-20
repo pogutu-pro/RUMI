@@ -29,12 +29,12 @@ in-app channel.
 | Paybill + bank auto-reconciliation | Yes, 7+ banks | **Paybill done (Phase 2, pending Safaricom test)**; banks not yet | 2, 4 |
 | Automatic SMS/email receipts | Yes | **Done:** numbered PDF receipts by SMS + email | 1 |
 | Late penalties | Yes | **Done:** fixed/percent, grace, monthly, cap, per-property | 1 |
-| Arrears control (reminders, demand notes, quit notices) | Yes | **Reminders + escalations done**; demand notes / quit notices not yet | 1 |
+| Arrears control (reminders, demand notes, quit notices) | Yes | **Done (1, 3c):** reminders, escalations, demand notes, notices to quit, debt-recovery worklist | 1 |
 | Deposits held and refunded | Yes | **Done:** held as liability, move-out settlement, refund recorded | 1 |
 | Tenant credit / advance payments | Yes | **Done:** kept and auto-applied | 1 |
 | Landlord statements | Yes | **Done (3a):** monthly statement per org/property, PDF | 3 |
-| Landlord remittance, advances, loans | Yes | Paystack split only | 3, 5 |
-| Agent commissions | Yes | No agent model | 3 |
+| Landlord remittance, advances, loans | Yes | **Done (3b):** owner statements and payouts *recorded* (money not moved); advances/loans not yet | 3, 5 |
+| Agent commissions | Yes | **Done (3b):** property owners, management + letting fees | 3 |
 | Expenses / suppliers | Yes | **Done (3a, 3d)** | 3 |
 | Trial balance / P&L / balance sheet | Yes | **Done (3d)** | 5 |
 | Bulk B2B/B2C disbursements | Yes | No | 5 |
@@ -64,11 +64,11 @@ product not inspected). Build order for the remaining gaps is top to bottom.
 | Accounts: chart, journal entries, suppliers, reconciliation, TB / P&L / balance sheet | **Done (3d)** — Landlord → Accounts | feature/eazzyrent-parity |
 | M-Pesa paybill integration | Done (Phase 2, untested with Safaricom) | — |
 | Bank integrations (7 banks, real time) | Real-time needs bank agreements (Phase 4); **CSV statement import + reconciliation done (3d)** for any bank and M-Pesa | feature/eazzyrent-parity |
-| Bulk SMS / email (KES 1/SMS, toggle) | **Building** broadcast messaging | feature/eazzyrent-parity |
-| Marketing: vacant units listed publicly, auto-removed when let | **Building** public listings | feature/eazzyrent-parity |
+| Bulk SMS / email (KES 1/SMS, toggle) | **Done:** Messages page — audience by property/arrears, personalisation, preview | feature/eazzyrent-parity |
+| Marketing: vacant units listed publicly, auto-removed when let | **Done:** /rentals search + enquiries inbox; tenanted units never listed | feature/eazzyrent-parity |
 | Maintenance requests | Support tickets with maintenance category exist; cost recovery via ad-hoc invoice | — |
 | Tenant + landlord portals | Done (tenant, landlord); owner portal via emailed statements | — |
-| Reports with charts | Income summary + statements; more later | — |
+| Reports with charts | Dashboard collection bars, statements, trial balance / P&L / balance sheet | — |
 | Payroll (salaries, NSSF/NHIF/KRA) | Gap — not planned (not core to rent collection) | — |
 | KRA eTIMS e-invoicing | Gap — needs KRA OSCU/VSCU onboarding by the business | — |
 | Real-time disbursements (B2B/B2C) | Out of scope — RumiaRent does not hold funds (CBK) ; remittances are *recorded* | — |

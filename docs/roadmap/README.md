@@ -29,9 +29,12 @@ prior context.
 | 1 | Ledger core: general invoices, receipts, penalties, deposits, tenant credit, utilities | **Implemented** on branch `feature/phase-1-ledger` (local, not pushed) using the *recommended* D1–D7 — owner to confirm |
 | 2 | M-Pesa paybill (Daraja C2B) collection + auto-matching + unmatched queue | **Implemented** on branch `feature/phase-2-paybill` (local) — not yet tested against Safaricom |
 | 3a | Expenses + landlord statements (single landlord) | **Implemented** on branch `feature/phase-3-statements` (local) |
-| 3b | Agency → many property owners, commissions, owner remittance | Not started |
+| 3b | Agency → many property owners, commissions, owner statements + recorded payouts | **Implemented** on `feature/eazzyrent-parity` (local) — see phase-3b-agency.md |
+| 3c | Lease documents, notices, debt recovery, rent reviews, lease-expiry reminders | **Implemented** on `feature/eazzyrent-parity` (local) — see phase-3c-leasing.md |
+| 3d | Trial balance, P&L, balance sheet, manual journals, suppliers, CSV statement reconciliation | **Implemented** on `feature/eazzyrent-parity` (local) |
+| 3e | Bulk SMS/email, public vacancy listings + enquiries, attention API, dashboard/navigation redesign | **Implemented** on `feature/eazzyrent-parity` (local) |
 | 4 | Bank IPN integrations (bank by bank) | Not started |
-| 5 | Disbursements, full accounting reports | Not started |
+| 5 | Disbursements (via landlord's bank/licensed partner only) | Not started — reports done in 3d |
 
 **Explicitly out of scope for now:** USSD.
 
@@ -44,14 +47,16 @@ the owner's explicit OK. Branches (each builds on the previous):
 2. `feature/phase-1-ledger` — Phase 1 backend + frontend, PostgreSQL fixes.
 3. `feature/phase-2-paybill` — M-Pesa paybill collection + stale auth test fix.
 4. `feature/phase-3-statements` — expenses and landlord statements.
+5. `feature/eazzyrent-parity` — agency, leasing, accounting reports, bulk
+   messaging, listings, attention API and the UX redesign (Phases 3b–3e).
 
 The top branch contains everything below it, so one PR is enough.
 
 To ship:
 
 ```bash
-git push -u origin fix/payments-phase-0 feature/phase-1-ledger feature/phase-2-paybill feature/phase-3-statements
-gh pr create --base main --head feature/phase-3-statements   # contains phases 0, 1 and 2 too
+git push -u origin fix/payments-phase-0 feature/phase-1-ledger feature/phase-2-paybill feature/phase-3-statements feature/eazzyrent-parity
+gh pr create --base main --head feature/eazzyrent-parity   # contains every phase below it
 # after CI is green (CI now really runs on PostgreSQL):
 gh pr merge --merge          # a push to main auto-deploys via webhook/
 # Migrations run automatically (Backend/entrypoint.sh). Then, on the server:
