@@ -65,7 +65,7 @@ export default function RentalsPage() {
               {listings.map((l) => (
                 <li key={l.id}>
                   <Card className="flex h-full flex-col overflow-hidden rounded-2xl">
-                    <div className="flex aspect-[4/3] items-center justify-center bg-muted">
+                    <div className={`flex items-center justify-center bg-muted ${l.images.length ? 'aspect-[4/3]' : 'h-28'}`}>
                       {l.images[0] ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={l.images[0]} alt={`${l.unit_type} at ${l.property_name}`} className="h-full w-full object-cover" loading="lazy" />

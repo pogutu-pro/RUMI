@@ -26,6 +26,13 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> = 
   reversed: 'destructive',
 };
 
+const PAYMENT_STATUS_LABEL: Record<string, string> = {
+  success: 'Paid', pending: 'Pending', processing: 'Processing', failed: 'Failed', reversed: 'Reversed',
+};
+const TENANCY_STATUS_LABEL: Record<string, string> = {
+  active: 'Active', notice_period: 'On notice', pending: 'Pending', expired: 'Ended', terminated: 'Terminated',
+};
+
 const PAGE_SIZE = 20;
 
 function formatKes(amount: string | number) {
@@ -62,7 +69,7 @@ const paymentColumns: ColumnDef<Payment>[] = [
     header: 'Date',
     cell: ({ row }) => {
       const paidAt = row.original.paid_at;
-      return paidAt ? new Date(paidAt).toLocaleDateString() : '—';
+      return paidAt ? formatDate(paidAt) : '—';
     },
   },
   {
@@ -74,7 +81,9 @@ const paymentColumns: ColumnDef<Payment>[] = [
     accessorKey: 'status',
     header: 'Status',
     cell: ({ row }) => (
-      <Badge variant={STATUS_VARIANT[row.original.status] ?? 'secondary'}>{row.original.status}</Badge>
+      <Badge variant={STATUS_VARIANT[row.original.status] ?? 'secondary'}>
+        {PAYMENT_STATUS_LABEL[row.original.status] ?? row.original.status}
+      </Badge>
     ),
   },
   {
@@ -150,7 +159,7 @@ export default function TenantRentalDashboard() {
             <span className={`text-xs font-semibold uppercase tracking-wide ${hero.label}`}>{hero.badge}</span>
             <span className="text-xs text-muted-foreground">
               {activeTenancy.unit_number}
-              {nextCharge && ` · due ${nextCharge.due_date}`}
+              {nextCharge && ` · due ${formatDate(nextCharge.due_date)}`}
             </span>
           </div>
           <p className="text-3xl font-semibold">
@@ -208,10 +217,10 @@ export default function TenantRentalDashboard() {
                 <span className="text-sm">
                   <span className="font-medium">{INVOICE_TYPE_LABEL[invoice.invoice_type]}</span>
                   <span className="block text-xs text-muted-foreground">
-                    {invoice.number} · due {formatDate(invoice.due_date)}
+                    {[invoice.number, `due ${formatDate(invoice.due_date)}`].filter(Boolean).join(' · ')}
                   </span>
                 </span>
-                <span className="flex items-center gap-3 text-sm">
+                <span className="flex shrink-0 items-center gap-3 whitespace-nowrap text-sm tabular-nums">
                   {formatKes(Number(invoice.outstanding) > 0 ? invoice.outstanding : invoice.amount_due)}
                   <InvoiceStatusBadge status={invoice.status} />
                 </span>
@@ -234,15 +243,15 @@ export default function TenantRentalDashboard() {
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Status</dt>
-              <dd><Badge variant="secondary">{activeTenancy.status}</Badge></dd>
+              <dd><Badge variant="secondary">{TENANCY_STATUS_LABEL[activeTenancy.status] ?? activeTenancy.status}</Badge></dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Start date</dt>
-              <dd className="text-sm font-medium">{activeTenancy.start_date}</dd>
+              <dd className="text-sm font-medium">{formatDate(activeTenancy.start_date)}</dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">End date</dt>
-              <dd className="text-sm font-medium">{activeTenancy.end_date ?? 'Ongoing'}</dd>
+              <dd className="text-sm font-medium">{activeTenancy.end_date ? formatDate(activeTenancy.end_date) : 'Ongoing'}</dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Monthly rent</dt>
