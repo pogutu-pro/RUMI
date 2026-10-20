@@ -16,6 +16,7 @@ import {
   Receipt,
   Briefcase,
   Gavel,
+  Calculator,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth';
 import { UserRole } from '@/features/auth/stores/auth.types';
@@ -34,6 +35,7 @@ const NAV = [
   { href: '/landlord/rental/paybill', label: 'M-Pesa paybill', icon: Smartphone },
   { href: '/landlord/rental/expenses', label: 'Expenses', icon: Receipt },
   { href: '/landlord/rental/statements', label: 'Statements', icon: FileSpreadsheet },
+  { href: '/landlord/rental/accounts', label: 'Accounts', icon: Calculator },
   { href: '/landlord/rental/owners', label: 'Property owners', icon: Briefcase },
   { href: '/landlord/rental/rules', label: 'Rent rules', icon: SlidersHorizontal },
   { href: '/landlord/rental/billing', label: 'Billing & Payout', icon: CreditCard },

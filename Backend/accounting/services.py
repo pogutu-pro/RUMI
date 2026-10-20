@@ -61,6 +61,12 @@ class ExpenseService:
         prop = fields.get('parent_property')
         if prop is not None and prop.organization_id != organization.id:
             raise ExpenseError('That property belongs to another organization.')
+        supplier = fields.get('supplier_ref')
+        if supplier is not None:
+            if supplier.organization_id != organization.id:
+                raise ExpenseError('That supplier belongs to another organization.')
+            if not fields.get('supplier'):
+                fields['supplier'] = supplier.name
         expense = Expense.objects.create(organization=organization, created_by=created_by, **fields)
         dims = {'parent_property': expense.parent_property} if expense.parent_property_id else {}
         if expense.unit_id:

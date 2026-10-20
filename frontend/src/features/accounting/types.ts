@@ -55,3 +55,18 @@ export interface Statement {
   tenants: StatementTenantRow[];
   expenses: { id: string; date: string; category: string; description: string; supplier: string; amount: string; property: string }[];
 }
+
+export interface StatementLine {
+  id: string;
+  line_date: string;
+  reference: string;
+  description: string;
+  amount: string;
+  status: 'matched' | 'created' | 'unmatched' | 'ignored';
+  payment: string | null;
+  payment_reference: string | null;
+  tenant_name: string | null;
+  note: string;
+}
+
+export interface ReportRow { code: string; name: string; amount?: string; debit?: string; credit?: string; type?: string }

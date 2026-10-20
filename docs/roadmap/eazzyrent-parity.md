@@ -35,8 +35,8 @@ in-app channel.
 | Landlord statements | Yes | **Done (3a):** monthly statement per org/property, PDF | 3 |
 | Landlord remittance, advances, loans | Yes | Paystack split only | 3, 5 |
 | Agent commissions | Yes | No agent model | 3 |
-| Expenses / suppliers | Yes | **Expenses done (3a)**; supplier records not yet | 3 |
-| Trial balance / P&L / balance sheet | Yes | Double-entry journal in place; statement shows cash + accrual; formal reports not yet | 5 |
+| Expenses / suppliers | Yes | **Done (3a, 3d)** | 3 |
+| Trial balance / P&L / balance sheet | Yes | **Done (3d)** | 5 |
 | Bulk B2B/B2C disbursements | Yes | No | 5 |
 | USSD | Yes | No — **out of scope for now** | — |
 | Tenant/landlord portals | Yes | Yes | — |
@@ -61,9 +61,9 @@ product not inspected). Build order for the remaining gaps is top to bottom.
 | Notice to vacate (tenant-initiated) | **Done (3c)** | feature/eazzyrent-parity |
 | Lease management: expiry reminders, automatic rent increments, document generation | **Done (3c)** | feature/eazzyrent-parity |
 | Document management (uploads) | **Done (3c)** | feature/eazzyrent-parity |
-| Accounts: chart, journal entries, suppliers, reconciliation, TB / P&L / balance sheet | Chart + journal done; **building** suppliers, manual journals, reports, statement-import reconciliation | feature/eazzyrent-parity |
+| Accounts: chart, journal entries, suppliers, reconciliation, TB / P&L / balance sheet | **Done (3d)** — Landlord → Accounts | feature/eazzyrent-parity |
 | M-Pesa paybill integration | Done (Phase 2, untested with Safaricom) | — |
-| Bank integrations (7 banks, real time) | Not possible without bank agreements; **building CSV statement import** as interim | feature/eazzyrent-parity |
+| Bank integrations (7 banks, real time) | Real-time needs bank agreements (Phase 4); **CSV statement import + reconciliation done (3d)** for any bank and M-Pesa | feature/eazzyrent-parity |
 | Bulk SMS / email (KES 1/SMS, toggle) | **Building** broadcast messaging | feature/eazzyrent-parity |
 | Marketing: vacant units listed publicly, auto-removed when let | **Building** public listings | feature/eazzyrent-parity |
 | Maintenance requests | Support tickets with maintenance category exist; cost recovery via ad-hoc invoice | — |
