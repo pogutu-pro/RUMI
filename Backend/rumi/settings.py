@@ -556,7 +556,8 @@ if DEBUG:
 
 # Sentry Error Monitoring (production only)
 SENTRY_DSN = os.getenv('SENTRY_DSN')
-if SENTRY_DSN and not DEBUG:
+_UNDER_TEST = os.getenv('DJANGO_SETTINGS_MODULE', '').endswith('test_settings')
+if SENTRY_DSN and not DEBUG and not _UNDER_TEST:
     import sentry_sdk
     from sentry_sdk.integrations.django import DjangoIntegration
     from sentry_sdk.integrations.celery import CeleryIntegration

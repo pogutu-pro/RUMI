@@ -41,3 +41,12 @@ CHANNEL_LAYERS = {
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.MD5PasswordHasher',
 ]
+
+# Never reach real providers from tests, whatever a local .env holds: an
+# unpatched code path must hit the mock, not a live SMS gateway or mailbox.
+AFRICASTALKING_API_KEY = ''
+AFRICASTALKING_USERNAME = 'sandbox'
+EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
+PAYSTACK_SECRET_KEY = ''
+PAYSTACK_PUBLIC_KEY = ''
+SENTRY_DSN = None  # settings.py also skips Sentry under test settings

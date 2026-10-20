@@ -28,7 +28,9 @@ from accounts.models import CaretakerProfile, LandlordProfile
 from accounts.utils import generate_strong_password
 from organizations.models import Organization, OrganizationMembership, PayoutAccount
 from properties.models import CaretakerPropertyAssignment, Property, RentalUnit, Tenancy
-from rent.models import Payment, PaymentAllocation, RentCharge
+from rent.models import Invoice, Payment
+from rent.services.invoicing import InvoiceService, LineSpec
+from rent.services.payment_service import PaymentService
 from tenants.models import EscalationPolicy, TenantProfile
 
 User = get_user_model()
@@ -205,23 +207,16 @@ class Command(BaseCommand):
             for period_start in (last_month_start, today.replace(day=1)):
                 period_end = period_start.replace(day=28)
                 due_date = period_start.replace(day=5)
-                charge, _ = RentCharge.objects.get_or_create(
-                    organization=org,
-                    tenancy=tenancy,
-                    parent_property=prop,
-                    unit=unit,
-                    tenant=tenant_profile,
-                    period_start=period_start,
-                    period_end=period_end,
-                    due_date=due_date,
-                    defaults={
-                        'amount_due': Decimal('22000.00'),
-                        'amount_paid': Decimal('0.00'),
-                        'status': 'due',
-                    },
-                )
-                if charge.status != 'paid':
-                    payment, _ = Payment.objects.get_or_create(
+                # Through the real services so demo data has invoice lines,
+                # journal entries and receipts like production does.
+                charge = Invoice.objects.filter(tenancy=tenancy, invoice_type='rent', period_start=period_start).first()
+                if charge is None:
+                    charge = InvoiceService.create_invoice(
+                        tenancy, 'rent', [LineSpec('rent', Decimal('22000.00'))],
+                        period_start=period_start, period_end=period_end, due_date=due_date,
+                    )
+                if charge.outstanding > 0:
+                    payment, created = Payment.objects.get_or_create(
                         internal_reference=f'DEMO-RENT-{tenancy.id}-{period_start.isoformat()}',
                         defaults={
                             'organization': org,
@@ -229,22 +224,17 @@ class Command(BaseCommand):
                             'tenant': tenant_profile,
                             'parent_property': prop,
                             'unit': unit,
-                            'amount': charge.amount_due,
+                            'amount': charge.outstanding,
                             'currency': 'KES',
-                            'payment_method': 'paystack',
-                            'provider': 'paystack',
-                            'provider_reference': f'DEMO-PSK-{tenancy.id}-{period_start.isoformat()}',
+                            'payment_method': 'mpesa_paybill',
+                            'provider': 'mpesa',
+                            'provider_reference': f'DEMO{period_start:%y%m}{str(tenancy.id)[:4].upper()}',
                             'status': 'success',
                             'paid_at': timezone.make_aware(datetime.combine(due_date, datetime.min.time())),
                         },
                     )
-                    PaymentAllocation.objects.get_or_create(
-                        payment=payment,
-                        rent_charge=charge,
-                        defaults={'amount': charge.amount_due},
-                    )
-                    charge.recalculate_status()
-                    charge.save()
+                    if created:
+                        PaymentService.settle_received(payment, notify=False)  # never text demo tenants
 
             # 9. Tech support — no organization or supporting data.
             self._get_or_reset_user(
