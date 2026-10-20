@@ -213,6 +213,9 @@ class RentalUnit(models.Model):
     amenities = models.JSONField(default=list, blank=True)
     images = models.JSONField(default=list, blank=True)
     is_active = models.BooleanField(default=True)
+    is_listed = models.BooleanField(
+        default=True, help_text='Advertise on the public RumiaRent listings while vacant (removed automatically once let).',
+    )
 
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)

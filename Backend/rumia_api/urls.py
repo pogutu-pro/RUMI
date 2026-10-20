@@ -2,6 +2,8 @@
 
 from django.urls import path
 
+from rumia_api.attention import AttentionView
+
 from rumia_api.ledger_views import (
     MeterReadingListCreateView,
     PropertyUtilityRatesView,
@@ -73,6 +75,7 @@ urlpatterns = [
     path('rent/payments/webhook/paystack/', PaystackWebhookView.as_view(), name='rumia-paystack-webhook'),
     path('rent/payments/providers/', PaymentProviderStatusView.as_view(), name='rumia-payment-providers'),
     path('income/', IncomeSummaryView.as_view(), name='rumia-income'),
+    path('attention/', AttentionView.as_view(), name='rumia-attention'),
     path('invoices/', InvoiceListCreateView.as_view(), name='rumia-invoices'),
     path('invoices/<uuid:pk>/', InvoiceDetailView.as_view(), name='rumia-invoice-detail'),
     path('invoices/<uuid:pk>/credit-notes/', InvoiceCreditNoteView.as_view(), name='rumia-invoice-credit-note'),

@@ -76,6 +76,8 @@ INSTALLED_APPS = [
     'accounting',
     'agency',
     'leasing',
+    'broadcasts',
+    'listings',
     'audit',
     'billing',
     'support',

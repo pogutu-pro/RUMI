@@ -69,7 +69,7 @@ class RentalUnitSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'organization', 'property', 'building', 'floor',
             'unit_number', 'unit_type', 'monthly_rent', 'deposit',
-            'status', 'notes', 'is_active', 'created_at', 'updated_at',
+            'status', 'notes', 'is_active', 'is_listed', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'organization', 'created_at', 'updated_at']
 
