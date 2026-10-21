@@ -269,6 +269,10 @@ PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY')
 PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
 PAYSTACK_WEBHOOK_SECRET = os.getenv('PAYSTACK_WEBHOOK_SECRET')
 PAYSTACK_ENV = os.getenv('PAYSTACK_ENV', 'test')  # 'test' or 'live'
+# Tenant rent through RumiaRent's Paystack account. Off: rent goes straight to
+# the landlord's own paybill or bank and RumiaRent only records it, so the
+# platform never handles tenant money. Paystack stays on for subscriptions.
+RENT_ONLINE_PAYMENTS_ENABLED = os.getenv('RENT_ONLINE_PAYMENTS_ENABLED', 'False').lower() == 'true'
 
 # M-Pesa paybill collection (Daraja C2B) — docs/roadmap/phase-2-paybill-design.md
 # Comma-separated Safaricom callback IPs; empty = no IP check (token + shortcode still required).

@@ -3,7 +3,7 @@
 import logging
 import uuid
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.db import transaction
@@ -410,6 +410,90 @@ class RentalUnitListCreateView(RumiaBaseView):
         return Response(RentalUnitSerializer(unit).data, status=status.HTTP_201_CREATED)
 
 
+def _is_uuid(value) -> bool:
+    try:
+        uuid.UUID(str(value))
+        return True
+    except ValueError:
+        return False
+
+
+class RentalUnitBulkCreateView(RumiaBaseView):
+    """
+    Create many units at once: POST {property, count, prefix?, start?, monthly_rent?, unit_type?}.
+    Numbers run prefix+start, prefix+start+1, ... and skip numbers the property already has,
+    so "20 units, prefix A" gives A1..A20 in one step during onboarding.
+    """
+
+    MAX_UNITS = 300
+
+    def post(self, request):
+        role = get_canonical_role(request.user)
+        if role not in ('landlord', 'super_admin', 'caretaker'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        prop = Property.objects.filter(pk=request.data.get('property')).first() if _is_uuid(
+            request.data.get('property')) else None
+        if not prop:
+            return Response({'detail': 'Property not found'}, status=status.HTTP_400_BAD_REQUEST)
+        if role == 'caretaker':
+            if prop.id not in self.get_user_property_ids():
+                return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        elif role != 'super_admin' and prop.organization_id not in self.get_user_organization_ids():
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        errors = {}
+        try:
+            count = int(request.data.get('count'))
+            if not 1 <= count <= self.MAX_UNITS:
+                raise ValueError
+        except (TypeError, ValueError):
+            count = 0
+            errors['count'] = f'Enter a number of units from 1 to {self.MAX_UNITS}.'
+        try:
+            start = int(request.data.get('start') or 1)
+            if start < 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            start = 1
+            errors['start'] = 'Start numbering from 0 or more.'
+        prefix = str(request.data.get('prefix') or '').strip()[:10]
+        try:
+            rent = Decimal(str(request.data.get('monthly_rent') or '0'))
+            if rent < 0:
+                raise InvalidOperation
+        except (InvalidOperation, ValueError):
+            rent = Decimal('0')
+            errors['monthly_rent'] = 'Enter the monthly rent as a number.'
+        unit_type = request.data.get('unit_type') or '1_bedroom'
+        if unit_type not in dict(RentalUnit.UNIT_TYPE_CHOICES):
+            errors['unit_type'] = 'Choose a unit type.'
+        if errors:
+            return Response({'detail': 'Please fix the highlighted fields.', 'errors': errors},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            org = Organization.objects.select_for_update().get(pk=prop.organization_id)
+            gate_error = GatingService.check_unit_limit(org, adding=count)
+            if gate_error:
+                return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
+            taken = set(RentalUnit.objects.filter(parent_property=prop).values_list('unit_number', flat=True))
+            numbers, n = [], start
+            while len(numbers) < count:
+                candidate = f'{prefix}{n}'
+                if candidate not in taken:
+                    numbers.append(candidate)
+                n += 1
+            RentalUnit.objects.bulk_create([
+                RentalUnit(organization=org, parent_property=prop, unit_number=number,
+                           unit_type=unit_type, monthly_rent=rent)
+                for number in numbers
+            ])
+        units = RentalUnit.objects.filter(parent_property=prop, unit_number__in=numbers).select_related('parent_property')
+        log_audit('unit_created', actor=request.user, organization=org, entity=prop,
+                  metadata={'bulk': len(numbers), 'first': numbers[0], 'last': numbers[-1]})
+        return Response(RentalUnitSerializer(units, many=True).data, status=status.HTTP_201_CREATED)
+
+
 class RentalUnitDetailView(RumiaBaseView):
     permission_classes = [IsAuthenticated, CanAccessProperty]
 
@@ -794,6 +878,13 @@ class PaymentListCreateView(RumiaBaseView):
         role = get_canonical_role(request.user)
         if role not in ('tenant', 'landlord', 'caretaker', 'super_admin'):
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        if not settings.RENT_ONLINE_PAYMENTS_ENABLED:
+            # The webhook still settles checkouts started before this was turned off.
+            return Response({
+                'detail': "Online rent payment is turned off. Pay to your landlord's M-Pesa paybill or bank "
+                          'using your account number, or ask your landlord to record a cash payment.',
+                'code': 'online_rent_disabled',
+            }, status=status.HTTP_403_FORBIDDEN)
 
         serializer = PaymentInitiateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

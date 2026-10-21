@@ -731,3 +731,11 @@ class LandlordWizardCompletionTests(TestCase):
     def test_status_still_points_at_the_payout_step_until_it_is_done(self):
         data = self.client.get('/api/v1/accounts/onboarding/status/').json()
         self.assertEqual(data['wizard']['current_step'], 3)
+
+    def test_plan_choice_is_optional(self):
+        response = self.client.post(self.url, {}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.data['selected_tier'])
+        data = self.client.get('/api/v1/accounts/onboarding/status/').json()
+        self.assertEqual(data['wizard']['current_step'], 5)
+

@@ -138,13 +138,13 @@ class GatingService:
         return None
 
     @classmethod
-    def check_unit_limit(cls, organization) -> dict | None:
+    def check_unit_limit(cls, organization, adding: int = 1) -> dict | None:
         plan = cls.get_effective_plan(organization)
         if plan.max_units == 0:  # 0 means unlimited (billing/models.py)
             return None
 
         current_count = RentalUnit.objects.filter(organization=organization).count()
-        if current_count >= plan.max_units:
+        if current_count + adding > plan.max_units:
             return {
                 'detail': 'Unit limit reached for your plan.',
                 'gate': 'max_units',

@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.conf import settings
 from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -89,14 +90,15 @@ class OnboardingStatusView(APIView):
             payout_status = payout.status if payout else 'not_started'
             selected_tier = (org.settings or {}).get('preferred_tier') if org else None
 
+            # 1 business, 2 first property, 3 how tenants pay (paybill, can be
+            # skipped), 5 = finished. No payout or plan step: rent goes to the
+            # landlord's own paybill/bank and new landlords start on the trial.
             if not org:
                 current_step = 1
             elif not has_property:
                 current_step = 2
-            elif payout_status == 'not_started':
+            elif user.onboarding_stage != 'COMPLETED':
                 current_step = 3
-            elif not selected_tier:
-                current_step = 4
             else:
                 current_step = 5
 
@@ -135,9 +137,9 @@ class LandlordWizardCompleteView(APIView):
         if user.role != 'landlord':
             return Response({'error': 'Not permitted'}, status=status.HTTP_403_FORBIDDEN)
 
+        # Optional: new landlords start on the free trial and choose a plan
+        # later from Billing; an older client may still send a preference.
         plan_slug = request.data.get('plan_slug')
-        if not plan_slug:
-            return Response({'error': 'plan_slug is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         from organizations.models import Organization, PayoutAccount
         from properties.models import Property
@@ -150,15 +152,18 @@ class LandlordWizardCompleteView(APIView):
         if not Property.objects.filter(organization=org).exists():
             return Response({'error': 'Property setup is required first'}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            plan = SubscriptionPlan.objects.get(slug=plan_slug, is_active=True)
-        except SubscriptionPlan.DoesNotExist:
-            return Response({'error': 'Invalid plan'}, status=status.HTTP_400_BAD_REQUEST)
+        plan = None
+        if plan_slug:
+            try:
+                plan = SubscriptionPlan.objects.get(slug=plan_slug, is_active=True)
+            except SubscriptionPlan.DoesNotExist:
+                return Response({'error': 'Invalid plan'}, status=status.HTTP_400_BAD_REQUEST)
 
         with transaction.atomic():
-            # Preference record only (D-06) — no billing/Paystack call here.
-            org.settings = {**(org.settings or {}), 'preferred_tier': plan.slug}
-            org.save(update_fields=['settings', 'updated_at'])
+            if plan is not None:
+                # Preference record only (D-06) — no billing/Paystack call here.
+                org.settings = {**(org.settings or {}), 'preferred_tier': plan.slug}
+                org.save(update_fields=['settings', 'updated_at'])
 
             user.onboarding_stage = 'COMPLETED'
             user.is_verified = True
@@ -170,5 +175,5 @@ class LandlordWizardCompleteView(APIView):
         return Response({
             'status': 'onboarding_completed',
             'organization_id': str(org.id),
-            'selected_tier': plan.slug,
+            'selected_tier': plan.slug if plan else None,
         }, status=status.HTTP_200_OK)
