@@ -92,7 +92,7 @@ def escalate_overdue_to_next_of_kin():
     configured threshold. Never contacts a next-of-kin without that opt-in
     and an explicitly authorized EmergencyContact — see tenants.models.
     """
-    from datetime import date, timedelta
+    from datetime import timedelta
 
     from django.utils import timezone
 
@@ -100,7 +100,7 @@ def escalate_overdue_to_next_of_kin():
     from rent.services.notifications import send_next_of_kin_escalation
     from tenants.models import EscalationPolicy
 
-    today = date.today()
+    today = timezone.localdate()
     notified = 0
 
     policies = EscalationPolicy.objects.filter(

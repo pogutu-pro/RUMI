@@ -104,7 +104,7 @@ class InvoiceListCreateView(InvoiceScopedMixin, RumiaBaseView):
             return _forbidden()
 
         due_date = serializer.validated_data['due_date']
-        today = timezone.now().date()
+        today = timezone.localdate()
         try:
             invoice = InvoiceService.create_invoice(
                 tenancy,

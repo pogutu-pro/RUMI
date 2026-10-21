@@ -78,9 +78,9 @@ class AdminOverrideService:
                     # reminder and never comes up for review again.
                     if status == 'active' and (
                         subscription.current_period_end is None
-                        or subscription.current_period_end < timezone.now().date()
+                        or subscription.current_period_end < timezone.localdate()
                     ):
-                        today = timezone.now().date()
+                        today = timezone.localdate()
                         subscription.current_period_start = today
                         subscription.current_period_end = today + timedelta(days=30)
                         subscription.grace_period_ends_at = None
