@@ -587,3 +587,63 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }
 }
+
+/* Phones: tables become one card per row (labels come from Table's useStackLabels). */
+@media (max-width: 767px) {
+  table.rr-stack thead {
+    display: none;
+  }
+  table.rr-stack,
+  table.rr-stack tbody,
+  table.rr-stack tfoot,
+  table.rr-stack tr,
+  table.rr-stack td {
+    display: block;
+    width: 100%;
+  }
+  table.rr-stack tr {
+    margin-bottom: 0.5rem;
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.75rem;
+    background: hsl(var(--background));
+    padding: 0.625rem 0.875rem;
+  }
+  table.rr-stack tbody tr:last-child {
+    border-width: 1px !important;
+  }
+  table.rr-stack td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.3rem 0 !important;
+    text-align: right;
+    white-space: normal !important;
+  }
+  table.rr-stack td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    max-width: 45%;
+    text-align: left;
+    font-size: 0.75rem;
+    color: hsl(var(--muted-foreground));
+  }
+  /* The first cell is the card's title; cells without a heading are actions. */
+  table.rr-stack td:first-child {
+    justify-content: flex-start;
+    text-align: left;
+    font-weight: 500;
+    padding-bottom: 0.4rem !important;
+  }
+  table.rr-stack td:first-child::before,
+  table.rr-stack td[data-label='']::before,
+  table.rr-stack td:not([data-label])::before {
+    content: none;
+  }
+  table.rr-stack td[data-label=''] {
+    justify-content: flex-end;
+  }
+  table.rr-stack td:empty {
+    display: none;
+  }
+}

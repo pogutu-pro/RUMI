@@ -265,38 +265,41 @@ function YearTable({ year, onPick }: { year: number; onPick: (month: string) => 
       {isLoading || !data ? (
         <p className="px-5 py-8 text-sm text-muted-foreground">Loading…</p>
       ) : (
-        <Table>
+        <Table noStack>
           <TableHeader>
             <TableRow>
               <TableHead>Month</TableHead>
               <TableHead className="text-right">Rent received</TableHead>
               <TableHead className="text-right">MRI due</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead className="hidden sm:table-cell">Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {data.months.map((m) => {
               const key = m.month.slice(0, 7);
               const future = key > currentMonthKey();
+              const pill = future ? null : m.status === 'filed' ? (
+                <StatusPill status="success">Filed</StatusPill>
+              ) : m.is_nil && m.status !== 'in_progress' ? (
+                // No rent recorded in RumiaRent: nothing to work out from here.
+                <StatusPill status="neutral">No rent recorded</StatusPill>
+              ) : m.status === 'overdue' ? (
+                <StatusPill status="danger">Overdue</StatusPill>
+              ) : m.status === 'due' ? (
+                <StatusPill status="warning">Due</StatusPill>
+              ) : (
+                <StatusPill status="neutral">In progress</StatusPill>
+              );
               return (
                 <TableRow key={m.month} className={cn(!future && 'cursor-pointer')} onClick={() => !future && onPick(key)}>
-                  <TableCell className="font-medium">{monthLabel(key)}</TableCell>
+                  <TableCell className="font-medium">
+                    {monthLabel(key)}
+                    {/* Phones have no room for a status column; the pill sits under the month. */}
+                    {pill && <div className="mt-1 sm:hidden">{pill}</div>}
+                  </TableCell>
                   <TableCell className="text-right">{future ? '—' : kes(m.gross_rent)}</TableCell>
                   <TableCell className="text-right">{future ? '—' : kes(m.mri_due)}</TableCell>
-                  <TableCell>
-                    {future ? null : m.status === 'filed' ? (
-                      <StatusPill status="success">Filed</StatusPill>
-                    ) : m.is_nil && m.status !== 'in_progress' ? (
-                      // No rent recorded in RumiaRent: nothing to work out from here.
-                      <StatusPill status="neutral">No rent recorded</StatusPill>
-                    ) : m.status === 'overdue' ? (
-                      <StatusPill status="danger">Overdue</StatusPill>
-                    ) : m.status === 'due' ? (
-                      <StatusPill status="warning">Due</StatusPill>
-                    ) : (
-                      <StatusPill status="neutral">In progress</StatusPill>
-                    )}
-                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">{pill}</TableCell>
                 </TableRow>
               );
             })}
@@ -304,7 +307,7 @@ function YearTable({ year, onPick }: { year: number; onPick: (month: string) => 
               <TableCell className="font-semibold">Total</TableCell>
               <TableCell className="text-right font-semibold">{kes(data.total_gross_rent)}</TableCell>
               <TableCell className="text-right font-semibold">{kes(data.total_mri_due)}</TableCell>
-              <TableCell />
+              <TableCell className="hidden sm:table-cell" />
             </TableRow>
           </TableBody>
         </Table>

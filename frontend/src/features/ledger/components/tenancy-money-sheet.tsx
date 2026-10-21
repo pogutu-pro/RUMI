@@ -367,7 +367,7 @@ function MetersTab({ tenancy }: { tenancy: Tenancy }) {
       <p className="text-sm text-muted-foreground">
         Usage since the last reading is billed on the next rent invoice. The first reading is the starting point.
       </p>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Select value={utility} onValueChange={(v) => setUtility(v as Utility)}>
           <SelectTrigger aria-label="Utility"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -376,7 +376,7 @@ function MetersTab({ tenancy }: { tenancy: Tenancy }) {
           </SelectContent>
         </Select>
         <Input aria-label="Meter reading" type="number" min="0" step="0.001" placeholder="Reading" value={value} onChange={(e) => setValue(e.target.value)} />
-        <Input aria-label="Reading date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <Input aria-label="Reading date" type="date" className="col-span-2 sm:col-span-1" value={date} onChange={(e) => setDate(e.target.value)} />
       </div>
       <div className="flex gap-2">
         <Button size="sm" onClick={save} isLoading={record.isPending} disabled={value === ''}>Save reading</Button>

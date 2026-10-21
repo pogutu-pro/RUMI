@@ -50,11 +50,11 @@ function ReportsTab() {
   const rowTable = (rows: ReportRow[] = [], title: string) => (
     <div>
       <h3 className="mb-1 font-medium">{title}</h3>
-      <Table>
+      <Table noStack>
         <TableBody>
           {rows.map((r) => (
             <TableRow key={`${title}-${r.code}`}>
-              <TableCell className="w-16 font-mono text-xs">{r.code}</TableCell>
+              <TableCell className="hidden w-16 font-mono text-xs sm:table-cell">{r.code}</TableCell>
               <TableCell>{r.name}</TableCell>
               <TableCell className="text-right">{formatKes(r.amount, { cents: true })}</TableCell>
             </TableRow>
@@ -97,7 +97,7 @@ function ReportsTab() {
             {data.balanced ? '' : ' — does not balance, contact support'}</p>
         </div>
       ) : (
-        <Table>
+        <Table noStack>
           <TableHeader><TableRow><TableHead>Account</TableHead><TableHead className="text-right">Debit</TableHead><TableHead className="text-right">Credit</TableHead></TableRow></TableHeader>
           <TableBody>
             {(data.accounts as ReportRow[]).map((r) => (

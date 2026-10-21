@@ -58,7 +58,7 @@ export default function StatementsPage() {
         <p className="text-sm text-destructive">Could not load the statement.</p>
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Tile label="Money received" value={formatKes(s.cash.received_total)} />
             <Tile label="Expenses" value={formatKes(s.cash.expenses_total)} />
             <Tile label="Net cash" value={formatKes(s.cash.net_cash)} strong />
