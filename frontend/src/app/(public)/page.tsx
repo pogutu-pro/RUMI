@@ -117,10 +117,10 @@ export default async function HomePage() {
           <div className="relative flex justify-center lg:col-span-5 lg:justify-end">
             <figure className="w-[250px] overflow-hidden rounded-[2rem] border-[7px] border-gray-950 bg-white shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] sm:w-[270px]">
               <Image
-                src="/images/product/dashboard-mobile.webp"
+                src="/images/product/dashboard-mobile-v2.webp"
                 alt="RumiaRent on a phone: M-Pesa payments to assign, tenants in arrears and rent collected this month"
                 width={585}
-                height={950}
+                height={1266}
                 priority
                 sizes="270px"
                 className="h-auto w-full"
@@ -145,7 +145,7 @@ export default async function HomePage() {
               <span className="h-2.5 w-2.5 rounded-full bg-gray-300" />
             </div>
             <Image
-              src="/images/product/dashboard.webp"
+              src="/images/product/dashboard-v2.webp"
               alt="RumiaRent landlord dashboard showing rent collected this month, tenants who owe, occupancy and M-Pesa payments to assign"
               width={1600}
               height={1012}
@@ -155,10 +155,10 @@ export default async function HomePage() {
           </figure>
           <figure className="absolute -bottom-10 right-4 w-[200px] overflow-hidden rounded-[1.75rem] border-[6px] border-gray-900 bg-white shadow-2xl lg:right-10 lg:w-[230px]">
             <Image
-              src="/images/product/tenant-pay.webp"
+              src="/images/product/tenant-pay-v2.webp"
               alt="A tenant's phone showing the landlord's paybill number and their own account number"
               width={585}
-              height={950}
+              height={1266}
               sizes="230px"
               className="h-auto w-full"
             />

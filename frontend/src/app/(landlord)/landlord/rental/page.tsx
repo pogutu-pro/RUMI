@@ -22,7 +22,7 @@ function StatCard({ label, value, hint, href, action }: {
 }) {
   return (
     <Card className="rounded-2xl">
-      <CardHeader className="pb-1">
+      <CardHeader className="p-4 pb-1 sm:p-6 sm:pb-1">
         <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-1 p-4 pt-0 sm:p-6 sm:pt-0">

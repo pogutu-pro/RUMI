@@ -52,6 +52,14 @@ const NAV: DashboardShellNavItem[] = [
   { section: 'Settings', href: '/landlord/rental/support', label: 'Support', icon: LifeBuoy },
 ];
 
+// Phones: what a landlord opens most days. Everything else is under Menu.
+const MOBILE_TABS = [
+  { href: '/landlord/rental', label: 'Home', icon: LayoutDashboard },
+  { href: '/landlord/rental/rent', label: 'Rent', icon: Wallet },
+  { href: '/landlord/rental/paybill', label: 'M-Pesa', icon: Smartphone },
+  { href: '/landlord/rental/tenancies', label: 'Tenants', icon: Users },
+];
+
 /**
  * Own layout for the rental product — renders through the shared
  * DashboardShell (collapsible desktop sidebar, mobile drawer, auth-guard,
@@ -68,6 +76,7 @@ export default function RentalLandlordLayout({ children }: { children: React.Rea
     <DashboardShell
       allowedRoles={[UserRole.LANDLORD, UserRole.SUPER_ADMIN]}
       nav={nav}
+      mobileTabs={MOBILE_TABS}
       settingsHref="/landlord/rental/settings"
       bannerSlot={
         !isSuperAdmin ? (

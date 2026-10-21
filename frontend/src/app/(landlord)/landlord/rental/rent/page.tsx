@@ -86,7 +86,45 @@ export default function InvoicesPage() {
           {filter === 'all' ? 'No invoices yet.' : 'Nothing here — all clear.'}
         </p>
       ) : (
-        <div className="overflow-x-auto">
+        <div>
+          {/* Phones: one card per invoice; tap it for the details. */}
+          <ul className="space-y-2 md:hidden">
+            {pageItems.map((invoice) => (
+              <li key={invoice.id}>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelected(invoice.id)}
+                  onKeyDown={(e) => e.key === 'Enter' && setSelected(invoice.id)}
+                  className="rounded-xl border bg-background p-4 active:bg-muted/50"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{invoice.tenant_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {invoice.unit_number} · {INVOICE_TYPE_LABEL[invoice.invoice_type]} · due {formatDate(invoice.due_date)}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="font-semibold tabular-nums">{formatKes(invoice.outstanding)}</p>
+                      <InvoiceStatusBadge status={invoice.status} />
+                    </div>
+                  </div>
+                  {Number(invoice.outstanding) > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-3 w-full"
+                      onClick={(e) => { e.stopPropagation(); setPaying(invoice); }}
+                    >
+                      Record payment
+                    </Button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -125,6 +163,7 @@ export default function InvoicesPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
           <SimplePager {...pagerProps} />
         </div>
       )}

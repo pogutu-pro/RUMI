@@ -51,9 +51,10 @@ describe('PaybillPage', () => {
 
   it('shows unmatched payments and requires a reason to mark one as not rent', () => {
     render(<PaybillPage />);
-    expect(screen.getByText('QK12AB34CD')).toBeInTheDocument();
-    expect(screen.getByText('WRONG')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Not rent' }));
+    // Rendered twice: phone cards and the desktop table (CSS shows one).
+    expect(screen.getAllByText('QK12AB34CD').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('WRONG').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Not rent' })[0]);
     const confirm = screen.getByRole('button', { name: 'Mark as not rent' });
     expect(confirm).toBeDisabled();
     fireEvent.change(screen.getByPlaceholderText(/shop sale/), { target: { value: 'Shop sale' } });

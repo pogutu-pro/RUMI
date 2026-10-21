@@ -23,6 +23,11 @@ export default function RentalTenantLayout({ children }: { children: React.React
     <DashboardShell
       allowedRoles={[UserRole.TENANT, UserRole.STUDENT]}
       nav={TENANT_NAV}
+      mobileTabs={[
+        { href: '/tenant/rental', label: 'Home', icon: LayoutDashboard },
+        { href: '/tenant/rental/pay', label: 'Pay', icon: CreditCard },
+        { href: '/tenant/rental/messages', label: 'Messages', icon: MessageSquare },
+      ]}
       settingsHref="/tenant/rental/settings"
     >
       {children}
