@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     'What personal data RumiaRent collects, how it is used and shared, and your rights.',
 };
 
-const LAST_UPDATED = '19 September 2026';
+const LAST_UPDATED = '21 October 2026';
 
 interface Block {
   heading: string;
@@ -26,7 +26,9 @@ const BLOCKS: Block[] = [
   {
     heading: '2. What we collect',
     body: [
-      'Account details: name, email address, phone number and a password, which we store only in scrambled form. For landlords, we also keep organisation and property details and their M-Pesa paybill number.',
+      'Account details: name, email address, phone number and, if you set one, a password, which we store only in scrambled form. For landlords, we also keep organisation and property details and their M-Pesa paybill number.',
+      'If you sign in with Google, Google shares your name, email address and profile photo with us, and confirms that the email address is yours. We use these only to create your account and sign you in. We never see your Google password and get no access to your Gmail, contacts, files or any other Google data. You can remove RumiaRent from your Google account at any time at myaccount.google.com/permissions.',
+      'If you sign in with an email link, we keep a scrambled copy of the one-time link and code until it is used or expires.',
       'Tenant records entered by a landlord or caretaker: name, phone, email, national ID number, occupation and address, next-of-kin or emergency contacts, and the tenancy, rent charge and payment history.',
       'Records you keep in RumiaRent: expenses and their receipts, messages sent between landlords, caretakers, tenants and our support team, and support tickets.',
       'Technical data: the information your browser sends when you use the site, such as IP address and device type, kept in server logs to run and secure the service.',
@@ -45,7 +47,7 @@ const BLOCKS: Block[] = [
   {
     heading: '4. Who we share it with',
     body: [
-      "Only the service providers needed to run RumiaRent: Safaricom (M-Pesa payment notices), Paystack for subscription payments, Africa's Talking for SMS, our email provider for email, and our hosting provider. We also share data when the law requires it or to protect people from fraud or harm.",
+      "Only the service providers needed to run RumiaRent: Safaricom (M-Pesa payment notices), Paystack for subscription payments, Africa's Talking for SMS, our email provider for email, Google when you choose to sign in with Google, Cloudflare, which delivers and protects the website, and our hosting provider. We also share data when the law requires it or to protect people from fraud or harm.",
       'Within an organisation, people see only what their role allows. A caretaker sees the properties they are assigned, and a tenant sees only their own tenancy and payments.',
     ],
   },
