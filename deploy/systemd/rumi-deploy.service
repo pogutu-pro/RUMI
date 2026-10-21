@@ -1,0 +1,10 @@
+[Unit]
+Description=Deploy RumiaRent when GitHub main has new commits
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# The read-only GitHub deploy key lives in ubuntu's ~/.ssh; docker needs root.
+Environment=GIT_SSH_COMMAND=ssh -i /home/ubuntu/.ssh/rumi_deploy -o IdentitiesOnly=yes -o UserKnownHostsFile=/home/ubuntu/.ssh/known_hosts
+ExecStart=/opt/rumi/deploy.sh
