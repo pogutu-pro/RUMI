@@ -16,6 +16,7 @@ prior context.
 | [audit-findings.md](audit-findings.md) | Every payment/billing defect found in the Oct 2026 audit, ranked, with file references and how each was verified |
 | [phase-0-critical-fixes.md](phase-0-critical-fixes.md) | The 5 critical bugs being fixed first — design of each fix and status checklist |
 | [phase-1-ledger-design.md](phase-1-ledger-design.md) | Phase 1 design (invoices, double-entry journal, tenant credit, receipts, penalties, deposits, reminders) — **draft, needs decisions D1–D7** |
+| [to-finish.md](to-finish.md) | **Start here:** what the owner still has to get (M-Pesa, banks, Paystack, SMS, decisions) to finish the product |
 | [eazzyrent-parity.md](eazzyrent-parity.md) | Competitor comparison, target architecture, and phased roadmap |
 | [bank-integration.md](bank-integration.md) | What is required to connect to M-Pesa (Daraja C2B) and Kenyan banks |
 | [phase-2-paybill-design.md](phase-2-paybill-design.md) | Phase 2: M-Pesa paybill collection |
