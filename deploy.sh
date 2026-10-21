@@ -2,8 +2,8 @@
 # Deploy origin/main to the Oracle server (rumiarent.com).
 #
 # Run by the rumi-deploy.timer every 2 minutes, or by hand:
-#   sudo /opt/rumi/deploy.sh           # deploy if main has moved on
-#   sudo /opt/rumi/deploy.sh --force   # rebuild and restart anyway
+#   /opt/rumi/deploy.sh           # deploy if main has moved on (as ubuntu)
+#   /opt/rumi/deploy.sh --force   # rebuild and restart anyway
 #
 # Order matters: the new images are built while the current site keeps
 # running, so a failed build changes nothing. The database is backed up
