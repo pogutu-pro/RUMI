@@ -3,7 +3,16 @@ from rest_framework import serializers
 from organizations.serializers import PayoutAccountSerializer
 from rumia_api.serializers import OrganizationSerializer
 
-from .models import OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
+from .models import ManualPaymentInstructions, OrganizationSubscription, SubscriptionPayment, SubscriptionPlan
+
+
+class ManualPaymentInstructionsSerializer(serializers.ModelSerializer):
+    instructions = serializers.CharField(allow_blank=True, max_length=2000, trim_whitespace=False)
+
+    class Meta:
+        model = ManualPaymentInstructions
+        fields = ['instructions', 'updated_at']
+        read_only_fields = ['updated_at']
 
 
 class SubscriptionPlanSerializer(serializers.ModelSerializer):

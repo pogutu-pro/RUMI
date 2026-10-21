@@ -1,0 +1,38 @@
+# HTTPS reverse proxy for the Oracle Cloud production server.
+# Loaded only by docker-compose.oracle.yml. Caddy obtains and renews the
+# Let's Encrypt certificates for these hostnames automatically — the domain's
+# DNS A records must point at this server before it can issue them.
+{
+	email info@rumiarent.com
+}
+
+rumiarent.com {
+	encode zstd gzip
+
+	# `route` keeps these in the literal order written, so the more specific
+	# rules below always win over the frontend catch-all at the end.
+	route {
+		# Internal backend endpoints — reachable inside the Docker network
+		# only, never from the public internet.
+		@internal path /metrics /metrics/* /metrics-proxy /metrics-proxy/* /__debug__/*
+		respond @internal 404
+
+		# User uploads (profile photos, receipts) served straight from the
+		# shared media volume: Django only serves /media/ when DEBUG=True.
+		handle_path /media/* {
+			root * /srv/media
+			file_server
+		}
+
+		# Django: API, admin, its static assets (whitenoise), health, API docs.
+		@backend path /api/* /admin/* /static/* /health/* /swagger* /redoc/*
+		reverse_proxy @backend backend:8000
+
+		# Everything else is the Next.js app.
+		reverse_proxy frontend:3000
+	}
+}
+
+www.rumiarent.com {
+	redir https://rumiarent.com{uri} permanent
+}

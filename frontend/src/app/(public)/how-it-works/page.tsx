@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/how-it-works' },
   title: 'How It Works',
   description: 'How RumiaRent works for landlords, agents, and tenants.',
 };

@@ -10,6 +10,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { PageHeader } from '@/components/dashboard/page-header';
 import { useTenancies, useRentBalance, useInitiatePayment } from '@/features/rental/hooks/use-rental';
+import { navigateCheckoutTab, openCheckoutTab } from '@/lib/utils/checkout-window';
 
 function formatKes(amount: string | number) {
   const n = Number(amount);
@@ -60,9 +61,14 @@ export default function TenantPayRentPage() {
 
   const handlePay = async () => {
     if (!canPay) return;
+    // Must happen synchronously, before the `await` below, or the browser
+    // blocks it as an unsolicited popup — see checkout-window.ts.
+    const checkoutTab = openCheckoutTab();
     const result = await initiate.mutateAsync({ tenancyId: activeTenancy.id, amount: String(amount) });
     if (result.authorization_url) {
-      window.location.href = result.authorization_url;
+      navigateCheckoutTab(checkoutTab, result.authorization_url);
+    } else {
+      checkoutTab?.close();
     }
   };
 

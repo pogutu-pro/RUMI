@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
+from django.db.models import Sum
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -127,7 +128,7 @@ class RumiaTestFixtures(TestCase):
         return user, profile
 
     @classmethod
-    def create_tenancy(cls, org, prop, unit, tenant, status='active'):
+    def create_tenancy(cls, org, prop, unit, tenant, status='active', monthly_rent=Decimal('22000.00')):
         return Tenancy.objects.create(
             organization=org,
             parent_property=prop,
@@ -135,8 +136,8 @@ class RumiaTestFixtures(TestCase):
             tenant=tenant,
             start_date=date.today() - timedelta(days=30),
             end_date=date.today() + timedelta(days=335),
-            monthly_rent=Decimal('22000.00'),
-            deposit=Decimal('22000.00'),
+            monthly_rent=monthly_rent,
+            deposit=monthly_rent,
             rent_due_day=5,
             status=status,
         )
@@ -646,6 +647,78 @@ class RentGenerationTests(RumiaTestFixtures):
         self.assertGreaterEqual(first.created, 1)
         self.assertEqual(second.created, 0)
 
+    def test_generation_sweeps_existing_credit_onto_the_new_charge(self):
+        """
+        Regression test for a real production incident: a caretaker recorded
+        a KES 8,000 cash payment for a tenant with no rent charge yet (a
+        brand-new tenancy). It saved correctly as a successful Payment, but
+        with nothing to allocate to, it had zero effect anywhere the
+        caretaker could see — not the charges table, not the tenant's
+        balance. Generating the tenancy's first charge must sweep that
+        existing credit onto it immediately, not leave it stranded forever
+        waiting for someone to notice.
+        """
+        from rent.services.payment_service import PaymentService
+
+        user_l, _, org = self.create_landlord_with_org()
+        prop, unit = self.create_property_with_unit(org)
+        _, tenant = self.create_tenant(org)
+        tenancy = self.create_tenancy(
+            org, prop, unit, tenant, status='active', monthly_rent=Decimal('10000.00'),
+        )
+        # Start this month so generation creates exactly one invoice.
+        Tenancy.objects.filter(pk=tenancy.pk).update(start_date=date.today().replace(day=1))
+        tenancy.refresh_from_db()
+        self.assertEqual(RentCharge.objects.filter(tenancy=tenancy).count(), 0)
+
+        payment = Payment.objects.create(
+            organization=org, tenancy=tenancy, tenant=tenant, parent_property=prop, unit=unit,
+            amount=Decimal('8000.00'), payment_method='cash', provider='manual',
+            internal_reference='RUMIA-CARETAKER-CASH', recorded_by=user_l,
+        )
+        PaymentService.record_manual_payment(payment, verified_by=user_l)
+        self.assertEqual(payment.allocations.count(), 0)  # nothing existed to apply it to
+
+        RentChargeGenerationService.generate_for_tenancy(tenancy)
+
+        charge = RentCharge.objects.get(tenancy=tenancy)
+        self.assertEqual(charge.amount_paid, Decimal('8000.00'))
+        self.assertEqual(charge.outstanding, Decimal('2000.00'))
+        self.assertEqual(charge.status, 'partially_paid')
+        payment.refresh_from_db()
+        self.assertEqual(payment.allocations.count(), 1)
+        self.assertEqual(payment.allocations.first().invoice_id, charge.id)
+
+    def test_generation_marks_the_new_charge_paid_when_credit_covers_it(self):
+        from rent.services.payment_service import PaymentService
+
+        user_l, _, org = self.create_landlord_with_org()
+        prop, unit = self.create_property_with_unit(org)
+        _, tenant = self.create_tenant(org)
+        tenancy = self.create_tenancy(
+            org, prop, unit, tenant, status='active', monthly_rent=Decimal('10000.00'),
+        )
+        # Start this month so generation creates exactly one invoice.
+        Tenancy.objects.filter(pk=tenancy.pk).update(start_date=date.today().replace(day=1))
+        tenancy.refresh_from_db()
+        payment = Payment.objects.create(
+            organization=org, tenancy=tenancy, tenant=tenant, parent_property=prop, unit=unit,
+            amount=Decimal('15000.00'), payment_method='cash', provider='manual',
+            internal_reference='RUMIA-PAID-AHEAD',
+        )
+        PaymentService.record_manual_payment(payment)
+
+        RentChargeGenerationService.generate_for_tenancy(tenancy)
+
+        charge = RentCharge.objects.get(tenancy=tenancy)
+        self.assertEqual(charge.status, 'paid')
+        self.assertEqual(charge.outstanding, Decimal('0.00'))
+        # KES 5,000 of the original 15,000 is still unapplied credit.
+        self.assertEqual(
+            payment.amount - (payment.allocations.aggregate(t=Sum('amount'))['t'] or Decimal('0.00')),
+            Decimal('5000.00'),
+        )
+
     def test_overdue_status_applied_by_date_alone(self):
         user_l, _, org = self.create_landlord_with_org()
         prop, unit = self.create_property_with_unit(org)
@@ -674,6 +747,52 @@ class RentGenerationTests(RumiaTestFixtures):
         response = client.get('/api/v1/rent/balance/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Decimal(response.data['outstanding_total']), Decimal('22000.00'))
+
+    def test_rent_balance_reports_credit_for_an_unallocated_payment(self):
+        """A payment with nothing due to apply it to (paid ahead, or a small
+        test payment) must still be visible somewhere — it has no RentCharge
+        at all, so it cannot show up in `charges`."""
+        user_l, _, org = self.create_landlord_with_org()
+        prop, unit = self.create_property_with_unit(org)
+        _, tenant = self.create_tenant(org)
+        tenancy = self.create_tenancy(org, prop, unit, tenant, status='active')
+        Payment.objects.create(
+            organization=org, tenancy=tenancy, tenant=tenant, parent_property=prop, unit=unit,
+            amount=Decimal('10.00'), payment_method='paystack', provider='paystack',
+            internal_reference='RUMIA-CREDIT-TEST', status='success', paid_at=timezone.now(),
+        )
+        from rent.services.payment_service import PaymentService
+        PaymentService.settle_received(Payment.objects.get(internal_reference='RUMIA-CREDIT-TEST'), notify=False)
+
+        client = APIClient()
+        client.force_authenticate(user=tenant.user)
+        response = client.get('/api/v1/rent/balance/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Decimal(response.data['credit_balance']), Decimal('10.00'))
+        self.assertEqual(Decimal(response.data['paid_this_month']), Decimal('10.00'))
+        self.assertEqual(Decimal(response.data['outstanding_total']), Decimal('0.00'))
+
+    def test_rent_balance_credit_excludes_amount_already_allocated(self):
+        """A payment that fully settles its charge leaves no credit behind."""
+        from rent.services.payment_service import PaymentService
+
+        user_l, _, org = self.create_landlord_with_org()
+        prop, unit = self.create_property_with_unit(org)
+        _, tenant = self.create_tenant(org)
+        tenancy = self.create_tenancy(org, prop, unit, tenant, status='active')
+        self.create_rent_charge(tenancy, amount=Decimal('22000.00'))
+        payment = Payment.objects.create(
+            organization=org, tenancy=tenancy, tenant=tenant, parent_property=prop, unit=unit,
+            amount=Decimal('22000.00'), payment_method='cash', provider='manual',
+            internal_reference='RUMIA-FULL-SETTLE',
+        )
+        PaymentService.record_manual_payment(payment)
+
+        client = APIClient()
+        client.force_authenticate(user=tenant.user)
+        response = client.get('/api/v1/rent/balance/')
+        self.assertEqual(Decimal(response.data['credit_balance']), Decimal('0.00'))
+        self.assertEqual(Decimal(response.data['outstanding_total']), Decimal('0.00'))
 
 
 class PaystackFlowTests(RumiaTestFixtures):
@@ -722,6 +841,38 @@ class PaystackFlowTests(RumiaTestFixtures):
 
         payment = Payment.objects.get(internal_reference=response.data['internal_reference'])
         self.assertEqual(payment.status, 'processing')
+
+    @override_settings(PAYSTACK_SECRET_KEY='test_secret_key', FRONTEND_URL='https://app.test')
+    @patch.object(PaystackProvider, 'initiate_payment')
+    @patch.object(PaystackProvider, 'get_config_status')
+    def test_payment_callback_url_points_at_a_real_page(self, mock_config, mock_initiate):
+        """Paystack's hosted checkout redirects the tenant's browser to this
+        URL after they pay — it must be a route the frontend actually
+        serves, not a stale path nobody has cleaned up (there is no page
+        at /payments/{id}/callback; the real one is under the tenant's own
+        rental area)."""
+        mock_config.return_value = ProviderConfigStatus(provider='paystack', status=ProviderStatus.AVAILABLE)
+        mock_initiate.return_value = InitiatePaymentResult(
+            success=True, provider_reference='PSK-REF-1',
+            authorization_url='https://checkout.paystack.com/abc123',
+        )
+        org, tenant_user, tenant, tenancy = self._tenancy_with_tenant()
+        PayoutAccount.objects.create(
+            organization=org, status='active', paystack_subaccount_code='SUB_TEST_CODE',
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=tenant_user)
+        response = client.post('/api/v1/rent/payments/', {
+            'tenancy': str(tenancy.id), 'amount': '22000.00',
+        })
+        self.assertEqual(response.status_code, 201)
+
+        callback_url = mock_initiate.call_args[0][0].callback_url
+        self.assertTrue(
+            callback_url.startswith('https://app.test/tenant/rental/payments/callback'),
+            f'callback_url {callback_url!r} does not point at the frontend\'s payment-callback page',
+        )
 
     def test_tenant_cannot_initiate_payment_for_other_tenants_tenancy(self):
         org, tenant_user, tenant, tenancy = self._tenancy_with_tenant()
@@ -837,6 +988,36 @@ class PaystackFlowTests(RumiaTestFixtures):
         self.assertEqual(payment.status, 'processing')
         self.assertEqual(AuditLog.objects.count(), 0)
 
+    @override_settings(PAYSTACK_WEBHOOK_SECRET='', PAYSTACK_SECRET_KEY='test_secret_key')
+    @patch.object(PaystackProvider, 'verify_payment')
+    def test_webhook_falls_back_to_secret_key_when_webhook_secret_unset(self, mock_verify):
+        """Paystack has no separate webhook-signing secret — it signs with
+        your Secret key. A deployment that only configured PAYSTACK_SECRET_KEY
+        (the one credential Paystack actually issues) must still verify."""
+        org, tenant_user, tenant, tenancy = self._tenancy_with_tenant()
+        charge = self.create_rent_charge(tenancy, amount=Decimal('22000.00'))
+        payment = Payment.objects.create(
+            organization=org, tenancy=tenancy, tenant=tenant, parent_property=tenancy.parent_property,
+            unit=tenancy.unit, amount=Decimal('22000.00'), payment_method='paystack', provider='paystack',
+            internal_reference='RUMIA-WEBHOOK-FALLBACK', status='processing',
+        )
+        mock_verify.return_value = VerifyPaymentResult(
+            success=True, status='success', amount=Decimal('22000.00'),
+            provider_reference=payment.internal_reference,
+        )
+        body, sig = self._webhook_body_and_signature('test_secret_key', payment.internal_reference, 2200000)
+
+        client = APIClient()
+        response = client.generic(
+            'POST', '/api/v1/rent/payments/webhook/paystack/', data=body,
+            content_type='application/json', HTTP_X_PAYSTACK_SIGNATURE=sig,
+        )
+        self.assertEqual(response.status_code, 200)
+        payment.refresh_from_db()
+        charge.refresh_from_db()
+        self.assertEqual(payment.status, 'success')
+        self.assertEqual(charge.status, 'paid')
+
 
 class SecurityAccessTests(RumiaTestFixtures):
     def test_tenant_cannot_create_property(self):
@@ -905,6 +1086,35 @@ class NotificationTests(RumiaTestFixtures):
         mock_sms.assert_called_once()
         self.assertIn(tenant.email, mock_email.call_args[0])
         self.assertIn(tenant.phone, mock_sms.call_args[0])
+
+    def test_payment_confirmation_email_is_branded_html(self):
+        """The tenant asked for this specifically: the plain-text confirmation
+        email did not look like it came from RumiaRent at all."""
+        from rent.services.notifications import send_payment_confirmation
+
+        user_l, _, org = self.create_landlord_with_org()
+        prop, unit = self.create_property_with_unit(org)
+        _, tenant = self.create_tenant(org)
+        tenancy = self.create_tenancy(org, prop, unit, tenant, status='active')
+        payment = Payment.objects.create(
+            organization=org, tenancy=tenancy, tenant=tenant, parent_property=prop, unit=unit,
+            amount=Decimal('22000.00'), payment_method='paystack', provider='paystack',
+            internal_reference='RUMIA-NOTIFY-BRANDED', status='success', paid_at=timezone.now(),
+        )
+
+        with patch('rent.services.notifications._send_sms', return_value=True):
+            send_payment_confirmation(payment)
+
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.content_subtype, 'html')
+        self.assertIn('RumiaRent', sent.body)
+        self.assertIn('logo', sent.body)
+        self.assertIn('22000.00', sent.body)
+        self.assertIn(payment.internal_reference, sent.body)
+        # The plain-text message already opens with "Hi <name>," — the
+        # branded wrapper must not print a second greeting above it.
+        self.assertEqual(sent.body.count(f'Hi {tenant.full_name}'), 1)
 
     def test_rent_due_reminder_sends_email_and_sms(self):
         from rent.services.notifications import send_rent_due_reminder
@@ -1024,6 +1234,7 @@ class TenantOnboardingTests(RumiaTestFixtures):
             'start_date': date.today().isoformat(), 'monthly_rent': '18000.00', 'status': 'active',
         })
         self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data['tenant_invite_outcome'], 'invited')
 
         profile.refresh_from_db()
         self.assertIsNotNone(profile.user)
@@ -1034,6 +1245,8 @@ class TenantOnboardingTests(RumiaTestFixtures):
         self.assertIn('reset-password', mail.outbox[0].body)
 
     def test_tenancy_creation_links_existing_user_without_reinvite(self):
+        """A profile already linked to a user (create_tenant links it eagerly)
+        should not be re-linked or re-invited on tenancy creation."""
         user_l, _, org = self.create_landlord_with_org()
         prop, unit = self.create_property_with_unit(org)
         existing_user, profile = self.create_tenant(org, 'already_has_account@test.com')
@@ -1047,6 +1260,36 @@ class TenantOnboardingTests(RumiaTestFixtures):
         })
         self.assertEqual(response.status_code, 201)
         self.assertEqual(len(mail.outbox), 0)  # already had an account, no invite needed
+        self.assertEqual(response.data['tenant_invite_outcome'], 'already_linked')
+
+    def test_tenancy_creation_reusing_a_landlords_own_email_skips_the_invite_visibly(self):
+        """Reproduces a real production incident: a landlord created a tenant
+        profile using their OWN login email (no user linked yet), then created
+        the tenancy. onboard_tenant_user matched that email to the landlord's
+        existing account and linked it, silently — the landlord assumed an
+        invite had gone out and only found out it hadn't by asking. The
+        response must say so explicitly."""
+        user_l, _, org = self.create_landlord_with_org()
+        prop, unit = self.create_property_with_unit(org)
+        profile = TenantProfile.objects.create(
+            organization=org, full_name='Landlord As Tenant', phone='+254700222111',
+            email=user_l.email, status='prospect',
+        )
+        self.assertIsNone(profile.user)
+
+        client = APIClient()
+        client.force_authenticate(user=user_l)
+        response = client.post('/api/v1/tenancies/', {
+            'unit': str(unit.id), 'tenant': str(profile.id),
+            'start_date': date.today().isoformat(), 'monthly_rent': '18000.00', 'status': 'active',
+        })
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(response.data['tenant_invite_outcome'], 'linked_existing')
+
+        profile.refresh_from_db()
+        self.assertEqual(profile.user_id, user_l.id)
+        self.assertEqual(profile.user.role, 'landlord')  # unchanged — no second role granted
 
 
 class NextOfKinEscalationTests(RumiaTestFixtures):

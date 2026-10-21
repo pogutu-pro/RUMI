@@ -10,10 +10,18 @@ import { Button } from '@/components/ui/button';
 import { UserMenu } from '@/components/layouts/user-menu';
 import { cn } from '@/lib/utils/cn';
 import { sanitizeInput, sanitizeImageUrl } from '@/lib/utils/security';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import { PublicMenuContent } from '@/components/layouts/public-menu-content';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
 import { RumiaLogoCompact } from '@/components/ui/rumia-animated-logo';
+import { useAuthStore } from '@/features/auth/stores/auth.store';
 
 const LOGIN_HREF = AUTH_ROUTES.LOGIN;
 
@@ -32,6 +40,7 @@ export const PublicHeader = React.memo(function PublicHeader({
 }: PublicHeaderProps = {}) {
   const pathname = usePathname();
   const isHome = pathname === '/';
+  const isAuthenticated = useAuthStore((s) => s.status === 'authenticated');
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -61,8 +70,8 @@ export const PublicHeader = React.memo(function PublicHeader({
           isScrolled
             ? 'bg-white/80 backdrop-blur-md shadow-lg py-2 xs:py-3'
             : isHome
-            ? 'bg-transparent py-4 xs:py-6'
-            : 'bg-white/90 backdrop-blur-sm py-3 xs:py-5'
+              ? 'bg-transparent py-4 xs:py-6'
+              : 'bg-white/90 backdrop-blur-sm py-3 xs:py-5',
         )}
       >
         <div className="container mx-auto px-4 lg:px-8">
@@ -92,10 +101,10 @@ export const PublicHeader = React.memo(function PublicHeader({
                 aria-label="Main navigation"
               >
                 {[
-                    { href: '/features', label: 'Features' },
-                    { href: '/how-it-works', label: 'How It Works' },
-                    { href: '/pricing', label: 'Pricing' },
-                    { href: '/about', label: 'About' },
+                  { href: '/features', label: 'Features' },
+                  { href: '/how-it-works', label: 'How It Works' },
+                  { href: '/pricing', label: 'Pricing' },
+                  { href: '/about', label: 'About' },
                 ].map((item) => (
                   <Link
                     key={item.href}
@@ -115,7 +124,6 @@ export const PublicHeader = React.memo(function PublicHeader({
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-3 shrink-0">
-
               {sanitizedUser ? (
                 <UserMenu
                   userName={sanitizedUser.name}
@@ -125,29 +133,62 @@ export const PublicHeader = React.memo(function PublicHeader({
                 />
               ) : (
                 <div className="flex items-center gap-2">
-                    {/* Menu Icon */}
-                    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-                      <SheetTrigger asChild>
+                  {isAuthenticated ? (
+                    <Link href="/dashboard" className="hidden md:block">
+                      <Button size="sm" className="rounded-full">
+                        Dashboard
+                      </Button>
+                    </Link>
+                  ) : (
+                    <>
+                      <Link href={LOGIN_HREF} className="hidden md:block">
                         <Button
                           variant="ghost"
-                          className={cn(
-                            "hidden lg:flex font-black text-sm tracking-widest text-primary hover:bg-primary/10",
-                          )}
+                          size="sm"
+                          className="font-semibold text-primary hover:bg-primary/10"
                         >
-                          MENU
+                          Sign in
                         </Button>
-                      </SheetTrigger>
-                      <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                        <SheetHeader className="sr-only">
-                          <SheetTitle>Navigation Menu</SheetTitle>
-                          <SheetDescription>Main navigation menu for accessing public pages.</SheetDescription>
-                        </SheetHeader>
-                        <div className="h-full flex flex-col pt-8">
-                            <PublicMenuContent onClose={() => setIsOpen(false)} excludeHeader />
-                        </div>
-                      </SheetContent>
-                    </Sheet>
-
+                      </Link>
+                      <Link
+                        href={`${AUTH_ROUTES.REGISTER}?role=landlord`}
+                        className="hidden md:block"
+                      >
+                        <Button size="sm" className="rounded-full">
+                          Get started
+                        </Button>
+                      </Link>
+                    </>
+                  )}
+                  <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                    <SheetTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-primary hover:bg-primary/10"
+                        aria-label="Open menu"
+                      >
+                        <Menu className="h-6 w-6" />
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent
+                      side="right"
+                      className="w-[300px] sm:w-[400px]"
+                    >
+                      <SheetHeader className="sr-only">
+                        <SheetTitle>Navigation Menu</SheetTitle>
+                        <SheetDescription>
+                          Main navigation menu for accessing public pages.
+                        </SheetDescription>
+                      </SheetHeader>
+                      <div className="flex h-full flex-col pt-8">
+                        <PublicMenuContent
+                          onClose={() => setIsOpen(false)}
+                          excludeHeader
+                        />
+                      </div>
+                    </SheetContent>
+                  </Sheet>
                 </div>
               )}
             </div>
@@ -159,4 +200,3 @@ export const PublicHeader = React.memo(function PublicHeader({
     </>
   );
 });
-

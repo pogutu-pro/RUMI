@@ -55,38 +55,70 @@ class SubscribeFlowTests(RumiaTestFixtures):
         return {p.slug: p for p in SubscriptionPlan.objects.all()}
 
     def test_manual_subscribe_never_calls_paystack(self):
+        """
+        Manual subscribe must never grant paid access on its own — it stays
+        'pending' until a super admin confirms the payment actually arrived
+        (via AdminSubscriptionOverrideView), the same as any other manual
+        payment this platform records. Regression test: this used to set
+        status='active' immediately, which meant choosing 'pay another way'
+        handed out a live paid plan before anyone had paid anything.
+        """
+        from datetime import timedelta
+        from django.utils import timezone as tz
+
         plans = self._seed_plans()
         user, profile, org = self.create_landlord_with_org()
-        admin = self.create_super_admin()
+        # Expire the trial so the floor plan (starter) is what get_effective_plan
+        # would return with NO subscription at all — the control case this test
+        # needs, so subscribing to 'pro' while pending can prove it grants nothing.
+        org.created_at = tz.now() - timedelta(days=40)
+        org.save(update_fields=['created_at'])
 
         client = APIClient()
-        client.force_authenticate(user=admin)
+        client.force_authenticate(user=user)
         with patch.object(PaystackBillingClient, 'initialize_subscription_transaction') as mock_init:
             response = client.post('/api/v1/billing/subscribe/', {
-                'plan_id': str(plans['starter'].id), 'billing_mode': 'manual',
-                'organization_id': str(org.id),
+                'plan_id': str(plans['pro'].id), 'billing_mode': 'manual',
             })
 
         self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data['status'], 'pending')
         mock_init.assert_not_called()
 
         subscription = OrganizationSubscription.objects.get(organization=org)
-        self.assertEqual(subscription.status, 'active')
+        self.assertEqual(subscription.status, 'pending')
         self.assertEqual(subscription.billing_mode, 'manual')
 
-    def test_landlord_cannot_self_activate_manual_billing(self):
-        """Audit C1: manual mode activates with no payment, so landlords may never choose it."""
+        from billing.services.gating_service import GatingService
+        # Still the starter floor, NOT the 'pro' plan just requested — a
+        # pending manual subscription must never grant its plan's access.
+        self.assertEqual(GatingService.get_effective_plan(org).id, plans['starter'].id)
+
+    def test_super_admin_confirms_a_manual_subscription_and_it_becomes_active(self):
         plans = self._seed_plans()
+        admin = self.create_super_admin()
         user, profile, org = self.create_landlord_with_org()
 
         client = APIClient()
         client.force_authenticate(user=user)
-        response = client.post('/api/v1/billing/subscribe/', {
-            'plan_id': str(plans['enterprise'].id), 'billing_mode': 'manual',
+        client.post('/api/v1/billing/subscribe/', {
+            'plan_id': str(plans['starter'].id), 'billing_mode': 'manual',
         })
 
-        self.assertEqual(response.status_code, 403)
-        self.assertFalse(OrganizationSubscription.objects.filter(organization=org).exists())
+        admin_client = APIClient()
+        admin_client.force_authenticate(user=admin)
+        response = admin_client.post(
+            f'/api/v1/billing/admin/organizations/{org.id}/override/',
+            {'status': 'active', 'reason': 'Bank transfer confirmed in RumiaRent business account'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+
+        subscription = OrganizationSubscription.objects.get(organization=org)
+        self.assertEqual(subscription.status, 'active')
+
+        from billing.services.gating_service import GatingService
+        self.assertEqual(GatingService.get_effective_plan(org).id, plans['starter'].id)
 
     @patch.object(PaystackBillingClient, 'initialize_subscription_transaction')
     def test_live_pending_checkout_blocks_a_second_subscribe(self, mock_init):
@@ -185,6 +217,8 @@ class SubscribeFlowTests(RumiaTestFixtures):
             'organization_id': str(org.id),
         })
         self.assertEqual(first.status_code, 201)
+        # Manual requests start 'pending'; once support confirms payment it is active.
+        OrganizationSubscription.objects.filter(organization=org).update(status='active')
 
         second = client.post('/api/v1/billing/subscribe/', {
             'plan_id': str(plans['pro'].id), 'billing_mode': 'manual',
@@ -1693,3 +1727,61 @@ class AdminPlanEditingTests(RumiaTestFixtures):
         migration.drop_branded_receipts(apps, None)
         self.assertEqual(SubscriptionPlan.objects.get(slug='pro').features, {'analytics': True})
 
+
+
+class ManualPaymentInstructionsViewTests(RumiaTestFixtures):
+    """
+    A landlord who cannot pay by card needs to see what to do instead —
+    and it must be whatever a super admin actually typed in, never
+    anything invented in code (a fabricated account number here would be a
+    real, live way to lose someone's money).
+    """
+
+    url = '/api/v1/billing/manual-payment-instructions/'
+
+    def test_defaults_to_blank_until_a_super_admin_sets_it(self):
+        user, _, _org = self.create_landlord_with_org()
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['instructions'], '')
+
+    def test_landlord_cannot_edit_it(self):
+        user, _, _org = self.create_landlord_with_org()
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.put(self.url, {'instructions': 'Paybill 000000'}, format='json')
+        self.assertEqual(response.status_code, 403)
+
+    def test_super_admin_sets_it_and_a_landlord_then_sees_it(self):
+        admin = self.create_super_admin()
+        user, _, _org = self.create_landlord_with_org()
+
+        admin_client = APIClient()
+        admin_client.force_authenticate(user=admin)
+        text = 'Bank: Example Bank\nAccount name: Stratnovo Ltd\nAccount number: 0123456789'
+        response = admin_client.put(self.url, {'instructions': text}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['instructions'], text)
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        response = client.get(self.url)
+        self.assertEqual(response.data['instructions'], text)
+
+    def test_tenant_cannot_read_it(self):
+        _, tenant = self.create_tenant(self.create_landlord_with_org()[2])
+        client = APIClient()
+        client.force_authenticate(user=tenant.user)
+        response = client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_editing_it_is_audit_logged(self):
+        admin = self.create_super_admin()
+        client = APIClient()
+        client.force_authenticate(user=admin)
+        client.put(self.url, {'instructions': 'Till 000000'}, format='json')
+        self.assertTrue(
+            AuditLog.objects.filter(action='manual_payment_instructions_updated', actor=admin).exists()
+        )

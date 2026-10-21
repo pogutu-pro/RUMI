@@ -109,7 +109,8 @@ class NotificationPreference(models.Model):
     )
     email_enabled = models.BooleanField(default=True)
     sms_enabled = models.BooleanField(default=True)
-    marketing_emails = models.BooleanField(default=True)
+    # Opt-in: nobody has consented to marketing until they say so.
+    marketing_emails = models.BooleanField(default=False)
     booking_updates = models.BooleanField(default=True)
     marketplace_updates = models.BooleanField(default=True)
     roommate_updates = models.BooleanField(default=True)

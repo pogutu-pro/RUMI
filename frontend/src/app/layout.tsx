@@ -3,6 +3,7 @@ import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { Providers } from './providers';
 import { cn } from '@/lib/utils/cn';
 import { getApiUrl } from '@/lib/utils/env';
+import { SHARE_IMAGE, SITE_URL, SOCIAL_HANDLE } from '@/lib/seo';
 import '@/styles/globals.css';
 import PWAInstallPrompt from '@/components/pwa/PWAInstallPrompt';
 import NetworkStatus from '@/components/pwa/NetworkStatus';
@@ -40,9 +41,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || 'https://rumiarent.co.ke',
-  ),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: 'RumiaRent: Rental Management for Kenyan Landlords',
     template: '%s | RumiaRent',
@@ -58,35 +57,27 @@ export const metadata: Metadata = {
     'tenant management software',
     'property management for agents',
   ],
-  authors: [{ name: 'Stratnovo', url: 'https://rumiarent.co.ke/about' }],
+  authors: [{ name: 'Stratnovo', url: 'https://rumiarent.com/about' }],
   creator: 'Stratnovo',
   publisher: 'Stratnovo',
   formatDetection: { email: false, address: false, telephone: false },
   openGraph: {
     type: 'website',
     locale: 'en_KE',
-    url: '/',
     title: 'RumiaRent: Rental Management for Kenyan Landlords',
     description:
       'Properties, units, tenants, rent, and payments in one simple place for Kenyan landlords and property agents.',
     siteName: 'RumiaRent',
-    images: [
-      {
-        url: '/images/og-image.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'RumiaRent: Rental Management Platform',
-        type: 'image/jpeg',
-      },
-    ],
+    images: [SHARE_IMAGE],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'RumiaRent: Rental Management for Kenyan Landlords',
-    description: 'Manage properties, tenants, and rent collection in one place.',
-    images: ['/images/og-image.jpg'],
-    creator: '@rumiplatform',
-    site: '@rumiplatform',
+    description:
+      'Manage properties, tenants, and rent collection in one place.',
+    images: [{ url: SHARE_IMAGE.url, alt: SHARE_IMAGE.alt }],
+    creator: SOCIAL_HANDLE,
+    site: SOCIAL_HANDLE,
   },
   robots: {
     index: true,
@@ -102,17 +93,6 @@ export const metadata: Metadata = {
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
   },
-  icons: {
-    icon: [
-      { url: '/images/icons/icon-32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/images/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/images/icons/icon.svg', type: 'image/svg+xml' },
-    ],
-    apple: [{ url: '/images/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
-    shortcut: '/images/icons/icon-192x192.png',
-  },
-
-  alternates: { canonical: '/' },
   appleWebApp: {
     statusBarStyle: 'default',
     title: 'RumiaRent',
@@ -128,26 +108,39 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const structuredData = {
-    '@context': 'https://schema.org',
-    '@type': 'Organization',
-    name: 'RumiaRent',
-    url: process.env.NEXT_PUBLIC_APP_URL || 'https://rumiarent.co.ke',
-    logo: `${process.env.NEXT_PUBLIC_APP_URL}/images/logo/logo.png`,
-    description:
-      'Rental management platform helping Kenyan landlords and agents manage properties, tenants, and rent collection.',
-    address: {
-      '@type': 'PostalAddress',
-      addressCountry: 'KE',
-      addressLocality: 'Nairobi',
+  const structuredData = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      '@id': `${SITE_URL}/#organization`,
+      name: 'RumiaRent',
+      url: SITE_URL,
+      logo: `${SITE_URL}/icon.png`,
+      image: `${SITE_URL}${SHARE_IMAGE.url}`,
+      description:
+        'Rental management platform helping Kenyan landlords and agents manage properties, tenants, and rent collection.',
+      address: {
+        '@type': 'PostalAddress',
+        addressCountry: 'KE',
+        addressLocality: 'Nairobi',
+      },
+      contactPoint: {
+        '@type': 'ContactPoint',
+        contactType: 'customer service',
+        email: 'info@rumiarent.com',
+        availableLanguage: ['en', 'sw'],
+      },
     },
-    contactPoint: {
-      '@type': 'ContactPoint',
-      contactType: 'customer service',
-      email: 'info@rumiarent.co.ke',
-      availableLanguage: ['en', 'sw'],
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}/#website`,
+      name: 'RumiaRent',
+      url: SITE_URL,
+      inLanguage: 'en-KE',
+      publisher: { '@id': `${SITE_URL}/#organization` },
     },
-  };
+  ];
 
   return (
     <html

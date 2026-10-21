@@ -117,6 +117,19 @@ export interface Tenancy {
   notes: string;
   created_at: string;
   updated_at: string;
+  /**
+   * Only present on the response to creating a tenancy. Mirrors
+   * Backend/tenants/services.py::onboard_tenant_user's outcome, so the
+   * landlord/caretaker knows whether an invite actually went out instead of
+   * assuming it did:
+   * - 'invited': a new account was created and an invite emailed.
+   * - 'linked_existing': the tenant's email already belonged to a DIFFERENT
+   *   account (possibly the landlord's or a caretaker's own login used by
+   *   mistake) — that account keeps its one role, nothing was emailed.
+   * - 'already_linked': this tenant profile already had an account.
+   * - 'no_email': no email on file for this tenant to invite.
+   */
+  tenant_invite_outcome?: 'invited' | 'linked_existing' | 'already_linked' | 'no_email';
 }
 
 export interface RentCharge {
@@ -153,6 +166,10 @@ export interface RentBalance {
   credit_total?: string;
   /** outstanding_total − credit_total (negative = tenant is in credit). */
   net_balance?: string;
+  /** Successful payments received since the 1st of the current calendar month. */
+  paid_this_month?: string;
+  /** Same as credit_total (kept for older screens). */
+  credit_balance?: string;
   charges: RentCharge[];
 }
 

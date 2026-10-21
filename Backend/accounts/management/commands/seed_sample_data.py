@@ -598,7 +598,7 @@ class Command(BaseCommand):
                 'content': '''
                 <h1>Contact Us</h1>
                 <p>Get in touch with our team for support, partnerships, or general inquiries.</p>
-                <p>Email: info@rumiarent.co.ke</p>
+                <p>Email: info@rumiarent.com</p>
                 <p>Phone: +254 712 345 678</p>
                 ''',
                 'is_published': True,

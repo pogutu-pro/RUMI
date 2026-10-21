@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { FadeIn } from '@/components/animations/fade-in';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/compliance' },
   title: 'Compliance',
   description: 'How RumiaRent handles data protection and payment security.',
 };

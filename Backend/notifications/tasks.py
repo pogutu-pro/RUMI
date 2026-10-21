@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.template import Template, Context
 from accounts.utils import send_branded_email
 from .delivery_log import DELIVERY_TYPES, log_delivery, suppressed
+from .unsubscribe import unsubscribe_footer
 
 
 @shared_task
@@ -27,13 +28,9 @@ def send_notification(recipient_id, notification_type, channel, context):
         recipient = User.objects.get(id=recipient_id)
 
         # Check user preferences
-        try:
-            prefs = NotificationPreference.objects.get(user=recipient)
-            if not _is_channel_enabled(prefs, channel, notification_type):
-                return  # User opted out
-        except NotificationPreference.DoesNotExist:
-            # Create default preferences
-            prefs = NotificationPreference.objects.create(user=recipient)
+        prefs, _ = NotificationPreference.objects.get_or_create(user=recipient)
+        if not _is_channel_enabled(prefs, channel, notification_type):
+            return  # User opted out (or never opted in to marketing)
 
         # Load template
         subject = None
@@ -75,6 +72,8 @@ def send_notification(recipient_id, notification_type, channel, context):
             # in_app needs no external service: it is already stored in the DB.
             with suppressed():
                 if channel == 'email':
+                    if notification_type.startswith('marketing_'):
+                        message += unsubscribe_footer(recipient)
                     _send_email_via_mailtrap(recipient.email, subject, message)
                 elif channel == 'sms':
                     send_sms_via_africastalking(recipient.phone_number, message)

@@ -213,8 +213,8 @@ class ContactInfoView(APIView):
     def get(self, request):
         """Return contact information"""
         return Response({
-            'email': 'info@rumiarent.co.ke',
-            'support_email': 'info@rumiarent.co.ke',
+            'email': 'info@rumiarent.com',
+            'support_email': 'info@rumiarent.com',
             'address': {
                 'city': 'Nairobi',
                 'country': 'Kenya',

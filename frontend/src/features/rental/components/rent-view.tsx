@@ -52,6 +52,7 @@ export function RentView({ canGenerateCharges = false }: RentViewProps) {
   );
   const tenancyById = React.useMemo(() => new Map(tenancies.map((t) => [t.id, t])), [tenancies]);
   const charges = balance?.charges ?? [];
+  const creditBalance = Number(balance?.credit_balance ?? '0');
   const { pageItems: pagedCharges, pagerProps: chargesPager } = usePagination(charges, 10);
 
   return (
@@ -78,7 +79,7 @@ export function RentView({ canGenerateCharges = false }: RentViewProps) {
         )}
       />
 
-      <div className="grid grid-cols-2 gap-3 sm:max-w-xl">
+      <div className="grid grid-cols-2 gap-3 sm:max-w-2xl sm:grid-cols-3">
         <div className="rounded-2xl border bg-background p-4 shadow-sm">
           <p className="text-xs font-medium text-muted-foreground">Outstanding</p>
           <p className="mt-1 text-xl font-semibold">{kes(balance?.outstanding_total)}</p>
@@ -87,7 +88,20 @@ export function RentView({ canGenerateCharges = false }: RentViewProps) {
           <p className="text-xs font-medium text-muted-foreground">Overdue</p>
           <p className="mt-1 text-xl font-semibold text-destructive">{kes(balance?.overdue_total)}</p>
         </div>
+        {creditBalance > 0 && (
+          <div className="rounded-2xl border bg-background p-4 shadow-sm">
+            <p className="text-xs font-medium text-muted-foreground">Paid ahead, not yet due</p>
+            <p className="mt-1 text-xl font-semibold text-emerald-600 dark:text-emerald-400">{kes(creditBalance)}</p>
+          </div>
+        )}
       </div>
+
+      {creditBalance > 0 && (
+        <p className="text-xs text-muted-foreground">
+          A payment was recorded with nothing outstanding to apply it to yet — it will settle each tenant&apos;s
+          next charge automatically as soon as one is generated.
+        </p>
+      )}
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>

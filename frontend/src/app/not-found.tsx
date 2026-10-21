@@ -167,7 +167,7 @@ export default function NotFound() {
             <p className="text-center text-xs text-muted-foreground">
               Need help?{' '}
               <a
-                href="mailto:info@rumiarent.co.ke"
+                href="mailto:info@rumiarent.com"
                 className="font-medium text-primary hover:underline"
               >
                 Contact our support team

@@ -27,7 +27,7 @@ export function AccountingView() {
 
       <Tabs defaultValue="tax">
         <TabsList>
-          <TabsTrigger value="tax">Rental income tax</TabsTrigger>
+          <TabsTrigger value="tax">Rental income tax (monthly)</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="expenses">Expenses</TabsTrigger>
           <TabsTrigger value="export">Export</TabsTrigger>

@@ -15,23 +15,26 @@ from __future__ import annotations
 import logging
 
 from django.conf import settings
-from django.core.mail import EmailMessage
 
 from notifications.tasks import send_sms_via_africastalking
 
 logger = logging.getLogger(__name__)
 
 
-def _send_email(to_email: str, subject: str, body: str) -> bool:
+def _send_email(to_email: str, subject: str, body: str, recipient_name: str = '') -> bool:
     if not to_email:
         return False
+    from accounts.utils import send_branded_email
+
     try:
-        EmailMessage(
+        send_branded_email(
             subject=subject,
-            body=body,
+            message=body,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[to_email],
-        ).send(fail_silently=False)
+            recipient_list=[to_email],
+            recipient_name=recipient_name,
+            fail_silently=False,
+        )
         return True
     except Exception:
         logger.exception('RumiaRent email notification failed (to=%s)', to_email)
@@ -62,7 +65,7 @@ def send_rent_due_reminder(charge) -> None:
         f'on {charge.due_date.isoformat()}.\n\n'
         f'Thank you.'
     )
-    _send_email(tenant.email, subject, body)
+    _send_email(tenant.email, subject, body, recipient_name=tenant.full_name)
 
     sms_text = (
         f'RumiaRent: KES {amount} rent due for unit {unit_label} on '
@@ -94,7 +97,7 @@ def send_payment_confirmation(payment) -> None:
         f'Date: {payment.paid_at.isoformat() if payment.paid_at else ""}\n\n'
         f'Thank you.'
     )
-    _send_email(tenant.email, subject, body)
+    _send_email(tenant.email, subject, body, recipient_name=tenant.full_name)
 
     sms_text = (
         f'RumiaRent: Payment of KES {payment.amount} received. '
@@ -124,7 +127,7 @@ def send_next_of_kin_escalation(charge, contact) -> None:
         f'Please help settle this balance or reach out to {tenant.full_name} directly.\n\n'
         f'Thank you.'
     )
-    _send_email(contact.email, subject, body)
+    _send_email(contact.email, subject, body, recipient_name=contact.full_name)
 
     sms_text = (
         f'RumiaRent: {tenant.full_name} has an overdue rent balance of KES {amount} '
@@ -140,27 +143,31 @@ def send_receipt_email(receipt) -> bool:
         return False
     s = receipt.snapshot
     body = (
-        f'Hi {tenant.full_name},\n\n'
-        f'Thank you — we received KES {s.get("amount")} for unit {s.get("unit")}.\n'
+        f'Thank you, we received KES {s.get("amount")} for unit {s.get("unit")}.\n'
         f'Receipt: {receipt.number}\n'
         f'Balance after this payment: KES {s.get("balance_after")}\n\n'
         f'Your receipt is attached.\n\n'
         f'{s.get("organization_name", "")}'
     )
+    from accounts.utils import send_branded_email
+
     try:
-        message = EmailMessage(
-            subject=f'Receipt {receipt.number}: RumiaRent',
-            body=body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[tenant.email],
-        )
+        attachments = []
         if receipt.pdf:
             receipt.pdf.open('rb')
             try:
-                message.attach(f'{receipt.number}.pdf', receipt.pdf.read(), 'application/pdf')
+                attachments.append((f'{receipt.number}.pdf', receipt.pdf.read(), 'application/pdf'))
             finally:
                 receipt.pdf.close()
-        message.send(fail_silently=False)
+        send_branded_email(
+            subject=f'Receipt {receipt.number}: RumiaRent',
+            message=body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[tenant.email],
+            recipient_name=tenant.full_name,
+            attachments=attachments,
+            fail_silently=False,
+        )
         return True
     except Exception:
         logger.exception('RumiaRent receipt email failed (receipt=%s)', receipt.number)

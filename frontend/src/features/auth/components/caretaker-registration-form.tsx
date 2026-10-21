@@ -55,8 +55,8 @@ export function CaretakerRegistrationForm() {
       <Alert role="status">
         <Info className="h-4 w-4" aria-hidden />
         <AlertDescription className="text-sm">
-          Caretaker accounts must be invited by a verified landlord. Request a
-          hostel ID or invitation code from your employer.
+          Caretaker accounts must be invited by a verified landlord. Ask your
+          landlord to send you an invitation.
         </AlertDescription>
       </Alert>
 
@@ -69,7 +69,7 @@ export function CaretakerRegistrationForm() {
 
       <form onSubmit={onSubmit} className="space-y-5" noValidate>
         <FormField
-          label="Hostel ID / Invitation code"
+          label="Invitation code"
           placeholder="RUMI-HST-0001"
           error={errors.hostel_id?.message}
           required
@@ -98,7 +98,7 @@ export function CaretakerRegistrationForm() {
         <FormField
           label="Email"
           type="email"
-          placeholder="caretaker@hostel.com"
+          placeholder="you@example.com"
           autoComplete="email"
           error={errors.email?.message}
           required

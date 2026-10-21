@@ -20,27 +20,32 @@ from .models import EmergencyContact, TenantProfile
 User = get_user_model()
 
 
-def onboard_tenant_user(profile: TenantProfile, property_name: str = '') -> TenantProfile:
+def onboard_tenant_user(profile: TenantProfile, property_name: str = '') -> tuple[TenantProfile, str]:
     """
     Ensure the tenant has a User account, linked to this profile.
 
-    - Email already belongs to an existing account: link it, no invite needed
-      (they can already log in).
-    - No account yet: create one (unusable password), link it, and email an
-      invite that reuses the existing password-reset-confirm flow as the
-      first-time setup step.
-    - No email on file: nothing to invite; the profile stays unlinked until
-      an email is added.
+    Returns (profile, outcome), outcome one of:
+    - 'invited': a brand-new account was created and an invite emailed.
+    - 'linked_existing': the email already belonged to an account — which
+      may be a landlord's or caretaker's own login reused by mistake; that
+      account keeps its one existing role, it does not gain a tenant role
+      too — so nothing was emailed. The caller should tell whoever created
+      the tenancy that no invite went out, or they'll assume one did.
+    - 'no_email': nothing to invite; the profile stays unlinked until an
+      email is added.
+    - 'already_linked': this profile already had a user before this call.
     """
-    if profile.user_id or not profile.email:
-        return profile
+    if profile.user_id:
+        return profile, 'already_linked'
+    if not profile.email:
+        return profile, 'no_email'
 
     with transaction.atomic():
         existing = User.objects.filter(email=profile.email).first()
         if existing:
             profile.user = existing
             profile.save(update_fields=['user', 'updated_at'])
-            return profile
+            return profile, 'linked_existing'
 
         name_parts = profile.full_name.strip().split(' ', 1)
         first_name = name_parts[0] if name_parts else profile.full_name
@@ -78,7 +83,7 @@ def onboard_tenant_user(profile: TenantProfile, property_name: str = '') -> Tena
         logging.getLogger(__name__).exception(
             'Failed to queue tenant invite email for user %s', user.id,
         )
-    return profile
+    return profile, 'invited'
 
 
 def save_emergency_contacts(profile: TenantProfile, contacts: list[dict]) -> list[EmergencyContact]:

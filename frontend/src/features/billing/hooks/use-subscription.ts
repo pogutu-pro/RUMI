@@ -40,11 +40,14 @@ export const useSubscribe = () => {
       billingApi.subscribe(planId, billingMode),
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: MY_SUBSCRIPTION_KEY });
-      if (result.authorization_url) {
-        // Auto mode redirects to Paystack — manual mode has no
-        // authorization_url and just shows the success toast.
-        window.location.href = result.authorization_url;
-      } else {
+      // Auto mode has an authorization_url to send the caller to Paystack
+      // with — the caller (billing/page.tsx) opens the checkout tab
+      // itself, since only it has the synchronous click-handler context a
+      // browser requires before allowing window.open. Manual mode lands as
+      // 'pending', not actually subscribed yet, and the caller (the "Pay
+      // another way" dialog) shows its own, more specific message — so
+      // this generic toast is only for whatever neither of those was.
+      if (!result.authorization_url && result.mode !== 'manual') {
         toast.success('Subscribed');
       }
     },
@@ -86,3 +89,26 @@ export const useBillingAccess = () =>
     staleTime: 60_000,
     refetchOnWindowFocus: true,
   });
+
+const MANUAL_PAYMENT_INSTRUCTIONS_KEY = ['billing', 'manual-payment-instructions'] as const;
+
+/** What to show a landlord who chooses to pay another way instead of by card. */
+export const useManualPaymentInstructions = (enabled = true) =>
+  useQuery({
+    queryKey: MANUAL_PAYMENT_INSTRUCTIONS_KEY,
+    queryFn: billingApi.getManualPaymentInstructions,
+    enabled,
+  });
+
+/** super_admin only — editing this is a real, live payment instruction. */
+export const useSetManualPaymentInstructions = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (instructions: string) => billingApi.setManualPaymentInstructions(instructions),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: MANUAL_PAYMENT_INSTRUCTIONS_KEY });
+      toast.success('Payment instructions saved');
+    },
+    onError: (err) => toast.error(billingErrorMessage(err, 'Could not save these instructions')),
+  });
+};

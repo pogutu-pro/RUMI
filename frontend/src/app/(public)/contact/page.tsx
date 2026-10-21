@@ -89,10 +89,10 @@ export default function ContactPage() {
                     <div>
                       <h3 className="mb-1 font-semibold text-gray-900">Email</h3>
                       <a
-                        href="mailto:info@rumiarent.co.ke"
+                        href="mailto:info@rumiarent.com"
                         className="text-gray-600 hover:text-primary transition-colors"
                       >
-                        info@rumiarent.co.ke
+                        info@rumiarent.com
                       </a>
                     </div>
                   </div>
@@ -156,9 +156,8 @@ export default function ContactPage() {
                         <SelectContent>
                           <SelectItem value="general">General Inquiry</SelectItem>
                           <SelectItem value="support">Support</SelectItem>
-                          <SelectItem value="hostel">Hostel Listing</SelectItem>
-                          <SelectItem value="booking">Booking Issue</SelectItem>
                           <SelectItem value="payment">Payment Issue</SelectItem>
+                          <SelectItem value="billing">Subscription and Billing</SelectItem>
                           <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>

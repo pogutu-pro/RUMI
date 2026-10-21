@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import uuid
 
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -159,6 +160,38 @@ class SubscriptionPayment(models.Model):
 
     def __str__(self):
         return f'{self.internal_reference} - {self.amount} {self.currency} ({self.status})'
+
+
+class ManualPaymentInstructions(models.Model):
+    """
+    What to show a landlord who chooses to pay for their subscription some
+    way other than by card (RumiaRent's own bank/paybill details, or
+    whatever the platform actually uses) — a single row, edited by a super
+    admin, never hardcoded in the app: a fabricated account number here
+    would be a real, live way to lose someone's money.
+
+    Deliberately free text rather than separate bank/paybill fields — the
+    platform's actual payment channel(s) are business decisions, not a
+    schema RumiaRent should be locking in ahead of time.
+    """
+
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1)
+    instructions = models.TextField(blank=True, default='')
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+',
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'billing_manualpaymentinstructions'
+
+    def __str__(self):
+        return 'Manual payment instructions'
+
+    @classmethod
+    def get(cls) -> 'ManualPaymentInstructions':
+        instance, _ = cls.objects.get_or_create(pk=1)
+        return instance
 
 
 class SubscriptionWebhookEvent(models.Model):

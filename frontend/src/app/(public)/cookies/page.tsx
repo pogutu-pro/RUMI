@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { FadeIn } from '@/components/animations/fade-in';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/cookies' },
   title: 'Cookie Policy',
   description: 'How RumiaRent uses cookies.',
 };
