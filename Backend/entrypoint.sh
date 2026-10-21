@@ -4,6 +4,10 @@ set -e
 echo "Running migrations..."
 python manage.py migrate --noinput
 
+# Paystack bills the amount on its own plan, so keep it equal to our price.
+echo "Syncing Paystack plans..."
+python manage.py sync_paystack_plans || echo "Paystack plan sync failed; continuing."
+
 echo "Collecting static files..."
 python manage.py collectstatic --noinput || true
 

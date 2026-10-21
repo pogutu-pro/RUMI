@@ -606,7 +606,8 @@ class PropertyLimitGateTests(RumiaTestFixtures):
         OrganizationSubscription.objects.create(
             organization=org, plan=plans['starter'], status='active', billing_mode='manual',
         )
-        self.create_property_with_unit(org)  # starter cap is 1 property — already at cap
+        self.create_property_with_unit(org)
+        self.create_property_with_unit(org)  # starter cap is 2 properties — now at cap
 
         client = APIClient()
         client.force_authenticate(user=user)
@@ -687,20 +688,20 @@ class UnitLimitGateTests(RumiaTestFixtures):
             'deposit': '20000.00',
         }
 
-    def test_unit_creation_blocked_at_starter_cap_of_ten(self):
+    def test_unit_creation_blocked_at_starter_cap_of_twenty(self):
         plans = self._seed_plans()
         user, profile, org = self.create_landlord_with_org()
         OrganizationSubscription.objects.create(
             organization=org, plan=plans['starter'], status='active', billing_mode='manual',
         )
         prop, _first_unit = self.create_property_with_unit(org)  # 1 unit already
-        for i in range(9):
+        for i in range(19):
             RentalUnit.objects.create(
                 organization=org, parent_property=prop, unit_number=f'B{i}',
                 unit_type='1_bedroom', monthly_rent=Decimal('20000.00'),
                 deposit=Decimal('20000.00'), status='vacant',
             )
-        self.assertEqual(RentalUnit.objects.filter(organization=org).count(), 10)
+        self.assertEqual(RentalUnit.objects.filter(organization=org).count(), 20)
 
         client = APIClient()
         client.force_authenticate(user=user)
@@ -873,10 +874,10 @@ class GateRejectionContractTests(RumiaTestFixtures):
         OrganizationSubscription.objects.create(
             organization=org, plan=plans['starter'], status='active', billing_mode='manual',
         )
-        # Starter is already at its property/unit caps by virtue of having
-        # zero properties created — max_properties=1, max_units=10, so we
-        # first create one property/unit to reach both caps simultaneously.
+        # Starter allows max_properties=2, max_units=20: create two
+        # properties (one unit each) now and top units up to 20 below.
         prop, _unit = self.create_property_with_unit(org)
+        self.create_property_with_unit(org)
 
         client = APIClient()
         client.force_authenticate(user=user)
@@ -888,7 +889,7 @@ class GateRejectionContractTests(RumiaTestFixtures):
         self.assertEqual(property_response.status_code, 403)
         self.assertEqual(set(property_response.data.keys()), self.EXPECTED_KEYS)
 
-        for i in range(9):
+        for i in range(18):
             RentalUnit.objects.create(
                 organization=org, parent_property=prop, unit_number=f'D{i}',
                 unit_type='1_bedroom', monthly_rent=Decimal('20000.00'),
@@ -1640,7 +1641,7 @@ class AdminPlanEditingTests(RumiaTestFixtures):
             with self.subTest(payload=payload):
                 self.assertEqual(self._patch(self.admin, self.pro, payload).status_code, 400)
         self.pro.refresh_from_db()
-        self.assertEqual(self.pro.price, Decimal('7999.00'))
+        self.assertEqual(self.pro.price, Decimal('3999.00'))
 
     def test_feature_switches_merge_rather_than_replace(self):
         self._patch(self.admin, self.pro, {'features': {'analytics': False}})
@@ -1660,7 +1661,7 @@ class AdminPlanEditingTests(RumiaTestFixtures):
         self._patch(self.admin, self.pro, {'price': '8000'})
         entry = AuditLog.objects.filter(action='subscription_plan_updated').latest('id')
         self.assertEqual(entry.actor, self.admin)
-        self.assertIn('7999', str(entry.old_value))
+        self.assertIn('3999', str(entry.old_value))
         self.assertIn('8000', str(entry.new_value))
 
     def test_paystack_is_updated_when_the_plan_is_linked(self):

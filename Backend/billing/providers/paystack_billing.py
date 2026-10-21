@@ -69,20 +69,36 @@ class PaystackBillingClient:
             )
         return data
 
-    def update_plan(self, plan_code: str, name: str, price: Decimal) -> dict:
+    def get_plan(self, plan_code: str) -> dict:
+        """Fetch a Paystack plan; `amount` is in cents."""
+        try:
+            response = requests.get(f'{API_BASE}/plan/{plan_code}', headers=self._headers(), timeout=30)
+            data = response.json()
+        except requests.RequestException as exc:
+            raise PaymentProviderError(
+                f'Paystack plan fetch failed: {exc}', self.provider_id, recoverable=True
+            )
+        if not data.get('status'):
+            raise PaymentProviderError(
+                data.get('message', 'Paystack plan fetch failed'), self.provider_id, recoverable=True
+            )
+        return data.get('data', {})
+
+    def update_plan(self, plan_code: str, name: str, price: Decimal, update_existing: bool = False) -> dict:
         """
         Change a Paystack plan's name and amount.
 
-        `update_existing_subscriptions` stays False on purpose: people already
-        subscribed keep the price they signed up at, and only new
-        subscriptions use the new one.
+        By default people already subscribed keep the price they signed up
+        at, and only new subscriptions use the new one. `update_existing`
+        moves them too; it is used for price cuts, so nobody keeps paying
+        more than the advertised price.
         """
         return self._put(
             f'/plan/{plan_code}',
             {
                 'name': name,
                 'amount': int(price * 100),
-                'update_existing_subscriptions': False,
+                'update_existing_subscriptions': update_existing,
             },
             action='plan update',
         )
