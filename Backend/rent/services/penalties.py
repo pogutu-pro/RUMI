@@ -24,6 +24,7 @@ from typing import Optional
 from dateutil.relativedelta import relativedelta
 from django.db import IntegrityError, transaction
 from django.db.models import Sum
+from django.utils import timezone
 
 from rent.models import Invoice, PenaltyPolicy
 from rent.services.invoicing import InvoiceService, LineSpec
@@ -54,7 +55,7 @@ def penalties_allowed(policy: PenaltyPolicy, first_penalty_day: date, as_of: dat
 class PenaltyService:
     @classmethod
     def run(cls, as_of: Optional[date] = None) -> dict:
-        as_of = as_of or date.today()
+        as_of = as_of or timezone.localdate()
         counts = {'issued': 0}
         org_ids = PenaltyPolicy.objects.filter(enabled=True).values_list('organization_id', flat=True)
         candidates = (

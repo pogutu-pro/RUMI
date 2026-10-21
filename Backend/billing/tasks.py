@@ -100,14 +100,14 @@ def send_manual_renewal_reminders():
     (`last_reminder_sent_at` guards against repeats, mirroring
     `RentCharge.reminder_sent_at` in `rent/tasks.py::send_rent_due_reminders`).
     """
-    from datetime import date, timedelta
+    from datetime import timedelta
 
     from django.utils import timezone
 
     from billing.models import OrganizationSubscription
     from billing.services.notifications import send_manual_renewal_reminder
 
-    today = date.today()
+    today = timezone.localdate()
     horizon = today + timedelta(days=3)
 
     subscriptions = OrganizationSubscription.objects.filter(

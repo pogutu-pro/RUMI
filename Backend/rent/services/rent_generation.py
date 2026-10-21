@@ -27,6 +27,7 @@ from typing import Optional
 from dateutil.relativedelta import relativedelta
 from django.db import IntegrityError, transaction
 from django.db.models import Q
+from django.utils import timezone
 
 from properties.models import Tenancy
 from rent.models import Invoice
@@ -78,7 +79,7 @@ class RentChargeGenerationService:
     @classmethod
     def generate_for_tenancy(cls, tenancy: Tenancy, as_of: date | None = None) -> int:
         """Ensure every elapsed billing period up to `as_of` has a rent invoice. Returns count created."""
-        as_of = as_of or date.today()
+        as_of = as_of or timezone.localdate()
         billing_end = tenancy_billing_end(tenancy)
         created = 0
 
@@ -151,7 +152,7 @@ class RentChargeGenerationService:
 
     @classmethod
     def billable_tenancies(cls, as_of: date | None = None):
-        as_of = as_of or date.today()
+        as_of = as_of or timezone.localdate()
         recently_ended = Q(status__in=('terminated', 'expired')) & (
             Q(move_out_date__gte=as_of - timedelta(days=ENDED_SWEEP_DAYS))
             | Q(end_date__gte=as_of - timedelta(days=ENDED_SWEEP_DAYS))
@@ -187,7 +188,7 @@ class RentChargeGenerationService:
         Invoice.recalculate_status() themselves; this catches invoices that
         just aged past a boundary with no payment at all.
         """
-        as_of = as_of or date.today()
+        as_of = as_of or timezone.localdate()
         candidates = Invoice.objects.exclude(
             status__in=['paid', 'waived', 'disputed'],
         ).filter(period_start__lte=as_of)

@@ -338,7 +338,7 @@ class PaymentService:
         }
         payment.save(update_fields=['status', 'unapplied_amount', 'metadata', 'updated_at'])
 
-        today = timezone.now().date()
+        today = timezone.localdate()
         allocations = list(payment.allocations.select_related('invoice'))
         for entry in [
             *LedgerService.entries_for('payment', payment.pk),
