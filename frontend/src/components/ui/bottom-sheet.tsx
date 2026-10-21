@@ -67,7 +67,7 @@ const BottomSheetContent = React.forwardRef<
         className={cn(
           'fixed inset-x-0 bottom-0 z-50',
           'rounded-t-2xl border-t border-gray-200',
-          'bg-white shadow-2xl',
+          'bg-background shadow-2xl',
           getMaxHeight(),
           'flex flex-col',
           'data-[state=open]:animate-in data-[state=closed]:animate-out',
@@ -79,7 +79,7 @@ const BottomSheetContent = React.forwardRef<
       >
         {showHandle && (
           <div className="flex justify-center pt-3 pb-2">
-            <div className="w-10 h-1 bg-gray-300 rounded-full" />
+            <div className="w-10 h-1 bg-border rounded-full" />
           </div>
         )}
         <div className="flex-1 overflow-y-auto px-4 pb-safe-bottom">
@@ -89,7 +89,7 @@ const BottomSheetContent = React.forwardRef<
           className={cn(
             'absolute right-4 top-4 rounded-full p-2',
             'opacity-70 hover:opacity-100 transition-opacity',
-            'hover:bg-gray-100',
+            'hover:bg-muted',
             'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
           )}
         >
@@ -134,7 +134,7 @@ const BottomSheetTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn('text-lg font-semibold text-gray-900', className)}
+    className={cn('text-lg font-semibold text-foreground', className)}
     {...props}
   />
 ));
@@ -146,7 +146,7 @@ const BottomSheetDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn('text-sm text-gray-600', className)}
+    className={cn('text-sm text-muted-foreground', className)}
     {...props}
   />
 ));

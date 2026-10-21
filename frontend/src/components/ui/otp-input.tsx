@@ -226,7 +226,7 @@ export function OTPInput({
             onKeyDown={(e) => handleKeyDown(i, e)}
             onPaste={(e) => handlePaste(i, e)}
             className={cn(
-              'w-12 h-14 rounded-lg border-2 bg-white text-center text-2xl font-semibold transition-all',
+              'w-12 h-14 rounded-lg border-2 bg-background text-center text-2xl font-semibold transition-all',
               'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
               error
                 ? 'border-[--rumi-danger,#f87171] focus-visible:ring-[--rumi-danger,#f87171]'

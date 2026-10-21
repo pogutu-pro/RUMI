@@ -37,7 +37,7 @@ describe('UnifiedThemeProvider', () => {
     const props = (ThemeProvider as jest.Mock).mock.calls[0][0];
     expect(props).toMatchObject({
       attribute: 'class',
-      defaultTheme: 'system',
+      defaultTheme: 'light', // light first; System stays available (enableSystem)
       enableSystem: true,
     });
   });
