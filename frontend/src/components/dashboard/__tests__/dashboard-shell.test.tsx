@@ -86,6 +86,19 @@ describe('DashboardShell', () => {
     expect(screen.getByText('content')).toBeInTheDocument();
   });
 
+  it('has no sign-out control; the account footer links to Settings', () => {
+    mockAuth({
+      user: mockUser(UserRole.LANDLORD, { email: 'l@example.com', first_name: 'Lucy', last_name: 'Land' }),
+    });
+    render(
+      <DashboardShell allowedRoles={[UserRole.LANDLORD]} nav={NAV} settingsHref="/landlord/rental/settings">
+        <div>content</div>
+      </DashboardShell>,
+    );
+    expect(screen.queryByText(/log out|sign out/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Lucy Land/ })).toHaveAttribute('href', '/landlord/rental/settings');
+  });
+
   it('renders the loading fallback and does not redirect while status is checking', () => {
     mockAuth({ status: 'checking', isAuthenticated: false, user: null });
     render(
