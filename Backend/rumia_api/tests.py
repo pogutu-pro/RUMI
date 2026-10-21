@@ -666,6 +666,9 @@ class RentGenerationTests(RumiaTestFixtures):
         tenancy = self.create_tenancy(
             org, prop, unit, tenant, status='active', monthly_rent=Decimal('10000.00'),
         )
+        # Start this month so generation creates exactly one invoice.
+        Tenancy.objects.filter(pk=tenancy.pk).update(start_date=date.today().replace(day=1))
+        tenancy.refresh_from_db()
         self.assertEqual(RentCharge.objects.filter(tenancy=tenancy).count(), 0)
 
         payment = Payment.objects.create(
@@ -684,7 +687,7 @@ class RentGenerationTests(RumiaTestFixtures):
         self.assertEqual(charge.status, 'partially_paid')
         payment.refresh_from_db()
         self.assertEqual(payment.allocations.count(), 1)
-        self.assertEqual(payment.allocations.first().rent_charge_id, charge.id)
+        self.assertEqual(payment.allocations.first().invoice_id, charge.id)
 
     def test_generation_marks_the_new_charge_paid_when_credit_covers_it(self):
         from rent.services.payment_service import PaymentService
@@ -695,6 +698,9 @@ class RentGenerationTests(RumiaTestFixtures):
         tenancy = self.create_tenancy(
             org, prop, unit, tenant, status='active', monthly_rent=Decimal('10000.00'),
         )
+        # Start this month so generation creates exactly one invoice.
+        Tenancy.objects.filter(pk=tenancy.pk).update(start_date=date.today().replace(day=1))
+        tenancy.refresh_from_db()
         payment = Payment.objects.create(
             organization=org, tenancy=tenancy, tenant=tenant, parent_property=prop, unit=unit,
             amount=Decimal('15000.00'), payment_method='cash', provider='manual',
@@ -755,6 +761,8 @@ class RentGenerationTests(RumiaTestFixtures):
             amount=Decimal('10.00'), payment_method='paystack', provider='paystack',
             internal_reference='RUMIA-CREDIT-TEST', status='success', paid_at=timezone.now(),
         )
+        from rent.services.payment_service import PaymentService
+        PaymentService.settle_received(Payment.objects.get(internal_reference='RUMIA-CREDIT-TEST'), notify=False)
 
         client = APIClient()
         client.force_authenticate(user=tenant.user)

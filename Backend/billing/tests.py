@@ -217,6 +217,8 @@ class SubscribeFlowTests(RumiaTestFixtures):
             'organization_id': str(org.id),
         })
         self.assertEqual(first.status_code, 201)
+        # Manual requests start 'pending'; once support confirms payment it is active.
+        OrganizationSubscription.objects.filter(organization=org).update(status='active')
 
         second = client.post('/api/v1/billing/subscribe/', {
             'plan_id': str(plans['pro'].id), 'billing_mode': 'manual',

@@ -143,27 +143,31 @@ def send_receipt_email(receipt) -> bool:
         return False
     s = receipt.snapshot
     body = (
-        f'Hi {tenant.full_name},\n\n'
-        f'Thank you — we received KES {s.get("amount")} for unit {s.get("unit")}.\n'
+        f'Thank you, we received KES {s.get("amount")} for unit {s.get("unit")}.\n'
         f'Receipt: {receipt.number}\n'
         f'Balance after this payment: KES {s.get("balance_after")}\n\n'
         f'Your receipt is attached.\n\n'
         f'{s.get("organization_name", "")}'
     )
+    from accounts.utils import send_branded_email
+
     try:
-        message = EmailMessage(
-            subject=f'Receipt {receipt.number}: RumiaRent',
-            body=body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[tenant.email],
-        )
+        attachments = []
         if receipt.pdf:
             receipt.pdf.open('rb')
             try:
-                message.attach(f'{receipt.number}.pdf', receipt.pdf.read(), 'application/pdf')
+                attachments.append((f'{receipt.number}.pdf', receipt.pdf.read(), 'application/pdf'))
             finally:
                 receipt.pdf.close()
-        message.send(fail_silently=False)
+        send_branded_email(
+            subject=f'Receipt {receipt.number}: RumiaRent',
+            message=body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[tenant.email],
+            recipient_name=tenant.full_name,
+            attachments=attachments,
+            fail_silently=False,
+        )
         return True
     except Exception:
         logger.exception('RumiaRent receipt email failed (receipt=%s)', receipt.number)

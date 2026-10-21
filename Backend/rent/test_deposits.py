@@ -126,7 +126,7 @@ class DepositApiTests(DepositFixtures):
     def test_new_tenancy_gets_deposit_invoice_by_default(self):
         _, unit = self.create_property_with_unit(self.org, name='Annex')
         _, tenant = self.create_tenant(self.org, email='new@test.com')
-        with patch('rumia_api.views.onboard_tenant_user'):
+        with patch('rumia_api.views.onboard_tenant_user', side_effect=lambda t, **_: (t, 'invited')):
             response = self.client_for(self.landlord).post('/api/v1/tenancies/', {
                 'unit': str(unit.id), 'tenant': str(tenant.id), 'start_date': '2026-06-01',
                 'monthly_rent': '15000.00', 'deposit': '15000.00', 'rent_due_day': 5, 'status': 'active',
@@ -145,7 +145,7 @@ class DepositApiTests(DepositFixtures):
         client = self.client_for(self.landlord)
         bad = client.post('/api/v1/tenancies/', {**payload, 'deposit_handling': 'maybe'}, format='json')
         self.assertEqual(bad.status_code, 400)
-        with patch('rumia_api.views.onboard_tenant_user'):
+        with patch('rumia_api.views.onboard_tenant_user', side_effect=lambda t, **_: (t, 'invited')):
             paid = client.post('/api/v1/tenancies/', {**payload, 'deposit_handling': 'already_paid'}, format='json')
         self.assertEqual(Invoice.objects.get(tenancy_id=paid.data['id'], invoice_type='deposit').status, 'paid')
 
