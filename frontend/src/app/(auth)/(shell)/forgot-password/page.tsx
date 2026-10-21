@@ -107,7 +107,7 @@ export default function ForgotPasswordPage() {
         <Link href="/" className="mb-6 flex justify-center">
           <Image src="/images/logo/logo.png" alt="RumiaRent" width={40} height={40} />
         </Link>
-        <div className="bg-white rounded-2xl border border-border/70 shadow-sm p-6 sm:p-8 space-y-6">
+        <div className="space-y-6">
           <div className="flex justify-center">
             <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
               <CheckCircle2 className="w-7 h-7 text-primary" />
@@ -185,7 +185,7 @@ export default function ForgotPasswordPage() {
       <Link href="/" className="mb-6 flex justify-center">
         <Image src="/images/logo/logo.png" alt="RumiaRent" width={40} height={40} />
       </Link>
-      <div className="bg-white rounded-2xl border border-border/70 shadow-sm p-6 sm:p-8 space-y-6">
+      <div className="space-y-6">
         <header className="text-center space-y-2">
           <div className="w-12 h-12 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
             <Mail className="w-6 h-6 text-primary" />

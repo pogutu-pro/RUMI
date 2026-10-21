@@ -47,7 +47,8 @@ For automatic, real-time matching, bring back the following from **each bank**
 |---|------------|-----|
 | ☐ | Get the **"RumiaRent" sender ID** approved on Africa's Talking, and keep the SMS balance topped up | Receipts and reminders come from a name tenants trust |
 | ☐ | Check the Africa's Talking dashboard for the 3 test SMS from 20 Oct (to +254711111111 and +254700555444) | They may have been sent from your live account by mistake |
-| ☐ | Make sure SPF, DKIM and DMARC are set for rumiarent.com at your email provider | Receipt emails land in the inbox, not spam |
+| ☐ | Make sure SPF, DKIM and DMARC are set for rumiarent.com at your email provider | Receipt emails and sign-in links land in the inbox, not spam. Sign-in now depends on email arriving fast |
+| ☐ | **Continue with Google**: in Google Cloud Console, APIs & Services → Credentials → Create OAuth client ID → Web application. Authorised JavaScript origins: `https://rumiarent.com` and `https://www.rumiarent.com`. No redirect URI is needed. Put the client ID in the server's `Backend/.env` as `GOOGLE_CLIENT_ID=...` and restart the backend | The Google button appears by itself once this is set. No client secret is needed. Also fill in the OAuth consent screen (app name RumiaRent, logo, privacy and terms links) |
 
 ## 5. Being found on Google and by AI assistants
 

@@ -92,6 +92,7 @@ const PUBLIC_PREFIXES = [
   '/legal',
   '/verify-email',
   '/verify-phone',
+  '/auth/link',
 ];
 
 const ROLE_RESTRICTED_PATHS: Record<string, UserRole[]> = {
@@ -225,12 +226,13 @@ export function middleware(request: NextRequest) {
   // Content Security Policy
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    // accounts.google.com/gsi: the "Continue with Google" button.
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com/gsi/client",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
     "img-src 'self' data: blob: https://*.googleusercontent.com",
     "font-src 'self' https://fonts.gstatic.com",
-    `connect-src 'self'${API_ORIGIN ? ` ${API_ORIGIN}` : ''}`,
-    "frame-src 'self' https://www.google.com",
+    `connect-src 'self'${API_ORIGIN ? ` ${API_ORIGIN}` : ''} https://accounts.google.com/gsi/`,
+    "frame-src 'self' https://www.google.com https://accounts.google.com/gsi/",
     "worker-src 'self' blob:",
   ].join('; ');
 

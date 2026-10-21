@@ -37,6 +37,7 @@ const PUBLIC_ROUTES = [
   '/reset-password',
   '/verify-email',
   '/verify-phone',
+  '/auth/link',
 ];
 
 const ROLE_REDIRECTS: Record<string, string> = {

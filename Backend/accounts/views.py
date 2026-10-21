@@ -5,6 +5,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
+from django.core.validators import EmailValidator
 from django.core.files.storage import default_storage
 from django.db import transaction, models
 from django.db.models import Sum
@@ -21,6 +22,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework.parsers import MultiPartParser, FormParser
 from drf_yasg.utils import swagger_auto_schema
 
+from . import passwordless
 from .models import (
     User, LandlordProfile, CaretakerProfile,
     OTPVerification, PasswordResetToken, UserActivityLog,
@@ -386,6 +388,77 @@ class ResendOTPView(APIView):
 @swagger_auto_schema(
     tags=['Authentication']
 )
+def session_response(user, access_token, refresh_token, extra=None):
+    """
+    The signed-in response every sign-in method returns: tokens, the user's
+    profile and the auth cookies the frontend middleware reads.
+    """
+    profile_data = UserLoginView()._get_user_profile_data(user)
+
+    response = Response({
+        'access_token': access_token,
+        'refresh_token': refresh_token,
+        'token_type': 'Bearer',
+        'expires_in': 3600,
+        'user': profile_data,
+        **(extra or {}),
+    }, status=status.HTTP_200_OK)
+
+    # SameSite=Strict withholds these cookies on ANY cross-site
+    # navigation, including the browser being redirected back to us by
+    # Paystack (or Google OAuth, already Lax below) after a top-level
+    # GET. That made every tenant land on /login right after paying,
+    # even though they never logged out — the middleware saw no cookie
+    # at all and assumed they weren't authenticated. Lax still refuses
+    # the cookie on cross-site POST/PUT/DELETE, so CSRF protection is
+    # unaffected; it only allows the legitimate case of a trusted site
+    # redirecting the user's own browser back to us.
+    #
+    # secure=False also let these cookies be sent over plain HTTP,
+    # unlike every other cookie this project sets (SESSION_COOKIE_SECURE
+    # / CSRF_COOKIE_SECURE are already True outside DEBUG) — production
+    # is HTTPS-only via Caddy, so there's no reason these should be the
+    # one exception.
+    secure = not settings.DEBUG
+
+    # Set access token cookie
+    response.set_cookie(
+        key='rumi_access_token',
+        value=access_token,
+        path='/',
+        domain=None,
+        secure=secure,
+        httponly=True,
+        samesite='Lax'
+    )
+
+    # Set refresh token cookie
+    response.set_cookie(
+        key='rumi_refresh_token',
+        value=refresh_token,
+        max_age=30 * 24 * 60 * 60,  # 30 days
+        path='/',
+        domain=None,
+        secure=secure,
+        httponly=True,
+        samesite='Lax'
+    )
+
+    # Set user role cookie
+    response.set_cookie(
+        key='rumi_user_role',
+        value=user.role,
+        max_age=30 * 24 * 60 * 60,  # 30 days
+        path='/',
+        domain=None,
+        secure=secure,
+        httponly=False,  # Frontend needs access to role
+        samesite='Lax'
+    )
+
+    return response
+
+
 class UserLoginView(APIView):
     """
     User Authentication API
@@ -503,74 +576,7 @@ class UserLoginView(APIView):
             }
         )
 
-# Get profile data
-        profile_data = self._get_user_profile_data(user)
-
-        response = Response({
-            'access_token': access_token,
-            'refresh_token': refresh_token,
-            'token_type': 'Bearer',
-            'expires_in': 3600,
-            'user': profile_data
-        }, status=status.HTTP_200_OK)
-
-# Set cookies for frontend access
-        from django.utils.http import http_date
-        from django.conf import settings
-
-        # SameSite=Strict withholds these cookies on ANY cross-site
-        # navigation, including the browser being redirected back to us by
-        # Paystack (or Google OAuth, already Lax below) after a top-level
-        # GET. That made every tenant land on /login right after paying,
-        # even though they never logged out — the middleware saw no cookie
-        # at all and assumed they weren't authenticated. Lax still refuses
-        # the cookie on cross-site POST/PUT/DELETE, so CSRF protection is
-        # unaffected; it only allows the legitimate case of a trusted site
-        # redirecting the user's own browser back to us.
-        #
-        # secure=False also let these cookies be sent over plain HTTP,
-        # unlike every other cookie this project sets (SESSION_COOKIE_SECURE
-        # / CSRF_COOKIE_SECURE are already True outside DEBUG) — production
-        # is HTTPS-only via Caddy, so there's no reason these should be the
-        # one exception.
-        secure = not settings.DEBUG
-
-        # Set access token cookie
-        response.set_cookie(
-            key='rumi_access_token',
-            value=access_token,
-            path='/',
-            domain=None,
-            secure=secure,
-            httponly=True,
-            samesite='Lax'
-        )
-
-        # Set refresh token cookie
-        response.set_cookie(
-            key='rumi_refresh_token',
-            value=refresh_token,
-            max_age=30 * 24 * 60 * 60,  # 30 days
-            path='/',
-            domain=None,
-            secure=secure,
-            httponly=True,
-            samesite='Lax'
-        )
-
-        # Set user role cookie
-        response.set_cookie(
-            key='rumi_user_role',
-            value=user.role,
-            max_age=30 * 24 * 60 * 60,  # 30 days
-            path='/',
-            domain=None,
-            secure=secure,
-            httponly=False,  # Frontend needs access to role
-            samesite='Lax'
-        )
-
-        return response
+        return session_response(user, access_token, refresh_token)
 
     def _get_user_profile_data(self, user):
         """Get user profile data based on role"""
@@ -2149,211 +2155,86 @@ class CheckEmailView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class GoogleOAuthView(APIView):
-    """
-    Google OAuth authentication endpoint
-    Handles Google token verification and user creation/login
-    """
+class _SignInView(APIView):
+    """Shared plumbing for the passwordless sign-in endpoints."""
+
     permission_classes = [permissions.AllowAny]
-    
+    authentication_classes = []  # a stale token cookie must not get in the way of signing in
+
+    @staticmethod
+    def _signed_in(user, created):
+        refresh = RefreshToken.for_user(user)
+        return session_response(user, str(refresh.access_token), str(refresh), extra={'is_new_user': created})
+
+    @staticmethod
+    def _refused(error):
+        return Response({'error': error.code, 'detail': error.detail}, status=error.status)
+
+
+class SignInMethodsView(APIView):
+    """Which sign-in buttons to show. The Google client ID is public by design."""
+
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        return Response({'google_client_id': settings.GOOGLE_CLIENT_ID or None, 'email_link': True})
+
+
+class EmailLinkRequestView(_SignInView):
+    """POST {email, next?}: email a one-time sign-in link and code."""
+
     def post(self, request):
-        access_token = request.data.get('access_token')
-        role = request.data.get('role', 'landlord')
-        gender = request.data.get('gender')
-        date_of_birth = request.data.get('date_of_birth')
-        phone_number = request.data.get('phone_number')
-
-        # Landlord specific fields
-        company_name = request.data.get('company_name')
-        total_units = request.data.get('total_units')
-
-        # Google OAuth self-registration only creates landlord accounts —
-        # tenants are invited by their landlord, never self-register.
-        if role and role != 'landlord':
-            return Response({
-                'error': 'Google OAuth only supports landlord accounts'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        if not access_token:
-            return Response({
-                'error': 'Access token is required'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
+        email = str(request.data.get('email', '')).strip()
         try:
-            # Verify Google token
-            user_info = self.verify_google_token(access_token)
-            
-            if not user_info:
-                return Response({
-                    'error': 'Invalid Google token'
-                }, status=status.HTTP_401_UNAUTHORIZED)
-            
-            # Check if user exists and validate role
-            email = user_info.get('email')
-            existing_user = User.objects.filter(email=email).first()
-            
-            if existing_user:
-                # For existing users, verify they're using the correct role
-                if existing_user.role not in ['student', 'landlord']:
-                    return Response({
-                        'error': f'Account exists as {existing_user.role}. Please use email login.'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-                
-                # Update existing user with latest Google info
-                existing_user.first_name = user_info.get('given_name', existing_user.first_name)
-                existing_user.last_name = user_info.get('family_name', existing_user.last_name)
-                existing_user.profile_picture = user_info.get('picture', existing_user.profile_picture)
-                
-                # Update optional fields if provided
-                if gender:
-                    existing_user.gender = gender
-                if date_of_birth:
-                    existing_user.date_of_birth = date_of_birth
-                if phone_number:
-                    existing_user.phone_number = phone_number
-                
-                existing_user.last_login = timezone.now()
-                existing_user.save()
-                
-                user = existing_user
-                is_new_user = False
+            EmailValidator()(email)
+        except ValidationError:
+            return Response({'error': 'email_invalid', 'detail': 'Enter a valid email address.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        next_path = str(request.data.get('next', ''))
+        if not next_path.startswith('/') or next_path.startswith('//'):
+            next_path = ''  # internal paths only, never an open redirect
+        result = passwordless.request_link(email, request, next_path=next_path)
+        if not result.sent:
+            return Response(
+                {'error': 'rate_limited', 'detail': 'An email was just sent. Check your inbox or wait a minute.',
+                 'retry_after': result.retry_after},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+        return Response({'sent': True, 'expires_in': int(passwordless.LINK_TTL.total_seconds())})
+
+
+class EmailLinkSignInView(_SignInView):
+    """POST {token} from the emailed link, or {email, code} typed from the email."""
+
+    def post(self, request):
+        token = str(request.data.get('token', '')).strip()
+        email = str(request.data.get('email', '')).strip()
+        code = str(request.data.get('code', '')).strip()
+        try:
+            if token:
+                user, created = passwordless.use_token(token, request)
+            elif email and code:
+                user, created = passwordless.use_code(email, code, request)
             else:
-                # Create new user
-                user = User.objects.create(
-                    email=email,
-                    first_name=user_info.get('given_name', ''),
-                    last_name=user_info.get('family_name', ''),
-                    role='landlord',
-                    gender=gender,
-                    date_of_birth=date_of_birth,
-                    phone_number=phone_number,
-                    is_verified=True,  # Google emails are verified
-                    is_active=True,
-                    profile_picture=user_info.get('picture'),
-                    onboarding_stage='ROLE_SELECTED'
-                )
+                return Response({'error': 'missing', 'detail': 'Open the link in the email or enter its code.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        except passwordless.SignInError as error:
+            return self._refused(error)
+        return self._signed_in(user, created)
 
-                LandlordProfile.objects.create(
-                    user=user,
-                    company_name=company_name,
-                    total_units=total_units if total_units is not None else 0,
-                    is_verified=False,
-                    total_hostels=0
-                )
-                
-                is_new_user = True
-            
-            # Generate JWT tokens
-            refresh = RefreshToken.for_user(user)
-            access_token = str(refresh.access_token)
-            refresh_token = str(refresh)
-            
-            # Log activity
-            UserActivityLog.objects.create(
-                user=user,
-                action_type='login',
-                action_description='Google OAuth login',
-                ip_address=self.get_client_ip(request),
-                user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                metadata={'auth_method': 'google_oauth'}
-            )
-            
-            # Get profile data
-            profile_data = self._get_user_profile_data(user)
-            
-            response = Response({
-                'access_token': access_token,
-                'refresh_token': refresh_token,
-                'token_type': 'Bearer',
-                'expires_in': 3600,
-                'user': profile_data,
-                'is_new_user': is_new_user,
-                'is_profile_complete': profile_data.get('is_profile_complete', False)
-            }, status=status.HTTP_200_OK)
-            
-            # Set access token cookie
-            response.set_cookie(
-                key='rumi_access_token',
-                value=access_token,
-                path='/',
-                domain=None,
-                secure=False,  # Set to True in production with HTTPS
-                httponly=True,
-                samesite='Lax'
-            )
-            
-            return response
-            
-        except Exception as e:
-            return Response({
-                'error': 'Authentication failed',
-                'details': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-    def verify_google_token(self, access_token):
-        """Verify Google access token and get user info"""
+
+class GoogleSignInView(_SignInView):
+    """POST {credential}: the ID token from Google Identity Services."""
+
+    def post(self, request):
+        credential = str(request.data.get('credential', '')).strip()
+        if not credential:
+            return Response({'error': 'missing', 'detail': 'Google did not send a sign-in.'},
+                            status=status.HTTP_400_BAD_REQUEST)
         try:
-            # Call Google API to verify token
-            response = requests.get(
-                'https://www.googleapis.com/oauth2/v2/userinfo',
-                headers={'Authorization': f'Bearer {access_token}'},
-                timeout=10
-            )
-            
-            if response.status_code != 200:
-                return None
-            
-            return response.json()
-            
-        except requests.RequestException:
-            return None
-    
-    def get_client_ip(self, request):
-        """Get client IP address"""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip
-    
-    def _get_user_profile_data(self, user):
-        """Get user profile data based on role"""
-        base_data = {
-            'id': user.id,
-            'email': user.email,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'role': user.role,
-            'is_verified': user.is_verified,
-            'phone_number': user.phone_number,
-            'profile_picture': user.profile_picture,
-            'date_joined': user.date_joined,
-        }
-        
-        # Add role-specific profile data
-        if user.role == 'student' and hasattr(user, 'student_profile'):
-            profile = user.student_profile
-            base_data.update({
-                'university': profile.university,
-                'student_id_number': profile.student_id_number,
-                'year_of_study': profile.year_of_study,
-                'course': profile.course,
-                'is_profile_complete': profile.is_profile_complete,
-            })
-        elif user.role == 'landlord' and hasattr(user, 'landlord_profile'):
-            profile = user.landlord_profile
-            base_data.update({
-                'company_name': profile.company_name,
-                'is_verified': profile.is_verified,
-                'total_hostels': profile.total_hostels,
-                'is_profile_complete': getattr(profile, 'is_profile_complete', False),
-            })
-        elif user.role == 'caretaker' and hasattr(user, 'caretaker_profile'):
-            profile = user.caretaker_profile
-            base_data.update({
-                'hostel': profile.hostel.name if profile.hostel else None,
-                'is_active': profile.is_active,
-            })
-        
-        return base_data
+            user, created = passwordless.google_sign_in(credential, request)
+        except passwordless.SignInError as error:
+            return self._refused(error)
+        return self._signed_in(user, created)
+

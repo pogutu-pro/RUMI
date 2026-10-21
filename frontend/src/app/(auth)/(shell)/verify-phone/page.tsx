@@ -113,7 +113,7 @@ export default function VerifyPhonePage() {
   if (verifyHook?.isSuccess) {
     return (
       <section className="mx-auto w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-6">
           <div className="flex justify-center">
             <div className="h-14 w-14 bg-primary/10 rounded-full flex items-center justify-center animate-bounce">
               <CheckCircle2 className="w-8 h-8 text-green-600" />

@@ -205,13 +205,16 @@ BRAND_LOGO_URL = f'{BRAND_SITE}/images/logo/logo.png'
 _URL_RE = re.compile(r'(https?://[^\s<]+)')
 
 
-def create_branded_email_html(subject, plain_message, recipient_name=None):
+def create_branded_email_html(subject, plain_message, recipient_name=None, action=None, code=None):
     """
     Wrap a plain-text message in the RumiaRent email layout.
 
     Inline styles and tables on purpose: Gmail and Outlook strip or mangle
     <style> blocks, and gradients/transforms don't render reliably in mail
     clients. All user-supplied text is HTML-escaped; bare URLs become links.
+
+    `action` is an optional (label, url) button and `code` an optional
+    one-time code shown large; both go after the first paragraph.
     """
     import html as html_lib
     from django.utils import timezone
@@ -227,7 +230,26 @@ def create_branded_email_html(subject, plain_message, recipient_name=None):
         )
 
     paragraphs = [p.strip() for p in plain_message.split('\n\n') if p.strip()]
-    body_html = ''.join(render_paragraph(p) for p in paragraphs)
+    rendered = [render_paragraph(p) for p in paragraphs]
+    extras = ''
+    if action:
+        label, url = action
+        extras += (
+            f'<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 24px 0;"><tr>'
+            f'<td style="border-radius:10px;background-color:{BRAND_GREEN};">'
+            f'<a href="{html_lib.escape(url, quote=True)}" style="display:inline-block;padding:14px 28px;'
+            f'font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;">{html_lib.escape(label)}</a>'
+            f'</td></tr></table>'
+        )
+    if code:
+        extras += (
+            f'<p style="margin:0 0 6px 0;font-size:14px;color:#6b7280;">Or enter this code:</p>'
+            f'<p style="margin:0 0 24px 0;font-size:32px;font-weight:700;letter-spacing:8px;'
+            f'font-family:SFMono-Regular,Menlo,Consolas,monospace;color:#111827;">{html_lib.escape(code)}</p>'
+        )
+    if extras:
+        rendered.insert(1 if rendered else 0, extras)
+    body_html = ''.join(rendered)
 
     # Most message bodies already open with their own "Hi <name>," — adding a
     # second one from the wrapper printed the greeting twice.
@@ -297,7 +319,9 @@ def send_branded_email(subject, message, from_email, recipient_list, recipient_n
     # actually sent.
     fail_silently = kwargs.pop('fail_silently', False)
 
-    html_message = create_branded_email_html(subject, message, recipient_name)
+    html_message = create_branded_email_html(
+        subject, message, recipient_name, action=kwargs.pop('action', None), code=kwargs.pop('code', None),
+    )
 
     email = EmailMessage(
         subject=subject,

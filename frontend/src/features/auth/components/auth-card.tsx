@@ -12,46 +12,28 @@ interface AuthCardProps {
   icon?: ReactNode;
 }
 
-export function AuthCard({
-  title,
-  description,
-  footer,
-  children,
-  className,
-  icon,
-}: AuthCardProps) {
+/**
+ * Heading and body for a screen inside AuthShell. Deliberately unboxed: the
+ * shell already frames the form, and a card inside it reads as clutter.
+ */
+export function AuthCard({ title, description, footer, children, className, icon }: AuthCardProps) {
   return (
-    <div
-      className={cn(
-        'rounded-2xl border border-border/70 bg-white p-6 shadow-sm',
-        'sm:p-8',
-        'transition-shadow duration-300',
-        className,
-      )}
-    >
+    <div className={cn('w-full', className)}>
       {(title || description) && (
-        <header className="mb-8 text-center space-y-3">
+        <header className="mb-8 space-y-2">
           {icon && (
-            <div className="flex justify-center">
-              <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center">
-                {icon}
-              </div>
+            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              {icon}
             </div>
           )}
-          {title && (
-            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-          )}
-          {description && (
-            <div className="text-sm text-gray-600 leading-relaxed">
-              {description}
-            </div>
-          )}
+          {title && <h1 className="text-[28px] font-semibold tracking-tight text-gray-900">{title}</h1>}
+          {description && <div className="text-[15px] leading-relaxed text-gray-500">{description}</div>}
         </header>
       )}
 
       <div className="space-y-6">{children}</div>
 
-      {footer && <div className="mt-6 border-t pt-4 text-center">{footer}</div>}
+      {footer && <div className="mt-8 border-t border-gray-100 pt-6 text-center">{footer}</div>}
     </div>
   );
 }
