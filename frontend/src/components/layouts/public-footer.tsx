@@ -10,6 +10,9 @@ const COLUMNS = [
     links: [
       { href: '/#features', label: 'Features' },
       { href: '/pricing', label: 'Pricing' },
+      { href: '/for/landlords', label: 'For landlords' },
+      { href: '/for/agents', label: 'For agents' },
+      { href: '/guides', label: 'Guides' },
       { href: '/rentals', label: 'Find a rental' },
     ],
   },

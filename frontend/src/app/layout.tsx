@@ -118,7 +118,9 @@ export default function RootLayout({
       logo: `${SITE_URL}/icon.png`,
       image: `${SITE_URL}${SHARE_IMAGE.url}`,
       description:
-        'Rental management platform helping Kenyan landlords and agents manage properties, tenants, and rent collection.',
+        'RumiaRent is rental management software for landlords and property agents in Kenya. It records every M-Pesa rent payment against the right tenant, sends receipts and reminders, and prepares statements and rental income tax figures. Tenants pay the landlord directly; RumiaRent never holds rent.',
+      knowsAbout: ['Rental management', 'M-Pesa rent collection', 'Property management in Kenya', 'Monthly rental income tax (MRI)'],
+      areaServed: { '@type': 'Country', name: 'Kenya' },
       address: {
         '@type': 'PostalAddress',
         addressCountry: 'KE',

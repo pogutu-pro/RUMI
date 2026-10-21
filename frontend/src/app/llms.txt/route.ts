@@ -1,5 +1,6 @@
 import { SITE_URL, fetchPublicPlans } from '@/lib/seo';
 import { FAQS, FEATURES, ONE_LINER, STEPS } from '@/lib/marketing';
+import { GUIDES } from '@/lib/guides';
 
 export const revalidate = 3600;
 
@@ -57,6 +58,16 @@ export async function GET(): Promise<Response> {
     `- [Pricing](${SITE_URL}/pricing)`,
     `- [Help and FAQ](${SITE_URL}/faq)`,
     `- [Find a rental (vacant units)](${SITE_URL}/rentals)`,
+    `- [For landlords](${SITE_URL}/for/landlords)`,
+    `- [For agents and property managers](${SITE_URL}/for/agents)`,
+    '',
+    '## Guides',
+    '',
+    ...GUIDES.map((g) => `- [${g.title}](${SITE_URL}/guides/${g.slug}): ${g.description}`),
+    '',
+    '## Full text',
+    '',
+    `- [llms-full.txt](${SITE_URL}/llms-full.txt): every guide and answer in one plain-text file`,
     `- [About](${SITE_URL}/about)`,
     `- [Contact](${SITE_URL}/contact)`,
     '',

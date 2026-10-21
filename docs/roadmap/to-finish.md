@@ -49,7 +49,20 @@ For automatic, real-time matching, bring back the following from **each bank**
 | ☐ | Check the Africa's Talking dashboard for the 3 test SMS from 20 Oct (to +254711111111 and +254700555444) | They may have been sent from your live account by mistake |
 | ☐ | Make sure SPF, DKIM and DMARC are set for rumiarent.com at your email provider | Receipt emails land in the inbox, not spam |
 
-## 5. Decisions and safety
+## 5. Being found on Google and by AI assistants
+
+The site side is done: guides, audience pages, structured data, sitemap,
+llms.txt and llms-full.txt. These need your accounts:
+
+| ✓ | What to do | Why |
+|---|------------|-----|
+| ☐ | **Google Search Console**: add `rumiarent.com` (domain property, verified with a DNS TXT record), then submit `https://rumiarent.com/sitemap.xml` | Google indexes the new pages within days, not weeks |
+| ☐ | **Bing Webmaster Tools**: import from Search Console, submit the sitemap | ChatGPT's search and Copilot draw on Bing's index |
+| ☐ | **Google Business Profile** for RumiaRent (Nairobi, software company), with the website link | Brand searches and Maps; AI assistants use it to confirm the business is real |
+| ☐ | Ask your first happy landlords for a short **Google review**, and list RumiaRent where Kenyan landlords look (property forums, Facebook landlord groups, LinkedIn page) | AI assistants recommend tools that other sites mention, not only what the tool says about itself |
+| ☐ | Tell me real questions landlords ask you | I turn them into new guides |
+
+## 6. Decisions and safety
 
 | ✓ | What | Why |
 |---|------|-----|
