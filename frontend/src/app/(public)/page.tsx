@@ -81,78 +81,92 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(FAQS)) }} />
 
-      {/* Hero: what it does, for whom, one action, and the real product. */}
-      <section className="overflow-hidden px-4 pb-16 pt-12 sm:pt-20">
-        <div className="mx-auto max-w-6xl">
-          <div className="max-w-3xl">
-            <h1 className="text-[2.5rem] font-semibold leading-[1.08] tracking-tight text-gray-900 sm:text-6xl">
+      {/* Hero: what it does, for whom, one action, and the real product, on brand green. */}
+      <section className="relative overflow-hidden bg-[#033d2a] px-4 pb-16 pt-14 text-white sm:pt-20 md:pb-40">
+        {/* One soft light source; no patterns or blobs. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_85%_0%,rgba(52,211,153,0.22),transparent_70%)]"
+        />
+        <div className="relative mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-12">
+          <div className="lg:col-span-7">
+            <h1 className="text-[2.5rem] font-semibold leading-[1.08] tracking-tight text-white sm:text-6xl">
               Know who has paid rent, without checking M‑Pesa messages.
             </h1>
-            <p className="mt-5 max-w-xl text-lg leading-relaxed text-gray-600 sm:text-xl">
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-emerald-50/80 sm:text-xl">
               Rent collection for Kenyan landlords. Payments matched, receipted and chased for you.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link
                 href={AUTH_ROUTES.REGISTER}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-base font-semibold text-white transition-colors hover:bg-primary/90"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-white px-6 text-base font-semibold text-[#033d2a] transition-colors hover:bg-emerald-50"
               >
                 Start free for 30 days <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <Link
                 href="#how-it-works"
-                className="inline-flex h-12 items-center justify-center rounded-lg px-4 text-base font-semibold text-gray-900 hover:bg-gray-100"
+                className="inline-flex h-12 items-center justify-center rounded-lg border border-white/25 px-5 text-base font-semibold text-white transition-colors hover:bg-white/10"
               >
                 See how it works
               </Link>
             </div>
-            <p className="mt-5 text-sm text-gray-500">No card needed. Rent goes straight to you, never through us.</p>
+            <p className="mt-5 text-sm text-emerald-50/70">No card needed. Rent goes straight to you, never through us.</p>
           </div>
 
-          {/* Phones: the dashboard as it looks on a phone; a desktop screenshot would be unreadable there. */}
-          <figure className="mx-auto mt-12 w-[260px] overflow-hidden rounded-[2rem] border-[7px] border-gray-900 bg-white shadow-2xl md:hidden">
-            <Image
-              src="/images/product/dashboard-mobile.webp"
-              alt="RumiaRent on a phone: M-Pesa payments to assign, tenants in arrears and rent collected this month"
-              width={585}
-              height={950}
-              priority
-              sizes="260px"
-              className="h-auto w-full"
-            />
-          </figure>
-
-          <div className="relative mt-14 hidden md:block">
-            <figure className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_24px_60px_-20px_rgba(15,23,42,0.25)]">
-              <div className="flex h-8 items-center gap-1.5 border-b border-gray-200 bg-gray-50 px-3" aria-hidden="true">
-                <span className="h-2.5 w-2.5 rounded-full bg-gray-300" />
-                <span className="h-2.5 w-2.5 rounded-full bg-gray-300" />
-                <span className="h-2.5 w-2.5 rounded-full bg-gray-300" />
-              </div>
+          {/* The dashboard as it looks on a phone: fills the right side on desktop, sits under the text on phones. */}
+          <div className="relative flex justify-center lg:col-span-5 lg:justify-end">
+            <figure className="w-[250px] overflow-hidden rounded-[2rem] border-[7px] border-gray-950 bg-white shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] sm:w-[270px]">
               <Image
-                src="/images/product/dashboard.webp"
-                alt="RumiaRent landlord dashboard showing rent collected this month, tenants who owe, occupancy and M-Pesa payments to assign"
-                width={1600}
-                height={1012}
-                loading="eager"
-                sizes="(min-width: 1200px) 1152px, 100vw"
-                className="h-auto w-full"
-              />
-            </figure>
-            <figure className="absolute -bottom-10 right-4 hidden w-[200px] overflow-hidden rounded-[1.75rem] border-[6px] border-gray-900 bg-white shadow-2xl md:block lg:right-10 lg:w-[230px]">
-              <Image
-                src="/images/product/tenant-pay.webp"
-                alt="A tenant's phone showing the landlord's paybill number and their own account number"
+                src="/images/product/dashboard-mobile.webp"
+                alt="RumiaRent on a phone: M-Pesa payments to assign, tenants in arrears and rent collected this month"
                 width={585}
                 height={950}
-                sizes="230px"
+                priority
+                sizes="270px"
                 className="h-auto w-full"
               />
             </figure>
+            <div className="absolute -left-2 bottom-10 hidden w-56 rounded-xl bg-white p-3 text-gray-900 shadow-xl sm:block lg:-left-10">
+              <p className="text-xs font-medium text-gray-500">M-Pesa · just now</p>
+              <p className="mt-1 text-sm font-semibold">KES 18,000 from Lucy Atieno</p>
+              <p className="mt-0.5 text-xs text-emerald-700">Matched to R3 · receipt sent</p>
+            </div>
           </div>
         </div>
       </section>
 
-      <Section id="how-it-works" className="border-t border-gray-100 bg-gray-50/60">
+      {/* The full desktop dashboard, rising out of the green hero. */}
+      <section className="relative hidden px-4 md:block">
+        <div className="relative mx-auto -mt-28 max-w-6xl">
+          <figure className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_24px_60px_-20px_rgba(15,23,42,0.35)]">
+            <div className="flex h-8 items-center gap-1.5 border-b border-gray-200 bg-gray-50 px-3" aria-hidden="true">
+              <span className="h-2.5 w-2.5 rounded-full bg-gray-300" />
+              <span className="h-2.5 w-2.5 rounded-full bg-gray-300" />
+              <span className="h-2.5 w-2.5 rounded-full bg-gray-300" />
+            </div>
+            <Image
+              src="/images/product/dashboard.webp"
+              alt="RumiaRent landlord dashboard showing rent collected this month, tenants who owe, occupancy and M-Pesa payments to assign"
+              width={1600}
+              height={1012}
+              sizes="(min-width: 1200px) 1152px, 100vw"
+              className="h-auto w-full"
+            />
+          </figure>
+          <figure className="absolute -bottom-10 right-4 w-[200px] overflow-hidden rounded-[1.75rem] border-[6px] border-gray-900 bg-white shadow-2xl lg:right-10 lg:w-[230px]">
+            <Image
+              src="/images/product/tenant-pay.webp"
+              alt="A tenant's phone showing the landlord's paybill number and their own account number"
+              width={585}
+              height={950}
+              sizes="230px"
+              className="h-auto w-full"
+            />
+          </figure>
+        </div>
+      </section>
+
+      <Section id="how-it-works" className="bg-white">
         <SectionHeading eyebrow="How it works" title="Set up in minutes" />
         <ol className="mt-12 grid gap-8 sm:grid-cols-3">
           {STEPS.map((step, index) => (
