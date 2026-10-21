@@ -8,7 +8,6 @@ import axiosBase, {
 import { useAuthStore } from '@/features/auth';
 import {
   getAccessToken,
-  getRefreshToken,
   hasSessionHint,
   setTokens,
   clearTokens,
@@ -135,7 +134,11 @@ axiosInstance.interceptors.response.use(
       'An error occurred';
 
     // 2. Token Refresh Logic (401)
-    if (status === 401 && originalRequest && !originalRequest._retry) {
+    // The refresh token lives in an httpOnly cookie that JS cannot read, so
+    // the refresh call sends no token: the server reads the cookie, rotates
+    // it and sets a fresh access cookie. Sign-in calls are skipped: a 401
+    // there is a wrong password, not an expired session.
+    if (status === 401 && originalRequest && !originalRequest._retry && !isAuthCall(originalRequest.url)) {
       if (isRefreshing) {
         return new Promise<AxiosResponse>((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -147,43 +150,25 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = getRefreshToken();
-
-      if (!refreshToken) {
-        handleLogout();
-        return Promise.reject(error);
-      }
-
       try {
-        // Use a separate partial instance or fetch to avoid interceptor loops
+        // Separate instance so a failing refresh cannot loop through this interceptor.
         const response = await axiosBase.post(
           `${BASE_URL}${REFRESH_PATH}`,
-          { refresh_token: refreshToken },
-          { headers: { 'Content-Type': 'application/json' } }
+          {},
+          { headers: { 'Content-Type': 'application/json' }, withCredentials: true },
         );
-
-        const { access_token, refresh_token } = response.data;
-        const newAccess = access_token || response.data?.data?.access_token;
-        const newRefresh = refresh_token || response.data?.data?.refresh_token || refreshToken;
-
-        setTokens(newAccess, newRefresh);
-        useAuthStore.getState().login({
-            accessToken: newAccess,
-            refreshToken: newRefresh,
-            user: useAuthStore.getState().user! // Keep existing user
-        }); // Update store if needed
-
-        processQueue(null, newAccess);
-        
-        // Update header for the original request
-        if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${newAccess}`;
+        const newAccess: string | undefined = response.data?.access_token;
+        if (newAccess) {
+          setTokens(newAccess, response.data?.refresh_token);
+          const user = useAuthStore.getState().user;
+          if (user) useAuthStore.getState().login({ accessToken: newAccess, user });
+          if (originalRequest.headers) originalRequest.headers.Authorization = `Bearer ${newAccess}`;
         }
-        
+        processQueue(null, newAccess ?? null);
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        handleLogout();
+        await endExpiredSession();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -213,13 +198,35 @@ axiosInstance.interceptors.response.use(
 
 // -- Helpers --
 
-function handleLogout() {
+const AUTH_CALLS = ['/accounts/login/', '/accounts/auth/', '/accounts/logout/', REFRESH_PATH];
+
+function isAuthCall(url?: string): boolean {
+  return !!url && AUTH_CALLS.some((path) => url.includes(path));
+}
+
+const SIGNED_OUT_PATHS = ['/login', '/register', '/auth', '/forgot-password', '/reset-password', '/verify-email'];
+
+/**
+ * The session is over (the refresh token expired or was revoked). Ask the
+ * server to clear its httpOnly cookies, which JS cannot remove, so the site
+ * stops treating the browser as signed in; then go to sign-in and come back
+ * to this page afterwards. Without this the app kept the dead cookie and
+ * pages such as /onboarding stayed blank.
+ */
+async function endExpiredSession() {
+  try {
+    await axiosBase.post(`${BASE_URL}/accounts/logout/`, {}, { withCredentials: true });
+  } catch {
+    // Best effort: still clear the client side and leave.
+  }
   clearTokens();
   useAuthStore.getState().logout();
-  if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-     // Optional: Redirect to login or show modal
-     // window.location.href = '/login'; 
-  }
+  if (typeof window === 'undefined') return;
+  const { pathname, search } = window.location;
+  const onSignedOutPage =
+    pathname === '/' || SIGNED_OUT_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  if (onSignedOutPage) return;
+  window.location.href = `/login?session_expired=true&next=${encodeURIComponent(pathname + search)}`;
 }
 
 export async function requestWithRetry<T>(

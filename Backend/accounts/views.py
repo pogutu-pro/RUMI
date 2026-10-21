@@ -18,7 +18,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework.exceptions import AuthenticationFailed, ValidationError as DRFValidationError
 from rest_framework.parsers import MultiPartParser, FormParser
 from drf_yasg.utils import swagger_auto_schema
 
@@ -385,9 +386,40 @@ class ResendOTPView(APIView):
         }, status=status.HTTP_200_OK)
 
 
-@swagger_auto_schema(
-    tags=['Authentication']
-)
+AUTH_COOKIES = ('rumi_access_token', 'rumi_refresh_token', 'rumi_user_role', 'rumi_onboarding_stage')
+
+
+def set_auth_cookies(response, access_token, refresh_token=None, role=None):
+    """
+    The session cookies, each living exactly as long as its token, so the
+    browser drops an expired access token instead of the site treating a
+    dead session as signed in.
+
+    Lax, not Strict: Strict withholds the cookies when Paystack or Google
+    redirects the browser back to us, which sent tenants to /login right
+    after paying. Lax still refuses them on cross-site POST/PUT/DELETE, so
+    CSRF protection is unaffected. Secure everywhere except local DEBUG.
+    """
+    jwt = settings.SIMPLE_JWT
+    common = {'path': '/', 'domain': None, 'secure': not settings.DEBUG, 'samesite': 'Lax'}
+    response.set_cookie(
+        'rumi_access_token', access_token, httponly=True,
+        max_age=int(jwt['ACCESS_TOKEN_LIFETIME'].total_seconds()), **common,
+    )
+    refresh_age = int(jwt['REFRESH_TOKEN_LIFETIME'].total_seconds())
+    if refresh_token:
+        response.set_cookie('rumi_refresh_token', refresh_token, httponly=True, max_age=refresh_age, **common)
+    if role:
+        # Readable by the frontend, which needs the role.
+        response.set_cookie('rumi_user_role', role, httponly=False, max_age=refresh_age, **common)
+
+
+def clear_auth_cookies(response):
+    # path/domain/samesite must match set_auth_cookies or the browser keeps them.
+    for name in AUTH_COOKIES:
+        response.delete_cookie(name, path='/', domain=None, samesite='Lax')
+
+
 def session_response(user, access_token, refresh_token, extra=None):
     """
     The signed-in response every sign-in method returns: tokens, the user's
@@ -404,61 +436,13 @@ def session_response(user, access_token, refresh_token, extra=None):
         **(extra or {}),
     }, status=status.HTTP_200_OK)
 
-    # SameSite=Strict withholds these cookies on ANY cross-site
-    # navigation, including the browser being redirected back to us by
-    # Paystack (or Google OAuth, already Lax below) after a top-level
-    # GET. That made every tenant land on /login right after paying,
-    # even though they never logged out — the middleware saw no cookie
-    # at all and assumed they weren't authenticated. Lax still refuses
-    # the cookie on cross-site POST/PUT/DELETE, so CSRF protection is
-    # unaffected; it only allows the legitimate case of a trusted site
-    # redirecting the user's own browser back to us.
-    #
-    # secure=False also let these cookies be sent over plain HTTP,
-    # unlike every other cookie this project sets (SESSION_COOKIE_SECURE
-    # / CSRF_COOKIE_SECURE are already True outside DEBUG) — production
-    # is HTTPS-only via Caddy, so there's no reason these should be the
-    # one exception.
-    secure = not settings.DEBUG
-
-    # Set access token cookie
-    response.set_cookie(
-        key='rumi_access_token',
-        value=access_token,
-        path='/',
-        domain=None,
-        secure=secure,
-        httponly=True,
-        samesite='Lax'
-    )
-
-    # Set refresh token cookie
-    response.set_cookie(
-        key='rumi_refresh_token',
-        value=refresh_token,
-        max_age=30 * 24 * 60 * 60,  # 30 days
-        path='/',
-        domain=None,
-        secure=secure,
-        httponly=True,
-        samesite='Lax'
-    )
-
-    # Set user role cookie
-    response.set_cookie(
-        key='rumi_user_role',
-        value=user.role,
-        max_age=30 * 24 * 60 * 60,  # 30 days
-        path='/',
-        domain=None,
-        secure=secure,
-        httponly=False,  # Frontend needs access to role
-        samesite='Lax'
-    )
-
+    set_auth_cookies(response, access_token, refresh_token, role=user.role)
     return response
 
 
+@swagger_auto_schema(
+    tags=['Authentication']
+)
 class UserLoginView(APIView):
     """
     User Authentication API
@@ -621,41 +605,58 @@ class UserLoginView(APIView):
     tags=['Authentication']
 )
 class TokenRefreshView(APIView):
-    """Refresh access token"""
+    """
+    A new access token from the refresh token. The browser cannot read the
+    httpOnly refresh cookie, so it is taken from the cookie when the body has
+    none. Rotation and blacklisting follow SIMPLE_JWT. A refresh that fails
+    clears the session cookies, so the site stops treating a dead session as
+    signed in.
+    """
 
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request):
-        refresh_token = request.data.get('refresh_token')
+        from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
+        refresh_token = request.data.get('refresh_token') or request.COOKIES.get('rumi_refresh_token')
         if not refresh_token:
-            return Response({
-                'error': 'Refresh token is required'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            response = Response({'error': 'Refresh token is required'}, status=status.HTTP_401_UNAUTHORIZED)
+            clear_auth_cookies(response)
+            return response
 
+        serializer = TokenRefreshSerializer(data={'refresh': refresh_token})
         try:
-            refresh = RefreshToken(refresh_token)
-            access_token = str(refresh.access_token)
+            serializer.is_valid(raise_exception=True)
+        except (TokenError, InvalidToken, AuthenticationFailed, DRFValidationError):
+            response = Response({'error': 'Invalid or expired refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
+            clear_auth_cookies(response)
+            return response
 
-            return Response({
-                'access_token': access_token,
-                'expires_in': 3600
-            }, status=status.HTTP_200_OK)
-
-        except TokenError:
-            return Response({
-                'error': 'Invalid or expired refresh token'
-            }, status=status.HTTP_401_UNAUTHORIZED)
+        access_token = serializer.validated_data['access']
+        new_refresh = serializer.validated_data.get('refresh')
+        response = Response({
+            'access_token': access_token,
+            'refresh_token': new_refresh or refresh_token,
+            'expires_in': int(settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()),
+        }, status=status.HTTP_200_OK)
+        set_auth_cookies(response, access_token, new_refresh)
+        return response
 
 
 @swagger_auto_schema(
     tags=['Authentication']
 )
 class UserLogoutView(APIView):
-    """Handle user logout"""
+    """
+    Sign out. Works with an expired session too: its job is to clear the
+    httpOnly cookies, which only the server can remove.
+    """
+
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        refresh_token = request.data.get('refresh_token')
+        refresh_token = request.data.get('refresh_token') or request.COOKIES.get('rumi_refresh_token')
 
         if refresh_token:
             # Blacklist refresh token
@@ -665,32 +666,19 @@ class UserLogoutView(APIView):
             except:
                 pass
 
-        # Log activity
-        UserActivityLog.objects.create(
-            user=request.user,
-            action_type='logout',
-            action_description="User logged out",
-            ip_address=get_client_ip(request)
-        )
+        if request.user.is_authenticated:
+            UserActivityLog.objects.create(
+                user=request.user,
+                action_type='logout',
+                action_description="User logged out",
+                ip_address=get_client_ip(request)
+            )
 
         response = Response({
             'message': 'Logged out successfully'
         }, status=status.HTTP_200_OK)
 
-        # rumi_access_token/rumi_refresh_token are set httponly=True at login
-        # (UserLoginView), so frontend/src/lib/auth/token.ts's clearTokens()
-        # (a client-side document.cookie delete) can never remove them --
-        # httpOnly cookies are invisible to JS entirely, for both read and
-        # write. Without deleting them here, they stay valid and visible to
-        # middleware.ts's server-side isAuthenticated check after "logout",
-        # while the JS-clearable role/onboarding cookies correctly go empty --
-        # that mismatch traps the user at a blank /onboarding page they can
-        # never navigate away from. path/domain/samesite must match what
-        # UserLoginView.post() used when setting them, or the browser treats
-        # this as a different cookie and the delete silently no-ops.
-        response.delete_cookie('rumi_access_token', path='/', domain=None, samesite='Lax')
-        response.delete_cookie('rumi_refresh_token', path='/', domain=None, samesite='Lax')
-        response.delete_cookie('rumi_user_role', path='/', domain=None, samesite='Lax')
+        clear_auth_cookies(response)
 
         return response
 

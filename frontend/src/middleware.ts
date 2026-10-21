@@ -136,7 +136,10 @@ function getDashboardUrl(role?: UserRole): string {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const token = request.cookies.get(TOKEN_COOKIE)?.value;
+  // A valid refresh cookie is a session too: the access token lasts an
+  // hour, and the API client renews it from the refresh cookie on its first
+  // 401. If the refresh fails, the server clears both cookies.
+  const token = request.cookies.get(TOKEN_COOKIE)?.value || request.cookies.get('rumi_refresh_token')?.value;
   const userRole = request.cookies.get(ROLE_COOKIE)?.value as
     | UserRole
     | undefined;
