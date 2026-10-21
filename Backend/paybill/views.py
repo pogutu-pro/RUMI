@@ -32,10 +32,15 @@ def _forbidden():
 
 
 def _client_ip(request) -> str:
+    """
+    The address that connected to our proxy. Behind Caddy, that is the LAST
+    X-Forwarded-For entry (the one Caddy adds); anything before it was sent by
+    the caller and could claim to be Safaricom.
+    """
     if getattr(settings, 'MPESA_TRUST_X_FORWARDED_FOR', False):
         forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
         if forwarded:
-            return forwarded.split(',')[0].strip()
+            return forwarded.split(',')[-1].strip()
     return request.META.get('REMOTE_ADDR', '')
 
 
