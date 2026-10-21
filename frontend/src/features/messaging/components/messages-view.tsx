@@ -372,7 +372,7 @@ export function MessagesView() {
         </p>
       </div>
 
-      <div className="grid h-[calc(100dvh-13rem)] min-h-[420px] overflow-hidden rounded-2xl border bg-background shadow-sm md:grid-cols-[320px_1fr]">
+      <div className="grid h-[calc(100dvh-19rem)] min-h-[380px] md:h-[calc(100dvh-13rem)] md:min-h-[420px] overflow-hidden rounded-2xl border bg-background shadow-sm md:grid-cols-[320px_1fr]">
         <div className={cn('min-h-0', selected ? 'hidden md:block' : 'block')}>
           <ConversationList
             conversations={conversations}

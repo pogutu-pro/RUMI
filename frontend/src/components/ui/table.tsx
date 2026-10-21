@@ -1,14 +1,49 @@
+'use client';
+
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
-const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
-  ({ className, ...props }, ref) => (
+/**
+ * Copies each column heading onto its cells as data-label, so on phones the
+ * `rr-stack` styles (styles/globals.css) can show every row as a small card:
+ * first cell as the title, then "Heading: value" lines. Re-runs when rows change.
+ */
+function useStackLabels(table: React.RefObject<HTMLTableElement | null>) {
+  React.useEffect(() => {
+    const el = table.current;
+    if (!el) return;
+    const label = () => {
+      const heads = Array.from(el.querySelectorAll('thead th')).map((th) => (th.textContent || '').trim());
+      el.querySelectorAll('tbody tr').forEach((tr) => {
+        Array.from(tr.children).forEach((cell, i) => {
+          const text = heads[i] ?? '';
+          if (cell.getAttribute('data-label') !== text) cell.setAttribute('data-label', text);
+        });
+      });
+    };
+    label();
+    const observer = new MutationObserver(label);
+    observer.observe(el, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [table]);
+}
+
+interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
+  /** Keep a real table on phones (wide data people scroll sideways through on purpose). */
+  noStack?: boolean;
+}
+
+const Table = React.forwardRef<HTMLTableElement, TableProps>(({ className, noStack, ...props }, ref) => {
+  const inner = React.useRef<HTMLTableElement | null>(null);
+  React.useImperativeHandle(ref, () => inner.current as HTMLTableElement);
+  useStackLabels(inner);
+  return (
     <div className="relative w-full overflow-x-auto">
-      <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props} />
+      <table ref={inner} className={cn('w-full caption-bottom text-sm', !noStack && 'rr-stack', className)} {...props} />
     </div>
-  ),
-);
+  );
+});
 Table.displayName = 'Table';
 
 const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
