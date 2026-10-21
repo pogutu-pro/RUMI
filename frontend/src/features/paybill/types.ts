@@ -26,7 +26,9 @@ export interface PaybillTransaction {
   msisdn: string;
   payer_name: string;
   status: PaybillTxnStatus;
-  matched_by: '' | 'reference' | 'unit' | 'phone' | 'manual';
+  matched_by: '' | 'reference' | 'unit' | 'phone' | 'fuzzy' | 'alias' | 'manual';
+  /** Came from an address not on Safaricom's list: check the M-Pesa statement before assigning. */
+  unverified_source?: boolean;
   tenancy: string | null;
   tenant_name: string | null;
   unit_number: string | null;

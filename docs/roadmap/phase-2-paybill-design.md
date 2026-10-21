@@ -91,3 +91,41 @@ See [bank-integration.md](bank-integration.md): Daraja production go-live
 for the landlord's paybill, then in RumiaRent: add the paybill with its
 production consumer key/secret → "Register with Safaricom" → send a KES 10
 test payment with the tenancy's account number.
+
+## Hardening (21 Oct 2026)
+
+**Matching order.** Each rule must find exactly one tenancy; otherwise the
+payment goes to "needs attention":
+
+1. The tenant's account number, exactly.
+2. The unit number, when only one current tenant has it.
+3. A reference learned when the landlord assigned an earlier payment by hand.
+4. One word of what was typed ("RENT B12 OCT"). Noise words such as RENT,
+   HSE and month names are never used alone.
+5. Look-alike characters (O/0, I/L/1, S/5, B/8).
+6. The phone number, only when Safaricom has not masked it.
+
+**Learning.** Assigning a payment by hand remembers its reference for that
+tenant. It is never learned when it is a noise word, a short number, or
+another tenant's account or unit number. If two tenants turn out to use the
+same reference, it becomes *contested* and is always sent to a person.
+
+**Reversal.** Reversing a payment puts its M-Pesa notice and any matched
+statement line back in the queue. A reference learned wrongly becomes
+contested. When the payment is re-assigned, it gets internal reference
+`MPESA-<code>-R2`.
+
+**Never lose a notice.** A notice from an IP outside
+`MPESA_CALLBACK_ALLOWED_IPS` that still carries the secret URL token is stored
+as unverified and held for a person to check against the statement. It is
+never settled automatically. Validation always accepts, and registration uses
+ResponseType `Completed`.
+
+**Missed notices.** The dashboard warns after 7 days without notices on a
+registered paybill. Once a paybill is 35 days old, it shows a monthly
+"check against your M-Pesa statement" item. Statement upload detects the
+header row and columns of M-Pesa and bank CSVs, and handles amounts such as
+`1,000 CR`, `(500)` and `500 DR`.
+
+**Telling tenants.** Every reminder SMS and email says "Pay via M-Pesa Paybill
+<n>, Account <tenant's account number>".

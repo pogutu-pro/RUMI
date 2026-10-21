@@ -119,7 +119,10 @@ function ReportsTab() {
   );
 }
 
+// 'auto': the server finds the header row and columns itself (M-Pesa and most
+// Kenyan bank exports). 'custom' is the fallback when it cannot.
 const PRESETS: Record<string, { date: string; amount: string; reference: string; description: string }> = {
+  auto: { date: '', amount: '', reference: '', description: '' },
   mpesa: { date: 'Completion Time', amount: 'Paid In', reference: 'Receipt No.', description: 'Details' },
   custom: { date: '', amount: '', reference: '', description: '' },
 };
@@ -132,8 +135,8 @@ function ReconcileTab() {
   const ignore = useIgnoreLine();
   const fileRef = React.useRef<HTMLInputElement>(null);
   const [account, setAccount] = React.useState('1020');
-  const [preset, setPreset] = React.useState('mpesa');
-  const [columns, setColumns] = React.useState(PRESETS.mpesa);
+  const [preset, setPreset] = React.useState('auto');
+  const [columns, setColumns] = React.useState(PRESETS.auto);
   const [choice, setChoice] = React.useState<Record<string, string>>({});
 
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,7 +154,8 @@ function ReconcileTab() {
     <div className="space-y-4 pt-2 text-sm">
       <p className="text-muted-foreground">
         Upload your bank or M-Pesa statement (CSV). Lines that match payments already recorded are ticked off; the rest wait
-        here to be assigned to a tenant or marked as not rent.
+        here to be assigned to a tenant or marked as not rent. Doing this once a month catches any M-Pesa payment that
+        did not reach RumiaRent.
       </p>
       <div className="grid gap-2 sm:grid-cols-3">
         <Select value={account} onValueChange={setAccount}>
@@ -164,13 +168,15 @@ function ReconcileTab() {
         <Select value={preset} onValueChange={(v) => { setPreset(v); setColumns(PRESETS[v]); }}>
           <SelectTrigger aria-label="Statement format"><SelectValue /></SelectTrigger>
           <SelectContent>
+            <SelectItem value="auto">Detect the columns for me</SelectItem>
             <SelectItem value="mpesa">M-Pesa org portal export</SelectItem>
-            <SelectItem value="custom">Other — name the columns</SelectItem>
+            <SelectItem value="custom">Name the columns myself</SelectItem>
           </SelectContent>
         </Select>
         <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={onFile} />
         <Button leftIcon={<Upload className="h-4 w-4" />} isLoading={importStatement.isPending}
-          disabled={!columns.date || !columns.amount} onClick={() => fileRef.current?.click()}>Upload CSV</Button>
+          disabled={preset === 'custom' && (!columns.date || !columns.amount)}
+          onClick={() => fileRef.current?.click()}>Upload CSV</Button>
       </div>
       {preset === 'custom' && (
         <div className="grid gap-2 sm:grid-cols-4">

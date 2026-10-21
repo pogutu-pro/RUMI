@@ -167,15 +167,10 @@ function RentHero({
         </Link>
       </div>
 
-      {/* Monthly rent and what's gone toward it this month always show here,
-          regardless of the headline figure above — including money paid
-          ahead of time, which has nothing to reduce and would otherwise be
-          invisible. */}
-      <div className="relative mt-6 grid grid-cols-2 gap-3 border-t border-white/20 pt-6 sm:grid-cols-3">
-        <div>
-          <p className={cn('text-xs', styles.muted)}>Monthly rent</p>
-          <p className="mt-1 text-lg font-semibold">{formatKes(tenancy.monthly_rent)}</p>
-        </div>
+      {/* What has gone toward rent this month always shows here, including
+          money paid ahead of time, which has nothing to reduce and would
+          otherwise be invisible. (Monthly rent is in the tiles below.) */}
+      <div className="relative mt-6 grid grid-cols-2 gap-3 border-t border-white/20 pt-6">
         <div>
           <p className={cn('text-xs', styles.muted)}>Paid this month</p>
           <p className="mt-1 text-lg font-semibold">{formatKes(paidThisMonth)}</p>

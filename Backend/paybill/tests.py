@@ -1,5 +1,6 @@
 """Phase 2 — paybill collection: callbacks, matching, queue, Daraja registration, references."""
 
+from datetime import timedelta
 from decimal import Decimal
 from io import StringIO
 from unittest.mock import MagicMock, patch
@@ -133,12 +134,17 @@ class CallbackTests(PaybillFixtures):
         self.assertEqual(IncomingTransaction.objects.count(), 0)
 
     @override_settings(MPESA_CALLBACK_ALLOWED_IPS=['196.201.214.200'])
-    def test_ip_allowlist(self):
-        self.assertEqual(self.callback(confirmation()).status_code, 403)
+    def test_unlisted_ip_is_held_for_review_not_lost_or_posted(self):
+        held = self.callback(confirmation(trans_id='QKHELD0001'))
+        self.assertEqual(held.status_code, 200)
+        txn = IncomingTransaction.objects.get(trans_id='QKHELD0001')
+        self.assertEqual((txn.status, txn.unverified_source, txn.payment_id), ('unmatched', True, None))
+
         with patch(SMS):
             ok = self.api.post(f'/api/v1/paybill/c2b/{self.paybill.callback_token}/confirm/', confirmation(),
                                format='json', REMOTE_ADDR='196.201.214.200')
         self.assertEqual(ok.status_code, 200)
+        self.assertEqual(IncomingTransaction.objects.get(trans_id='QK12AB34CD').status, 'matched')
 
     def test_bad_amount_is_logged_not_crashing(self):
         response = self.callback(confirmation(amount='abc'))
@@ -258,3 +264,102 @@ class TenantInstructionsAndToolsTests(PaybillFixtures):
         with override_settings(FIELD_ENCRYPTION_KEY='bnJlcGxhY2VtZW50LWtleS1mb3ItdGVzdHMtMzJieXQ='):
             with self.assertRaises(DecryptionError):
                 decrypt(token)
+
+
+class MatchingHardeningTests(PaybillFixtures):
+    """How real tenants type account numbers, and learning from the landlord."""
+
+    def setUp(self):
+        super().setUp()
+        from properties.models import RentalUnit
+        unit_b = RentalUnit.objects.create(organization=self.org, parent_property=self.prop, unit_number='B12',
+                                           monthly_rent=D('15000'))
+        _, tenant_b = self.create_tenant(self.org, email='second@test.com')
+        self.tenancy_b = self.create_tenancy(self.org, self.prop, unit_b, tenant_b)
+
+    def matched(self, ref, trans_id):
+        self.callback(confirmation(trans_id=trans_id, ref=ref, amount='1000.00'))
+        txn = IncomingTransaction.objects.get(trans_id=trans_id)
+        return txn.tenancy_id, txn.matched_by
+
+    def test_account_number_inside_extra_words(self):
+        self.assertEqual(self.matched('rent b12 oct', 'QKWORD0001'), (self.tenancy_b.pk, 'fuzzy'))
+
+    def test_lookalike_characters(self):
+        self.assertEqual(self.matched('BI2', 'QKLOOK0001'), (self.tenancy_b.pk, 'fuzzy'))
+        self.assertEqual(self.matched('A1O1', 'QKLOOK0002'), (self.tenancy.pk, 'fuzzy'))
+
+    def test_noise_alone_never_matches(self):
+        self.assertEqual(self.matched('RENT', 'QKNOISE001'), (None, ''))
+
+    def test_assigning_by_hand_teaches_the_next_payment(self):
+        self.callback(confirmation(trans_id='QKLEARN001', ref='JOHN K', amount='500.00'))
+        first = IncomingTransaction.objects.get(trans_id='QKLEARN001')
+        self.assertEqual(first.status, 'unmatched')
+        with patch(SMS):
+            response = self.client_for(self.landlord).post(
+                f'/api/v1/paybill/transactions/{first.id}/assign/', {'tenancy': str(self.tenancy.id)}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(self.matched('john k', 'QKLEARN002'), (self.tenancy.pk, 'alias'))
+
+    def test_a_wrongly_learned_reference_is_undone_by_reversing(self):
+        from paybill.models import PaybillReferenceAlias
+        from paybill.services import PaybillService
+        from rent.services.payment_service import PaymentService
+        self.callback(confirmation(trans_id='QKMAMA0001', ref='MAMA', amount='500.00'))
+        with patch(SMS):
+            PaybillService.assign(IncomingTransaction.objects.get(trans_id='QKMAMA0001'), self.tenancy, self.landlord)
+        # Another tenant also types MAMA: it is wrongly matched by the learned reference.
+        self.assertEqual(self.matched('MAMA', 'QKMAMA0002'), (self.tenancy.pk, 'alias'))
+        wrong = IncomingTransaction.objects.get(trans_id='QKMAMA0002')
+
+        PaymentService.reverse_payment(wrong.payment, reversed_by=self.landlord, reason='Wrong tenant')
+        wrong.refresh_from_db()
+        self.assertEqual((wrong.status, wrong.payment_id), ('unmatched', None))
+
+        with patch(SMS):
+            payment = PaybillService.assign(wrong, self.tenancy_b, self.landlord)  # now to the right tenant
+        self.assertEqual((payment.tenancy_id, payment.internal_reference), (self.tenancy_b.pk, 'MPESA-QKMAMA0002-R2'))
+        # Two tenants type MAMA: it is never guessed again.
+        self.assertTrue(PaybillReferenceAlias.objects.get(normalized_ref='MAMA').contested)
+        self.assertEqual(self.matched('MAMA', 'QKMAMA0003'), (None, ''))
+
+    def test_never_learns_another_tenants_unit_number(self):
+        from paybill.models import PaybillReferenceAlias
+        from paybill.services import PaybillService
+        self.tenancy_b.status = 'expired'  # B12 no longer current, so 'B12' stays unmatched
+        self.tenancy_b.save(update_fields=['status'])
+        self.callback(confirmation(trans_id='QKUNIT0001', ref='B12X', amount='500.00'))
+        txn = IncomingTransaction.objects.get(trans_id='QKUNIT0001')
+        Tenancy.objects.filter(pk=self.tenancy_b.pk).update(payment_reference='B12X')
+        with patch(SMS):
+            PaybillService.assign(txn, self.tenancy, self.landlord)
+        self.assertFalse(PaybillReferenceAlias.objects.exists())
+
+
+class ReminderHowToPayTests(PaybillFixtures):
+    def test_overdue_reminder_says_where_and_with_which_account_number(self):
+        from rent.services.notifications import how_to_pay, send_invoice_reminder
+        self.assertEqual(how_to_pay(self.tenancy), f'Pay via M-Pesa Paybill 600999, Account {self.tenancy.payment_reference}.')
+        with patch(SMS) as sms:
+            send_invoice_reminder(self.invoice, 'overdue_3', ['sms'], self.invoice.due_date + timedelta(days=3))
+        self.assertIn('Paybill 600999', sms.call_args[0][1])
+
+
+class PaybillAttentionTests(PaybillFixtures):
+    def keys(self):
+        from rumia_api.attention import attention_items
+        return {item['key'] for item in attention_items(self.org)}
+
+    def test_quiet_paybill_and_monthly_statement_check(self):
+        from django.utils import timezone
+        long_ago = timezone.now() - timedelta(days=40)
+        PaybillAccount.objects.filter(pk=self.paybill.pk).update(
+            registered_at=long_ago, last_callback_at=long_ago, created_at=long_ago)
+        keys = self.keys()
+        self.assertIn('paybill_quiet_600999', keys)
+        self.assertIn('statement_check', keys)
+
+    def test_new_paybill_is_not_nagged(self):
+        self.assertFalse({'statement_check', 'paybill_quiet_600999'} & self.keys())
+
