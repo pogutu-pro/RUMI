@@ -44,7 +44,8 @@ function ReportsTab() {
   const [report, setReport] = React.useState('income_statement');
   const [start, setStart] = React.useState(monthStart());
   const [end, setEnd] = React.useState(today());
-  const params = report === 'income_statement' ? { period_start: start, period_end: end } : { as_of: end };
+  const params: Record<string, string> =
+    report === 'income_statement' ? { period_start: start, period_end: end } : { as_of: end };
   const { data, isLoading } = useReport(report, params);
   const rowTable = (rows: ReportRow[] = [], title: string) => (
     <div>
