@@ -1,202 +1,125 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, User } from 'lucide-react';
-
-import { Button } from '@/components/ui/button';
-import { UserMenu } from '@/components/layouts/user-menu';
+import { Menu, X } from 'lucide-react';
+import { AUTH_ROUTES, getDashboardRoute } from '@/lib/constants/routes';
 import { cn } from '@/lib/utils/cn';
-import { sanitizeInput, sanitizeImageUrl } from '@/lib/utils/security';
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
-import { PublicMenuContent } from '@/components/layouts/public-menu-content';
-import { AUTH_ROUTES } from '@/lib/constants/routes';
-import { RumiaLogoCompact } from '@/components/ui/rumia-animated-logo';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
 
-const LOGIN_HREF = AUTH_ROUTES.LOGIN;
+// Kept to what a first-time visitor needs; everything else is in the footer.
+const NAV = [
+  { href: '/pricing', label: 'Pricing' },
+  { href: '/rentals', label: 'Find a rental' },
+];
 
-interface PublicHeaderProps {
-  user?: {
-    name: string;
-    role: 'tenant' | 'landlord' | 'admin';
-    image?: string;
-  } | null;
-  onSignOut?: () => Promise<void>;
+function Logo() {
+  return (
+    <Link href="/" className="flex shrink-0 items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+      <Image src="/images/logo/logo.png" alt="" width={36} height={36} priority className="h-9 w-9" />
+      <span className="text-lg font-semibold tracking-tight text-gray-900">
+        Rumia<span className="text-primary">Rent</span>
+      </span>
+    </Link>
+  );
 }
 
-export const PublicHeader = React.memo(function PublicHeader({
-  user,
-  onSignOut,
-}: PublicHeaderProps = {}) {
+/**
+ * One header for every public page: logo, two links, Sign in and one
+ * primary action. On phones the primary action stays visible next to a
+ * single menu button, so it is always clear where to start.
+ */
+export function PublicHeader() {
   const pathname = usePathname();
-  const isHome = pathname === '/';
-  const isAuthenticated = useAuthStore((s) => s.status === 'authenticated');
-  const [isScrolled, setIsScrolled] = React.useState(false);
-  const [isOpen, setIsOpen] = React.useState(false);
+  const user = useAuthStore((s) => s.user);
+  const signedIn = useAuthStore((s) => s.status === 'authenticated') && !!user;
+  const dashboard = signedIn && user?.role ? getDashboardRoute(user.role) : null;
+  const [open, setOpen] = React.useState(false);
 
-  // Handle scroll effect
+  React.useEffect(() => setOpen(false), [pathname]);
   React.useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+    document.body.style.overflow = open ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [open]);
 
-  const sanitizedUser = React.useMemo(() => {
-    if (!user) return null;
-    return {
-      name: sanitizeInput(user.name),
-      role: user.role,
-      image: user.image ? sanitizeImageUrl(user.image) : undefined,
-    };
-  }, [user]);
+  const primary = dashboard
+    ? { href: dashboard, label: 'Open dashboard' }
+    : { href: AUTH_ROUTES.REGISTER, label: 'Start free' };
 
   return (
-    <>
-      <header
-        className={cn(
-          'fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out',
-          isScrolled
-            ? 'bg-white/80 backdrop-blur-md shadow-lg py-2 xs:py-3'
-            : isHome
-              ? 'bg-transparent py-4 xs:py-6'
-              : 'bg-white/90 backdrop-blur-sm py-3 xs:py-5',
-        )}
-      >
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="flex items-center justify-between gap-4">
-            {/* Logo */}
+    <header className="sticky top-0 z-50 border-b border-gray-200/80 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
+        <Logo />
+
+        <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
+          {NAV.map((item) => (
             <Link
-              href="/"
-              className="flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-sm group shrink-0"
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900',
+                pathname === item.href && 'text-gray-900',
+              )}
             >
-              <div className="relative h-16 w-16 xs:h-20 xs:w-20 overflow-hidden rounded-lg transition-transform group-hover:scale-105">
-                <Image
-                  src="/images/logo/logo.png"
-                  alt="RumiaRent Logo"
-                  width={80}
-                  height={80}
-                  priority
-                  style={{ height: 'auto' }}
-                />
-              </div>
-              <RumiaLogoCompact />
+              {item.label}
             </Link>
+          ))}
+        </nav>
 
-            {/* Center – Quick Links */}
-            <div className="flex-1 flex justify-center max-w-4xl mx-auto">
-              <nav
-                className="hidden lg:flex items-center gap-1"
-                aria-label="Main navigation"
+        <div className="flex items-center gap-2">
+          {!dashboard && (
+            <Link href={AUTH_ROUTES.LOGIN} className="hidden rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 md:inline-flex">
+              Sign in
+            </Link>
+          )}
+          <Link
+            href={primary.href}
+            className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+          >
+            {primary.label}
+          </Link>
+          <button
+            type="button"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-gray-700 hover:bg-gray-100 md:hidden"
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-expanded={open}
+            aria-controls="mobile-menu"
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <div id="mobile-menu" className="fixed inset-x-0 top-16 bottom-0 z-50 overflow-y-auto border-t border-gray-200 bg-white md:hidden">
+          <nav aria-label="Mobile" className="mx-auto flex max-w-6xl flex-col px-4 py-4">
+            {NAV.map((item) => (
+              <Link key={item.href} href={item.href} className="border-b border-gray-100 py-4 text-lg font-medium text-gray-900">
+                {item.label}
+              </Link>
+            ))}
+            <Link href="/faq" className="border-b border-gray-100 py-4 text-lg font-medium text-gray-900">Help</Link>
+            <div className="mt-6 flex flex-col gap-3">
+              <Link
+                href={primary.href}
+                className="inline-flex h-12 items-center justify-center rounded-lg bg-primary text-base font-semibold text-white"
               >
-                {[
-                  { href: '/features', label: 'Features' },
-                  { href: '/how-it-works', label: 'How It Works' },
-                  { href: '/pricing', label: 'Pricing' },
-                  { href: '/about', label: 'About' },
-                ].map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      'px-4 py-2 text-lg font-bold transition-colors',
-                      pathname.startsWith(item.href)
-                        ? 'text-primary underline decoration-2 underline-offset-8'
-                        : 'text-primary hover:text-primary/80',
-                    )}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-            </div>
-
-            {/* Right Side Actions */}
-            <div className="flex items-center gap-3 shrink-0">
-              {sanitizedUser ? (
-                <UserMenu
-                  userName={sanitizedUser.name}
-                  userRole={sanitizedUser.role}
-                  userImage={sanitizedUser.image}
-                  onSignOut={onSignOut ?? (async () => {})}
-                />
-              ) : (
-                <div className="flex items-center gap-2">
-                  {isAuthenticated ? (
-                    <Link href="/dashboard" className="hidden md:block">
-                      <Button size="sm" className="rounded-full">
-                        Dashboard
-                      </Button>
-                    </Link>
-                  ) : (
-                    <>
-                      <Link href={LOGIN_HREF} className="hidden md:block">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="font-semibold text-primary hover:bg-primary/10"
-                        >
-                          Sign in
-                        </Button>
-                      </Link>
-                      <Link
-                        href={`${AUTH_ROUTES.REGISTER}?role=landlord`}
-                        className="hidden md:block"
-                      >
-                        <Button size="sm" className="rounded-full">
-                          Get started
-                        </Button>
-                      </Link>
-                    </>
-                  )}
-                  <Sheet open={isOpen} onOpenChange={setIsOpen}>
-                    <SheetTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-primary hover:bg-primary/10"
-                        aria-label="Open menu"
-                      >
-                        <Menu className="h-6 w-6" />
-                      </Button>
-                    </SheetTrigger>
-                    <SheetContent
-                      side="right"
-                      className="w-[300px] sm:w-[400px]"
-                    >
-                      <SheetHeader className="sr-only">
-                        <SheetTitle>Navigation Menu</SheetTitle>
-                        <SheetDescription>
-                          Main navigation menu for accessing public pages.
-                        </SheetDescription>
-                      </SheetHeader>
-                      <div className="flex h-full flex-col pt-8">
-                        <PublicMenuContent
-                          onClose={() => setIsOpen(false)}
-                          excludeHeader
-                        />
-                      </div>
-                    </SheetContent>
-                  </Sheet>
-                </div>
+                {dashboard ? 'Open dashboard' : 'Start free for 30 days'}
+              </Link>
+              {!dashboard && (
+                <Link href={AUTH_ROUTES.LOGIN} className="inline-flex h-12 items-center justify-center rounded-lg border border-gray-300 text-base font-semibold text-gray-900">
+                  Sign in
+                </Link>
               )}
             </div>
-          </div>
+          </nav>
         </div>
-      </header>
-      {/* Spacer for fixed header on non-home pages */}
-      {!isHome && <div className="h-20" />}
-    </>
+      )}
+    </header>
   );
-});
+}

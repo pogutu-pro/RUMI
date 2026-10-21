@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { FadeIn } from '@/components/animations/fade-in';
+import { PageIntro } from '@/components/marketing/page-intro';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -56,19 +57,12 @@ export default function ContactPage() {
 
   return (
     <div className="flex flex-col bg-white text-gray-900">
-      {/* Hero Section */}
-      <section className="border-b border-gray-200 bg-white py-24 md:py-32">
-        <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <h1 className="mb-6 text-4xl font-bold text-gray-900 sm:text-5xl md:text-6xl">
-              Get in Touch
-            </h1>
-            <p className="text-xl text-gray-600 leading-relaxed">
-              Have a question? We'd love to hear from you. Send us a message and
-              we'll respond as soon as possible.
-            </p>
-          </div>
-        </FadeIn>
+      <section className="px-4 pt-12 sm:pt-20">
+        <div className="mx-auto max-w-6xl">
+          <PageIntro title="Contact">
+            Questions about RumiaRent, or setting up your paybill? Email info@rumiarent.com or send a message.
+          </PageIntro>
+        </div>
       </section>
 
       {/* Contact Form & Info */}

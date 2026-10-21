@@ -1,5 +1,6 @@
 "use client";
 
+import { PageIntro } from '@/components/marketing/page-intro';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
@@ -196,38 +197,14 @@ export default function BlogPage() {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      {/* Hero - Clean, Notion-style */}
-      <section className="border-b border-border/50 bg-gradient-to-b from-muted/30 to-background">
-        <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-10 md:pt-24 md:pb-14">
-          <div className="mx-auto max-w-3xl text-center">
-            <Badge
-              variant="outline"
-              className="mb-5 inline-flex items-center gap-2 border-border bg-background/80 px-4 py-2 text-sm font-semibold text-foreground"
-            >
-              <BookOpen className="h-4 w-4" />
-              RumiaRent Blog
-            </Badge>
-            <h1 className="mb-5 text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl leading-tight">
-              Insights for better
-              <br />
-              rental living.
-            </h1>
-            <p className="mb-6 text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-              Guides, stories, and updates for tenants, landlords, and
-              caretakers building safer, better managed rentals.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4 text-base text-muted-foreground">
-              <div className="inline-flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-full">
-                <Users className="h-5 w-5 text-primary" />
-                <span className="font-medium">For Everyone</span>
-              </div>
-            </div>
-          </div>
-        </FadeIn>
+      <section className="px-4 pb-10 pt-12 sm:pt-20">
+        <div className="mx-auto max-w-6xl">
+          <PageIntro title="Blog">Guides and updates for landlords, agents and tenants in Kenya.</PageIntro>
+        </div>
       </section>
 
       {/* Filters - Large, accessible buttons */}
-      <section className="border-b border-border/50 bg-muted/20 sticky top-0 z-10 backdrop-blur-sm">
+      <section className="border-b border-border/50 bg-muted/20 sticky top-16 z-10 backdrop-blur-sm">
         <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap gap-2">

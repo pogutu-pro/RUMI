@@ -1,228 +1,131 @@
-import type { Metadata } from 'next';
-import { FadeIn } from '@/components/animations/fade-in';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowRight, MessageCircle } from 'lucide-react';
+import type { Metadata } from 'next';
+import { FAQS } from '@/lib/marketing';
+import { FaqList, faqSchema } from '@/components/marketing/faq-list';
 
 export const metadata: Metadata = {
+  title: 'Help and FAQ',
+  description:
+    'Answers about RumiaRent: how M-Pesa rent payments are matched, receipts and reminders, tenants, caretakers, pricing and your data.',
   alternates: { canonical: '/faq' },
-  title: 'Frequently Asked Questions',
-  description: 'Find answers to common questions about RumiaRent.',
 };
 
-const FAQ_CATEGORIES = [
+const byQuestion = Object.fromEntries(FAQS.map((f) => [f.q, f]));
+const pick = (...questions: string[]) => questions.map((q) => byQuestion[q]);
+
+const GROUPS = [
   {
-    title: 'Getting Started',
+    id: 'start',
+    title: 'Getting started',
     items: [
+      ...pick('What is RumiaRent?', 'Does it work on a phone?'),
       {
-        question: 'How do I create an account?',
-        answer:
-          'Landlords and agents click "Sign up" and fill in their details, then verify their email. Tenants and caretakers do not sign up: the landlord or caretaker adds them, and they get an email to set up their own account.',
+        q: 'How do I set up my first property?',
+        a: 'Sign up, enter your business name, then add a property with how many units it has and the rent. RumiaRent creates the units for you, numbered the way you choose, such as A1 to A12.',
       },
       {
-        question: 'Is RumiaRent free to try?',
-        answer:
-          'Yes. Every plan starts with a 30-day free trial, no credit card required. See Pricing for what\'s included.',
-      },
-      {
-        question: 'What do I need to set up my first property?',
-        answer:
-          'Just a property name and address. Add units, then attach tenants as you go. There\'s no bulk import required to get started.',
+        q: 'How do I add a tenant?',
+        a: 'Choose "Add tenant", pick a vacant unit and enter their name, phone and rent. Invoices, their account number and reminders start automatically. Tenants with an email address also get a login.',
       },
     ],
   },
   {
-    title: 'Properties & Tenancies',
+    id: 'payments',
+    title: 'Rent and M-Pesa',
     items: [
+      ...pick('Does RumiaRent hold my rent money?', 'How do tenants pay rent?', 'What if a tenant types the wrong account number?', 'Do I need my own paybill?'),
       {
-        question: 'What counts as a "unit"?',
-        answer:
-          'Any rentable space: an apartment, a house, or a room in an estate. Each unit belongs to one property and can have one active tenancy at a time.',
+        q: 'How do I connect my paybill so payments match automatically?',
+        a: 'Add your paybill number in RumiaRent, then get your paybill approved on Safaricom\'s Daraja portal ("Go Live"), paste the two keys Safaricom gives you, and press Register. The M-Pesa paybill page walks you through each step.',
       },
       {
-        question: 'Can a unit have two tenants at once?',
-        answer:
-          'No. RumiaRent enforces one active tenancy per unit. To move a new tenant in, terminate the current tenancy first.',
+        q: 'What happens if a payment is missed?',
+        a: 'Once a month RumiaRent reminds you to upload your M-Pesa or bank statement. Any payment that did not reach RumiaRent shows up so you can add it in one tap.',
       },
       {
-        question: 'How do I end a tenancy?',
-        answer:
-          'Open the tenancy and choose "Terminate." The unit is automatically marked vacant and ready for the next tenant.',
+        q: 'Can I record cash and bank payments?',
+        a: 'Yes. Record a cash, bank or M-Pesa payment against a tenant and their receipt is sent the same way. Caretakers can record payments too, if you allow it.',
       },
     ],
   },
   {
-    title: 'Rent & Payments',
+    id: 'tenants',
+    title: 'Tenants, caretakers and agents',
     items: [
+      ...pick('Can my caretaker use it?'),
       {
-        question: 'How does rent get charged?',
-        answer:
-          'RumiaRent generates the next rent charge automatically for every active tenancy, based on the rent amount and due day you set.',
+        q: 'What do tenants see?',
+        a: 'Their balance, invoices, receipts and how to pay: your paybill number and their own account number. They can also give notice to vacate and message you.',
       },
       {
-        question: 'What payment methods do you support?',
-        answer:
-          'Tenants pay your own M-Pesa paybill, each with their own account number, so payments are matched and receipted automatically. You can also record cash and bank transfers, or upload a bank or M-Pesa statement to match. RumiaRent never holds rent money.',
-      },
-      {
-        question: 'How is a payment confirmed?',
-        answer:
-          'Safaricom notifies RumiaRent when a payment lands in your paybill. We record it against the tenant whose account number was used and send their receipt. A payment with a mistyped account number waits for you to assign it. Nothing is ever based on what a tenant says they paid.',
-      },
-      {
-        question: 'What if a payment is reversed or fails?',
-        answer:
-          'The rent charge automatically returns to outstanding, and it stays visible until it\'s resolved.',
+        q: 'I am an agent. Can I manage properties for several owners?',
+        a: 'Yes. Add each property owner, set your management and letting fees, and send each owner a monthly statement. Payouts to owners are recorded, and you send the money from your own bank or M-Pesa.',
       },
     ],
   },
   {
-    title: 'For Landlords & Agents',
+    id: 'billing',
+    title: 'Pricing and billing',
     items: [
+      ...pick('How much does RumiaRent cost?'),
       {
-        question: 'Can I manage multiple properties?',
-        answer:
-          'Yes. Add as many properties and units as you manage, all under one account.',
-      },
-      {
-        question: 'Can I give caretakers access?',
-        answer:
-          'Yes. Caretaker accounts can be scoped to only the specific properties they manage, nothing else.',
-      },
-      {
-        question: 'How do I see who owes me rent?',
-        answer:
-          'Your Rent page shows every outstanding and overdue charge, updated in real time, with a one-click way to record a payment.',
+        q: 'Do you take a percentage of rent?',
+        a: 'No. RumiaRent is a flat monthly subscription. Your rent goes straight to you.',
       },
     ],
   },
   {
-    title: 'Security & Privacy',
+    id: 'data',
+    title: 'Your data',
     items: [
       {
-        question: 'Can other landlords see my data?',
-        answer:
-          'No. Every property, tenant, and payment record is isolated to your organization, enforced on the server rather than just hidden in the interface.',
+        q: 'Who can see my tenants\' information?',
+        a: 'Only you and the caretakers you assign to a property. Tenants see only their own account. Details are in our privacy policy.',
       },
       {
-        question: 'Is my tenant\'s personal information protected?',
-        answer:
-          'Yes. Tenant contact details and financial records are only visible to you, your permitted caretakers, and the tenant themselves.',
-      },
-      {
-        question: 'Do you store card details?',
-        answer:
-          'No. Rent is paid by M-Pesa or bank straight to you, and the card payments for your RumiaRent subscription are handled by Paystack. RumiaRent never stores card numbers.',
+        q: 'Can I export my records?',
+        a: 'Yes. Download monthly statements as PDF and transactions as CSV, including a QuickBooks-friendly format.',
       },
     ],
   },
 ];
 
-export default function FAQPage() {
-  const faqSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: FAQ_CATEGORIES.flatMap((category) =>
-      category.items.map((item) => ({
-        '@type': 'Question',
-        name: item.question,
-        acceptedAnswer: { '@type': 'Answer', text: item.answer },
-      })),
-    ),
-  };
-
+export default function FaqPage() {
+  const all = GROUPS.flatMap((g) => g.items);
   return (
-    <div className="flex flex-col bg-white text-gray-900">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-      />
-      {/* Hero Section */}
-      <section className="border-b border-gray-200 bg-white py-24 md:py-32">
-        <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <h1 className="mb-6 text-4xl font-bold text-gray-900 sm:text-5xl md:text-6xl">
-              Frequently Asked Questions
-            </h1>
-            <p className="text-xl text-gray-600 leading-relaxed">
-              Find answers to common questions about RumiaRent. Can&apos;t find what you&apos;re
-              looking for?{' '}
-              <Link
-                href="/contact"
-                className="text-primary hover:text-primary/80 font-semibold underline-offset-4 hover:underline"
-              >
-                Contact us
-              </Link>
-              .
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(all)) }} />
+      <section className="px-4 pb-20 pt-12 sm:pt-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="max-w-2xl">
+            <h1 className="text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl">Help and FAQ</h1>
+            <p className="mt-4 text-lg leading-relaxed text-gray-600">
+              Short answers to what landlords, agents and tenants ask most. Can&apos;t find yours?{' '}
+              <Link href="/contact" className="font-medium text-primary hover:underline">Ask us</Link>.
             </p>
           </div>
-        </FadeIn>
-      </section>
 
-      {/* FAQ Sections */}
-      <section className="py-24 md:py-32 bg-white">
-        <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-4xl">
-            <div className="space-y-12">
-              {FAQ_CATEGORIES.map((category, categoryIndex) => (
-                <div key={category.title}>
-                  <h2 className="mb-6 text-2xl font-bold text-gray-900 sm:text-3xl">
-                    {category.title}
-                  </h2>
-                  <Accordion type="single" collapsible className="w-full space-y-4">
-                    {category.items.map((item, itemIndex) => (
-                      <AccordionItem
-                        key={item.question}
-                        value={`${categoryIndex}-${itemIndex}`}
-                        className="rounded-2xl border border-gray-100 px-6 shadow-sm"
-                      >
-                        <AccordionTrigger className="text-left font-semibold hover:no-underline">
-                          {item.question}
-                        </AccordionTrigger>
-                        <AccordionContent className="text-gray-600 leading-relaxed">
-                          {item.answer}
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
-                </div>
+          <div className="mt-12 grid gap-12 lg:grid-cols-4">
+            <nav aria-label="Topics" className="hidden lg:block">
+              <ul className="sticky top-24 space-y-2 text-sm">
+                {GROUPS.map((group) => (
+                  <li key={group.id}>
+                    <a href={`#${group.id}`} className="text-gray-600 hover:text-gray-900">{group.title}</a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+            <div className="space-y-12 lg:col-span-3">
+              {GROUPS.map((group) => (
+                <section key={group.id} id={group.id} className="scroll-mt-24">
+                  <h2 className="mb-2 text-xl font-semibold text-gray-900">{group.title}</h2>
+                  <FaqList items={group.items} />
+                </section>
               ))}
             </div>
           </div>
-        </FadeIn>
+        </div>
       </section>
-
-      {/* CTA Section */}
-      <section className="bg-gray-50 py-24 md:py-32">
-        <FadeIn className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-6 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                <MessageCircle className="h-8 w-8 text-primary" />
-              </div>
-            </div>
-            <h2 className="mb-4 text-3xl font-bold text-gray-900 sm:text-4xl">
-              Still have questions?
-            </h2>
-            <p className="mb-8 text-lg text-gray-600">
-              Our support team is here to help. Get in touch and we&apos;ll respond as
-              soon as possible.
-            </p>
-            <Link href="/contact" prefetch>
-              <Button size="lg" className="h-12 px-8">
-                Contact Support
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-          </div>
-        </FadeIn>
-      </section>
-    </div>
+    </>
   );
 }
