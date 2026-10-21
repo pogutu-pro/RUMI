@@ -35,7 +35,7 @@ See [phase-0-critical-fixes.md](phase-0-critical-fixes.md) for fix design.
 Rent split uses `percentage_charge=0` + `bearer='account'`: the platform pays
 Paystack's ~1.5% fee on every rent payment and earns nothing from it. Example:
 50 units × KES 22,000 ≈ KES 16,500/month in fees against a KES 7,999 Pro
-subscription. (`rent/providers/paystack.py`, `payment_service.py:148`)
+subscription (Pro is KES 3,999 since the October 2026 launch prices). (`rent/providers/paystack.py`, `payment_service.py:148`)
 
 ## Missing / half-built
 
@@ -49,7 +49,7 @@ subscription. (`rent/providers/paystack.py`, `payment_service.py:148`)
 ## Housekeeping
 
 - README is stale (hostels, students, M-Pesa STK, "112 tests").
-- `settings.py` holds dead pricing constants (`BASIC_PLAN_PRICE=10000`, 2% student fee) that don't match seeded plans (2,999 / 7,999 / 19,999).
+- `settings.py` holds dead pricing constants (`BASIC_PLAN_PRICE=10000`, 2% student fee) that don't match seeded plans (now 1,499 / 3,999 / 9,999, the October 2026 launch prices; originally 2,999 / 7,999 / 19,999).
 - 8 receipt PDFs committed under `Backend/media/receipts/pdf/`.
 
 ## Checked and fine
