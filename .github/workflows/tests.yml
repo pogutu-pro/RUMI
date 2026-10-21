@@ -136,7 +136,7 @@ jobs:
       - name: 🧪 Run unit tests
         run: |
           cd frontend
-          pnpm test -- --passWithNoTests
+          pnpm test --ci
 
       # The same build the server runs: a failure here would also fail the deploy.
       - name: 🏗️ Production build
