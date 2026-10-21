@@ -60,6 +60,10 @@ else
     log "WARNING: ledger check failed; see the log above. Backup: $BACKUP"
 fi
 
+# Paystack bills the amount on its own plan, so keep it equal to our price.
+$COMPOSE exec -T backend python manage.py sync_paystack_plans >> "$LOG_FILE" 2>&1 \
+    || log "WARNING: Paystack plan sync failed; see the log above."
+
 echo "$TARGET" > "$STATE_FILE"
 docker image prune -f > /dev/null
 log "=== Deployed ${TARGET:0:8} ==="
