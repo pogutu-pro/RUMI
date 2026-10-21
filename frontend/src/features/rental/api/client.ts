@@ -119,6 +119,11 @@ export const rentalApi = {
     const res = await axios.post<Tenancy>('/tenancies/', payload);
     return res.data;
   },
+  /** New tenant + tenancy in one request (rolls back together). */
+  moveIn: async (payload: Record<string, unknown>): Promise<Tenancy> => {
+    const res = await axios.post<Tenancy>('/tenancies/move-in/', payload);
+    return res.data;
+  },
   updateTenancy: async (id: string, payload: Record<string, unknown>): Promise<Tenancy> => {
     const res = await axios.patch<Tenancy>(`/tenancies/${id}/`, payload);
     return res.data;

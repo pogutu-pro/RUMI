@@ -16,6 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
+import { MoveInDialog } from '@/features/rental/components/move-in-dialog';
 import { useProperty, useUnits, useCreateUnit, useUpdateUnit } from '@/features/rental/hooks/use-rental';
 import { GateBanner } from '@/features/rental/components/gate-banner';
 import { isGateRejection } from '@/lib/api/gate';
@@ -48,6 +49,7 @@ export default function PropertyDetailPage() {
 
   const [open, setOpen] = React.useState(false);
   const [editingUnit, setEditingUnit] = React.useState<RentalUnit | null>(null);
+  const [moveInUnit, setMoveInUnit] = React.useState<string | null>(null);
   const gateError = isGateRejection(createUnit.error);
 
   const form = useForm<z.input<typeof unitSchema>, unknown, z.output<typeof unitSchema>>({
@@ -278,6 +280,7 @@ export default function PropertyDetailPage() {
               <TableHead>Rent</TableHead>
               <TableHead>Status</TableHead>
               <TableHead title="Shown on the public RumiaRent rentals page while vacant">Advertise</TableHead>
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -310,6 +313,11 @@ export default function PropertyDetailPage() {
                     aria-label={`Advertise unit ${u.unit_number} while vacant`}
                   />
                 </TableCell>
+                <TableCell>
+                  {u.status === 'vacant' && (
+                    <Button size="sm" variant="outline" onClick={() => setMoveInUnit(u.id)}>Move in</Button>
+                  )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -317,6 +325,7 @@ export default function PropertyDetailPage() {
         <SimplePager {...unitsPager} />
         </>
       )}
+      <MoveInDialog open={!!moveInUnit} onOpenChange={(v) => { if (!v) setMoveInUnit(null); }} unitId={moveInUnit ?? undefined} />
     </div>
   );
 }

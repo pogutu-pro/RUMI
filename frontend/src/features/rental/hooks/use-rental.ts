@@ -205,6 +205,39 @@ export const useTenancies = () => {
   });
 };
 
+function announceTenancy(tenancy: Tenancy) {
+  // The landlord/caretaker otherwise has no way to know an invite email
+  // didn't go out — it looks identical to success. This bit them for
+  // real: a tenant profile created with the landlord's own login email
+  // silently linked to that account instead of inviting anyone.
+  if (tenancy.tenant_invite_outcome === 'linked_existing') {
+    toast.success('Tenancy created', {
+      description:
+        'No invite sent — this email already has a RumiaRent account, so it kept its existing access instead of getting a tenant login.',
+    });
+  } else if (tenancy.tenant_invite_outcome === 'no_email') {
+    toast.success('Tenant moved in', {
+      description: 'Receipts and reminders go to their phone. Add an email to also give them a login.',
+    });
+  } else {
+    toast.success('Tenant moved in', { description: 'They have been sent a login invite.' });
+  }
+}
+
+/** Move a new tenant into a unit: creates the tenant and the tenancy together. */
+export const useMoveIn = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Record<string, unknown>) => rentalApi.moveIn(payload),
+    onSuccess: (tenancy) => {
+      qc.invalidateQueries({ queryKey: ['rental'] });
+      qc.invalidateQueries({ queryKey: ['ledger'] });
+      announceTenancy(tenancy);
+    },
+    onError: (err) => toast.error(errorMessage(err, 'Could not move the tenant in')),
+  });
+};
+
 export const useCreateTenancy = () => {
   const qc = useQueryClient();
   return useMutation({

@@ -41,7 +41,7 @@ const BLOCKS: Block[] = [
     heading: '4. Subscriptions and billing',
     body: [
       'Every new landlord account starts with a 30-day free trial with all features unlocked. No payment card is needed to start. Before the trial ends you will be asked to choose a plan.',
-      'Plans are charged monthly in Kenyan shillings (KES) at the price shown on the pricing page. Payments are processed by Paystack. Rental income tax figures and basic accounting are free on every plan.',
+      'Plans are charged monthly in Kenyan shillings (KES) at the price shown on the pricing page. Subscription payments are processed by Paystack. Rental income tax figures and basic accounting are free on every plan.',
       'A plan renews automatically each month until it is cancelled. Some accounts are billed manually instead, and those receive a reminder before each renewal date.',
       'To cancel, contact us using the details below. Cancellation takes effect at the end of the period you have already paid for, and you keep access until then. We do not charge for any period after that.',
       'If a renewal payment fails, your account stays fully usable for a short grace period while you fix the payment. After that the account is suspended, meaning you cannot use paid features. Your records are not deleted, and access returns when payment succeeds.',
@@ -52,7 +52,7 @@ const BLOCKS: Block[] = [
   {
     heading: '5. Rent payments between tenants and landlords',
     body: [
-      "When a tenant pays rent online, Paystack processes the payment and it is paid out to the landlord's payout account. RumiaRent does not hold rent money. Landlords and tenants must sort out any dispute about rent between themselves.",
+      "Tenants pay rent directly to the landlord's own M-Pesa paybill, bank account or in cash. RumiaRent never receives, holds or moves rent money: it records payments the landlord's paybill reports or the landlord enters, and issues receipts. Landlords and tenants must sort out any dispute about rent between themselves.",
       'Landlords and caretakers can also record rent received in cash, by bank transfer or directly to M-Pesa. The person recording it is responsible for making sure it is accurate.',
     ],
   },

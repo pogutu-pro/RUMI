@@ -41,9 +41,10 @@ export default function CompliancePage() {
               <section>
                 <h2 className="mb-4 text-2xl font-bold text-gray-900">2. Payment Security</h2>
                 <p className="leading-relaxed">
-                  RumiaRent does not process card, bank, or M-Pesa payment details directly. All
-                  payments are handled by Paystack, a PCI-DSS compliant payment processor. We never
-                  see or store your card or bank details.
+                  RumiaRent never holds or moves rent money. Tenants pay the landlord&apos;s own M-Pesa
+                  paybill or bank account; we only receive the notice that a payment happened. Card
+                  payments for RumiaRent subscriptions are handled by Paystack, a PCI-DSS compliant
+                  processor, and we never see or store card details.
                 </p>
               </section>
 

@@ -23,11 +23,17 @@ export default function OnboardingPage() {
               <UserCheck className="w-8 h-8 text-primary" />
             </div>
           }
-          title={<span className="font-semibold text-3xl tracking-tight">Complete Profile</span>}
+          title={
+            <span className="font-semibold text-3xl tracking-tight">
+              {user.role === 'landlord' ? 'Set up RumiaRent' : 'Complete your profile'}
+            </span>
+          }
           description={
             <div className="space-y-1">
-              <p className="text-gray-900 font-bold">Finish setting up your {user.role} account</p>
-              <p className="text-xs text-gray-500">We need a few more details to verify your identity</p>
+              <p className="text-gray-900 font-bold">
+                {user.role === 'landlord' ? 'Three quick steps, about two minutes' : `Finish setting up your ${user.role} account`}
+              </p>
+              <p className="text-xs text-gray-500">You can change everything later.</p>
             </div>
           }
         >

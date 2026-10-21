@@ -795,6 +795,7 @@ class RentGenerationTests(RumiaTestFixtures):
         self.assertEqual(Decimal(response.data['outstanding_total']), Decimal('0.00'))
 
 
+@override_settings(RENT_ONLINE_PAYMENTS_ENABLED=True)
 class PaystackFlowTests(RumiaTestFixtures):
     def _tenancy_with_tenant(self):
         user_l, _, org = self.create_landlord_with_org()
@@ -1519,6 +1520,7 @@ class CaretakerEndpointTests(RumiaTestFixtures):
         self.assertEqual(resp.status_code, 400)
 
 
+@override_settings(RENT_ONLINE_PAYMENTS_ENABLED=True)
 class PaymentsPhase0RegressionTests(RumiaTestFixtures):
     """Audit C4/C5 — see docs/roadmap/phase-0-critical-fixes.md."""
 
@@ -1696,3 +1698,122 @@ class ManualPaymentRecordingTests(RumiaTestFixtures):
         payment = Payment.objects.get()
         self.assertTrue(Receipt.objects.filter(payment=payment).exists())
         queued.assert_called_once()
+
+
+class RentVerifyOnlyTests(RumiaTestFixtures):
+    """With online rent off (the default), RumiaRent never starts a tenant checkout."""
+
+    def setUp(self):
+        _, _, self.org = self.create_landlord_with_org()
+        prop, unit = self.create_property_with_unit(self.org)
+        self.tenant_user, tenant = self.create_tenant(self.org)
+        self.tenancy = self.create_tenancy(self.org, prop, unit, tenant)
+
+    @patch.object(PaystackProvider, 'initiate_payment')
+    def test_tenant_cannot_start_a_paystack_rent_checkout(self, mock_initiate):
+        client = APIClient()
+        client.force_authenticate(user=self.tenant_user)
+        response = client.post('/api/v1/rent/payments/', {'tenancy': str(self.tenancy.id), 'amount': '22000.00'})
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.data['code'], 'online_rent_disabled')
+        mock_initiate.assert_not_called()
+        self.assertFalse(Payment.objects.exists())
+
+    def test_landlord_onboarding_does_not_ask_for_payout_details(self):
+        landlord, _, org = self.create_landlord_with_org(email='onboard@test.com')
+        self.create_property_with_unit(org)
+        client = APIClient()
+        client.force_authenticate(user=landlord)
+        response = client.get('/api/v1/accounts/onboarding/status/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['wizard']['current_step'], 3)  # property done -> how tenants pay
+
+
+class RentalUnitBulkCreateTests(RumiaTestFixtures):
+    def setUp(self):
+        self.landlord, _, self.org = self.create_landlord_with_org()
+        self.prop, _ = self.create_property_with_unit(self.org)  # already has one unit
+        self.client_ = APIClient()
+        self.client_.force_authenticate(user=self.landlord)
+
+    def bulk(self, **payload):
+        return self.client_.post('/api/v1/units/bulk/', {'property': str(self.prop.id), **payload}, format='json')
+
+    def test_creates_numbered_units_with_rent_and_skips_taken_numbers(self):
+        RentalUnit.objects.filter(parent_property=self.prop).update(unit_number='A2')
+        response = self.bulk(count=3, prefix='A', monthly_rent='15000')
+
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(sorted(u['unit_number'] for u in response.data), ['A1', 'A3', 'A4'])
+        self.assertTrue(all(Decimal(u['monthly_rent']) == Decimal('15000') for u in response.data))
+
+    def test_respects_the_plan_unit_limit_for_the_whole_batch(self):
+        from billing.services.gating_service import GatingService
+        with patch.object(GatingService, 'get_effective_plan') as plan:
+            plan.return_value.max_units = 5
+            plan.return_value.slug = 'starter'
+            response = self.bulk(count=5)  # 1 existing + 5 > 5
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(RentalUnit.objects.filter(parent_property=self.prop).count(), 1)
+
+    def test_validation_and_other_organizations(self):
+        self.assertEqual(self.bulk(count=0).status_code, 400)
+        self.assertEqual(self.bulk(count=2, monthly_rent='abc').status_code, 400)
+        intruder, _, _ = self.create_landlord_with_org(email='intruder@test.com')
+        other = APIClient()
+        other.force_authenticate(user=intruder)
+        response = other.post('/api/v1/units/bulk/', {'property': str(self.prop.id), 'count': 2}, format='json')
+        self.assertEqual(response.status_code, 403)
+
+
+
+class TenancyMoveInTests(RumiaTestFixtures):
+    """One-step move-in, and tenants can't be borrowed across organizations."""
+
+    def setUp(self):
+        self.landlord, _, self.org = self.create_landlord_with_org()
+        self.prop, self.unit = self.create_property_with_unit(self.org)
+        self.api = APIClient()
+        self.api.force_authenticate(user=self.landlord)
+
+    def move_in(self, **overrides):
+        payload = {
+            'unit': str(self.unit.id), 'full_name': 'Akinyi Otieno', 'phone': '+254722000111',
+            'monthly_rent': '18000.00', 'deposit': '18000.00', 'deposit_handling': 'invoice',
+            'start_date': date.today().isoformat(), 'rent_due_day': 5,
+        }
+        payload.update(overrides)
+        with patch('rumia_api.views.onboard_tenant_user', side_effect=lambda t, **_: (t, 'no_email')):
+            return self.api.post('/api/v1/tenancies/move-in/', payload, format='json')
+
+    def test_creates_tenant_tenancy_and_deposit_invoice_together(self):
+        from rent.models import Invoice
+        response = self.move_in()
+        self.assertEqual(response.status_code, 201, response.data)
+        tenancy = Tenancy.objects.get(pk=response.data['id'])
+        self.assertEqual((tenancy.status, tenancy.tenant.full_name), ('active', 'Akinyi Otieno'))
+        self.assertEqual(tenancy.tenant.organization_id, self.org.id)
+        self.assertTrue(Invoice.objects.filter(tenancy=tenancy, invoice_type='deposit').exists())
+        self.unit.refresh_from_db()
+        self.assertEqual(self.unit.status, 'occupied')
+
+    def test_failed_move_in_leaves_no_stray_tenant(self):
+        self.assertEqual(self.move_in().status_code, 201)
+        second = self.move_in(full_name='Second Person', phone='+254722000222')
+        self.assertEqual(second.status_code, 400)  # unit already let
+        self.assertFalse(TenantProfile.objects.filter(full_name='Second Person').exists())
+
+    def test_needs_a_way_to_reach_the_tenant(self):
+        self.assertEqual(self.move_in(phone='', email='').status_code, 400)
+
+    def test_tenancy_create_rejects_another_organizations_tenant(self):
+        _, _, other_org = self.create_landlord_with_org(email='other@test.com')
+        _, foreign_tenant = self.create_tenant(other_org, email='foreign@test.com')
+        response = self.api.post('/api/v1/tenancies/', {
+            'unit': str(self.unit.id), 'tenant': str(foreign_tenant.id), 'monthly_rent': '18000.00',
+            'start_date': date.today().isoformat(), 'status': 'active',
+        }, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Tenancy.objects.filter(tenant=foreign_tenant).exists())

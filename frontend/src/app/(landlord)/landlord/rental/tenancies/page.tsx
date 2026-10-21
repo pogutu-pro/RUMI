@@ -21,6 +21,7 @@ import {
 import { PageHeader } from '@/components/dashboard/page-header';
 import type { Tenancy } from '@/features/rental/types';
 import { TenancyMoneySheet } from '@/features/ledger/components/tenancy-money-sheet';
+import { MoveInDialog } from '@/features/rental/components/move-in-dialog';
 import { usePagination } from '@/hooks/use-pagination';
 import { SimplePager } from '@/components/ui/simple-pager';
 
@@ -73,6 +74,7 @@ export default function TenanciesPage() {
   const terminateTenancy = useTerminateTenancy();
 
   const [open, setOpen] = React.useState(false);
+  const [movingIn, setMovingIn] = React.useState(false);
   const [editingTenancy, setEditingTenancy] = React.useState<Tenancy | null>(null);
   const [moneyTenancy, setMoneyTenancy] = React.useState<Tenancy | null>(null);
 
@@ -140,16 +142,19 @@ export default function TenanciesPage() {
     <div className="space-y-4">
       <PageHeader
         title="Tenancies"
+        description="Who lives where, on what rent."
         action={(
+          <div className="flex flex-wrap gap-2">
+          <Button leftIcon={<Plus className="h-4 w-4" />} onClick={() => setMovingIn(true)}>Add tenant</Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button leftIcon={<Plus className="h-4 w-4" />}>New tenancy</Button>
+              <Button variant="outline">Existing tenant</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-xl">
               <DialogHeader>
-                <DialogTitle>New tenancy</DialogTitle>
+                <DialogTitle>Existing tenant, new unit</DialogTitle>
                 <DialogDescription>
-                  Attach a tenant to a vacant unit. Rent charges are generated from the start date.
+                  For a tenant already in RumiaRent (e.g. moving units). Rent charges are generated from the start date.
                 </DialogDescription>
               </DialogHeader>
               <Form {...form}>
@@ -276,8 +281,10 @@ export default function TenanciesPage() {
               </Form>
             </DialogContent>
           </Dialog>
+          </div>
         )}
       />
+      <MoveInDialog open={movingIn} onOpenChange={setMovingIn} />
 
       <Dialog open={!!editingTenancy} onOpenChange={(v) => { if (!v) setEditingTenancy(null); }}>
         <DialogContent className="sm:max-w-xl">

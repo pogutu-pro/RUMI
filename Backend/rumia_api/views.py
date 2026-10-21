@@ -3,7 +3,7 @@
 import logging
 import uuid
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.db import transaction
@@ -410,6 +410,90 @@ class RentalUnitListCreateView(RumiaBaseView):
         return Response(RentalUnitSerializer(unit).data, status=status.HTTP_201_CREATED)
 
 
+def _is_uuid(value) -> bool:
+    try:
+        uuid.UUID(str(value))
+        return True
+    except ValueError:
+        return False
+
+
+class RentalUnitBulkCreateView(RumiaBaseView):
+    """
+    Create many units at once: POST {property, count, prefix?, start?, monthly_rent?, unit_type?}.
+    Numbers run prefix+start, prefix+start+1, ... and skip numbers the property already has,
+    so "20 units, prefix A" gives A1..A20 in one step during onboarding.
+    """
+
+    MAX_UNITS = 300
+
+    def post(self, request):
+        role = get_canonical_role(request.user)
+        if role not in ('landlord', 'super_admin', 'caretaker'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        prop = Property.objects.filter(pk=request.data.get('property')).first() if _is_uuid(
+            request.data.get('property')) else None
+        if not prop:
+            return Response({'detail': 'Property not found'}, status=status.HTTP_400_BAD_REQUEST)
+        if role == 'caretaker':
+            if prop.id not in self.get_user_property_ids():
+                return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        elif role != 'super_admin' and prop.organization_id not in self.get_user_organization_ids():
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        errors = {}
+        try:
+            count = int(request.data.get('count'))
+            if not 1 <= count <= self.MAX_UNITS:
+                raise ValueError
+        except (TypeError, ValueError):
+            count = 0
+            errors['count'] = f'Enter a number of units from 1 to {self.MAX_UNITS}.'
+        try:
+            start = int(request.data.get('start') or 1)
+            if start < 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            start = 1
+            errors['start'] = 'Start numbering from 0 or more.'
+        prefix = str(request.data.get('prefix') or '').strip()[:10]
+        try:
+            rent = Decimal(str(request.data.get('monthly_rent') or '0'))
+            if rent < 0:
+                raise InvalidOperation
+        except (InvalidOperation, ValueError):
+            rent = Decimal('0')
+            errors['monthly_rent'] = 'Enter the monthly rent as a number.'
+        unit_type = request.data.get('unit_type') or '1_bedroom'
+        if unit_type not in dict(RentalUnit.UNIT_TYPE_CHOICES):
+            errors['unit_type'] = 'Choose a unit type.'
+        if errors:
+            return Response({'detail': 'Please fix the highlighted fields.', 'errors': errors},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            org = Organization.objects.select_for_update().get(pk=prop.organization_id)
+            gate_error = GatingService.check_unit_limit(org, adding=count)
+            if gate_error:
+                return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
+            taken = set(RentalUnit.objects.filter(parent_property=prop).values_list('unit_number', flat=True))
+            numbers, n = [], start
+            while len(numbers) < count:
+                candidate = f'{prefix}{n}'
+                if candidate not in taken:
+                    numbers.append(candidate)
+                n += 1
+            RentalUnit.objects.bulk_create([
+                RentalUnit(organization=org, parent_property=prop, unit_number=number,
+                           unit_type=unit_type, monthly_rent=rent)
+                for number in numbers
+            ])
+        units = RentalUnit.objects.filter(parent_property=prop, unit_number__in=numbers).select_related('parent_property')
+        log_audit('unit_created', actor=request.user, organization=org, entity=prop,
+                  metadata={'bulk': len(numbers), 'first': numbers[0], 'last': numbers[-1]})
+        return Response(RentalUnitSerializer(units, many=True).data, status=status.HTTP_201_CREATED)
+
+
 class RentalUnitDetailView(RumiaBaseView):
     permission_classes = [IsAuthenticated, CanAccessProperty]
 
@@ -462,73 +546,128 @@ class TenancyListCreateView(RumiaBaseView):
         role = get_canonical_role(request.user)
         if role not in ('landlord', 'super_admin', 'caretaker'):
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        error = _check_deposit_options(request.data)
+        if error:
+            return error
 
-        if request.data.get('deposit_handling', 'invoice') not in ('invoice', 'already_paid', 'none'):
-            return Response({'deposit_handling': 'Use invoice, already_paid or none.'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        if request.data.get('deposit_payment_method', 'cash') not in ('cash', 'bank_transfer', 'mpesa_paybill', 'other'):
-            return Response({'deposit_payment_method': 'Use cash, bank_transfer, mpesa_paybill or other.'},
+        with transaction.atomic():
+            unit, error = _unit_for_tenancy(self, request, role)
+            if error:
+                return error
+            # The tenant must belong to the unit's organization: otherwise any
+            # landlord could attach (and read) another landlord's tenant.
+            tenant = TenantProfile.objects.filter(
+                pk=request.data.get('tenant'), organization_id=unit.organization_id,
+            ).first() if _is_uuid(request.data.get('tenant')) else None
+            if not tenant:
+                return Response({'detail': 'Tenant not found'}, status=status.HTTP_400_BAD_REQUEST)
+            tenancy, error = _create_tenancy(request, unit, tenant, request.data)
+            if error:
+                return error
+
+        return _tenancy_created_response(request, unit, tenant, tenancy)
+
+
+class TenancyMoveInView(RumiaBaseView):
+    """
+    Move a tenant into a unit in one step: POST {unit, full_name, phone, email?,
+    national_id?, monthly_rent, deposit?, deposit_handling?, start_date, ...}.
+    Creates the tenant and the tenancy together, so a half-finished move-in
+    never leaves a stray tenant behind.
+    """
+
+    def post(self, request):
+        role = get_canonical_role(request.user)
+        if role not in ('landlord', 'super_admin', 'caretaker'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        if role == 'caretaker' and not _caretaker_can(request.user, 'can_manage_tenants'):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        error = _check_deposit_options(request.data)
+        if error:
+            return error
+        profile_serializer = TenantProfileSerializer(data={
+            field: request.data.get(field, '') for field in ('full_name', 'phone', 'email', 'national_id', 'occupation')
+        })
+        profile_serializer.is_valid(raise_exception=True)
+        if not (profile_serializer.validated_data.get('phone') or profile_serializer.validated_data.get('email')):
+            return Response({'phone': 'Add a phone number or email so the tenant gets receipts.'},
                             status=status.HTTP_400_BAD_REQUEST)
 
         with transaction.atomic():
-            # WR-05: missing/unknown/deleted `unit` or `tenant` ids
-            # previously raised KeyError/DoesNotExist -> opaque 500;
-            # `.filter().first()` + explicit 400 gives a clean, actionable
-            # error instead (matches the validation-error style used
-            # everywhere else in this file).
-            unit = RentalUnit.objects.select_for_update().filter(pk=request.data.get('unit')).first()
-            if not unit:
-                return Response({'detail': 'Unit not found'}, status=status.HTTP_400_BAD_REQUEST)
+            unit, error = _unit_for_tenancy(self, request, role)
+            if error:
+                return error
+            tenant = profile_serializer.save(organization=unit.organization, created_by=request.user, status='active')
+            log_audit('tenant_created', actor=request.user, organization=unit.organization, entity=tenant)
+            data = {**{k: v for k, v in request.data.items()}, 'tenant': str(tenant.id),
+                    'status': request.data.get('status', 'active')}
+            tenancy, error = _create_tenancy(request, unit, tenant, data)
+            if error:
+                transaction.set_rollback(True)
+                return error
 
-            if role == 'caretaker' and unit.parent_property_id not in self.get_user_property_ids():
-                return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
-            elif role != 'super_admin' and unit.organization_id not in self.get_user_organization_ids():
-                return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        return _tenancy_created_response(request, unit, tenant, tenancy)
 
-            tenant = TenantProfile.objects.filter(pk=request.data.get('tenant')).first()
-            if not tenant:
-                return Response({'detail': 'Tenant not found'}, status=status.HTTP_400_BAD_REQUEST)
 
-            serializer = TenancySerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            new_status = serializer.validated_data.get('status', 'pending')
+def _check_deposit_options(data):
+    if data.get('deposit_handling', 'invoice') not in ('invoice', 'already_paid', 'none'):
+        return Response({'deposit_handling': 'Use invoice, already_paid or none.'},
+                        status=status.HTTP_400_BAD_REQUEST)
+    if data.get('deposit_payment_method', 'cash') not in ('cash', 'bank_transfer', 'mpesa_paybill', 'other'):
+        return Response({'deposit_payment_method': 'Use cash, bank_transfer, mpesa_paybill or other.'},
+                        status=status.HTTP_400_BAD_REQUEST)
+    return None
 
-            if new_status == 'active' and unit.tenancies.filter(status='active').exists():
-                return Response(
-                    {'detail': 'This unit already has an active tenancy.'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
 
-            tenancy = serializer.save(
-                organization=unit.organization,
-                parent_property=unit.parent_property,
-                unit=unit,
-                tenant=tenant,
-                created_by=request.user,
-            )
-            _sync_unit_status(tenancy)
+def _unit_for_tenancy(view, request, role):
+    """Lock and return the unit the caller may let, or (None, error response)."""
+    unit_id = request.data.get('unit')
+    unit = RentalUnit.objects.select_for_update().filter(pk=unit_id).first() if _is_uuid(unit_id) else None
+    if not unit:
+        return None, Response({'detail': 'Unit not found'}, status=status.HTTP_400_BAD_REQUEST)
+    if role == 'caretaker' and unit.parent_property_id not in view.get_user_property_ids():
+        return None, Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+    if role not in ('caretaker', 'super_admin') and unit.organization_id not in view.get_user_organization_ids():
+        return None, Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+    return unit, None
 
-            # Deposit for a new tenancy: invoice it (default), record it as
-            # already paid, or skip ('none').
-            deposit_handling = request.data.get('deposit_handling', 'invoice')
-            if tenancy.deposit > 0 and deposit_handling == 'invoice':
-                DepositService.issue_invoice(tenancy, created_by=request.user)
-            elif tenancy.deposit > 0 and deposit_handling == 'already_paid':
-                DepositService.record_held(
-                    tenancy, tenancy.deposit, method=request.data.get('deposit_payment_method', 'cash'),
-                    created_by=request.user,
-                )
 
-        log_audit('tenancy_created', actor=request.user, organization=unit.organization, entity=tenancy)
-        # Outside the transaction — this is the point a tenant is actually tied to a
-        # property, so it's when they should get their account + login invite.
-        _tenant, invite_outcome = onboard_tenant_user(tenant, property_name=unit.parent_property.name)
-        data = TenancySerializer(tenancy).data
-        # 'invited' | 'linked_existing' | 'no_email' | 'already_linked' — the
-        # frontend uses this to tell the landlord/caretaker whether an
-        # invite actually went out, instead of leaving them to assume it did.
-        data['tenant_invite_outcome'] = invite_outcome
-        return Response(data, status=status.HTTP_201_CREATED)
+def _create_tenancy(request, unit, tenant, data):
+    """Create the tenancy and its deposit entry. Call inside a transaction holding the unit lock."""
+    serializer = TenancySerializer(data=data)
+    serializer.is_valid(raise_exception=True)
+    if serializer.validated_data.get('status', 'pending') == 'active' and unit.tenancies.filter(status='active').exists():
+        return None, Response({'detail': 'This unit already has an active tenancy.'},
+                              status=status.HTTP_400_BAD_REQUEST)
+    tenancy = serializer.save(
+        organization=unit.organization, parent_property=unit.parent_property, unit=unit, tenant=tenant,
+        created_by=request.user,
+    )
+    _sync_unit_status(tenancy)
+
+    # Deposit for a new tenancy: invoice it (default), record it as
+    # already paid, or skip ('none').
+    deposit_handling = data.get('deposit_handling', 'invoice')
+    if tenancy.deposit > 0 and deposit_handling == 'invoice':
+        DepositService.issue_invoice(tenancy, created_by=request.user)
+    elif tenancy.deposit > 0 and deposit_handling == 'already_paid':
+        DepositService.record_held(
+            tenancy, tenancy.deposit, method=data.get('deposit_payment_method', 'cash'), created_by=request.user,
+        )
+    return tenancy, None
+
+
+def _tenancy_created_response(request, unit, tenant, tenancy):
+    log_audit('tenancy_created', actor=request.user, organization=unit.organization, entity=tenancy)
+    # Outside the transaction — this is the point a tenant is actually tied to a
+    # property, so it's when they should get their account + login invite.
+    _tenant, invite_outcome = onboard_tenant_user(tenant, property_name=unit.parent_property.name)
+    data = TenancySerializer(tenancy).data
+    # 'invited' | 'linked_existing' | 'no_email' | 'already_linked' — the
+    # frontend uses this to tell the landlord/caretaker whether an
+    # invite actually went out, instead of leaving them to assume it did.
+    data['tenant_invite_outcome'] = invite_outcome
+    return Response(data, status=status.HTTP_201_CREATED)
 
 
 class TenancyDetailView(RumiaBaseView):
@@ -794,6 +933,13 @@ class PaymentListCreateView(RumiaBaseView):
         role = get_canonical_role(request.user)
         if role not in ('tenant', 'landlord', 'caretaker', 'super_admin'):
             return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        if not settings.RENT_ONLINE_PAYMENTS_ENABLED:
+            # The webhook still settles checkouts started before this was turned off.
+            return Response({
+                'detail': "Online rent payment is turned off. Pay to your landlord's M-Pesa paybill or bank "
+                          'using your account number, or ask your landlord to record a cash payment.',
+                'code': 'online_rent_disabled',
+            }, status=status.HTTP_403_FORBIDDEN)
 
         serializer = PaymentInitiateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

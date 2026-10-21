@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import * as React from 'react';
 import { toast } from 'sonner';
 import { Landmark } from 'lucide-react';
@@ -20,11 +21,8 @@ import {
   useSwitchPlan,
 } from '@/features/billing/hooks/use-subscription';
 import { usePlans } from '@/features/billing/hooks/use-plans';
-import { usePayoutStatus } from '@/features/payout/hooks/use-payout';
 import { navigateCheckoutTab, openCheckoutTab } from '@/lib/utils/checkout-window';
-import { PayoutDetailsForm } from '@/features/payout/components/payout-details-form';
 import type { OrganizationSubscription, SubscriptionPlan } from '@/features/billing/types';
-import type { PayoutStatus } from '@/features/payout/types';
 
 /** "Pay another way" — for a landlord with no card. Shows whatever a super
  * admin has configured (RumiaRent's real bank/paybill details), never
@@ -102,27 +100,19 @@ const SUBSCRIPTION_STATUS_VARIANT: Record<
   cancelled: 'danger',
 };
 
-const PAYOUT_STATUS_VARIANT: Record<PayoutStatus, NonNullable<StatusPillProps['status']>> = {
-  active: 'success',
-  pending_verification: 'warning',
-  not_started: 'neutral',
-};
-
 /**
- * Combined "Billing & Payout" page (D-03) — one page, not two. Shows the
- * landlord's current subscription plan/status and payout status, both
+ * Billing: the landlord's RumiaRent subscription, and a pointer to how
+ * tenants pay rent (straight to the landlord's own paybill), both
  * consuming existing, already-working endpoints with no backend changes.
  */
 export default function BillingPayoutPage() {
   const { data: subscription, isLoading: subscriptionLoading, error: subscriptionError } =
     useMySubscription();
   const { data: access } = useBillingAccess();
-  const { data: payout, isLoading: payoutLoading } = usePayoutStatus();
   const { data: plans, isLoading: plansLoading, isError: plansError, refetch: refetchPlans } =
     usePlans();
   const subscribeMutation = useSubscribe();
   const switchPlanMutation = useSwitchPlan();
-  const [editingPayout, setEditingPayout] = React.useState(false);
   const [manualPayPlan, setManualPayPlan] = React.useState<SubscriptionPlan | null>(null);
   const isManualPending = subscription?.status === 'pending' && subscription.billing_mode === 'manual';
 
@@ -136,7 +126,7 @@ export default function BillingPayoutPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Billing & Payout" />
+      <PageHeader title="Billing" />
 
       <Card className="rounded-2xl">
         <CardHeader>
@@ -210,52 +200,16 @@ export default function BillingPayoutPage() {
 
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-base">Payout</CardTitle>
+          <CardTitle className="text-base">How tenants pay you</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-5">
-          {payoutLoading ? (
-            <div className="skeleton h-16 rounded-xl" />
-          ) : payout ? (
-            <>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-3">
-                  <StatusPill status={PAYOUT_STATUS_VARIANT[payout.status]}>
-                    {payout.status.replace(/_/g, ' ')}
-                  </StatusPill>
-                  {payout.status !== 'not_started' && (
-                    <p className="text-sm text-muted-foreground">
-                      {payout.bank_name} · {payout.bank_account_number_masked}
-                    </p>
-                  )}
-                </div>
-                {payout.status !== 'not_started' && !editingPayout && (
-                  <Button type="button" variant="outline" size="sm" onClick={() => setEditingPayout(true)}>
-                    Edit bank details
-                  </Button>
-                )}
-              </div>
-
-              {payout.status === 'not_started' && (
-                <div>
-                  <p className="mb-4 text-sm text-muted-foreground">
-                    This is where tenant rent payments actually get paid out to you — add your
-                    bank details so Paystack can settle rent into your account.
-                  </p>
-                  <PayoutDetailsForm />
-                </div>
-              )}
-
-              {payout.status !== 'not_started' && editingPayout && (
-                <div className="border-t pt-5">
-                  <PayoutDetailsForm onSuccess={() => setEditingPayout(false)} />
-                </div>
-              )}
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Something went wrong. Please try again.
-            </p>
-          )}
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            Rent goes straight to your own M-Pesa paybill or bank account. RumiaRent never handles it: we only record
+            each payment against the right tenant and send the receipt.
+          </p>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/landlord/rental/paybill">Set up your M-Pesa paybill</Link>
+          </Button>
         </CardContent>
       </Card>
 

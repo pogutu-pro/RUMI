@@ -68,12 +68,12 @@ const FAQ_CATEGORIES = [
       {
         question: 'What payment methods do you support?',
         answer:
-          'Paystack for card and bank payments, plus manual recording for cash or bank transfers you receive directly.',
+          'Tenants pay your own M-Pesa paybill, each with their own account number, so payments are matched and receipted automatically. You can also record cash and bank transfers, or upload a bank or M-Pesa statement to match. RumiaRent never holds rent money.',
       },
       {
         question: 'How is a payment confirmed?',
         answer:
-          'Paystack payments are verified directly with Paystack before your records update. It is never based on what the tenant\'s browser reports. You get a confirmation the moment it clears.',
+          'Safaricom notifies RumiaRent when a payment lands in your paybill. We record it against the tenant whose account number was used and send their receipt. A payment with a mistyped account number waits for you to assign it. Nothing is ever based on what a tenant says they paid.',
       },
       {
         question: 'What if a payment is reversed or fails?',
@@ -118,7 +118,7 @@ const FAQ_CATEGORIES = [
       {
         question: 'Do you store card details?',
         answer:
-          'No. Card payments are processed entirely by Paystack, and RumiaRent never stores card numbers.',
+          'No. Rent is paid by M-Pesa or bank straight to you, and the card payments for your RumiaRent subscription are handled by Paystack. RumiaRent never stores card numbers.',
       },
     ],
   },
