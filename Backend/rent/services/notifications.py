@@ -52,6 +52,28 @@ def _send_sms(phone: str, message: str) -> bool:
         return False
 
 
+def how_to_pay(tenancy) -> str:
+    """
+    One line telling the tenant where to pay, e.g. "Pay via M-Pesa Paybill
+    600999, Account A3." Using their exact account number is what lets the
+    payment be matched and receipted automatically. Empty when the landlord has
+    no paybill on RumiaRent.
+    """
+    from paybill.models import PaybillAccount
+
+    if tenancy is None:
+        return ''
+    paybill = (
+        PaybillAccount.objects.filter(organization_id=tenancy.organization_id, is_active=True)
+        .order_by('created_at').first()
+    )
+    if paybill is None:
+        return ''
+    if paybill.shortcode_type == 'till':
+        return f'Pay via M-Pesa Till {paybill.shortcode}.'
+    return f'Pay via M-Pesa Paybill {paybill.shortcode}, Account {tenancy.payment_reference}.'
+
+
 def send_rent_due_reminder(charge) -> None:
     """charge: rent.models.RentCharge"""
     tenant = charge.tenant
@@ -63,13 +85,15 @@ def send_rent_due_reminder(charge) -> None:
         f'Hi {tenant.full_name},\n\n'
         f'This is a reminder that KES {amount} is due for unit {unit_label} '
         f'on {charge.due_date.isoformat()}.\n\n'
+        f'{how_to_pay(charge.tenancy)}\n\n'
         f'Thank you.'
     )
     _send_email(tenant.email, subject, body, recipient_name=tenant.full_name)
 
+    pay = how_to_pay(charge.tenancy)
     sms_text = (
         f'RumiaRent: KES {amount} rent due for unit {unit_label} on '
-        f'{charge.due_date.isoformat()}.'
+        f'{charge.due_date.isoformat()}.{" " + pay if pay else ""}'
     )
     _send_sms(tenant.phone, sms_text)
 
@@ -227,6 +251,9 @@ def send_invoice_reminder(invoice, key: str, channels, as_of) -> None:
         days = (as_of - invoice.due_date).days
         subject = f'Overdue {what}: KES {amount}'
         sms = f'RumiaRent: KES {amount} {what} for {unit} is {days} day(s) overdue ({invoice.number}). Please pay to avoid penalties.'
+    pay = how_to_pay(invoice.tenancy)
+    if pay:
+        sms = f'{sms} {pay}'
     body = f'Hi {tenant.full_name},\n\n{sms.removeprefix("RumiaRent: ")}\n\nThank you.\n{invoice.organization.name}'
 
     _deliver(

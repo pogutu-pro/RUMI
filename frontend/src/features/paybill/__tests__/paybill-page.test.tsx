@@ -6,6 +6,7 @@ import type { PaybillAccount, PaybillTransaction } from '../types';
 
 const register = jest.fn();
 const ignore = jest.fn().mockResolvedValue({});
+const updatePaybill = jest.fn().mockResolvedValue({});
 
 const account: PaybillAccount = {
   id: 'pb1', shortcode: '600999', shortcode_type: 'paybill', display_name: 'Greenview', environment: 'production',
@@ -26,15 +27,26 @@ jest.mock('@/features/paybill/hooks', () => ({
   useConnectPaybill: () => ({ mutateAsync: jest.fn(), isPending: false }),
   useAssignPaybillTxn: () => ({ mutateAsync: jest.fn(), isPending: false }),
   useIgnorePaybillTxn: () => ({ mutateAsync: ignore, isPending: false }),
+  useUpdatePaybill: () => ({ mutateAsync: updatePaybill, isPending: false }),
 }));
 jest.mock('@/features/rental/hooks/use-rental', () => ({ useTenancies: () => ({ data: [] }) }));
 
 describe('PaybillPage', () => {
-  it('blocks registration until credentials are added', () => {
+  it('blocks registration until Safaricom keys are added, and saves the keys', async () => {
     render(<PaybillPage />);
     expect(screen.getByText('Paybill 600999')).toBeInTheDocument();
-    expect(screen.getByText('Add the Daraja consumer key and secret to register.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Register with Safaricom' })).toBeDisabled();
+    expect(screen.getByText('Turn on automatic M-Pesa receipts')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add Safaricom keys' }));
+    const save = screen.getByRole('button', { name: 'Save keys' });
+    expect(save).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Consumer Key'), { target: { value: ' key123 ' } });
+    fireEvent.change(screen.getByLabelText('Consumer Secret'), { target: { value: 'secret456' } });
+    fireEvent.click(save);
+    expect(updatePaybill).toHaveBeenCalledWith({
+      id: 'pb1', payload: { consumer_key: 'key123', consumer_secret: 'secret456', environment: 'production' },
+    });
   });
 
   it('shows unmatched payments and requires a reason to mark one as not rent', () => {

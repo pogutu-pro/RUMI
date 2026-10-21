@@ -286,6 +286,9 @@ function YearTable({ year, onPick }: { year: number; onPick: (month: string) => 
                   <TableCell>
                     {future ? null : m.status === 'filed' ? (
                       <StatusPill status="success">Filed</StatusPill>
+                    ) : m.is_nil && m.status !== 'in_progress' ? (
+                      // No rent recorded in RumiaRent: nothing to work out from here.
+                      <StatusPill status="neutral">No rent recorded</StatusPill>
                     ) : m.status === 'overdue' ? (
                       <StatusPill status="danger">Overdue</StatusPill>
                     ) : m.status === 'due' ? (

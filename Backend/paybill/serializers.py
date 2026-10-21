@@ -66,7 +66,7 @@ class IncomingTransactionSerializer(serializers.ModelSerializer):
         model = IncomingTransaction
         fields = [
             'id', 'shortcode', 'trans_id', 'trans_type', 'trans_time', 'amount', 'bill_ref_number', 'msisdn',
-            'payer_name', 'status', 'matched_by', 'tenancy', 'tenant_name', 'unit_number', 'payment',
+            'payer_name', 'status', 'matched_by', 'unverified_source', 'tenancy', 'tenant_name', 'unit_number', 'payment',
             'receipt_number', 'note', 'resolved_at', 'received_at',
         ]
         read_only_fields = fields

@@ -134,7 +134,23 @@ class ManualJournalService:
 
 # ----------------------------------------------------------- reconciliation
 
-DATE_FORMATS = ('%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y', '%d/%m/%Y %H:%M:%S', '%Y-%m-%d %H:%M:%S', '%d.%m.%Y', '%d %b %Y')
+DATE_FORMATS = (
+    '%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y', '%d.%m.%Y', '%d %b %Y', '%d-%b-%Y', '%d-%b-%y', '%d %B %Y',
+    '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%d/%m/%Y %H:%M:%S', '%d/%m/%Y %H:%M', '%d-%m-%Y %H:%M:%S',
+    '%d %b %Y %H:%M:%S', '%Y/%m/%d',
+)
+
+# Column names used by M-Pesa org-portal statements and Kenyan bank CSV
+# exports, most specific first. Matched case-insensitively against headers.
+COLUMN_HINTS = {
+    'date': ('completion time', 'transaction date', 'trans date', 'txn date', 'value date', 'posting date',
+             'posted date', 'tran date', 'date'),
+    'amount': ('paid in', 'money in', 'credit amount', 'credits', 'credit', 'deposits', 'deposit', 'cr', 'amount'),
+    'reference': ('receipt no', 'receipt', 'transaction id', 'transaction ref', 'reference', 'ref no', 'ref',
+                  'cheque no', 'doc no'),
+    'description': ('details', 'narration', 'narrative', 'description', 'particulars', 'transaction details',
+                    'remarks', 'other party info'),
+}
 MPESA_CODE = re.compile(r'\b[A-Z0-9]{10}\b')
 
 
@@ -148,12 +164,26 @@ def _parse_date(value: str) -> date:
     raise ReportError(f'Unrecognised date "{value}" — use YYYY-MM-DD or DD/MM/YYYY.')
 
 
+def _csv_line(cells: list[str]) -> str:
+    buffer = io.StringIO()
+    csv.writer(buffer).writerow(cells)
+    return buffer.getvalue().rstrip('\r\n')
+
+
 def _parse_amount(value: str) -> Optional[Decimal]:
-    cleaned = (value or '').replace(',', '').replace('KES', '').replace('Ksh', '').strip()
-    if not cleaned:
+    """'1,000.00', 'KSh 1,000', '1000 CR' -> 1000; '(500.00)', '500 DR' -> -500; '', '-' -> None."""
+    cleaned = (value or '').upper().replace(',', '').replace('KES', '').replace('KSHS', '').replace('KSH', '').strip()
+    if cleaned in ('', '-', '--'):
         return None
+    sign = Decimal('1')
+    if cleaned.startswith('(') and cleaned.endswith(')'):
+        cleaned, sign = cleaned[1:-1].strip(), Decimal('-1')
+    if cleaned.endswith('DR'):
+        cleaned, sign = cleaned[:-2].strip(), Decimal('-1')
+    elif cleaned.endswith('CR'):
+        cleaned = cleaned[:-2].strip()
     try:
-        return Decimal(cleaned).quantize(Decimal('0.01'))
+        return (Decimal(cleaned) * sign).quantize(Decimal('0.01'))
     except InvalidOperation as exc:
         raise ReportError(f'Unrecognised amount "{value}".') from exc
 
@@ -171,15 +201,20 @@ class ReconciliationService:
     def import_csv(cls, organization, account_code: str, upload, mapping: dict, imported_by=None) -> StatementImport:
         if account_code not in dict(StatementImport.ACCOUNT_CHOICES):
             raise ReportError('Choose the bank or M-Pesa account this statement is for.')
+        text = upload.read().decode('utf-8-sig', errors='replace')
+        rows = list(csv.reader(io.StringIO(text)))
+        header_at, detected = cls.detect_columns(rows)
+        # Columns the person named win; anything left blank is detected.
+        mapping = {k: (mapping.get(k) or detected.get(k) or '') for k in ('date', 'amount', 'reference', 'description')}
+        headers = [h.strip() for h in rows[header_at]] if rows else []
         for key in ('date', 'amount'):
             if not mapping.get(key):
-                raise ReportError(f'Say which column holds the {key}.')
-        text = upload.read().decode('utf-8-sig', errors='replace')
-        reader = csv.DictReader(io.StringIO(text))
-        headers = reader.fieldnames or []
+                raise ReportError(f'Could not find the {key} column. Found: {", ".join(h for h in headers if h)}. '
+                                  'Say which column it is.')
         missing = [mapping[k] for k in ('date', 'amount', 'reference', 'description') if mapping.get(k) and mapping[k] not in headers]
         if missing:
             raise ReportError(f'Columns not found in the file: {", ".join(missing)}. Found: {", ".join(headers)}.')
+        reader = csv.DictReader(io.StringIO('\n'.join(_csv_line(r) for r in rows[header_at:])))
         statement = StatementImport.objects.create(organization=organization, account_code=account_code,
                                                    filename=getattr(upload, 'name', 'statement.csv')[:255],
                                                    imported_by=imported_by)
@@ -190,6 +225,8 @@ class ReconciliationService:
             amount = _parse_amount(row.get(mapping['amount'], ''))
             if amount is None or amount <= 0:
                 continue  # money out / blank lines are not tenant payments
+            if not (row.get(mapping['date']) or '').strip():
+                continue  # totals and footer rows
             lines.append(StatementLine(
                 statement=statement, line_date=_parse_date(row.get(mapping['date'], '')), amount=amount,
                 reference=(row.get(mapping.get('reference') or '', '') or '').strip()[:100],
@@ -198,6 +235,27 @@ class ReconciliationService:
         StatementLine.objects.bulk_create(lines)
         cls.auto_match(statement)
         return statement
+
+    @staticmethod
+    def detect_columns(rows: list[list[str]]) -> tuple[int, dict]:
+        """
+        Find the header row (bank exports often start with account details)
+        and which columns hold the date, money in, reference and narration.
+        """
+        for index, row in enumerate(rows[:40]):
+            names = [(cell or '').strip() for cell in row]
+            lowered = [n.lower() for n in names]
+            found = {}
+            for key, hints in COLUMN_HINTS.items():
+                for hint in hints:
+                    hit = next((names[i] for i, n in enumerate(lowered)
+                                if n == hint or (len(hint) > 3 and n.startswith(hint))), None)
+                    if hit:
+                        found[key] = hit
+                        break
+            if 'date' in found and 'amount' in found:
+                return index, found
+        return 0, {}
 
     @classmethod
     def auto_match(cls, statement: StatementImport) -> None:

@@ -354,6 +354,15 @@ class PaymentService:
             charge.recalculate_status()
             charge.save(update_fields=['amount_paid', 'status', 'updated_at'])
 
+        # The money itself still arrived: its M-Pesa notice and statement line
+        # go back to "needs attention" so it can be put on the right account.
+        from accounting.models import StatementLine
+        from paybill.services import PaybillService
+
+        PaybillService.release(payment, reason)
+        StatementLine.objects.filter(payment=payment, status__in=('matched', 'created')).update(
+            status='unmatched', payment=None, note=f'Payment reversed. {reason}'.strip()[:255],
+        )
         return payment
 
     # --- reconciliation, refunds and disputes (audit H4/H5) -----------------

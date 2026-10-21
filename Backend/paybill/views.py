@@ -52,9 +52,10 @@ class C2BCallbackView(APIView):
 
     def post(self, request, token):
         allowed = [ip.strip() for ip in getattr(settings, 'MPESA_CALLBACK_ALLOWED_IPS', []) if ip.strip()]
-        if allowed and _client_ip(request) not in allowed:
-            logger.warning('Paybill callback from disallowed IP %s', _client_ip(request))
-            return Response({'ResultCode': 1, 'ResultDesc': 'Rejected'}, status=status.HTTP_403_FORBIDDEN)
+        # Safaricom adds callback addresses from time to time. A request with the
+        # secret URL token from an unlisted address is kept for a person to check,
+        # never auto-settled, so a real payment is not lost over a stale list.
+        trusted = not allowed or _client_ip(request) in allowed
 
         paybill = PaybillAccount.objects.filter(callback_token=token, is_active=True).select_related('organization').first()
         if paybill is None:
@@ -71,8 +72,10 @@ class C2BCallbackView(APIView):
             # typo in the account number. Unmatched payments go to a queue.
             return Response(ACCEPTED)
 
+        if not trusted:
+            logger.warning('Paybill callback for %s from unlisted IP %s held for review', paybill.shortcode, _client_ip(request))
         try:
-            PaybillService.ingest(paybill, payload)
+            PaybillService.ingest(paybill, payload, trusted=trusted)
         except PaybillError as exc:
             logger.error('Paybill confirmation rejected for %s: %s', paybill.shortcode, exc)
         except Exception:

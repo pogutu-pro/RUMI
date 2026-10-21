@@ -120,6 +120,25 @@ class ReconciliationTests(ReportFixtures):
         again = self.upload()  # a re-import never matches the same payment twice
         self.assertEqual(again.lines.get(reference='QK11111111').status, 'unmatched')
 
+    def test_columns_detected_without_any_mapping(self):
+        csv_bytes = self.MPESA_CSV.format(d=TODAY.strftime('%d/%m/%Y')).encode()
+        statement = ReconciliationService.import_csv(self.org, '1020', SimpleUploadedFile('m.csv', csv_bytes), {})
+        self.assertEqual(sorted(statement.lines.values_list('reference', flat=True)), ['QK11111111', 'QK22222222'])
+
+    def test_bank_export_with_account_details_above_the_table(self):
+        bank = (
+            'Account Name,KAMAU HOMES\n'
+            'Account Number,0123456789\n'
+            '\n'
+            'Tran Date,Value Date,Narration,Ref No,Debit,Credit,Balance\n'
+            f'{TODAY:%d-%b-%Y},{TODAY:%d-%b-%Y},PESALINK A101 RENT,FT001,,"18,000.00 CR",1\n'
+            f'{TODAY:%d-%b-%Y},{TODAY:%d-%b-%Y},LEDGER FEE,FT002,50.00,-,1\n'
+            'Total,,,,50.00,"18,000.00",\n'
+        ).encode()
+        statement = ReconciliationService.import_csv(self.org, '1010', SimpleUploadedFile('bank.csv', bank), {})
+        line = statement.lines.get()
+        self.assertEqual((line.amount, line.reference, line.description), (D('18000.00'), 'FT001', 'PESALINK A101 RENT'))
+
     def test_assign_unmatched_line_creates_tenant_payment(self):
         statement = self.upload()
         line = statement.lines.get(reference='QK22222222')

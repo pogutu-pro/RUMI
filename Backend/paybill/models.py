@@ -84,6 +84,8 @@ class IncomingTransaction(models.Model):
         ('reference', 'Account number'),
         ('unit', 'Unit number'),
         ('phone', 'Phone number'),
+        ('fuzzy', 'Account number (close match)'),
+        ('alias', 'Learned from an earlier payment'),
         ('manual', 'Assigned by hand'),
     ]
 
@@ -117,6 +119,10 @@ class IncomingTransaction(models.Model):
     )
     resolved_at = models.DateTimeField(null=True, blank=True)
     note = models.CharField(max_length=255, blank=True, default='')
+    unverified_source = models.BooleanField(
+        default=False,
+        help_text='Arrived from an IP outside MPESA_CALLBACK_ALLOWED_IPS: kept for a person to check, never auto-settled.',
+    )
     received_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
@@ -126,3 +132,35 @@ class IncomingTransaction(models.Model):
 
     def __str__(self):
         return f'{self.trans_id} {self.amount} → {self.bill_ref_number or "?"} ({self.status})'
+
+
+class PaybillReferenceAlias(models.Model):
+    """
+    An account number a tenant keeps typing that is not their real one (their
+    name, "A 3 rent", an old unit). Learned when the landlord assigns such a
+    payment by hand, so the next one with the same text matches on its own.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(
+        'organizations.Organization', on_delete=models.CASCADE, related_name='paybill_aliases',
+    )
+    normalized_ref = models.CharField(max_length=100)
+    tenancy = models.ForeignKey(
+        'properties.Tenancy', on_delete=models.CASCADE, null=True, blank=True, related_name='paybill_aliases',
+    )
+    # Used by more than one tenant, or learned wrongly once: always ask a person.
+    contested = models.BooleanField(default=False)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    times_used = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = 'paybill_referencealias'
+        constraints = [
+            models.UniqueConstraint(fields=['organization', 'normalized_ref'], name='uniq_paybill_alias_per_org'),
+        ]
+
+    def __str__(self):
+        return f'{self.normalized_ref} → {self.tenancy_id}'
+

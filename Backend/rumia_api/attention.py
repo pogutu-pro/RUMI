@@ -13,19 +13,20 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
-from accounting.models import StatementLine
+from accounting.models import StatementImport, StatementLine
 from accounting.books_views import OwnerScopedView
 from agency.models import PropertyOwner
 from agency.services import OwnerStatementService
 from leasing.models import DebtCase
 from leasing.services import arrears
 from listings.models import ListingEnquiry
-from organizations.models import PayoutAccount
 from paybill.models import IncomingTransaction, PaybillAccount
 from properties.models import Tenancy
 from rent.models import Invoice, Payment
 
 ZERO = Decimal('0')
+PAYBILL_QUIET_DAYS = 7
+STATEMENT_CHECK_DAYS = 35
 
 
 def _n(count: int, singular: str, plural: str) -> str:
@@ -93,12 +94,38 @@ def attention_items(org) -> list[dict]:
         f'{_kes(sum((OwnerStatementService.balance(o) for o in owners_due), ZERO))} approved but not yet remitted.',
         '/landlord/rental/owners')
 
-    payout = PayoutAccount.objects.filter(organization=org).first()
-    has_paybill = PaybillAccount.objects.filter(organization=org, is_active=True).exists()
-    if not has_paybill and (payout is None or payout.status != 'active'):
-        items.append({'key': 'collection_setup', 'tone': 'warning', 'count': 1, 'title': 'Set up rent collection',
-                      'detail': 'Connect your M-Pesa paybill so tenant payments are recorded automatically.',
+    paybills = list(PaybillAccount.objects.filter(organization=org, is_active=True))
+    has_tenants = current.exists()
+    if not paybills and has_tenants:
+        items.append({'key': 'collection_setup', 'tone': 'warning', 'count': 1, 'title': 'Tell tenants where to pay',
+                      'detail': 'Add your M-Pesa paybill so tenants get their account number and payments are recorded.',
                       'href': '/landlord/rental/paybill'})
+
+    # Safaricom has gone quiet: a registered paybill normally reports every
+    # payment within seconds, so days of silence with tenants paying means
+    # notifications are not arriving (expired registration, changed URL...).
+    for paybill in paybills:
+        last = paybill.last_callback_at or paybill.registered_at
+        if paybill.registered_at and has_tenants and last and (timezone.now() - last).days >= PAYBILL_QUIET_DAYS:
+            days = (timezone.now() - last).days
+            items.append({'key': f'paybill_quiet_{paybill.shortcode}', 'tone': 'warning', 'count': 1,
+                          'title': f'No M-Pesa notices for {days} days',
+                          'detail': f'Paybill {paybill.shortcode} has sent nothing since {last:%d %b}. If tenants paid, '
+                                    'register the paybill again and upload your M-Pesa statement to catch up.',
+                          'href': '/landlord/rental/paybill'})
+
+    # Monthly safety net: Safaricom occasionally drops a notification, so
+    # matching last month's M-Pesa statement catches anything missed.
+    established = [p for p in paybills if (timezone.now() - p.created_at).days >= STATEMENT_CHECK_DAYS]
+    recent_import = StatementImport.objects.filter(
+        organization=org, account_code='1020', created_at__gte=timezone.now() - timedelta(days=STATEMENT_CHECK_DAYS),
+    ).exists()
+    if established and has_tenants and not recent_import:
+        items.append({'key': 'statement_check', 'tone': 'info', 'count': 1,
+                      'title': 'Check last month against your M-Pesa statement',
+                      'detail': 'Download the statement from the M-Pesa portal and upload it. Any payment that did not '
+                                'reach RumiaRent shows up so you can add it.',
+                      'href': '/landlord/rental/accounts'})
 
     order = {'urgent': 0, 'warning': 1, 'info': 2}
     return sorted(items, key=lambda i: order[i['tone']])
