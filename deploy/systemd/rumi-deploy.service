@@ -5,6 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-# The read-only GitHub deploy key lives in ubuntu's ~/.ssh; docker needs root.
-Environment=GIT_SSH_COMMAND=ssh -i /home/ubuntu/.ssh/rumi_deploy -o IdentitiesOnly=yes -o UserKnownHostsFile=/home/ubuntu/.ssh/known_hosts
+# Runs as the owner of /opt/rumi (a member of the docker group); its
+# ~/.ssh/config points github.com at the read-only deploy key.
+User=ubuntu
+Group=ubuntu
 ExecStart=/opt/rumi/deploy.sh
