@@ -21,6 +21,7 @@ from datetime import date, timedelta
 from typing import Optional
 
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 
 from rent.models import Invoice, ReminderLog
 
@@ -74,7 +75,7 @@ def _channels(policy) -> list[str]:
 class ReminderService:
     @classmethod
     def run(cls, as_of: Optional[date] = None) -> dict:
-        as_of = as_of or date.today()
+        as_of = as_of or timezone.localdate()
         counts = {'sent': 0, 'skipped': 0}
         invoices = (
             Invoice.objects.filter(is_disputed=False)

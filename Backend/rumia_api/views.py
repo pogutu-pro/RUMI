@@ -722,7 +722,7 @@ class TenancyTerminateView(RumiaBaseView):
 
         serializer = TenancyTerminateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        move_out_date = serializer.validated_data.get('move_out_date', timezone.now().date())
+        move_out_date = serializer.validated_data.get('move_out_date', timezone.localdate())
 
         with transaction.atomic():
             tenancy.status = 'terminated'
@@ -1236,7 +1236,7 @@ class IncomeSummaryView(RumiaBaseView):
         if gate_error:
             return Response(gate_error, status=status.HTTP_403_FORBIDDEN)
 
-        today = timezone.now().date()
+        today = timezone.localdate()
         period_start = date.fromisoformat(
             request.query_params.get('period_start', today.replace(day=1).isoformat())
         )

@@ -156,7 +156,7 @@ class Invoice(models.Model):
 
     def recalculate_status(self, as_of=None) -> str:
         """Recompute amount_paid and status from authoritative allocations and credit notes."""
-        today = (as_of or timezone.now().date())
+        today = (as_of or timezone.localdate())
         paid = self.payment_allocations.filter(
             payment__status='success'
         ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
