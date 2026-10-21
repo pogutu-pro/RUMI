@@ -22,4 +22,18 @@ describe('auth API request contracts (field names the Django serializers require
     await authApi.verifyEmail({ token: '', email: 'a@b.co', otp: '123456' });
     expect(post).toHaveBeenCalledWith('/accounts/verify-email/', { email: 'a@b.co', otp_code: '123456' });
   });
+
+  it('email link: request, then sign in with the token or the code', async () => {
+    await authApi.requestEmailLink('grace@example.com', '/tenant/rental');
+    expect(post).toHaveBeenCalledWith('/accounts/auth/email-link/', { email: 'grace@example.com', next: '/tenant/rental' });
+    await authApi.signInWithEmailLink({ token: 'abc' });
+    expect(post).toHaveBeenCalledWith('/accounts/auth/email-link/sign-in/', { token: 'abc' });
+    await authApi.signInWithEmailLink({ email: 'grace@example.com', code: '123456' });
+    expect(post).toHaveBeenCalledWith('/accounts/auth/email-link/sign-in/', { email: 'grace@example.com', code: '123456' });
+  });
+
+  it('google sends the ID token as credential', async () => {
+    await authApi.signInWithGoogle('id-token');
+    expect(post).toHaveBeenCalledWith('/accounts/auth/google/', { credential: 'id-token' });
+  });
 });

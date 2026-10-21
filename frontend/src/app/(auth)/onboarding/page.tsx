@@ -1,47 +1,27 @@
 'use client';
 
 import { Suspense } from 'react';
+
 import { useAuth } from '@/features/auth/hooks/use-auth';
-import { OnboardingForm } from '@/features/auth/components/onboarding-form';
 import { AuthCard } from '@/features/auth/components/auth-card';
-import { UserCheck } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { AuthShell } from '@/features/auth/components/auth-shell';
+import { LandlordOnboardingWizard } from '@/features/auth/components/landlord-onboarding-wizard';
+import { OnboardingForm } from '@/features/auth/components/onboarding-form';
 
 export default function OnboardingPage() {
-  const { user, profile } = useAuth();
-  const router = useRouter();
-
+  const { user } = useAuth();
   if (!user) return null;
 
+  // Landlords get the full-page setup with its own step rail.
+  if (user.role === 'landlord') return <LandlordOnboardingWizard />;
+
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50/30 p-4 pt-12">
-      <section className="w-full max-w-2xl mx-auto">
-        <AuthCard
-          icon={
-            <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <UserCheck className="w-8 h-8 text-primary" />
-            </div>
-          }
-          title={
-            <span className="font-semibold text-3xl tracking-tight">
-              {user.role === 'landlord' ? 'Set up RumiaRent' : 'Complete your profile'}
-            </span>
-          }
-          description={
-            <div className="space-y-1">
-              <p className="text-gray-900 font-bold">
-                {user.role === 'landlord' ? 'Three quick steps, about two minutes' : `Finish setting up your ${user.role} account`}
-              </p>
-              <p className="text-xs text-gray-500">You can change everything later.</p>
-            </div>
-          }
-        >
-          <Suspense fallback={<div>Loading form...</div>}>
-            <OnboardingForm role={user.role} />
-          </Suspense>
-        </AuthCard>
-      </section>
-    </main>
+    <AuthShell>
+      <AuthCard title="Complete your profile" description={`Finish setting up your ${user.role} account.`}>
+        <Suspense fallback={null}>
+          <OnboardingForm role={user.role} />
+        </Suspense>
+      </AuthCard>
+    </AuthShell>
   );
 }

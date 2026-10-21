@@ -609,3 +609,32 @@ class Message(models.Model):
             self.read_at = timezone.now()
             self.save(update_fields=['is_read', 'read_at'])
 
+
+
+class EmailSignInLink(models.Model):
+    """
+    A one-time "sign in with email" link plus a 6-digit code sent with it.
+
+    Only hashes are stored, so a database leak cannot be replayed. The link
+    and the code are two ways to use the same sign-in: the code covers phones
+    where the email opens in another browser than the one waiting to sign in.
+    `user` is empty when the address has no account yet; using the link then
+    creates a landlord account, since the address is proven to be theirs.
+    """
+
+    email = models.EmailField(db_index=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='sign_in_links')
+    token_hash = models.CharField(max_length=64, unique=True)
+    code_hash = models.CharField(max_length=64)
+    created_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'accounts_emailsigninlink'
+        indexes = [models.Index(fields=['email', 'used_at', 'expires_at'], name='idx_signinlink_active')]
+
+    def __str__(self):
+        return f'Sign-in link for {self.email}'

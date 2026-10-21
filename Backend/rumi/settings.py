@@ -295,6 +295,12 @@ BILLING_AUTO_RENEWAL_BUFFER_DAYS = int(os.getenv('BILLING_AUTO_RENEWAL_BUFFER_DA
 
 # Webhook URLs (must include /api/v1/ and trailing slash)
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rumiarent.com').rstrip('/')
+
+# "Continue with Google": the OAuth client ID from Google Cloud Console
+# (APIs & Services > Credentials > OAuth client ID > Web application).
+# Empty hides the button. No client secret is needed: the browser gets a
+# signed ID token and the backend checks it against Google's public keys.
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '').strip()
 # BACKEND_API_URL is used for all webhook callback URLs (Paystack, etc.)
 # Must reach the Django backend, not Next.js. In production that is the main
 # domain: the Caddy proxy (Caddyfile) routes /api/* on rumiarent.com to Django.

@@ -105,7 +105,7 @@ export default function ResetPasswordPage() {
         <Link href="/" className="mb-6 flex justify-center">
           <Image src="/images/logo/logo.png" alt="RumiaRent" width={40} height={40} />
         </Link>
-        <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 space-y-6 border border-gray-100">
+        <div className="space-y-6">
           <div className="flex justify-center">
             <div className="h-14 w-14 bg-red-100 rounded-full flex items-center justify-center">
               <XCircle className="w-8 h-8 text-red-600" />
@@ -151,7 +151,7 @@ export default function ResetPasswordPage() {
         <Link href="/" className="mb-6 flex justify-center">
           <Image src="/images/logo/logo.png" alt="RumiaRent" width={40} height={40} />
         </Link>
-        <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 space-y-6 border border-gray-100">
+        <div className="space-y-6">
           <div className="flex justify-center">
             <div className="h-14 w-14 bg-primary/10 rounded-full flex items-center justify-center">
               <CheckCircle2 className="w-8 h-8 text-green-600" />

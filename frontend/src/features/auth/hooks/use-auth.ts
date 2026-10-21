@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/features/auth';
+import type { EmailLinkProof } from '../api/auth';
 import { hasSessionHint, setUserRole } from '@/lib/auth/token';
 import { useAuthStore } from '../stores/auth.store';
 import { UserRole, LoginPayload } from '../stores/auth.types';
@@ -35,6 +36,18 @@ const AUTH_REDIRECTS: Record<string, string> = {
 };
 
 const DEFAULT_REDIRECT = '/tenant/rental';
+
+/**
+ * Where to go after signing in: the page they were sent away from (`next`),
+ * if it is one of ours, otherwise their dashboard. The middleware still
+ * sends a landlord who has not finished setup to /onboarding.
+ */
+export function safeNextPath(next?: string | null): string | null {
+  if (!next || !next.startsWith('/') || next.startsWith('//') || next.startsWith('/\\')) return null;
+  const path = next.split(/[?#]/)[0];
+  const authPages = ['/login', '/register', '/auth', '/forgot-password', '/reset-password', '/verify-email'];
+  return authPages.some((p) => path === p || path.startsWith(`${p}/`)) ? null : next;
+}
 
 // -- Main Facade Hook --
 
@@ -137,7 +150,7 @@ function useAuthSuccess() {
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  return (response: any, successMessage: string) => {
+  return (response: any, successMessage: string, next?: string | null) => {
     // 1. Update Store
     const accessToken = response.access || response.access_token;
     const refreshToken = response.refresh || response.refresh_token;
@@ -160,7 +173,7 @@ function useAuthSuccess() {
 
     // 4. Final Delegation: Push to dashboard and let Middleware decide if /onboarding is needed
     // This eliminates the conflicting logic in the frontend hooks.
-    const redirectUrl = AUTH_REDIRECTS[response.user?.role] || DEFAULT_REDIRECT;
+    const redirectUrl = safeNextPath(next) || AUTH_REDIRECTS[response.user?.role] || DEFAULT_REDIRECT;
     router.push(redirectUrl as any);
 
     // 5. Toast
@@ -207,19 +220,57 @@ export function useRegister() {
 /**
  * Hook for user login
  */
-export function useLogin() {
+export function useLogin(next?: string | null) {
   const handleSuccess = useAuthSuccess();
 
   return useMutation({
     mutationFn: (data: LoginRequest) => authApi.login(data),
     onSuccess: (response: AuthResponse) => {
-      handleSuccess(response, 'Welcome back!');
+      handleSuccess(response, 'Welcome back!', next);
     },
     onError: (error: ApiError) => {
       // We don't toast here because LoginForm handles it via internal state
       // but we log it for debugging
       console.error('Login error:', error);
     },
+  });
+}
+
+/** Which sign-in methods are switched on (Google needs a client ID on the server). */
+export function useSignInMethods() {
+  return useQuery({
+    queryKey: ['auth', 'sign-in-methods'],
+    queryFn: () => authApi.signInMethods(),
+    staleTime: 10 * 60 * 1000,
+    retry: 1,
+  });
+}
+
+/** Email a one-time sign-in link and code. */
+export function useRequestEmailLink() {
+  return useMutation({
+    mutationFn: ({ email, next }: { email: string; next?: string | null }) =>
+      authApi.requestEmailLink(email, next || undefined),
+  });
+}
+
+/** Sign in with the emailed link (`{token}`) or the code typed from it (`{email, code}`). */
+export function useEmailLinkSignIn(next?: string | null) {
+  const handleSuccess = useAuthSuccess();
+  return useMutation({
+    mutationFn: (proof: EmailLinkProof) => authApi.signInWithEmailLink(proof),
+    onSuccess: (response) =>
+      handleSuccess(response, response.is_new_user ? 'Welcome to RumiaRent!' : 'Welcome back!', next),
+  });
+}
+
+/** Sign in with the ID token from Google's button. */
+export function useGoogleSignIn(next?: string | null) {
+  const handleSuccess = useAuthSuccess();
+  return useMutation({
+    mutationFn: (credential: string) => authApi.signInWithGoogle(credential),
+    onSuccess: (response) =>
+      handleSuccess(response, response.is_new_user ? 'Welcome to RumiaRent!' : 'Welcome back!', next),
   });
 }
 

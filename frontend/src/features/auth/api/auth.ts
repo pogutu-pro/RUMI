@@ -28,6 +28,40 @@ async function login(data: LoginRequest): Promise<AuthResponse> {
   return res.data;
 }
 
+export interface SignInMethods {
+  google_client_id: string | null;
+  email_link: boolean;
+}
+
+/** Which sign-in buttons to show. Endpoint: GET /api/v1/accounts/auth/methods/ */
+async function signInMethods(): Promise<SignInMethods> {
+  const res = await axios.get<SignInMethods>('/accounts/auth/methods/');
+  return res.data;
+}
+
+/**
+ * Email a one-time sign-in link and code. The answer is the same whether or
+ * not the address has an account. Endpoint: POST /api/v1/accounts/auth/email-link/
+ */
+async function requestEmailLink(email: string, next?: string): Promise<{ sent: boolean; expires_in: number }> {
+  const res = await axios.post('/accounts/auth/email-link/', { email, next: next || '' });
+  return res.data;
+}
+
+export type EmailLinkProof = { token: string } | { email: string; code: string };
+
+/** Sign in with the emailed link or its code. Creates a landlord account for a new address. */
+async function signInWithEmailLink(proof: EmailLinkProof): Promise<AuthResponse & { is_new_user: boolean }> {
+  const res = await axios.post('/accounts/auth/email-link/sign-in/', proof);
+  return res.data;
+}
+
+/** Sign in with a Google Identity Services ID token. */
+async function signInWithGoogle(credential: string): Promise<AuthResponse & { is_new_user: boolean }> {
+  const res = await axios.post('/accounts/auth/google/', { credential });
+  return res.data;
+}
+
 /**
  * Check email and authentication method
  * Endpoint: POST /api/v1/accounts/check-email/
@@ -319,6 +353,10 @@ async function getPermissions(): Promise<any> {
 
 export const authApi = {
   login,
+  signInMethods,
+  requestEmailLink,
+  signInWithEmailLink,
+  signInWithGoogle,
   checkEmail,
   checkPasswordStatus,
   setPassword,

@@ -14,7 +14,10 @@ urlpatterns = [
     path('check-email/', views.CheckEmailView.as_view(), name='check_email'),
     path('check-password/', views.CheckPasswordView.as_view(), name='check_password'),
     path('set-password/', views.SetPasswordView.as_view(), name='set_password'),
-    path('auth/google/', views.GoogleOAuthView.as_view(), name='google_oauth'),
+    path('auth/methods/', views.SignInMethodsView.as_view(), name='sign_in_methods'),
+    path('auth/google/', views.GoogleSignInView.as_view(), name='google_sign_in'),
+    path('auth/email-link/', views.EmailLinkRequestView.as_view(), name='email_link_request'),
+    path('auth/email-link/sign-in/', views.EmailLinkSignInView.as_view(), name='email_link_sign_in'),
     path('refresh-token/', views.TokenRefreshView.as_view(), name='token_refresh'),
     path('logout/', views.UserLogoutView.as_view(), name='user_logout'),
 

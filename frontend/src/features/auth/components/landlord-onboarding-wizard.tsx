@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Gift, Loader2, Smartphone } from 'lucide-react';
+import { ArrowLeft, Check, Gift, Loader2, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { axiosInstance as axios } from '@/lib/api/client';
@@ -22,20 +24,24 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Steps } from '@/components/ui/steps';
-import { useOnboardingStatus } from '@/features/auth/hooks/use-auth';
+import { authApi } from '@/features/auth/api/auth';
+import { useAuth, useOnboardingStatus } from '@/features/auth/hooks/use-auth';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
 import { useCreateOrganization, useCreateProperty } from '@/features/rental/hooks/use-rental';
 import { usePaybillAccounts } from '@/features/paybill/hooks';
 import { paybillApi } from '@/features/paybill/api';
 import { apiErrorMessage } from '@/features/ledger/lib/format';
-import { wizardOrgSchema, type WizardOrgFormData } from '@/lib/validations/auth.schema';
+import { cn } from '@/lib/utils/cn';
 
 // Three short steps, like the Kenyan rent tools landlords already know:
 // who you are, what you rent out (units created for you), and the paybill
 // tenants already pay into. No bank/payout details and no plan choice:
 // rent goes straight to the landlord, and the free trial covers everything.
-const WIZARD_STEPS = [{ title: 'Your business' }, { title: 'Your property' }, { title: 'How tenants pay' }];
+const STEPS = [
+  { title: 'About you', hint: 'Your name and business' },
+  { title: 'Your property', hint: 'Units are created for you' },
+  { title: 'How tenants pay', hint: 'Your M-Pesa paybill' },
+];
 const DONE = 5; // server's "finished" marker
 
 const UNIT_TYPES = [
@@ -48,11 +54,11 @@ const UNIT_TYPES = [
   { value: 'other', label: 'Mixed / other' },
 ];
 
+const field = 'h-11 text-base';
+
 function clampStep(step: number): number {
   return Math.min(3, Math.max(1, step));
 }
-
-const card = 'rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-10';
 
 export function LandlordOnboardingWizard() {
   const router = useRouter();
@@ -66,76 +72,249 @@ export function LandlordOnboardingWizard() {
     if (finished) router.replace('/landlord/rental');
   }, [finished, router]);
 
-  if (isLoading) {
+  if (isLoading || finished) {
     return (
-      <div className="flex flex-col items-center justify-center p-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-dvh items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" aria-label="Loading" />
       </div>
     );
   }
-  if (finished) return null;
 
   const goTo = (next: number) => setManualStep(clampStep(next));
 
   return (
-    <div className="space-y-8">
-      <Steps steps={WIZARD_STEPS} currentStep={step - 1} />
-      {manualStep === null && serverStep > 1 && (
-        <div className="rounded-2xl border border-primary/20 bg-primary/5 px-6 py-4 text-sm font-semibold text-primary">
-          Welcome back. Pick up where you left off.
-        </div>
-      )}
-      {step === 1 && <BusinessStep organizationName={data?.wizard?.organization_name ?? null} onAdvance={() => goTo(2)} />}
+    <OnboardingFrame step={step} resumed={manualStep === null && serverStep > 1}>
+      {step === 1 && <AboutStep organizationName={data?.wizard?.organization_name ?? null} onAdvance={() => goTo(2)} />}
       {step === 2 && <PropertyStep onAdvance={() => goTo(3)} onBack={() => goTo(1)} />}
-      {step === 3 && (
-        <PaymentStep organizationName={data?.wizard?.organization_name ?? ''} onBack={() => goTo(2)} />
-      )}
+      {step === 3 && <PaymentStep organizationName={data?.wizard?.organization_name ?? ''} onBack={() => goTo(2)} />}
+    </OnboardingFrame>
+  );
+}
+
+/** Step rail on the left from laptop width; a slim progress bar on phones. */
+function OnboardingFrame({ step, resumed, children }: { step: number; resumed: boolean; children: ReactNode }) {
+  const { logout } = useAuth();
+  const logo = (
+    <Link href="/" className="inline-flex items-center gap-2" aria-label="RumiaRent home">
+      <Image src="/images/logo/logo.png" alt="" width={28} height={28} className="h-7 w-7" priority />
+      <span className="text-lg font-semibold tracking-tight text-gray-900">
+        Rumia<span className="text-primary">Rent</span>
+      </span>
+    </Link>
+  );
+
+  return (
+    <div className="flex min-h-dvh bg-white">
+      <aside className="hidden w-[300px] shrink-0 flex-col border-r border-gray-100 bg-gray-50/70 px-8 py-6 lg:sticky lg:top-0 lg:flex lg:h-dvh">
+        {logo}
+        <div className="mt-12">
+          <p className="text-sm font-semibold text-gray-900">Set up RumiaRent</p>
+          <p className="mt-0.5 text-sm text-gray-500">About two minutes. Change anything later.</p>
+        </div>
+        <ol className="mt-8 space-y-1">
+          {STEPS.map((s, i) => {
+            const n = i + 1;
+            const done = n < step;
+            const current = n === step;
+            return (
+              <li
+                key={s.title}
+                aria-current={current ? 'step' : undefined}
+                className={cn('flex items-start gap-3 rounded-xl px-3 py-3', current && 'bg-white shadow-sm ring-1 ring-gray-100')}
+              >
+                <span
+                  className={cn(
+                    'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold',
+                    done && 'bg-primary text-white',
+                    current && 'bg-gray-900 text-white',
+                    !done && !current && 'border border-gray-300 text-gray-500',
+                  )}
+                >
+                  {done ? <Check className="h-3.5 w-3.5" aria-label="Done" /> : n}
+                </span>
+                <span>
+                  <span className={cn('block text-sm font-medium', current || done ? 'text-gray-900' : 'text-gray-500')}>
+                    {s.title}
+                  </span>
+                  <span className="block text-xs text-gray-500">{s.hint}</span>
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+        <div className="mt-auto space-y-4">
+          <p className="flex items-start gap-2 text-xs leading-relaxed text-gray-500">
+            <Gift className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+            Free for 30 days with every feature. Choose a plan later from Billing.
+          </p>
+          <button type="button" onClick={() => void logout()} className="text-xs font-medium text-gray-500 hover:text-gray-900">
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      <div className="flex min-h-dvh flex-1 flex-col">
+        <header className="flex h-16 shrink-0 items-center justify-between px-5 lg:hidden">
+          {logo}
+          <span className="text-sm text-gray-500">
+            Step {step} of {STEPS.length}
+          </span>
+        </header>
+        <div className="h-1 bg-gray-100 lg:hidden" aria-hidden>
+          <div className="h-full bg-primary transition-all" style={{ width: `${(step / STEPS.length) * 100}%` }} />
+        </div>
+        <main className="flex flex-1 justify-center px-5 py-8 sm:px-10 sm:py-16">
+          <div className="w-full max-w-xl">
+            {resumed && (
+              <p className="mb-6 rounded-lg bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
+                Welcome back. Pick up where you left off.
+              </p>
+            )}
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
 
-function BusinessStep({ organizationName, onAdvance }: { organizationName: string | null; onAdvance: () => void }) {
+function StepHeading({ step, title, subtitle, onBack }: { step: number; title: string; subtitle: string; onBack?: () => void }) {
+  return (
+    <div className="mb-8">
+      <div className="mb-3 flex items-center gap-2 text-sm text-gray-500">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Go back"
+            className="-ml-1 inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-gray-100 hover:text-gray-900"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+        )}
+        <span className="hidden lg:inline">
+          Step {step} of {STEPS.length}
+        </span>
+      </div>
+      <h1 className="text-[28px] font-semibold tracking-tight text-gray-900">{title}</h1>
+      <p className="mt-1.5 text-[15px] text-gray-500">{subtitle}</p>
+    </div>
+  );
+}
+
+/** Kenyan mobile numbers as +2547XXXXXXXX / +2541XXXXXXXX, or null if not one. */
+export function normalizeKenyanPhone(raw: string): string | null {
+  const digits = raw.replace(/[\s-]/g, '');
+  const match = digits.match(/^(?:\+?254|0)?([17]\d{8})$/);
+  return match ? `+254${match[1]}` : null;
+}
+
+function aboutSchema(askName: boolean) {
+  return z.object({
+    full_name: askName
+      ? z.string().trim().min(2, 'Enter your name').max(150)
+      : z.string().trim().max(150),
+    phone: z
+      .string()
+      .trim()
+      .refine((v) => v === '' || normalizeKenyanPhone(v) !== null, 'Enter a Kenyan number like 0712 345 678'),
+    name: z.string().trim().min(2, 'Enter your business or landlord name').max(255),
+  });
+}
+type AboutForm = z.infer<ReturnType<typeof aboutSchema>>;
+
+function AboutStep({ organizationName, onAdvance }: { organizationName: string | null; onAdvance: () => void }) {
+  const user = useAuthStore((s) => s.user);
   const createOrganization = useCreateOrganization();
-  const form = useForm<WizardOrgFormData>({
-    resolver: zodResolver(wizardOrgSchema),
-    defaultValues: { name: organizationName ?? '' },
+  // People who signed up with an email link or Google may have no name or
+  // phone yet; only ask for what is missing.
+  const askName = !user?.first_name?.trim();
+  const askPhone = !user?.phone_number?.trim();
+  const [saving, setSaving] = useState(false);
+  const form = useForm<AboutForm>({
+    resolver: zodResolver(aboutSchema(askName)),
+    defaultValues: { full_name: '', phone: '', name: organizationName ?? '' },
   });
 
-  const onSubmit = async (values: WizardOrgFormData) => {
-    if (organizationName && values.name === organizationName) return onAdvance(); // already created
+  const onSubmit = async (values: AboutForm) => {
+    setSaving(true);
     try {
-      await createOrganization.mutateAsync(values);
-      onAdvance();
-    } catch {
-      // useCreateOrganization already shows the error; stay so they can retry.
+      const updates: Record<string, string> = {};
+      if (askName) {
+        const [first, ...rest] = values.full_name.trim().split(/\s+/);
+        updates.first_name = first;
+        updates.last_name = rest.join(' ');
+      }
+      const phone = values.phone ? normalizeKenyanPhone(values.phone) : null;
+      if (askPhone && phone) updates.phone_number = phone;
+      if (Object.keys(updates).length) {
+        try {
+          await authApi.updateProfile(updates as never);
+          useAuthStore.getState().updateUser(updates);
+        } catch (err) {
+          toast.error(apiErrorMessage(err, 'Could not save your name. Try again.'));
+          return;
+        }
+      }
+      if (organizationName && values.name === organizationName) return onAdvance(); // already created
+      try {
+        await createOrganization.mutateAsync({ name: values.name });
+        onAdvance();
+      } catch {
+        // useCreateOrganization already shows the error; stay so they can retry.
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
+  const firstName = user?.first_name?.trim();
+
   return (
-    <div className={card}>
-      <h2 className="text-2xl font-semibold text-gray-900">What is your business called?</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Tenants see this name on receipts and messages.</p>
+    <>
+      <StepHeading
+        step={1}
+        title={firstName ? `Welcome, ${firstName}` : 'Welcome to RumiaRent'}
+        subtitle="Tell us who tenants are paying. They see this name on receipts and messages."
+      />
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-6">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          {askName && (
+            <FormField control={form.control} name="full_name" render={({ field: f }) => (
               <FormItem>
-                <FormLabel>Business or landlord name</FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder="e.g. Kamau Properties" className="h-11" autoFocus />
-                </FormControl>
+                <FormLabel>Your name</FormLabel>
+                <FormControl><Input {...f} autoComplete="name" placeholder="e.g. Grace Mwangi" className={field} autoFocus /></FormControl>
                 <FormMessage />
               </FormItem>
-            )}
-          />
-          <Button type="submit" size="lg" className="h-11 w-full rounded-full" isLoading={createOrganization.isPending}>
+            )} />
+          )}
+          {askPhone && (
+            <FormField control={form.control} name="phone" render={({ field: f }) => (
+              <FormItem>
+                <FormLabel>Phone number <span className="font-normal text-gray-400">(optional)</span></FormLabel>
+                <FormControl>
+                  <Input {...f} type="tel" inputMode="tel" autoComplete="tel" placeholder="0712 345 678" className={field} />
+                </FormControl>
+                <FormDescription>For important alerts by SMS. Never shown to tenants.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+          <FormField control={form.control} name="name" render={({ field: f }) => (
+            <FormItem>
+              <FormLabel>Business or landlord name</FormLabel>
+              <FormControl>
+                <Input {...f} placeholder="e.g. Kamau Properties" className={field} autoFocus={!askName} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+          <Button type="submit" className="h-11 w-full text-base" isLoading={saving}>
             Continue
           </Button>
         </form>
       </Form>
-    </div>
+    </>
   );
 }
 
@@ -187,90 +366,88 @@ function PropertyStep({ onAdvance, onBack }: { onAdvance: () => void; onBack: ()
   const units = Number(form.watch('units')) || 0;
 
   return (
-    <div className={card}>
-      <div className="flex items-center gap-3">
-        <Button type="button" variant="ghost" size="icon" aria-label="Go back" onClick={onBack}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h2 className="text-2xl font-semibold text-gray-900">Add your first property</h2>
-      </div>
-      <p className="mt-1 text-sm text-muted-foreground">You can add more properties and edit units any time.</p>
+    <>
+      <StepHeading
+        step={2}
+        title="Add your first property"
+        subtitle="We create the units for you. Add more properties any time."
+        onBack={onBack}
+      />
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-5">
-          <FormField control={form.control} name="name" render={({ field }) => (
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          <FormField control={form.control} name="name" render={({ field: f }) => (
             <FormItem>
               <FormLabel>Property name</FormLabel>
-              <FormControl><Input {...field} placeholder="e.g. Greenview Apartments" className="h-11" autoFocus /></FormControl>
+              <FormControl><Input {...f} placeholder="e.g. Greenview Apartments" className={field} autoFocus /></FormControl>
               <FormMessage />
             </FormItem>
           )} />
           <div className="grid gap-5 sm:grid-cols-2">
-            <FormField control={form.control} name="address" render={({ field }) => (
+            <FormField control={form.control} name="address" render={({ field: f }) => (
               <FormItem>
                 <FormLabel>Estate or road</FormLabel>
-                <FormControl><Input {...field} placeholder="e.g. Kilimani, Ngong Road" className="h-11" /></FormControl>
+                <FormControl><Input {...f} placeholder="e.g. Kilimani, Ngong Road" className={field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField control={form.control} name="city" render={({ field }) => (
+            <FormField control={form.control} name="city" render={({ field: f }) => (
               <FormItem>
                 <FormLabel>Town</FormLabel>
-                <FormControl><Input {...field} className="h-11" /></FormControl>
+                <FormControl><Input {...f} className={field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
           </div>
-          <div className="grid gap-5 sm:grid-cols-3">
-            <FormField control={form.control} name="units" render={({ field }) => (
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
+            <FormField control={form.control} name="units" render={({ field: f }) => (
               <FormItem>
-                <FormLabel>Number of units</FormLabel>
+                <FormLabel>Units</FormLabel>
                 <FormControl>
-                  <Input type="number" inputMode="numeric" min={1} max={300} className="h-11"
-                    {...field} value={field.value as number | string} />
+                  <Input type="number" inputMode="numeric" min={1} max={300} className={field}
+                    {...f} value={f.value as number | string} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField control={form.control} name="unit_type" render={({ field }) => (
+            <FormField control={form.control} name="rent" render={({ field: f }) => (
               <FormItem>
+                <FormLabel>Rent each (KES)</FormLabel>
+                <FormControl>
+                  <Input type="number" inputMode="numeric" min={0} className={field}
+                    {...f} value={f.value as number | string} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="unit_type" render={({ field: f }) => (
+              <FormItem className="col-span-2 sm:col-span-1">
                 <FormLabel>Mostly</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl><SelectTrigger className="h-11"><SelectValue /></SelectTrigger></FormControl>
+                <Select value={f.value} onValueChange={f.onChange}>
+                  <FormControl><SelectTrigger className={field}><SelectValue /></SelectTrigger></FormControl>
                   <SelectContent>
                     {UNIT_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </FormItem>
             )} />
-            <FormField control={form.control} name="rent" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Rent per unit (KES)</FormLabel>
-                <FormControl>
-                  <Input type="number" inputMode="numeric" min={0} className="h-11"
-                    {...field} value={field.value as number | string} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
           </div>
-          <FormField control={form.control} name="prefix" render={({ field }) => (
+          <FormField control={form.control} name="prefix" render={({ field: f }) => (
             <FormItem>
-              <FormLabel>Unit label (optional)</FormLabel>
-              <FormControl><Input {...field} placeholder="e.g. A" className="h-11 sm:max-w-40" /></FormControl>
+              <FormLabel>Unit label <span className="font-normal text-gray-400">(optional)</span></FormLabel>
+              <FormControl><Input {...f} placeholder="e.g. A" className={cn(field, 'sm:max-w-40')} /></FormControl>
               <FormDescription>
-                Your units will be numbered {units > 0 ? `${prefix}1 to ${prefix}${units}` : `${prefix}1, ${prefix}2, ...`}.
+                Units will be numbered {units > 0 ? `${prefix}1 to ${prefix}${units}` : `${prefix}1, ${prefix}2, ...`}.
                 Rent can differ per unit; change it later on the property page.
               </FormDescription>
               <FormMessage />
             </FormItem>
           )} />
-          <Button type="submit" size="lg" className="h-11 w-full rounded-full"
-            isLoading={createProperty.isPending || addUnits.isPending}>
+          <Button type="submit" className="h-11 w-full text-base" isLoading={createProperty.isPending || addUnits.isPending}>
             Continue
           </Button>
         </form>
       </Form>
-    </div>
+    </>
   );
 }
 
@@ -319,72 +496,65 @@ function PaymentStep({ organizationName, onBack }: { organizationName: string; o
   };
 
   return (
-    <div className={card}>
-      <div className="flex items-center gap-3">
-        <Button type="button" variant="ghost" size="icon" aria-label="Go back" onClick={onBack}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h2 className="text-2xl font-semibold text-gray-900">How do tenants pay you?</h2>
-      </div>
-      <div className="mt-4 flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-gray-700">
+    <>
+      <StepHeading
+        step={3}
+        title="How do tenants pay you?"
+        subtitle="Add the paybill tenants already use, and we match every payment to the right tenant."
+        onBack={onBack}
+      />
+      <div className="mb-6 flex items-start gap-3 rounded-xl border border-primary/15 bg-primary/5 p-4 text-sm text-gray-700">
         <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
         <p>
-          Rent keeps going <span className="font-semibold text-gray-900">straight to your own M-Pesa paybill</span>.
-          RumiaRent never touches the money. Each tenant gets their own account number to type, so we can tell who
-          paid and send their receipt.
+          Rent keeps going <span className="font-semibold text-gray-900">straight to your own paybill</span>. RumiaRent
+          never touches the money. Each tenant gets an account number to type, so we know who paid and send the receipt.
         </p>
       </div>
 
       {existing ? (
-        <div className="mt-6 space-y-4">
+        <div className="space-y-4">
           <p className="text-sm">
             Paybill <span className="font-mono font-semibold">{existing.shortcode}</span> is saved.
           </p>
-          <Button size="lg" className="h-11 w-full rounded-full" isLoading={complete.isPending} onClick={() => complete.mutate()}>
+          <Button className="h-11 w-full text-base" isLoading={complete.isPending} onClick={() => complete.mutate()}>
             Go to my dashboard
           </Button>
         </div>
       ) : (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-5">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             <div className="grid gap-5 sm:grid-cols-2">
-              <FormField control={form.control} name="shortcode" render={({ field }) => (
+              <FormField control={form.control} name="shortcode" render={({ field: f }) => (
                 <FormItem>
-                  <FormLabel>Paybill (business) number</FormLabel>
-                  <FormControl><Input {...field} inputMode="numeric" placeholder="e.g. 522522" className="h-11" autoFocus /></FormControl>
+                  <FormLabel>Paybill number</FormLabel>
+                  <FormControl><Input {...f} inputMode="numeric" placeholder="e.g. 522522" className={field} autoFocus /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
-              <FormField control={form.control} name="display_name" render={({ field }) => (
+              <FormField control={form.control} name="display_name" render={({ field: f }) => (
                 <FormItem>
                   <FormLabel>Name tenants see on M-Pesa</FormLabel>
-                  <FormControl><Input {...field} className="h-11" /></FormControl>
+                  <FormControl><Input {...f} className={field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
             </div>
-            <Button type="submit" size="lg" className="h-11 w-full rounded-full"
-              isLoading={connect.isPending || complete.isPending}>
+            <Button type="submit" className="h-11 w-full text-base" isLoading={connect.isPending || complete.isPending}>
               Finish setup
             </Button>
           </form>
         </Form>
       )}
 
-      <div className="mt-6 border-t border-gray-100 pt-5 text-center">
-        <p className="mb-2 text-sm text-gray-600">
-          No paybill yet, or you collect cash or bank transfers? Skip this. You can record payments yourself and add a
-          paybill later under M-Pesa paybill.
-        </p>
-        <Button type="button" variant="ghost" onClick={() => complete.mutate()} disabled={complete.isPending}>
+      <div className="mt-8 border-t border-gray-100 pt-6">
+        <Button type="button" variant="outline" className="h-11 w-full" onClick={() => complete.mutate()} disabled={complete.isPending}>
           Skip for now
         </Button>
+        <p className="mt-3 text-center text-xs leading-relaxed text-gray-500">
+          No paybill yet, or you take cash or bank transfers? Skip this and record payments yourself. Add a paybill
+          later under M-Pesa.
+        </p>
       </div>
-
-      <p className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-        <Gift className="h-4 w-4 text-primary" aria-hidden />
-        Free for 30 days with every feature. Choose a plan later from Billing.
-      </p>
-    </div>
+    </>
   );
 }
