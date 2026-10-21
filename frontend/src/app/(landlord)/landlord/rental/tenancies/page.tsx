@@ -21,6 +21,7 @@ import {
 import { PageHeader } from '@/components/dashboard/page-header';
 import type { Tenancy } from '@/features/rental/types';
 import { TenancyMoneySheet } from '@/features/ledger/components/tenancy-money-sheet';
+import { formatKes } from '@/features/ledger/lib/format';
 import { MoveInDialog } from '@/features/rental/components/move-in-dialog';
 import { usePagination } from '@/hooks/use-pagination';
 import { SimplePager } from '@/components/ui/simple-pager';
@@ -37,6 +38,10 @@ const tenancySchema = z.object({
 });
 
 type TenancyFormValues = z.infer<typeof tenancySchema>;
+
+const STATUS_LABEL: Record<string, string> = {
+  active: 'Active', notice_period: 'On notice', pending: 'Pending', expired: 'Ended', terminated: 'Ended',
+};
 
 const EMPTY_FORM: TenancyFormValues = {
   unit: '', tenant: '', monthly_rent: '', deposit: '', deposit_handling: 'invoice', start_date: '',
@@ -77,6 +82,7 @@ export default function TenanciesPage() {
   const [movingIn, setMovingIn] = React.useState(false);
   const [editingTenancy, setEditingTenancy] = React.useState<Tenancy | null>(null);
   const [moneyTenancy, setMoneyTenancy] = React.useState<Tenancy | null>(null);
+  const [ending, setEnding] = React.useState<Tenancy | null>(null);
 
   const form = useForm<TenancyFormValues>({
     resolver: zodResolver(tenancySchema),
@@ -401,6 +407,48 @@ export default function TenanciesPage() {
         <p className="text-sm text-muted-foreground">No tenancies yet.</p>
       ) : (
         <>
+        {/* Phones: one card per tenancy; tap it for their money. */}
+        <ul className="space-y-2 md:hidden">
+          {pagedTenancies.map((t) => (
+            <li key={t.id}>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setMoneyTenancy(t)}
+                onKeyDown={(e) => e.key === 'Enter' && setMoneyTenancy(t)}
+                className="rounded-xl border bg-background p-4 active:bg-muted/50"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{t.tenant_name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {t.unit_number}
+                      {t.payment_reference ? ` · M-Pesa acc. ${t.payment_reference}` : ''}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="font-semibold tabular-nums">{formatKes(t.monthly_rent)}</p>
+                    <Badge variant={t.status === 'active' ? 'default' : 'secondary'}>{STATUS_LABEL[t.status] ?? t.status}</Badge>
+                  </div>
+                </div>
+                <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <Button size="sm" variant="outline" className="flex-1" leftIcon={<Wallet className="h-4 w-4" />} onClick={() => setMoneyTenancy(t)}>
+                    Money
+                  </Button>
+                  <Button size="sm" variant="outline" className="flex-1" leftIcon={<Pencil className="h-4 w-4" />} onClick={() => openEdit(t)}>
+                    Edit
+                  </Button>
+                  {t.status === 'active' && (
+                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setEnding(t)}>
+                      End
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -418,9 +466,9 @@ export default function TenanciesPage() {
                 <TableCell className="font-medium">{t.tenant_name}</TableCell>
                 <TableCell>{t.unit_number}</TableCell>
                 <TableCell className="font-mono text-xs">{t.payment_reference || '—'}</TableCell>
-                <TableCell>KES {t.monthly_rent}</TableCell>
+                <TableCell className="tabular-nums">{formatKes(t.monthly_rent)}</TableCell>
                 <TableCell>
-                  <Badge variant={t.status === 'active' ? 'default' : 'secondary'}>{t.status}</Badge>
+                  <Badge variant={t.status === 'active' ? 'default' : 'secondary'}>{STATUS_LABEL[t.status] ?? t.status}</Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
@@ -447,7 +495,7 @@ export default function TenanciesPage() {
                         size="sm"
                         variant="outline"
                         disabled={terminateTenancy.isPending}
-                        onClick={() => terminateTenancy.mutate({ id: t.id })}
+                        onClick={() => setEnding(t)}
                       >
                         Terminate
                       </Button>
@@ -458,10 +506,32 @@ export default function TenanciesPage() {
             ))}
           </TableBody>
         </Table>
+        </div>
         <SimplePager {...tenanciesPager} />
         </>
       )}
 
+      <Dialog open={!!ending} onOpenChange={(v) => { if (!v) setEnding(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>End {ending?.tenant_name}&apos;s tenancy?</DialogTitle>
+            <DialogDescription>
+              Unit {ending?.unit_number} becomes vacant and no more rent is invoiced. Any amount they still owe stays on
+              record. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEnding(null)}>Keep tenancy</Button>
+            <Button
+              variant="destructive"
+              isLoading={terminateTenancy.isPending}
+              onClick={() => ending && terminateTenancy.mutate({ id: ending.id }, { onSuccess: () => setEnding(null) })}
+            >
+              End tenancy
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <TenancyMoneySheet tenancy={moneyTenancy} onClose={() => setMoneyTenancy(null)} />
     </div>
   );

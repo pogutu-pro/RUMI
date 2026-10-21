@@ -50,7 +50,81 @@ export interface DashboardShellProps {
    * org-scoped (e.g. the super-admin shell's own Users/Support sections).
    * Defaults true so every existing caller keeps today's behavior. */
   showOrgSwitcher?: boolean;
+  /** Phones: up to four everyday destinations in a bottom tab bar (plus Menu
+   * for everything else). Labels should be one short word. */
+  mobileTabs?: { href: string; label: string; icon: LucideIcon }[];
   children: React.ReactNode;
+}
+
+/**
+ * Bottom tab bar for phones: where the thumb rests, with the everyday pages one
+ * tap away and "Menu" opening the full list. Counts come from the side nav.
+ */
+function MobileTabBar({
+  tabs,
+  nav,
+  pathname,
+  badges,
+  onMenu,
+}: {
+  tabs: { href: string; label: string; icon: LucideIcon }[];
+  nav: DashboardShellNavItem[];
+  pathname: string;
+  badges: Record<string, number>;
+  onMenu: () => void;
+}) {
+  const current = activeHref(nav, pathname);
+  const inTabs = tabs.some((t) => t.href === current);
+  return (
+    <nav
+      aria-label="Main"
+      className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/85"
+    >
+      <ul className="mx-auto flex h-16 max-w-md items-stretch">
+        {tabs.map((tab) => {
+          const active = tab.href === current;
+          const item = nav.find((n) => n.href === tab.href);
+          const count = (item?.badge ?? 0) + (badges[tab.href] ?? 0);
+          const Icon = tab.icon;
+          return (
+            <li key={tab.href} className="flex-1">
+              <Link
+                href={tab.href}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'relative flex h-full flex-col items-center justify-center gap-1 text-[11px] font-medium',
+                  active ? 'text-primary' : 'text-muted-foreground',
+                )}
+              >
+                <span className="relative">
+                  <Icon className="h-[22px] w-[22px]" aria-hidden="true" strokeWidth={active ? 2.25 : 1.75} />
+                  {count > 0 && (
+                    <span className="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground">
+                      {count > 9 ? '9+' : count}
+                    </span>
+                  )}
+                </span>
+                {tab.label}
+              </Link>
+            </li>
+          );
+        })}
+        <li className="flex-1">
+          <button
+            type="button"
+            onClick={onMenu}
+            className={cn(
+              'flex h-full w-full flex-col items-center justify-center gap-1 text-[11px] font-medium',
+              !inTabs ? 'text-primary' : 'text-muted-foreground',
+            )}
+          >
+            <Menu className="h-[22px] w-[22px]" aria-hidden="true" strokeWidth={!inTabs ? 2.25 : 1.75} />
+            Menu
+          </button>
+        </li>
+      </ul>
+    </nav>
+  );
 }
 
 function NavLinks({
@@ -230,6 +304,7 @@ export function DashboardShell({
   maxWidth,
   bannerSlot,
   showOrgSwitcher = true,
+  mobileTabs,
   children,
 }: DashboardShellProps) {
   const { user, status, isAuthenticated, logout } = useAuth();
@@ -312,14 +387,19 @@ export function DashboardShell({
           {!isDesktop && (
             <>
               <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b bg-background px-4">
-                <button
-                  onClick={() => setMobileNavOpen(true)}
-                  aria-label="Open menu"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
-                >
-                  <Menu className="h-5 w-5" />
-                </button>
-                <span className="text-base font-semibold text-foreground">RumiaRent</span>
+                {/* With a bottom tab bar, Menu lives there; one menu button, not two. */}
+                {!mobileTabs?.length && (
+                  <button
+                    onClick={() => setMobileNavOpen(true)}
+                    aria-label="Open menu"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </button>
+                )}
+                <span className="text-base font-semibold text-foreground">
+                  Rumia<span className="text-primary">Rent</span>
+                </span>
                 <div className="ml-auto flex items-center gap-1">
                   <NotificationBell />
                   <AccountMenu name={name} email={email} photoUrl={photoUrl} settingsHref={settingsHref} onLogout={logout} />
@@ -351,10 +431,26 @@ export function DashboardShell({
                 </div>
               </header>
             )}
-            <main className={cn('mx-auto space-y-6 px-4 py-6 md:py-8', maxWidth ?? 'max-w-5xl', !isDesktop && 'pt-[4.5rem]')}>
+            <main
+              className={cn(
+                'mx-auto space-y-6 px-4 py-6 md:py-8',
+                maxWidth ?? 'max-w-5xl',
+                !isDesktop && 'pt-[4.5rem]',
+                !isDesktop && mobileTabs?.length && 'pb-28',
+              )}
+            >
               {bannerSlot}
               {children}
             </main>
+            {!isDesktop && mobileTabs && mobileTabs.length > 0 && (
+              <MobileTabBar
+                tabs={mobileTabs}
+                nav={nav}
+                pathname={pathname}
+                badges={navBadges}
+                onMenu={() => setMobileNavOpen(true)}
+              />
+            )}
           </div>
         </div>
       </TooltipProvider>

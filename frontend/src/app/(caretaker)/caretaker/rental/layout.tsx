@@ -21,6 +21,12 @@ export default function RentalCaretakerLayout({ children }: { children: React.Re
     <DashboardShell
       allowedRoles={[UserRole.CARETAKER]}
       nav={NAV}
+      mobileTabs={[
+        { href: '/caretaker/rental', label: 'Home', icon: LayoutDashboard },
+        { href: '/caretaker/rental/rent', label: 'Rent', icon: Wallet },
+        { href: '/caretaker/rental/tenants', label: 'Tenants', icon: Users },
+        { href: '/caretaker/rental/messages', label: 'Messages', icon: MessageSquare },
+      ]}
       settingsHref="/caretaker/rental/settings"
     >
       {children}

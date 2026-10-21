@@ -135,7 +135,41 @@ export default function PaybillPage() {
             {tab === 'unmatched' ? 'Every M-Pesa payment has been matched.' : 'No M-Pesa payments yet.'}
           </p>
         ) : (
-          <div className="overflow-x-auto">
+          <div>
+            {/* Phones: one card per payment. */}
+            <ul className="space-y-2 md:hidden">
+              {transactions.map((t) => (
+                <li key={t.id} className="rounded-xl border bg-background p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{t.payer_name || 'Unknown payer'}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(t.trans_time)} · <span className="font-mono">{t.trans_id}</span>
+                      </p>
+                    </div>
+                    <p className="shrink-0 font-semibold tabular-nums">{formatKes(t.amount)}</p>
+                  </div>
+                  <p className="mt-2 text-sm">
+                    Account typed <span className="font-mono">{t.bill_ref_number || '(blank)'}</span>
+                    {t.tenant_name ? (
+                      <span className="text-muted-foreground"> → {t.tenant_name} · {t.unit_number} ({MATCHED_BY[t.matched_by]})</span>
+                    ) : null}
+                  </p>
+                  {t.unverified_source && (
+                    <p className="mt-1 text-xs text-warning">Check against your M-Pesa statement</p>
+                  )}
+                  {t.status === 'unmatched' ? (
+                    <div className="mt-3 flex gap-2">
+                      <Button size="sm" className="flex-1" onClick={() => setAssigning(t)}>Assign to tenant</Button>
+                      <Button size="sm" variant="outline" onClick={() => setIgnoring(t)}>Not rent</Button>
+                    </div>
+                  ) : !t.tenant_name ? (
+                    <Badge variant="outline" className="mt-2">{STATUS_LABEL[t.status]}</Badge>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -192,6 +226,7 @@ export default function PaybillPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </div>
         )}
       </div>

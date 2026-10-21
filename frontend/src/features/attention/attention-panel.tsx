@@ -43,7 +43,7 @@ export function AttentionPanel() {
                       <span className="font-medium">
                         <span className={tone.text}>{item.count}</span> {item.title}
                       </span>
-                      <span className="mt-0.5 block text-muted-foreground">{item.detail}</span>
+                      <span className="mt-0.5 line-clamp-2 text-muted-foreground sm:line-clamp-none">{item.detail}</span>
                     </span>
                     <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                   </Link>

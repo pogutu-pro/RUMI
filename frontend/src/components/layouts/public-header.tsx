@@ -51,6 +51,7 @@ export function PublicHeader() {
     : { href: AUTH_ROUTES.REGISTER, label: 'Start free' };
 
   return (
+    <>
     <header className="sticky top-0 z-50 border-b border-gray-200/80 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
         <Logo />
@@ -95,6 +96,9 @@ export function PublicHeader() {
         </div>
       </div>
 
+    </header>
+    {/* Outside the header on purpose: its backdrop blur would make this
+        fixed panel size itself to the 64px header instead of the screen. */}
       {open && (
         <div id="mobile-menu" className="fixed inset-x-0 top-16 bottom-0 z-50 overflow-y-auto border-t border-gray-200 bg-white md:hidden">
           <nav aria-label="Mobile" className="mx-auto flex max-w-6xl flex-col px-4 py-4">
@@ -120,6 +124,6 @@ export function PublicHeader() {
           </nav>
         </div>
       )}
-    </header>
+    </>
   );
 }
