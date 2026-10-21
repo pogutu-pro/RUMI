@@ -103,7 +103,7 @@ class UtilityService:
     @transaction.atomic
     def bill_now(cls, tenancy, created_by=None):
         """Bill all unbilled readings for the tenancy on an ad-hoc invoice due today."""
-        today = timezone.now().date()
+        today = timezone.localdate()
         lines, readings = cls.lines_for(tenancy, before=today + timedelta(days=1))
         if not lines:
             raise UtilityError('No unbilled consumption for this tenancy.')

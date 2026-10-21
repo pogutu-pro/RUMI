@@ -33,7 +33,7 @@ class LeasingError(ValueError):
 
 def arrears(tenancy) -> Decimal:
     return sum(
-        (i.outstanding for i in Invoice.objects.filter(tenancy=tenancy, is_disputed=False, due_date__lt=timezone.now().date())),
+        (i.outstanding for i in Invoice.objects.filter(tenancy=tenancy, is_disputed=False, due_date__lt=timezone.localdate())),
         ZERO,
     )
 
@@ -116,7 +116,7 @@ class DocumentService:
         owed = arrears(tenancy)
         if owed <= 0:
             raise LeasingError('This tenant has no overdue balance.')
-        invoices = Invoice.objects.filter(tenancy=tenancy, is_disputed=False, due_date__lt=timezone.now().date())
+        invoices = Invoice.objects.filter(tenancy=tenancy, is_disputed=False, due_date__lt=timezone.localdate())
         rows = [['Invoice', 'Description', 'Due', 'Outstanding']] + [
             [i.number, i.get_invoice_type_display(), f'{i.due_date:%d %b %Y}', f'{i.outstanding:,.2f}']
             for i in invoices.order_by('due_date') if i.outstanding > 0

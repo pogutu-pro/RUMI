@@ -82,7 +82,7 @@ class SubscriptionService:
         if not plan.paystack_plan_code:
             raise ValueError('Plan not yet linked to Paystack')
 
-        today = timezone.now().date()
+        today = timezone.localdate()
         internal_reference = f'SUB-{uuid.uuid4().hex[:10].upper()}'
 
         metadata = {'kind': kind, 'plan_id': str(plan.id)}

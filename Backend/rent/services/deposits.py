@@ -68,7 +68,7 @@ class DepositService:
         amount = Decimal(str(amount)) if amount is not None else summary['to_invoice']
         if amount <= 0:
             raise DepositError('There is no deposit left to invoice for this tenancy.')
-        due_date = due_date or max(tenancy.start_date, timezone.now().date())
+        due_date = due_date or max(tenancy.start_date, timezone.localdate())
         return InvoiceService.create_invoice(
             tenancy, 'deposit', [LineSpec('deposit', amount, description='Security deposit')],
             period_start=min(tenancy.start_date, due_date), period_end=due_date, due_date=due_date,
@@ -89,7 +89,7 @@ class DepositService:
             raise DepositError('Deposit amount must be positive.')
         if method not in ('cash', 'bank_transfer', 'mpesa_paybill', 'other'):
             raise DepositError('Unsupported deposit payment method.')
-        received_on = received_on or timezone.now().date()
+        received_on = received_on or timezone.localdate()
         invoice = cls.issue_invoice(tenancy, amount, due_date=received_on, created_by=created_by)
 
         payment = Payment.objects.create(
@@ -159,7 +159,7 @@ class DepositService:
         if settlement.status != 'draft':
             raise DepositError('Only a draft settlement can be approved.')
         tenancy = settlement.tenancy
-        today = timezone.now().date()
+        today = timezone.localdate()
 
         # 1. Close any deposit that was invoiced but never collected.
         for invoice in _deposit_invoices(tenancy):
@@ -214,7 +214,7 @@ class DepositService:
             raise DepositError('Approve the settlement before recording the refund.')
         if method not in dict(DepositSettlement.REFUND_METHOD_CHOICES):
             raise DepositError('Unsupported refund method.')
-        refunded_on = refunded_on or timezone.now().date()
+        refunded_on = refunded_on or timezone.localdate()
         amount = settlement.refund_amount
         if amount > 0:
             dims = tenancy_dimensions(settlement.tenancy)

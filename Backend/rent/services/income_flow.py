@@ -105,7 +105,7 @@ class IncomeFlowService:
 
     @classmethod
     def _summarize_charges(cls, charges, period_start: date, period_end: date) -> IncomeSummary:
-        today = timezone.now().date()
+        today = timezone.localdate()
         expected = Decimal('0.00')
         collected = Decimal('0.00')
         outstanding = Decimal('0.00')
@@ -174,7 +174,7 @@ class IncomeFlowService:
 
     @classmethod
     def overdue_charges(cls, organization_id, as_of: Optional[date] = None):
-        today = as_of or timezone.now().date()
+        today = as_of or timezone.localdate()
         return Invoice.objects.filter(
             organization_id=organization_id,
             due_date__lt=today,

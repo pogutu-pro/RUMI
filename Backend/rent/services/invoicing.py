@@ -100,7 +100,7 @@ class InvoiceService:
             raise InvoiceError('Deposit lines must be on their own deposit invoice')
 
         organization = tenancy.organization
-        issue_date = issue_date or timezone.now().date()
+        issue_date = issue_date or timezone.localdate()
         total = sum((line.amount for line in lines), Decimal('0.00'))
 
         invoice = Invoice.objects.create(
@@ -183,7 +183,7 @@ class InvoiceService:
                 'Money already paid is returned by reversing or refunding the payment.'
             )
 
-        issue_date = issue_date or timezone.now().date()
+        issue_date = issue_date or timezone.localdate()
         credit_note = CreditNote.objects.create(
             organization=invoice.organization,
             invoice=invoice,
