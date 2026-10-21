@@ -100,7 +100,7 @@ export default function PWAInstallPrompt() {
         exit={{ y: 100, opacity: 0 }}
         className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-96"
       >
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl p-4 flex flex-col gap-3">
+        <div className="bg-card text-card-foreground border border-border rounded-lg shadow-xl p-4 flex flex-col gap-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="bg-primary/10 p-2 rounded-md">

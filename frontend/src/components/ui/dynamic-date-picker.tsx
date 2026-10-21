@@ -107,7 +107,7 @@ export function DynamicDatePicker({
       <PopoverContent className="w-[320px] p-0 border-2 border-primary rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]" align="start">
         <div className="p-3 border-b-2 border-primary bg-primary/5">
           <Tabs value={mode} onValueChange={(v) => setMode(v as SelectionMode)} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-white border-2 border-primary rounded-none h-10 p-0 overflow-hidden">
+            <TabsList className="grid w-full grid-cols-3 bg-background border-2 border-primary rounded-none h-10 p-0 overflow-hidden">
               <TabsTrigger 
                 value="day" 
                 className="rounded-none data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest border-r-2 border-primary last:border-r-0"
@@ -130,7 +130,7 @@ export function DynamicDatePicker({
           </Tabs>
         </div>
 
-        <div className="p-4 bg-white overflow-hidden min-h-[300px]">
+        <div className="p-4 bg-background overflow-hidden min-h-[300px]">
           <AnimatePresence mode="wait">
             {mode === 'day' && (
               <motion.div

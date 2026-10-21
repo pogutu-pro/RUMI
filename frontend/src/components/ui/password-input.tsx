@@ -85,7 +85,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
             onClick={() => setShowPassword((p) => !p)}
             aria-pressed={showPassword}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
           >
             {showPassword ? (
               <EyeOff className="h-4 w-4" />
@@ -99,7 +99,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
         {showStrength && passwordValue.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-600">Password strength</span>
+              <span className="text-muted-foreground">Password strength</span>
               <span
                 className="font-medium"
                 style={{ color: colors.text }}
@@ -109,7 +109,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
               </span>
             </div>
 
-            <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-300"
                 style={{
@@ -126,7 +126,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
                   key={req.key}
                   className={cn(
                     'flex items-center gap-2 transition-colors',
-                    req.met ? 'text-green-600' : 'text-gray-500',
+                    req.met ? 'text-success' : 'text-muted-foreground',
                   )}
                 >
                   {req.met ? (

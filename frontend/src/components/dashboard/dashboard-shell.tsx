@@ -78,7 +78,7 @@ function MobileTabBar({
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/85"
+      className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/85 dark:bg-card/95 dark:supports-[backdrop-filter]:bg-card/85"
     >
       <ul className="mx-auto flex h-16 max-w-md items-stretch">
         {tabs.map((tab) => {
@@ -93,7 +93,7 @@ function MobileTabBar({
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'relative flex h-full flex-col items-center justify-center gap-1 text-[11px] font-medium',
-                  active ? 'text-primary' : 'text-muted-foreground',
+                  active ? 'text-primary' : 'text-foreground/60',
                 )}
               >
                 <span className="relative">
@@ -115,7 +115,7 @@ function MobileTabBar({
             onClick={onMenu}
             className={cn(
               'flex h-full w-full flex-col items-center justify-center gap-1 text-[11px] font-medium',
-              !inTabs ? 'text-primary' : 'text-muted-foreground',
+              !inTabs ? 'text-primary' : 'text-foreground/60',
             )}
           >
             <Menu className="h-[22px] w-[22px]" aria-hidden="true" strokeWidth={!inTabs ? 2.25 : 1.75} />
@@ -156,11 +156,14 @@ function NavLinks({
             href={item.href}
             onClick={onNavigate}
             className={cn(
-              'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-normal transition-colors',
+              'flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors',
               collapsed && 'justify-center px-0',
+              // A soft tint with brand-coloured text marks the current page
+              // (as Linear, Notion and GitHub do); a solid block glares,
+              // most of all in dark mode.
               isActive
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                ? 'bg-primary/10 font-medium text-primary dark:bg-primary/15'
+                : 'text-foreground/70 hover:bg-muted hover:text-foreground',
             )}
           >
             <span className="relative">
@@ -175,7 +178,7 @@ function NavLinks({
                 aria-label={`${count} need attention`}
                 className={cn(
                   'ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold',
-                  isActive ? 'bg-primary-foreground text-primary' : 'bg-destructive text-destructive-foreground',
+                  'bg-destructive text-destructive-foreground',
                 )}
               >
                 {count > 99 ? '99+' : count}
@@ -350,12 +353,12 @@ export function DashboardShell({
   return (
     <UnifiedThemeProvider>
       <TooltipProvider>
-        <div className="flex min-h-screen bg-muted/40">
+        <div className="flex min-h-screen bg-muted/40 dark:bg-background">
           {/* Desktop sidebar */}
           {isDesktop && (
             <aside
               className={cn(
-                'sticky top-0 flex h-screen shrink-0 flex-col self-start border-r bg-background transition-all duration-200',
+                'sticky top-0 flex h-screen shrink-0 flex-col self-start border-r bg-background transition-all duration-200 dark:bg-card',
                 collapsed ? 'w-[76px]' : 'w-64',
               )}
             >
@@ -386,7 +389,7 @@ export function DashboardShell({
           {/* Mobile top bar + drawer */}
           {!isDesktop && (
             <>
-              <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b bg-background px-4">
+              <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b bg-background px-4 dark:bg-card">
                 {/* With a bottom tab bar, Menu lives there; one menu button, not two. */}
                 {!mobileTabs?.length && (
                   <button
@@ -406,7 +409,7 @@ export function DashboardShell({
                 </div>
               </header>
               <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-                <SheetContent side="left" className="flex w-72 flex-col p-0">
+                <SheetContent side="left" className="flex w-72 flex-col p-0 dark:bg-card">
                   <SheetTitle className="sr-only">Navigation</SheetTitle>
                   <div className="flex h-16 items-center px-4">
                     <span className="text-lg font-semibold text-foreground">RumiaRent</span>
@@ -423,7 +426,7 @@ export function DashboardShell({
 
           <div className="min-w-0 flex-1">
             {isDesktop && (
-              <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-background px-6">
+              <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-background px-6 dark:bg-card">
                 <p className="truncate text-sm font-medium text-foreground">Welcome back, {firstName}</p>
                 <div className="flex items-center gap-1">
                   <NotificationBell />

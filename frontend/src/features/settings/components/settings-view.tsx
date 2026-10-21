@@ -5,6 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { toast } from 'sonner';
+import { useTheme } from 'next-themes';
+import { Monitor, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -16,6 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FormRow } from '@/components/ui/form-layout';
 import { PageHeader } from '@/components/dashboard/page-header';
+import { cn } from '@/lib/utils/cn';
 import { useAuth, useProfile } from '@/features/auth';
 import {
   useNotificationPreferences,
@@ -213,6 +216,58 @@ function NotificationsTab() {
   );
 }
 
+const THEMES = [
+  { value: 'light', label: 'Light', icon: Sun, page: 'bg-[#faf9f7]', card: 'bg-white', line: 'bg-[#e4e0da]' },
+  { value: 'dark', label: 'Dark', icon: Moon, page: 'bg-[#17181b]', card: 'bg-[#1f2023]', line: 'bg-[#34363a]' },
+  { value: 'system', label: 'System', icon: Monitor, page: 'bg-[linear-gradient(90deg,#faf9f7_50%,#17181b_50%)]', card: 'bg-[linear-gradient(90deg,#fff_50%,#1f2023_50%)]', line: 'bg-[#9ca3af]' },
+] as const;
+
+/** Light, Dark, or follow the phone or computer. Light is the default. */
+function AppearanceCard() {
+  const { theme, setTheme } = useTheme();
+  // next-themes only knows the saved choice in the browser; render neutral first.
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+  const active = mounted ? (theme ?? 'light') : null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Appearance</CardTitle>
+        <CardDescription>Light is easiest to read outdoors. Dark is gentler at night.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div role="radiogroup" aria-label="Theme" className="grid max-w-md grid-cols-3 gap-3">
+          {THEMES.map(({ value, label, icon: Icon, page, card, line }) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={active === value}
+              onClick={() => setTheme(value)}
+              className={cn(
+                'rounded-xl border p-2 text-left transition-colors',
+                active === value ? 'border-primary ring-2 ring-primary/30' : 'hover:border-foreground/30',
+              )}
+            >
+              <span className={cn('block h-14 rounded-lg p-2', page)} aria-hidden="true">
+                <span className={cn('block h-full rounded-md p-1.5 shadow-sm', card)}>
+                  <span className={cn('block h-1.5 w-3/4 rounded-full', line)} />
+                  <span className={cn('mt-1.5 block h-1.5 w-1/2 rounded-full', line)} />
+                </span>
+              </span>
+              <span className="mt-2 flex items-center gap-1.5 text-sm font-medium">
+                <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                {label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 /** The only sign-out control in the app; kept out of the way on purpose. */
 function SignOutSection() {
   const { user, logout } = useAuth();
@@ -245,7 +300,7 @@ function SignOutSection() {
 export function SettingsView() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Settings" description="Your profile and how RumiaRent reaches you." />
+      <PageHeader title="Settings" description="Your profile, how RumiaRent reaches you, and how it looks." />
       <Tabs defaultValue="profile">
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
@@ -258,6 +313,7 @@ export function SettingsView() {
           <NotificationsTab />
         </TabsContent>
       </Tabs>
+      <AppearanceCard />
       <SignOutSection />
     </div>
   );

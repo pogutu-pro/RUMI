@@ -41,7 +41,9 @@ export function UnifiedThemeProvider({
   return (
     <ThemeProvider 
       attribute="class" 
-      defaultTheme={forcedTheme || "system"} 
+      // Light until the person picks Dark or System in Settings: most
+      // landlords expect it, and it reads best outdoors on a phone.
+      defaultTheme={forcedTheme || "light"} 
       enableSystem={!forcedTheme}
       forcedTheme={forcedTheme}
       disableTransitionOnChange

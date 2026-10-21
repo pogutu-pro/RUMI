@@ -15,27 +15,32 @@
     --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-family-heading: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
     
-    /* --- Text & Content --- */
-    --foreground: 240 10% 4%;
-    --text-primary: 240 10% 4%;
-    --text-muted: 240 4% 45%;
+    /* --- Text & Content ---
+     * Near-black, never pure black: softer on white for long reading. */
+    --foreground: 30 6% 12%;
+    --text-primary: 30 6% 12%;
+    --text-muted: 30 4% 40%;
     --text-inverse: 0 0% 100%;
 
-    /* --- Surfaces --- */
+    /* --- Surfaces ---
+     * Dashboards sit on a warm off-white (`muted`, see DashboardShell) with
+     * white cards and sidebar, the calm look of ValidBridge, Notion and
+     * Stripe: less glare than an all-white screen. The public site and
+     * sign-in pages stay plain white. Muted text stays above WCAG AA. */
     --background: 0 0% 100%;
-    --surface: 0 0% 98%;
+    --surface: 40 18% 95%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 4%;
+    --card-foreground: 30 6% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 4%;
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 45%;
+    --popover-foreground: 30 6% 12%;
+    --muted: 40 14% 94%;
+    --muted-foreground: 30 4% 40%;
 
     /* --- Brand & Actions --- */
     --primary: 159 90% 26%; /* Matches the logo green (sampled #027F53), still WCAG AA on white */
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 6% 10%;
+    --secondary: 40 14% 94%;
+    --secondary-foreground: 30 6% 12%;
     --accent: 39 95% 52%;
     --accent-foreground: 240 10% 4%;
 
@@ -50,8 +55,8 @@
     --info-foreground: 0 0% 100%;
 
     /* --- UI Components --- */
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
+    --border: 35 10% 88%;
+    --input: 35 10% 85%;
     --ring: 159 90% 26%;
     
     --radius: 0.5rem;
@@ -65,51 +70,56 @@
   }
 
   .dark {
+    /* Dark: neutral charcoal, not near-black (as GitHub, Notion, Linear and
+     * Slack do). Pure black behind bright text makes letters glow and tires
+     * the eyes; raised surfaces are a step lighter instead of using shadows,
+     * text is off-white, and colours are softened so nothing glares. */
+
     /* --- Text & Content --- */
-    --foreground: 213 31% 91%;
-    --text-primary: 213 31% 91%;
-    --text-muted: 215.4 16.3% 56.9%;
-    --text-inverse: 224 71% 4%;
+    --foreground: 220 9% 89%;
+    --text-primary: 220 9% 89%;
+    --text-muted: 220 6% 64%;
+    --text-inverse: 220 7% 10%;
 
     /* --- Surfaces --- */
-    --background: 224 71% 4%;
-    --surface: 224 71% 6%;
-    --card: 224 71% 4%;
-    --card-foreground: 213 31% 91%;
-    --popover: 224 71% 4%;
-    --popover-foreground: 213 31% 91%;
-    --muted: 223 47% 11%;
-    --muted-foreground: 215.4 16.3% 56.9%;
+    --background: 220 7% 10%;
+    --surface: 220 7% 12%;
+    --card: 220 7% 13%;
+    --card-foreground: 220 9% 89%;
+    --popover: 220 7% 15%;
+    --popover-foreground: 220 9% 89%;
+    --muted: 220 6% 18%;
+    --muted-foreground: 220 6% 64%;
 
     /* --- Brand & Actions --- */
-    --primary: 154 85% 45%; /* Brighter Emerald for Dark Mode contrast */
-    --primary-foreground: 224 71% 4%;
-    --secondary: 223 47% 11%;
-    --secondary-foreground: 210 40% 98%;
-    --accent: 216 34% 17%;
-    --accent-foreground: 210 40% 98%;
+    --primary: 156 52% 48%; /* the logo green, toned down so it does not glow */
+    --primary-foreground: 220 7% 10%;
+    --secondary: 220 6% 18%;
+    --secondary-foreground: 220 9% 89%;
+    --accent: 220 6% 20%;
+    --accent-foreground: 220 9% 89%;
 
     /* --- Status Colors --- */
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --success: 154 85% 45%;
-    --success-foreground: 224 71% 4%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 224 71% 4%;
-    --info: 214 95% 60%;
-    --info-foreground: 224 71% 4%;
+    --destructive: 0 65% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 156 52% 48%;
+    --success-foreground: 220 7% 10%;
+    --warning: 38 85% 58%;
+    --warning-foreground: 220 7% 10%;
+    --info: 213 75% 64%;
+    --info-foreground: 220 7% 10%;
 
     /* --- UI Components --- */
-    --border: 216 34% 17%;
-    --input: 216 34% 17%;
-    --ring: 154 85% 45%;
- 
+    --border: 220 6% 22%;
+    --input: 220 6% 26%;
+    --ring: 156 52% 48%;
+
     /* --- Visualization --- */
-    --chart-1: 154 85% 45%;
-    --chart-2: 214 95% 60%;
-    --chart-3: 262 83% 68%;
-    --chart-4: 38 92% 65%;
-    --chart-5: 0 84% 70%;
+    --chart-1: 156 52% 48%;
+    --chart-2: 213 75% 64%;
+    --chart-3: 262 60% 70%;
+    --chart-4: 38 85% 62%;
+    --chart-5: 0 65% 66%;
   }
 }
 
