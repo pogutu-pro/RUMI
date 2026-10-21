@@ -68,6 +68,7 @@ const PUBLIC_ROUTES = new Set([
   '/robots.txt',
   '/sitemap.xml',
   '/llms.txt',
+  '/llms-full.txt',
   '/unsubscribe',
   '/manifest.webmanifest',
   '/favicon.ico',
@@ -85,6 +86,8 @@ const AUTH_ROUTES = new Set([
 const PUBLIC_PREFIXES = [
   '/blog',
   '/rentals',
+  '/guides',
+  '/for/',
   '/hostels',
   '/legal',
   '/verify-email',
@@ -238,6 +241,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.png|favicon.ico|robots.txt|sitemap.xml|llms.txt|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.png|favicon.ico|robots.txt|sitemap.xml|llms.txt|llms-full.txt|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

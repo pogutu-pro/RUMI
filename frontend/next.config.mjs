@@ -58,7 +58,6 @@ const nextConfig = {
       { source: '/how-it-works', destination: '/#how-it-works', permanent: true },
       { source: '/how-it-works/:path*', destination: '/#how-it-works', permanent: true },
       { source: '/more', destination: '/', permanent: true },
-      { source: '/guides', destination: '/faq', permanent: true },
       { source: '/help-center', destination: '/faq', permanent: true },
     ];
   },
