@@ -80,13 +80,19 @@ product not inspected). Build order for the remaining gaps is top to bottom.
 
 | | EazzyRent (all features, every tier) | RumiaRent |
 |---|---|---|
-| Landlord, 1–50 units | KES 3,000/mo | Pro KES 7,999 (max 5 properties) |
-| Landlord, 51–100 units | KES 5,000/mo | Enterprise KES 19,999 |
+| Landlord, 1–20 units | KES 3,000/mo | Starter KES 1,499 (2 properties, 20 units) |
+| Landlord, 21–60 units | KES 3,000–5,000/mo | Pro KES 3,999 (10 properties, 60 units) |
+| Landlord, 61+ units | KES 5,000/mo | Enterprise KES 9,999 (unlimited) |
 | Agents, 1–300 units | KES 3,500/mo | n/a (no agent model) |
 | Yearly discount | 15% | none |
 | Bulk SMS | KES 1/SMS | included |
 
 Recommendation: move to per-unit-band pricing with all features on every tier.
+
+Update (October 2026): launch prices set against Bomahut, Blocks, RentLynk and
+EazzyRent: Starter KES 1,499, Pro KES 3,999, Enterprise KES 9,999 (previously
+2,999 / 7,999 / 19,999). Migration `billing/0004_launch_prices`; Paystack plan
+amounts follow via `manage.py sync_paystack_plans` as the backend starts.
 
 ## Target architecture
 
