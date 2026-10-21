@@ -26,11 +26,11 @@ const BLOCKS: Block[] = [
   {
     heading: '2. What we collect',
     body: [
-      'Account details: name, email address, phone number and a password, which we store only in scrambled form. For landlords, we also keep organisation and property details and the payout account used to pay out rent.',
+      'Account details: name, email address, phone number and a password, which we store only in scrambled form. For landlords, we also keep organisation and property details and their M-Pesa paybill number.',
       'Tenant records entered by a landlord or caretaker: name, phone, email, national ID number, occupation and address, next-of-kin or emergency contacts, and the tenancy, rent charge and payment history.',
       'Records you keep in RumiaRent: expenses and their receipts, messages sent between landlords, caretakers, tenants and our support team, and support tickets.',
       'Technical data: the information your browser sends when you use the site, such as IP address and device type, kept in server logs to run and secure the service.',
-      'We do not collect card or bank details. Paystack collects those when a payment is made, and we only receive the result of the payment.',
+      'We do not collect card details. Paystack collects those when a landlord pays for a RumiaRent subscription. For rent, Safaricom tells us the payer name, amount, M-Pesa code and account number of payments made to a landlord\'s paybill, so we can record and receipt them.',
     ],
   },
   {
@@ -45,7 +45,7 @@ const BLOCKS: Block[] = [
   {
     heading: '4. Who we share it with',
     body: [
-      "Only the service providers needed to run RumiaRent: Paystack for payments, Africa's Talking for SMS, our email provider for email, and our hosting provider. We also share data when the law requires it or to protect people from fraud or harm.",
+      "Only the service providers needed to run RumiaRent: Safaricom (M-Pesa payment notices), Paystack for subscription payments, Africa's Talking for SMS, our email provider for email, and our hosting provider. We also share data when the law requires it or to protect people from fraud or harm.",
       'Within an organisation, people see only what their role allows. A caretaker sees the properties they are assigned, and a tenant sees only their own tenancy and payments.',
     ],
   },

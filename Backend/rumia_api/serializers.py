@@ -63,11 +63,12 @@ class RentalUnitSerializer(serializers.ModelSerializer):
     property = serializers.PrimaryKeyRelatedField(
         source='parent_property', queryset=Property.objects.all()
     )
+    property_name = serializers.CharField(source='parent_property.name', read_only=True)
 
     class Meta:
         model = RentalUnit
         fields = [
-            'id', 'organization', 'property', 'building', 'floor',
+            'id', 'organization', 'property', 'property_name', 'building', 'floor',
             'unit_number', 'unit_type', 'monthly_rent', 'deposit',
             'status', 'notes', 'is_active', 'is_listed', 'created_at', 'updated_at',
         ]

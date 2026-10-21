@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
-import { ArrowLeft, CheckCircle2, Gift, Loader2 } from 'lucide-react';
+import { z } from 'zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Gift, Loader2, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { axiosInstance as axios } from '@/lib/api/client';
@@ -14,121 +15,86 @@ import { Input } from '@/components/ui/input';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Steps } from '@/components/ui/steps';
-import { PriceDisplay } from '@/components/ui/price-display';
-import { EmptyState } from '@/components/ui/empty-state';
-import { ErrorState } from '@/components/ui/error-state';
 import { useOnboardingStatus } from '@/features/auth/hooks/use-auth';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
 import { useCreateOrganization, useCreateProperty } from '@/features/rental/hooks/use-rental';
-import { usePayoutStatus } from '@/features/payout/hooks/use-payout';
-import { PayoutDetailsForm } from '@/features/payout/components/payout-details-form';
-import { usePlans } from '@/features/billing/hooks/use-plans';
-import { planFeatures, RECOMMENDED_PLAN_SLUG } from '@/features/billing/plan-summary';
-import { useBillingAccess } from '@/features/billing/hooks/use-subscription';
-import {
-  wizardOrgSchema,
-  wizardPropertySchema,
-  type WizardOrgFormData,
-  type WizardPropertyFormData,
-} from '@/lib/validations/auth.schema';
+import { usePaybillAccounts } from '@/features/paybill/hooks';
+import { paybillApi } from '@/features/paybill/api';
+import { apiErrorMessage } from '@/features/ledger/lib/format';
+import { wizardOrgSchema, type WizardOrgFormData } from '@/lib/validations/auth.schema';
 
-const WIZARD_STEPS = [
-  { title: 'Organization' },
-  { title: 'Property' },
-  { title: 'Payout' },
-  { title: 'Plan' },
+// Three short steps, like the Kenyan rent tools landlords already know:
+// who you are, what you rent out (units created for you), and the paybill
+// tenants already pay into. No bank/payout details and no plan choice:
+// rent goes straight to the landlord, and the free trial covers everything.
+const WIZARD_STEPS = [{ title: 'Your business' }, { title: 'Your property' }, { title: 'How tenants pay' }];
+const DONE = 5; // server's "finished" marker
+
+const UNIT_TYPES = [
+  { value: 'bedsitter', label: 'Bedsitters' },
+  { value: 'studio', label: 'Studios' },
+  { value: '1_bedroom', label: '1 bedroom' },
+  { value: '2_bedroom', label: '2 bedroom' },
+  { value: '3_bedroom', label: '3 bedroom' },
+  { value: 'house', label: 'Houses' },
+  { value: 'other', label: 'Mixed / other' },
 ];
 
 function clampStep(step: number): number {
-  return Math.min(4, Math.max(1, step));
+  return Math.min(3, Math.max(1, step));
 }
 
-/**
- * 4-step resumable landlord onboarding wizard (org -> property -> payout ->
- * tier), replacing the brutalist 2-step landlord branch of onboarding-form.tsx
- * (D-01, D-02). Resumability is a read of server state (useOnboardingStatus's
- * `wizard` block, Phase 4 Plan 01), not a client-local draft replay. Each
- * step persists real data immediately via its own endpoint (org/property/
- * payout/tier) — resumability never depends on a client-side draft replay.
- */
+const card = 'rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-10';
+
 export function LandlordOnboardingWizard() {
   const router = useRouter();
-  const { data, isLoading: isLoadingStatus } = useOnboardingStatus();
-
-  // Local step state overrides the server-derived step only after the
-  // landlord advances a step client-side; until then the effective step is
-  // computed directly from server data on every render, so there is no
-  // one-frame flash back to step 1 while the status query resolves.
+  const { data, isLoading } = useOnboardingStatus();
   const [manualStep, setManualStep] = useState<number | null>(null);
   const serverStep = data?.wizard ? clampStep(data.wizard.current_step) : 1;
   const step = manualStep ?? serverStep;
-  const showResumeBanner = manualStep === null && serverStep > 1;
+  const finished = data?.wizard?.current_step === DONE;
 
-  const goToStep = (next: number) => setManualStep(clampStep(next));
-
-  // Wizard already complete (current_step === 5, e.g. a landlord navigating
-  // back to /onboarding after finishing) — redirect immediately, never
-  // rendering the step cards first.
   useEffect(() => {
-    if (data?.wizard?.current_step === 5) {
-      router.replace('/landlord/rental');
-    }
-  }, [data, router]);
+    if (finished) router.replace('/landlord/rental');
+  }, [finished, router]);
 
-  if (isLoadingStatus) {
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center p-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
+  if (finished) return null;
 
-  if (data?.wizard?.current_step === 5) {
-    return null;
-  }
+  const goTo = (next: number) => setManualStep(clampStep(next));
 
   return (
     <div className="space-y-8">
       <Steps steps={WIZARD_STEPS} currentStep={step - 1} />
-
-      {showResumeBanner && (
+      {manualStep === null && serverStep > 1 && (
         <div className="rounded-2xl border border-primary/20 bg-primary/5 px-6 py-4 text-sm font-semibold text-primary">
-          Welcome back — pick up where you left off.
+          Welcome back. Pick up where you left off.
         </div>
       )}
-
-      {step === 1 && (
-        <OrgStep
-          organizationName={data?.wizard?.organization_name ?? null}
-          onAdvance={() => goToStep(2)}
-        />
+      {step === 1 && <BusinessStep organizationName={data?.wizard?.organization_name ?? null} onAdvance={() => goTo(2)} />}
+      {step === 2 && <PropertyStep onAdvance={() => goTo(3)} onBack={() => goTo(1)} />}
+      {step === 3 && (
+        <PaymentStep organizationName={data?.wizard?.organization_name ?? ''} onBack={() => goTo(2)} />
       )}
-      {step === 2 && (
-        <PropertyStep
-          organizationName={data?.wizard?.organization_name ?? null}
-          onAdvance={() => goToStep(3)}
-          onBack={() => goToStep(1)}
-        />
-      )}
-      {step === 3 && <PayoutStep onAdvance={() => goToStep(4)} onBack={() => goToStep(2)} />}
-      {step === 4 && <TierStep onBack={() => goToStep(3)} />}
     </div>
   );
 }
 
-function OrgStep({
-  organizationName,
-  onAdvance,
-}: {
-  organizationName: string | null;
-  onAdvance: () => void;
-}) {
+function BusinessStep({ organizationName, onAdvance }: { organizationName: string | null; onAdvance: () => void }) {
   const createOrganization = useCreateOrganization();
   const form = useForm<WizardOrgFormData>({
     resolver: zodResolver(wizardOrgSchema),
@@ -136,45 +102,36 @@ function OrgStep({
   });
 
   const onSubmit = async (values: WizardOrgFormData) => {
+    if (organizationName && values.name === organizationName) return onAdvance(); // already created
     try {
       await createOrganization.mutateAsync(values);
       onAdvance();
     } catch {
-      // Error toast already surfaced by useCreateOrganization's onError —
-      // stay on this step so the landlord can retry without losing input.
+      // useCreateOrganization already shows the error; stay so they can retry.
     }
   };
 
   return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-10 shadow-sm">
-      <h2 className="mb-6 text-2xl font-semibold text-gray-900">Set up your organization</h2>
+    <div className={card}>
+      <h2 className="text-2xl font-semibold text-gray-900">What is your business called?</h2>
+      <p className="mt-1 text-sm text-muted-foreground">Tenants see this name on receipts and messages.</p>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-6">
           <FormField
             control={form.control}
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Organization name</FormLabel>
+                <FormLabel>Business or landlord name</FormLabel>
                 <FormControl>
-                  <Input
-                    {...field}
-                    placeholder="e.g. RumiaRent Property Management"
-                    className="h-11"
-                  />
+                  <Input {...field} placeholder="e.g. Kamau Properties" className="h-11" autoFocus />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <Button
-            type="submit"
-            variant="charcoal"
-            size="lg"
-            className="h-11 w-full rounded-full"
-            isLoading={createOrganization.isPending}
-          >
-            Continue to Property Setup
+          <Button type="submit" size="lg" className="h-11 w-full rounded-full" isLoading={createOrganization.isPending}>
+            Continue
           </Button>
         </form>
       </Form>
@@ -182,97 +139,134 @@ function OrgStep({
   );
 }
 
-function PropertyStep({
-  organizationName,
-  onAdvance,
-  onBack,
-}: {
-  organizationName: string | null;
-  onAdvance: () => void;
-  onBack: () => void;
-}) {
+const propertySchema = z.object({
+  name: z.string().trim().min(2, 'Enter the property name').max(255),
+  address: z.string().trim().min(3, 'Enter the estate or road').max(500),
+  city: z.string().trim().min(2, 'Enter the town').max(100),
+  units: z.coerce.number().int('Whole number').min(1, 'At least 1 unit').max(300, 'Up to 300 at a time'),
+  prefix: z.string().trim().max(10),
+  rent: z.coerce.number().min(0, 'Enter the rent or leave 0'),
+  unit_type: z.string(),
+});
+type PropertyInput = z.input<typeof propertySchema>;
+type PropertyOutput = z.output<typeof propertySchema>;
+
+function PropertyStep({ onAdvance, onBack }: { onAdvance: () => void; onBack: () => void }) {
+  const qc = useQueryClient();
   const createProperty = useCreateProperty();
-  const form = useForm<WizardPropertyFormData>({
-    resolver: zodResolver(wizardPropertySchema),
-    defaultValues: { name: '', address: '', city: 'Nairobi' },
+  const form = useForm<PropertyInput, unknown, PropertyOutput>({
+    resolver: zodResolver(propertySchema),
+    defaultValues: { name: '', address: '', city: 'Nairobi', units: 10, prefix: '', rent: 0, unit_type: '1_bedroom' },
+  });
+  const addUnits = useMutation({
+    mutationFn: (payload: { property: string; count: number; prefix: string; monthly_rent: string; unit_type: string }) =>
+      axios.post('/units/bulk/', payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['rental'] }),
   });
 
-  const onSubmit = async (values: WizardPropertyFormData) => {
+  const onSubmit = async (v: PropertyOutput) => {
+    let propertyId: string;
     try {
-      // Organization is resolved server-side via the owner fallback in
-      // PropertyListCreateView._resolve_organization — never pass
-      // organization_id from the client.
-      await createProperty.mutateAsync(values);
-      onAdvance();
+      const property = await createProperty.mutateAsync({ name: v.name, address: v.address, city: v.city });
+      propertyId = property.id;
     } catch {
-      // Error toast already surfaced by useCreateProperty's onError.
+      return; // error toast already shown
     }
+    try {
+      await addUnits.mutateAsync({
+        property: propertyId, count: v.units, prefix: v.prefix, monthly_rent: String(v.rent), unit_type: v.unit_type,
+      });
+    } catch (err) {
+      // The property exists; units can be added from the property page later.
+      toast.error(apiErrorMessage(err, 'Property saved, but the units could not be added. Add them from Properties.'));
+    }
+    onAdvance();
   };
 
+  const prefix = form.watch('prefix');
+  const units = Number(form.watch('units')) || 0;
+
   return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-10 shadow-sm">
-      <div className="mb-6 flex items-center gap-3">
+    <div className={card}>
+      <div className="flex items-center gap-3">
         <Button type="button" variant="ghost" size="icon" aria-label="Go back" onClick={onBack}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div>
-          {organizationName && (
-            <p className="text-sm font-medium text-muted-foreground">
-              Setting up: {organizationName}
-            </p>
-          )}
-          <h2 className="text-2xl font-semibold text-gray-900">Add your first property</h2>
-        </div>
+        <h2 className="text-2xl font-semibold text-gray-900">Add your first property</h2>
       </div>
+      <p className="mt-1 text-sm text-muted-foreground">You can add more properties and edit units any time.</p>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
+        <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-5">
+          <FormField control={form.control} name="name" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Property name</FormLabel>
+              <FormControl><Input {...field} placeholder="e.g. Greenview Apartments" className="h-11" autoFocus /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+          <div className="grid gap-5 sm:grid-cols-2">
+            <FormField control={form.control} name="address" render={({ field }) => (
               <FormItem>
-                <FormLabel>Property name</FormLabel>
+                <FormLabel>Estate or road</FormLabel>
+                <FormControl><Input {...field} placeholder="e.g. Kilimani, Ngong Road" className="h-11" /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="city" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Town</FormLabel>
+                <FormControl><Input {...field} className="h-11" /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
+          <div className="grid gap-5 sm:grid-cols-3">
+            <FormField control={form.control} name="units" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Number of units</FormLabel>
                 <FormControl>
-                  <Input {...field} className="h-11" />
+                  <Input type="number" inputMode="numeric" min={1} max={300} className="h-11"
+                    {...field} value={field.value as number | string} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="address"
-            render={({ field }) => (
+            )} />
+            <FormField control={form.control} name="unit_type" render={({ field }) => (
               <FormItem>
-                <FormLabel>Address</FormLabel>
+                <FormLabel>Mostly</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl><SelectTrigger className="h-11"><SelectValue /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    {UNIT_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="rent" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Rent per unit (KES)</FormLabel>
                 <FormControl>
-                  <Input {...field} className="h-11" />
+                  <Input type="number" inputMode="numeric" min={0} className="h-11"
+                    {...field} value={field.value as number | string} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="city"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>City</FormLabel>
-                <FormControl>
-                  <Input {...field} className="h-11" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button
-            type="submit"
-            variant="charcoal"
-            size="lg"
-            className="h-11 w-full rounded-full"
-            isLoading={createProperty.isPending}
-          >
-            Continue to Payout Details
+            )} />
+          </div>
+          <FormField control={form.control} name="prefix" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Unit label (optional)</FormLabel>
+              <FormControl><Input {...field} placeholder="e.g. A" className="h-11 sm:max-w-40" /></FormControl>
+              <FormDescription>
+                Your units will be numbered {units > 0 ? `${prefix}1 to ${prefix}${units}` : `${prefix}1, ${prefix}2, ...`}.
+                Rent can differ per unit; change it later on the property page.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )} />
+          <Button type="submit" size="lg" className="h-11 w-full rounded-full"
+            isLoading={createProperty.isPending || addUnits.isPending}>
+            Continue
           </Button>
         </form>
       </Form>
@@ -280,181 +274,117 @@ function PropertyStep({
   );
 }
 
-function PayoutStep({ onAdvance, onBack }: { onAdvance: () => void; onBack: () => void }) {
-  const { data: payoutStatus } = usePayoutStatus();
+const paybillSchema = z.object({
+  shortcode: z.string().trim().regex(/^\d{5,7}$/, 'A paybill number is 5 to 7 digits'),
+  display_name: z.string().trim().max(100),
+});
+type PaybillForm = z.infer<typeof paybillSchema>;
 
-  return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-10 shadow-sm">
-      <div className="mb-6 flex items-center gap-3">
-        <Button type="button" variant="ghost" size="icon" aria-label="Go back" onClick={onBack}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h2 className="text-2xl font-semibold text-gray-900">Payout details</h2>
-      </div>
-      {payoutStatus && payoutStatus.status !== 'not_started' && (
-        <p className="mb-4 text-sm text-muted-foreground">
-          Current: {payoutStatus.bank_account_number_masked}
-        </p>
-      )}
-      {/* Advances on any resulting status (pending_verification or active) —
-          the wizard never blocks completion on Paystack verification
-          (D-04/D-05); PayoutDetailsForm's onSuccess only fires once the
-          submission itself succeeds. */}
-      <PayoutDetailsForm
-        onSuccess={onAdvance}
-        submitLabel="Continue to Plan Selection"
-        fullWidthButton
-      />
-      <div className="mt-5 border-t border-gray-100 pt-5 text-center">
-        <p className="mb-3 text-sm text-gray-600">
-          Not ready with your bank details? You can add them later under Billing &amp; Payout. Until you do,
-          tenants will not be able to pay rent online.
-        </p>
-        <Button type="button" variant="ghost" onClick={onAdvance}>
-          Skip for now
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function TierStep({ onBack }: { onBack: () => void }) {
+function PaymentStep({ organizationName, onBack }: { organizationName: string; onBack: () => void }) {
   const router = useRouter();
-  const { data: plans, isLoading, isError, refetch } = usePlans();
-  const { data: access } = useBillingAccess();
-  const trialDays = access?.on_trial ? access.trial_days_left : 30;
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const qc = useQueryClient();
+  const { data: paybills = [] } = usePaybillAccounts();
+  const existing = paybills[0];
+  const form = useForm<PaybillForm>({
+    resolver: zodResolver(paybillSchema),
+    defaultValues: { shortcode: '', display_name: organizationName },
+  });
 
-  // Records the landlord's tier choice as a preference only (D-06) — this
-  // call never creates a Paystack charge; the actual billing flow (Phase 6)
-  // is triggered later, from the dashboard.
-  const completeMutation = useMutation({
-    mutationFn: (plan_slug: string) =>
-      axios.post('/accounts/onboarding/wizard-complete/', { plan_slug }),
+  const complete = useMutation({
+    mutationFn: () => axios.post('/accounts/onboarding/wizard-complete/', {}),
     onSuccess: () => {
-      // The server now has this account as COMPLETED, but the site decides
-      // whether to send someone back to /onboarding from a browser cookie set
-      // at sign-in. Without refreshing it, the very next page load bounced the
-      // landlord straight back into the wizard they had just finished.
+      // The site decides whether to send someone back to /onboarding from a
+      // cookie set at sign-in; refresh it or the next page load bounces back.
       useAuthStore.getState().updateUser({ onboarding_stage: 'COMPLETED' });
       router.push('/landlord/rental');
     },
-    onError: (err) => {
-      // CR-03: surface a toast on failure so the landlord isn't left
-      // staring at a stopped spinner with no explanation (e.g. the
-      // backend's 400s for missing org/property/payout setup, a stale
-      // plan slug, or a network error).
-      const message = (err as { message?: string })?.message || 'Could not complete setup';
-      toast.error(message);
-    },
+    onError: (err) => toast.error(apiErrorMessage(err, 'Could not finish setup')),
+  });
+  const connect = useMutation({
+    mutationFn: (v: PaybillForm) =>
+      paybillApi.connect({
+        shortcode: v.shortcode, shortcode_type: 'paybill', display_name: v.display_name, environment: 'production',
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['paybill'] }),
   });
 
-  const handleComplete = () => {
-    if (!selectedSlug) return;
-    completeMutation.mutate(selectedSlug);
+  const onSubmit = async (v: PaybillForm) => {
+    try {
+      await connect.mutateAsync(v);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, 'Could not save the paybill'));
+      return;
+    }
+    complete.mutate();
   };
 
   return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-10">
-      <div className="mb-6 flex items-center gap-3">
+    <div className={card}>
+      <div className="flex items-center gap-3">
         <Button type="button" variant="ghost" size="icon" aria-label="Go back" onClick={onBack}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h2 className="text-2xl font-semibold text-gray-900">Choose your plan</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">How do tenants pay you?</h2>
       </div>
-
-      <div className="mb-6 flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4">
-        <Gift className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
-        <p className="text-sm text-gray-700">
-          <span className="font-semibold text-gray-900">Your first {trialDays} days are free.</span> You get every
-          Enterprise feature from the moment you finish setting up, and you are not charged today. The plan you pick
-          here is the one to continue on afterwards.
+      <div className="mt-4 flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-gray-700">
+        <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+        <p>
+          Rent keeps going <span className="font-semibold text-gray-900">straight to your own M-Pesa paybill</span>.
+          RumiaRent never touches the money. Each tenant gets their own account number to type, so we can tell who
+          paid and send their receipt.
         </p>
       </div>
 
-      {isLoading && (
-        <div className="grid gap-6 sm:grid-cols-3">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="skeleton h-64 rounded-3xl" />
-          ))}
+      {existing ? (
+        <div className="mt-6 space-y-4">
+          <p className="text-sm">
+            Paybill <span className="font-mono font-semibold">{existing.shortcode}</span> is saved.
+          </p>
+          <Button size="lg" className="h-11 w-full rounded-full" isLoading={complete.isPending} onClick={() => complete.mutate()}>
+            Go to my dashboard
+          </Button>
         </div>
+      ) : (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-5">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <FormField control={form.control} name="shortcode" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Paybill (business) number</FormLabel>
+                  <FormControl><Input {...field} inputMode="numeric" placeholder="e.g. 522522" className="h-11" autoFocus /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="display_name" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name tenants see on M-Pesa</FormLabel>
+                  <FormControl><Input {...field} className="h-11" /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
+            <Button type="submit" size="lg" className="h-11 w-full rounded-full"
+              isLoading={connect.isPending || complete.isPending}>
+              Finish setup
+            </Button>
+          </form>
+        </Form>
       )}
 
-      {!isLoading && isError && (
-        <ErrorState
-          title="Couldn't load pricing"
-          message="We're having trouble reaching pricing right now. Try again in a moment."
-          onRetry={() => refetch()}
-        />
-      )}
+      <div className="mt-6 border-t border-gray-100 pt-5 text-center">
+        <p className="mb-2 text-sm text-gray-600">
+          No paybill yet, or you collect cash or bank transfers? Skip this. You can record payments yourself and add a
+          paybill later under M-Pesa paybill.
+        </p>
+        <Button type="button" variant="ghost" onClick={() => complete.mutate()} disabled={complete.isPending}>
+          Skip for now
+        </Button>
+      </div>
 
-      {!isLoading && !isError && plans && plans.length === 0 && (
-        <EmptyState
-          variant="alert"
-          title="Pricing unavailable right now"
-          description="We couldn't load our current plans. Refresh the page, or contact support if this keeps happening."
-        />
-      )}
-
-      {!isLoading && !isError && plans && plans.length > 0 && (
-        <div className="grid gap-5 sm:grid-cols-3">
-          {plans.map((plan) => {
-            const isSelected = selectedSlug === plan.slug;
-            const isRecommended = plan.slug === RECOMMENDED_PLAN_SLUG;
-
-            return (
-              <button
-                key={plan.id}
-                type="button"
-                onClick={() => setSelectedSlug(plan.slug)}
-                aria-pressed={isSelected}
-                className={`relative rounded-3xl p-6 text-left transition-all ${
-                  isSelected
-                    ? 'border-2 border-primary bg-primary/5 shadow-xl'
-                    : 'border border-gray-100 bg-white shadow-sm hover:-translate-y-0.5 hover:shadow-md'
-                }`}
-              >
-                {isRecommended && (
-                  <span className="absolute right-6 top-6 rounded-full bg-primary px-3 py-1 text-xs font-semibold tracking-wide text-white">
-                    POPULAR
-                  </span>
-                )}
-                {isSelected && (
-                  <CheckCircle2 className="absolute right-6 top-6 h-6 w-6 text-primary" aria-hidden />
-                )}
-
-                <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400">
-                  {plan.name}
-                </h3>
-                <div className="mt-3 flex items-baseline gap-1">
-                  <PriceDisplay amount={plan.price} size="lg" />
-                  <span className="text-sm text-muted-foreground">/month</span>
-                </div>
-                <ul className="mt-5 space-y-2.5 border-t border-gray-100 pt-5">
-                  {planFeatures(plan).map((feature) => (
-                    <li key={feature} className="flex items-start gap-2.5 text-sm text-gray-600">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      <Button
-        type="button"
-        variant="charcoal"
-        size="lg"
-        className="mt-8 h-11 w-full rounded-full"
-        disabled={!selectedSlug || completeMutation.isPending}
-        isLoading={completeMutation.isPending}
-        onClick={handleComplete}
-      >
-        Complete setup
-      </Button>
+      <p className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <Gift className="h-4 w-4 text-primary" aria-hidden />
+        Free for 30 days with every feature. Choose a plan later from Billing.
+      </p>
     </div>
   );
 }

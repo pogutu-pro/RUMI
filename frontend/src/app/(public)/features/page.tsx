@@ -80,9 +80,9 @@ const LANDLORD_GROUPS: Group[] = [
       },
       {
         icon: CreditCard,
-        title: 'Online payments with Paystack',
+        title: 'M-Pesa paybill, matched for you',
         description:
-          'Tenants pay from their own dashboard, in full or any amount they choose, and rent is paid out to the landlord’s account. Payment confirmations go to the tenant automatically.',
+          'Rent goes straight to your own M-Pesa paybill. Each tenant has their own account number, so every payment is matched to the right unit and the tenant gets a receipt by SMS and email.',
       },
       {
         icon: HandCoins,

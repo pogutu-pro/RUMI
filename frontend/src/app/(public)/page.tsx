@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'RumiaRent - Rental Management for Kenyan Landlords',
     description:
-      'Properties, units, tenants, rent, and payments in one simple place. Know who owes you, get paid via Paystack or cash, and see what needs attention.',
+      'Properties, units, tenants, rent, and payments in one simple place. Know who owes you, get paid straight to your M-Pesa paybill, and see what needs attention.',
     url: '/',
     siteName: 'RumiaRent',
     locale: 'en_KE',
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     'landlord software Kenya',
     'property management system Kenya',
     'rent collection app',
-    'Paystack rent payment',
+    'M-Pesa rent collection',
     'tenant management software',
   ],
   robots: {
@@ -60,7 +60,7 @@ const PILLARS = [
   {
     icon: Zap,
     title: 'Get paid without chasing',
-    desc: 'Tenants pay via Paystack, or you record cash and bank payments in a tap.',
+    desc: 'Tenants pay your M-Pesa paybill and get a receipt automatically. Cash and bank payments take a tap to record.',
   },
   {
     icon: LayoutGrid,
@@ -78,8 +78,8 @@ const STEPS = [
 const PLATFORM_FEATURES = [
   {
     icon: Landmark,
-    title: 'Bank, M-Pesa, and card payments',
-    desc: 'Tenants pay however suits them, via Paystack: cards, bank transfers, and M-Pesa. It settles straight into your account, automatically matched to the right unit.',
+    title: 'Your paybill, matched automatically',
+    desc: 'Rent lands straight in your own M-Pesa paybill or bank account. Each tenant has their own account number, so every payment is matched to the right unit and receipted.',
   },
   {
     icon: Receipt,
@@ -192,7 +192,7 @@ export default function HomePage() {
                 {[
                   'See which units are occupied and which are vacant',
                   'Know exactly who owes rent and how much',
-                  'Accept Paystack payments or record cash yourself',
+                  'Payments to your paybill matched to the right tenant',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
                     <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
@@ -216,7 +216,7 @@ export default function HomePage() {
               <ul className="mb-8 space-y-4">
                 {[
                   'See your unit, your rent, and your balance',
-                  'Pay securely via Paystack in seconds',
+                  'Pay with M-Pesa, the way you already do',
                   'Every payment recorded and ready as a receipt',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3">

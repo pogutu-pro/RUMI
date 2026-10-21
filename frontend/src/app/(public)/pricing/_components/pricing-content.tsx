@@ -21,7 +21,7 @@ const FAQS = [
   },
   {
     q: 'Do you support M-Pesa and bank payments?',
-    a: 'Yes. Payments run through Paystack, which covers M-Pesa, bank transfers, and cards, so tenants can pay however is easiest for them.',
+    a: 'Yes. Tenants pay your own M-Pesa paybill and each payment is matched to the right tenant and receipted. Bank transfers and cash are recorded in a tap, or matched from an uploaded statement.',
   },
   {
     q: 'What happens after my 30-day trial?',

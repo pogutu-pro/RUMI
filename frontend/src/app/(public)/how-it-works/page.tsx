@@ -24,7 +24,7 @@ const LANDLORD_STEPS = [
   },
   {
     title: 'Collect and record payments',
-    description: 'Tenants pay via Paystack, or you record cash and bank payments. Balances update instantly.',
+    description: 'Tenants pay your M-Pesa paybill with their account number, or you record cash and bank payments. Balances update instantly.',
   },
 ];
 
@@ -35,7 +35,7 @@ const TENANT_STEPS = [
   },
   {
     title: 'Pay your rent',
-    description: 'Pay securely via Paystack whenever it’s due.',
+    description: 'Pay your landlord\'s M-Pesa paybill with your own account number. Your receipt arrives by SMS.',
   },
   {
     title: 'Keep your receipts',
@@ -152,7 +152,7 @@ export default function HowItWorksPage() {
             <div className="bg-gray-50 rounded-3xl p-8">
               <h3 className="font-bold text-gray-900 mb-4">What&apos;s included</h3>
               <ul className="space-y-3 text-sm text-gray-600">
-                <li>Paystack payment integration</li>
+                <li>M-Pesa paybill matching and receipts</li>
                 <li>Cash and bank payment recording</li>
                 <li>Automatic monthly rent charges</li>
                 <li>Outstanding and overdue tracking</li>

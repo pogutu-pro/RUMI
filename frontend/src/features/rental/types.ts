@@ -61,6 +61,7 @@ export interface RentalUnit {
   id: string;
   organization: string;
   property: string;
+  property_name?: string;
   building: string | null;
   floor: string | null;
   unit_number: string;

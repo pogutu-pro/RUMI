@@ -25,7 +25,6 @@ import {
 import { useAuth } from '@/features/auth';
 import { UserRole } from '@/features/auth/stores/auth.types';
 import { DashboardShell, type DashboardShellNavItem } from '@/components/dashboard/dashboard-shell';
-import { PayoutPendingBanner } from '@/features/payout/components/payout-pending-banner';
 import { attentionBadges, useAttention } from '@/features/attention/hooks';
 import { TrialBanner } from '@/features/billing/components/trial-banner';
 
@@ -48,7 +47,7 @@ const NAV: DashboardShellNavItem[] = [
   { section: 'Books', href: '/landlord/rental/owners', label: 'Property owners', icon: Briefcase },
   { section: 'Settings', href: '/landlord/rental/rules', label: 'Rent rules', icon: SlidersHorizontal },
   { section: 'Settings', href: '/landlord/rental/caretakers', label: 'Caretakers', icon: HardHat },
-  { section: 'Settings', href: '/landlord/rental/billing', label: 'Billing & payout', icon: Settings2 },
+  { section: 'Settings', href: '/landlord/rental/billing', label: 'Billing', icon: Settings2 },
   { section: 'Settings', href: '/landlord/rental/settings', label: 'Settings', icon: Settings },
   { section: 'Settings', href: '/landlord/rental/support', label: 'Support', icon: LifeBuoy },
 ];
@@ -74,7 +73,6 @@ export default function RentalLandlordLayout({ children }: { children: React.Rea
         !isSuperAdmin ? (
           <div className="space-y-3">
             <TrialBanner />
-            <PayoutPendingBanner />
           </div>
         ) : null
       }

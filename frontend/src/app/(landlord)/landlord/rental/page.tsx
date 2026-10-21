@@ -13,6 +13,7 @@ import {
   useIncomeSummary,
 } from '@/features/rental/hooks/use-rental';
 import { AttentionPanel } from '@/features/attention/attention-panel';
+import { GetStarted } from '@/features/attention/get-started';
 import { formatKes } from '@/features/ledger/lib/format';
 import { isGateRejection, capitalizeTier } from '@/lib/api/gate';
 
@@ -66,6 +67,7 @@ export default function LandlordRentalDashboard() {
         </p>
       </div>
 
+      <GetStarted />
       <AttentionPanel />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

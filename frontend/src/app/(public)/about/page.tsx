@@ -46,8 +46,8 @@ export default function AboutPage() {
               <p>
                 RumiaRent is built for that landlord first: properties, units, tenants,
                 and rent charges, with payment collection that actually works in
-                Kenya. Paystack for card and bank payments, and simple cash
-                recording for everything else.
+                Kenya. Tenants pay your own M-Pesa paybill or bank account, and every
+                payment is matched and receipted. Cash is one tap to record.
               </p>
             </div>
           </div>
@@ -76,8 +76,8 @@ export default function AboutPage() {
                   Rent & Payments
                 </h3>
                 <p className="text-gray-600 leading-relaxed">
-                  Rent charges generate automatically. Payments come in via Paystack
-                  or get recorded by hand, and either way, balances stay accurate.
+                  Rent charges generate automatically. Payments to your paybill are
+                  matched to the right tenant, cash is recorded by hand, and balances stay accurate.
                 </p>
               </div>
               <div className="border border-gray-100 bg-white p-8 rounded-3xl shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5 duration-300">
