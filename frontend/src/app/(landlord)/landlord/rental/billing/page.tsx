@@ -22,6 +22,7 @@ import {
 } from '@/features/billing/hooks/use-subscription';
 import { usePlans } from '@/features/billing/hooks/use-plans';
 import { navigateCheckoutTab, openCheckoutTab } from '@/lib/utils/checkout-window';
+import { WhatsAppHelp } from '@/components/support/whatsapp-help';
 import type { OrganizationSubscription, SubscriptionPlan } from '@/features/billing/types';
 
 /** "Pay another way" — for a landlord with no card. Shows whatever a super
@@ -70,6 +71,7 @@ function ManualPayDialog({
             how to pay.
           </p>
         )}
+        <WhatsAppHelp topic="plan" label="Questions about paying? Ask us on WhatsApp" />
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>
@@ -207,9 +209,12 @@ export default function BillingPayoutPage() {
             Rent goes straight to your own M-Pesa paybill or bank account. RumiaRent never handles it: we only record
             each payment against the right tenant and send the receipt.
           </p>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/landlord/rental/paybill">Set up your M-Pesa paybill</Link>
-          </Button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/landlord/rental/paybill">Set up your M-Pesa paybill</Link>
+            </Button>
+            <WhatsAppHelp topic="paybill" label="Or let us set it up with you" />
+          </div>
         </CardContent>
       </Card>
 
@@ -311,6 +316,10 @@ export default function BillingPayoutPage() {
           })}
         </div>
       )}
+
+      <p className="text-center text-sm text-muted-foreground">
+        Not sure which plan fits? <WhatsAppHelp topic="plan" label="Ask us on WhatsApp" className="align-middle" />
+      </p>
 
       <ManualPayDialog
         plan={manualPayPlan}

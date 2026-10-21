@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils/cn';
 import { useTenancies, useUnits } from '@/features/rental/hooks/use-rental';
 import { usePaybillAccounts } from '@/features/paybill/hooks';
+import { WhatsAppHelp } from '@/components/support/whatsapp-help';
 import { MoveInDialog } from '@/features/rental/components/move-in-dialog';
 
 /**
@@ -41,12 +42,14 @@ export function GetStarted() {
       title: 'Tell tenants where to pay',
       hint: 'Your M-Pesa paybill number. Each tenant gets their own account number.',
       action: <Button asChild size="sm" variant="outline"><Link href="/landlord/rental/paybill">Add paybill</Link></Button>,
+      help: 'paybill' as const,
     },
     {
       done: paybills.some((p) => p.registered_at),
       title: 'Turn on automatic M-Pesa receipts',
       hint: 'Once Safaricom approves, payments are matched and receipted without you lifting a finger.',
       action: <Button asChild size="sm" variant="outline"><Link href="/landlord/rental/paybill">Set up</Link></Button>,
+      help: 'daraja' as const,
     },
   ];
   const doneCount = steps.filter((s) => s.done).length;
@@ -80,6 +83,9 @@ export function GetStarted() {
               <div className="min-w-0 flex-1">
                 <p className={cn('text-sm font-medium', step.done && 'text-muted-foreground line-through')}>{step.title}</p>
                 {!step.done && <p className="text-xs text-muted-foreground">{step.hint}</p>}
+                {index === next && 'help' in step && step.help && (
+                  <WhatsAppHelp topic={step.help} label="We can set this up with you" className="mt-1.5 text-xs" />
+                )}
               </div>
               {index === next && <div className="shrink-0">{step.action}</div>}
             </li>

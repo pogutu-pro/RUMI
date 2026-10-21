@@ -31,6 +31,7 @@ import { useCreateOrganization, useCreateProperty } from '@/features/rental/hook
 import { usePaybillAccounts } from '@/features/paybill/hooks';
 import { paybillApi } from '@/features/paybill/api';
 import { apiErrorMessage } from '@/features/ledger/lib/format';
+import { WhatsAppHelp } from '@/components/support/whatsapp-help';
 import { cn } from '@/lib/utils/cn';
 
 // Three short steps, like the Kenyan rent tools landlords already know:
@@ -554,6 +555,11 @@ function PaymentStep({ organizationName, onBack }: { organizationName: string; o
           No paybill yet, or you take cash or bank transfers? Skip this and record payments yourself. Add a paybill
           later under M-Pesa.
         </p>
+      </div>
+
+      <div className="mt-6 flex flex-col items-center gap-1 rounded-xl bg-gray-50 px-4 py-4 text-center">
+        <p className="text-sm text-gray-600">Rather we set it up with you? It takes a few minutes.</p>
+        <WhatsAppHelp topic="paybill" business={organizationName} />
       </div>
     </>
   );

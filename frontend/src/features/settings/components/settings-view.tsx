@@ -213,6 +213,35 @@ function NotificationsTab() {
   );
 }
 
+/** The only sign-out control in the app; kept out of the way on purpose. */
+function SignOutSection() {
+  const { user, logout } = useAuth();
+  const [busy, setBusy] = React.useState(false);
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-medium">Sign out</p>
+          <p className="text-xs text-muted-foreground">
+            {user?.email ? `Signed in as ${user.email}. ` : ''}Sign out on shared or borrowed devices.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          className="sm:w-auto"
+          isLoading={busy}
+          onClick={async () => {
+            setBusy(true);
+            await logout();
+          }}
+        >
+          Sign out
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function SettingsView() {
   return (
     <div className="space-y-6">
@@ -229,6 +258,7 @@ export function SettingsView() {
           <NotificationsTab />
         </TabsContent>
       </Tabs>
+      <SignOutSection />
     </div>
   );
 }

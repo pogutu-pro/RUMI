@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
-import { ChevronsLeft, ChevronsRight, LogOut, Menu } from 'lucide-react';
+import { ChevronsLeft, ChevronsRight, Menu } from 'lucide-react';
 import { useAuth } from '@/features/auth';
 import { UserRole } from '@/features/auth/stores/auth.types';
 import { UnifiedThemeProvider } from '@/components/providers/unified-theme-provider';
@@ -211,7 +211,7 @@ function NavLinks({
 
 /**
  * Wraps the nav links so the list scrolls internally instead of pushing the
- * logout footer down — but a plain `overflow-y-auto` div gives no hint that
+ * account footer down — but a plain `overflow-y-auto` div gives no hint that
  * there's more below: the last item just gets sliced off mid-row with no
  * scrollbar or fade, which reads as broken rather than scrollable on any
  * screen too short to fit every item (a landlord's 12-item nav on a
@@ -227,68 +227,68 @@ function NavScrollArea({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Pinned to the bottom-left of the sidebar: who is signed in, and the one-click
- * way out. Collapses to a lone logout icon when the sidebar is collapsed.
+ * Pinned to the bottom-left of the sidebar: who is signed in, linking to
+ * Settings. Signing out lives on the Settings page, not one tap away here.
  */
 function SidebarFooter({
   name,
   email,
   photoUrl,
   collapsed,
-  onLogout,
+  settingsHref,
+  onNavigate,
 }: {
   name: string;
   email: string;
   photoUrl: string | null;
   collapsed: boolean;
-  onLogout: () => void;
+  settingsHref: string;
+  onNavigate?: () => void;
 }) {
-  const logoutButton = (
-    <button
-      type="button"
-      onClick={onLogout}
-      aria-label="Log out"
-      className={cn(
-        'flex items-center gap-2 rounded-xl text-sm font-medium text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-400',
-        collapsed ? 'h-10 w-10 justify-center' : 'w-full px-3 py-2.5',
-      )}
-    >
-      <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
-      {!collapsed && <span>Log out</span>}
-    </button>
+  const avatar = (
+    <Avatar className="h-9 w-9 shrink-0">
+      {photoUrl && <AvatarImage src={photoUrl} alt={name} />}
+      <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
+        {getUserInitials(name) || 'U'}
+      </AvatarFallback>
+    </Avatar>
   );
 
-  return (
-    <div className={cn('mt-auto space-y-2 border-t p-3', collapsed && 'flex flex-col items-center')}>
-      {!collapsed && (
-        <div className="flex items-center gap-3 px-1 py-1">
-          <Avatar className="h-9 w-9 shrink-0">
-            {photoUrl && <AvatarImage src={photoUrl} alt={name} />}
-            <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
-              {getUserInitials(name) || 'U'}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-foreground">{name}</p>
-            <p className="truncate text-xs text-muted-foreground">{email}</p>
-          </div>
-        </div>
-      )}
-      {collapsed ? (
+  if (collapsed) {
+    return (
+      <div className="mt-auto flex justify-center border-t p-3">
         <Tooltip delayDuration={200}>
-          <TooltipTrigger asChild>{logoutButton}</TooltipTrigger>
-          <TooltipContent side="right">Log out</TooltipContent>
+          <TooltipTrigger asChild>
+            <Link href={settingsHref} aria-label="Settings" className="rounded-full transition-opacity hover:opacity-80">
+              {avatar}
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right">Settings</TooltipContent>
         </Tooltip>
-      ) : (
-        logoutButton
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-auto border-t p-3">
+      <Link
+        href={settingsHref}
+        onClick={onNavigate}
+        className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-muted"
+      >
+        {avatar}
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-foreground">{name}</p>
+          <p className="truncate text-xs text-muted-foreground">{email}</p>
+        </div>
+      </Link>
     </div>
   );
 }
 
 /**
  * Shared dashboard chrome — collapsible desktop sidebar, mobile slide-over
- * drawer, avatar/logout footer, and the `allowedRoles` auth-gate. Extracted
+ * drawer, avatar footer, and the `allowedRoles` auth-gate. Extracted
  * from the landlord rental layout (the most mature of the four per-role
  * implementations) so every role layout gets identical structure/behavior
  * and the auth-gate is enforced by construction, not copy-paste.
@@ -307,7 +307,7 @@ export function DashboardShell({
   mobileTabs,
   children,
 }: DashboardShellProps) {
-  const { user, status, isAuthenticated, logout } = useAuth();
+  const { user, status, isAuthenticated } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -379,7 +379,7 @@ export function DashboardShell({
                 <NavLinks nav={nav} collapsed={collapsed} pathname={pathname} badges={navBadges} />
               </NavScrollArea>
 
-              <SidebarFooter name={name} email={email} photoUrl={photoUrl} collapsed={collapsed} onLogout={logout} />
+              <SidebarFooter name={name} email={email} photoUrl={photoUrl} collapsed={collapsed} settingsHref={settingsHref} />
             </aside>
           )}
 
@@ -402,7 +402,7 @@ export function DashboardShell({
                 </span>
                 <div className="ml-auto flex items-center gap-1">
                   <NotificationBell />
-                  <AccountMenu name={name} email={email} photoUrl={photoUrl} settingsHref={settingsHref} onLogout={logout} />
+                  <AccountMenu name={name} email={email} photoUrl={photoUrl} settingsHref={settingsHref} />
                 </div>
               </header>
               <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
@@ -415,7 +415,7 @@ export function DashboardShell({
                   <NavScrollArea>
                     <NavLinks nav={nav} collapsed={false} pathname={pathname} badges={navBadges} onNavigate={() => setMobileNavOpen(false)} />
                   </NavScrollArea>
-                  <SidebarFooter name={name} email={email} photoUrl={photoUrl} collapsed={false} onLogout={logout} />
+                  <SidebarFooter name={name} email={email} photoUrl={photoUrl} collapsed={false} settingsHref={settingsHref} onNavigate={() => setMobileNavOpen(false)} />
                 </SheetContent>
               </Sheet>
             </>
@@ -427,7 +427,7 @@ export function DashboardShell({
                 <p className="truncate text-sm font-medium text-foreground">Welcome back, {firstName}</p>
                 <div className="flex items-center gap-1">
                   <NotificationBell />
-                  <AccountMenu name={name} email={email} photoUrl={photoUrl} settingsHref={settingsHref} onLogout={logout} />
+                  <AccountMenu name={name} email={email} photoUrl={photoUrl} settingsHref={settingsHref} />
                 </div>
               </header>
             )}

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import * as React from 'react';
-import { LogOut, Monitor, Moon, Settings, Sun } from 'lucide-react';
+import { Monitor, Moon, Settings, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -63,13 +63,11 @@ export function AccountMenu({
   email,
   photoUrl,
   settingsHref,
-  onLogout,
 }: {
   name: string;
   email: string;
   photoUrl?: string | null;
   settingsHref: string;
-  onLogout: () => void;
 }) {
   return (
     <DropdownMenu>
@@ -99,10 +97,6 @@ export function AccountMenu({
             <Settings className="h-4 w-4" aria-hidden="true" />
             Settings
           </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={onLogout} className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive">
-          <LogOut className="h-4 w-4" aria-hidden="true" />
-          Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

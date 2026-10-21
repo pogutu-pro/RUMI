@@ -26,6 +26,7 @@ import {
   useUpdatePaybill,
 } from '@/features/paybill/hooks';
 import type { PaybillAccount, PaybillTransaction } from '@/features/paybill/types';
+import { WhatsAppHelp } from '@/components/support/whatsapp-help';
 
 const STATUS_LABEL: Record<string, string> = {
   matched: 'Matched',
@@ -76,6 +77,9 @@ export default function PaybillPage() {
               matched and receipted automatically once Safaricom approves the connection (steps below).
             </CardDescription>
           </CardHeader>
+          <CardContent className="pt-0">
+            <WhatsAppHelp topic="paybill" label="Prefer we set it up with you? Message us on WhatsApp" />
+          </CardContent>
         </Card>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
@@ -431,10 +435,17 @@ function SafaricomGuide() {
           </li>
         </ol>
         <p className="mt-3 text-xs text-muted-foreground">
-          Safaricom sometimes changes these screens. If you get stuck, Daraja support is apisupport@safaricom.co.ke, or
-          message us from Support. Until it is set up, tenants can still pay your paybill and you record payments by hand
-          or upload your M-Pesa statement.
+          Safaricom sometimes changes these screens. If you get stuck, Daraja support is apisupport@safaricom.co.ke.
+          Until it is set up, tenants can still pay your paybill and you record payments by hand or upload your M-Pesa
+          statement.
         </p>
+        <div className="mt-4 flex flex-col gap-3 rounded-xl border bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm">
+            <span className="font-medium">Rather not do this yourself?</span> We do it with you on a short WhatsApp
+            chat, free.
+          </p>
+          <WhatsAppHelp topic="daraja" variant="button" />
+        </div>
       </CardContent>
     </Card>
   );
@@ -478,6 +489,7 @@ function KeysDialog({ paybill, onClose }: { paybill: PaybillAccount | null; onCl
               autoComplete="off" />
           </div>
         </div>
+        <WhatsAppHelp topic="daraja" label="Not sure where these are? We can help on WhatsApp" />
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={save} isLoading={update.isPending} disabled={!key.trim() || !secret.trim()}>Save keys</Button>

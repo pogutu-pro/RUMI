@@ -16,6 +16,7 @@ import {
 } from '@/features/books/hooks';
 import type { ReportRow } from '@/features/books/types';
 import { formatDate, formatKes } from '@/features/ledger/lib/format';
+import { WhatsAppHelp } from '@/components/support/whatsapp-help';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const monthStart = () => `${today().slice(0, 8)}01`;
@@ -157,6 +158,7 @@ function ReconcileTab() {
         here to be assigned to a tenant or marked as not rent. Doing this once a month catches any M-Pesa payment that
         did not reach RumiaRent.
       </p>
+      <WhatsAppHelp topic="bank" label="Rent paid into a bank? We can set up matching with you" />
       <div className="grid gap-2 sm:grid-cols-3">
         <Select value={account} onValueChange={setAccount}>
           <SelectTrigger aria-label="Account"><SelectValue /></SelectTrigger>
