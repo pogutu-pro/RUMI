@@ -44,26 +44,54 @@ handle a "change of business entity".
 | ☐ | Lawyer's written opinion | Advocate with fintech experience | Confirms the "notify only, never hold funds" model needs no CBK payment-service-provider licence. Also have them review the Terms, Privacy Policy and the landlord authorisation letter (section D) |
 | ☐ | eTIMS onboarding (and VAT if turnover passes the threshold) | KRA | For RumiaRent's own subscription invoices to landlords |
 
-## B. At the bank (for RumiaRent's own account)
+## B. At the bank
 
-Open a **business current account** in RumiaRent's name. Subscription money
+### B1. RumiaRent's own account
+Open a **business current account** in the business name. Subscription money
 from landlords settles here (through Paystack, or a direct transfer when a
 landlord uses "pay another way").
 
-Questions to ask the relationship manager while you're there. You'll need
-the answers for bank integration later; nothing is built for it yet:
+### B2. Bank integration for landlords: what is already known
+Researched 21 Oct 2026 from the banks' developer docs and other Kenyan PMSs.
+Go to the bank to **confirm** these and fill in the "Ask" items. Nothing is
+built for banks yet; today landlords upload a CSV statement.
 
-1. **Statement exports.** Can a business customer download account statements as **CSV** (not only PDF)? Get a sample file with fake data. RumiaRent's "Accounts & reconciliation" page imports CSV today.
-2. **Real-time credit notifications (IPN/webhook).** When money lands in a *customer's* account, can the bank call a URL in real time with the amount, the payer's narrative/reference and a transaction ID? What is the product called?
-   - Equity: **Jenga API**
-   - KCB: **Buni**
-   - Co-op Bank: its **API developer portal**
-3. **Third-party access with consent.** Can a landlord authorise a software company (RumiaRent) to receive those notifications for *their* account, using a signed mandate letter? Ask for the bank's template letter.
-4. **Deposit reference.** When a tenant pays by bank (branch, app or PesaLink), which field carries the reference the tenant types? Is it delivered in the notification and the CSV?
-5. **Technical and commercial.** Sandbox access, security requirements (IP whitelisting, certificates), fees, contract or NDA, and who the technical contact is.
+**How Kenyan PMSs do it:** the same model as M-Pesa. Rent lands in the
+landlord's **own** account, and the landlord asks *their* bank to send
+"instant notifications" for that account to the PMS's web address. Example:
+RentalDesk tells landlords to ask their Equity contact to enable *instant
+account notifications through Jenga Account Services* and send them to
+RentalDesk's URL (Basic Auth), tests with a test credit, then goes live.
+Tenants put the unit or invoice number in the payment reference. When the
+reference is missing, the payment waits for manual matching. RumiaRent
+already works this way for M-Pesa, so banks become another source for the
+same "match and receipt" queue.
 
-Ask the same five questions at each bank you want to support. Start with
-whichever bank most of your landlords use.
+| Question | Equity (Jenga) | KCB (Buni) | Co-op (Co-opConnect) |
+|---|---|---|---|
+| **1. Statement export** | API: *Account Full Statement* returns date, amount, Credit/Debit, `reference` and `description` (narration) for a date range. Needs a signed request with a key registered with Finserve. **Ask:** CSV download in online banking for business accounts? Can a third party (RumiaRent) pull a landlord's statement with their consent? | **Ask:** CSV export in KCB online banking for business accounts; any statement API on Buni | Has an *Account Transactions* API. **Ask:** CSV export; whether a third party can call it with the landlord's consent |
+| **2. Real-time notification (IPN)** | Yes. Jenga **IPN**: you register a URL plus username/password (Basic Auth) in JengaHQ; it sends payer name, phone, `customer.reference`, amount, transaction and bank reference, status. The documented IPN is for **Jenga payment-gateway** collections. **Ask:** do *Jenga Account Services instant notifications* cover every credit to a normal account (branch, app, PesaLink, EFT)? | Yes. Buni **IPN API**: KCB POSTs each successful credit to your HTTPS URL with `transactionReference`, `transactionAmount`, `customerReference`, `narration`, `customerName`, `customerMobileNumber`, `balance`, signed with a `Signature` header. You reply with a small JSON acknowledgement | Co-opConnect lists an **Instant Notification Service** ("real-time notification of any activity on the account"). **Ask:** is it push (they call our URL) or pull? What are the fields? Is it available to SMEs? |
+| **3. Third-party access with consent** | Other PMSs (RentalDesk) receive Equity notifications for landlords' accounts: the landlord asks their Equity contact to point them at the PMS. **Ask:** the official form or mandate letter for this | Production IPN needs a **request letter signed by the account signatories** (form on the Buni portal), emailed to **buni@kcbgroup.com**. So the landlord signs; the URL can be RumiaRent's. **Ask:** confirm the URL may belong to a third party | **Ask:** the mandate letter for a third party to receive a customer's notifications |
+| **4. Deposit reference** | IPN `customer.reference` / `transaction.billNumber`; statement `description`. **Ask:** which one carries what the payer typed in branch, Equitel/app and PesaLink deposits | IPN `customerReference` and `narration`. **Ask:** which carries what the payer typed, per channel (branch, app, PesaLink, Vooma) | **Ask:** the same question for statements and notifications |
+| **5. Technical and commercial** | UAT and live environments (uat.finserve.africa / api.finserve.africa); Basic Auth on the IPN; may require IP or domain allow-listing. **Ask:** fees, contract, technical contact | No self-service sandbox for IPN (registration by email); the signature public key comes from KCB on request. **Ask:** the public key, fees, contract, contact | Developer portal developer.co-opbank.co.ke: register an app, get consumer key/secret, subscribe to each API, test in sandbox. **Ask:** go-live process, fees, contact |
+
+**What to bring back from each bank:** the product name; a sample
+notification and a sample CSV statement (fake data); the mandate or request
+form; the fees; and a named technical contact. With those, each bank takes
+about a week to build: one endpoint per bank feeding the existing matching
+queue.
+
+**Suggested order:** Equity and KCB both have documented push notifications
+and several PMSs already use them. Ask Co-op whether its notification service
+is push. Start with whichever bank most of your first landlords use.
+
+### B3. Other Kenyan PMSs (landscape, Oct 2026)
+Most are M-Pesa-first. EazzyRent, Kodi and Pangoni advertise using the
+landlord's **own** paybill. Bank reconciliation is advertised by EazzyRent (7
+banks), Nyumba Zetu and Silqu, and RentalDesk publishes its Equity setup.
+Pricing is about KES 1,500–15,000 a month by unit count; Pangoni has a free
+tier for 3 units. Also listed: BomaHut, PMS.co.ke, Shiftenant, Rentall,
+RentSmart, Dala, Blocks, Rent Rahisi. Claims come from the vendors' own sites.
 
 ## C. Safaricom (M-Pesa)
 
