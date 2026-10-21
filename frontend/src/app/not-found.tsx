@@ -128,7 +128,7 @@ export default function NotFound() {
               </h3>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Link
-                  href="/how-it-works"
+                  href="/#how-it-works"
                   className="group flex items-center gap-3 rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/50 hover:bg-accent"
                 >
                   <div className="rounded-md bg-primary/10 p-2 group-hover:bg-primary/20 transition-colors">

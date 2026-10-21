@@ -1,145 +1,96 @@
-import type { Metadata } from 'next';
-import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Landmark, Receipt, MessageCircle, Headset } from 'lucide-react';
-import { AUTH_ROUTES } from '@/lib/constants/routes';
-import { PricingContent } from './_components/pricing-content';
-import { SITE_URL, fetchPublicPlans } from '@/lib/seo';
+import type { Metadata } from 'next';
+import { SHARE_IMAGE, SITE_URL, fetchPublicPlans } from '@/lib/seo';
+import { PlanCards } from '@/components/marketing/plan-cards';
+import { FaqList, faqSchema } from '@/components/marketing/faq-list';
+
+export const revalidate = 3600;
+
+const DESCRIPTION =
+  'RumiaRent pricing in Kenyan shillings: one flat monthly price by how many properties and units you manage. 30-day free trial, no card needed.';
 
 export const metadata: Metadata = {
-  alternates: { canonical: '/pricing' },
   title: 'Pricing',
-  description: 'RumiaRent rental management pricing. Simple, flat monthly billing.',
+  description: DESCRIPTION,
+  alternates: { canonical: '/pricing' },
+  openGraph: { title: 'RumiaRent pricing', description: DESCRIPTION, url: '/pricing', images: [SHARE_IMAGE] },
 };
 
-const PRICING_HIGHLIGHTS = [
-  { icon: Landmark, label: 'Bank, M-Pesa, and card payments' },
-  { icon: Receipt, label: 'Automated invoicing and billing' },
-  { icon: MessageCircle, label: 'Built-in communication module' },
-  { icon: Headset, label: 'Dedicated customer support' },
+const PRICING_FAQS = [
+  {
+    q: 'Is there a free trial?',
+    a: 'Yes. Every new account gets 30 days with every feature unlocked. No card is needed to start, and nothing is charged until you choose a plan.',
+  },
+  {
+    q: 'Do you charge a percentage of rent?',
+    a: 'No. You pay one flat monthly price. Rent goes straight from your tenants to your own paybill or bank account, and RumiaRent takes nothing from it.',
+  },
+  {
+    q: 'Are SMS receipts and reminders included?',
+    a: 'Yes. Receipts, rent reminders and arrears notices by SMS and email are included in every plan.',
+  },
+  {
+    q: 'How do I pay for RumiaRent?',
+    a: 'By card through Paystack, renewing monthly. If you do not have a card, choose "Pay another way" when subscribing and pay by M-Pesa or bank; your plan starts once the payment is confirmed.',
+  },
+  {
+    q: 'Can I change or cancel my plan?',
+    a: 'Yes, at any time from Billing. You keep access until the end of the month you have paid for.',
+  },
 ];
 
 export default async function PricingPage() {
   const plans = await fetchPublicPlans();
-  const appSchema = {
+  const offers = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'RumiaRent',
     url: SITE_URL,
     applicationCategory: 'BusinessApplication',
-    operatingSystem: 'Web, Android, iOS',
-    description:
-      'Rental management platform for Kenyan landlords and agents: properties, tenants, rent collection, reminders and simple accounting.',
+    operatingSystem: 'Web browser',
     offers: plans.map((plan) => ({
       '@type': 'Offer',
       name: plan.name,
       price: Number(plan.price).toFixed(2),
       priceCurrency: 'KES',
       url: `${SITE_URL}/pricing`,
-      availability: 'https://schema.org/InStock',
     })),
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans">
+    <>
       {plans.length > 0 && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(appSchema) }}
-        />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(offers) }} />
       )}
-      {/* Header */}
-      <section className="bg-white py-24 px-4 relative overflow-hidden border-b border-gray-100">
-        <div className="container mx-auto max-w-3xl text-center">
-          <h1 className="text-5xl font-bold text-primary mb-6">
-            Pricing
-          </h1>
-          <p className="text-xl text-gray-600">
-            Flat monthly pricing, from Starter to Enterprise. No per-unit surprises.
-            Notifications included.
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(PRICING_FAQS)) }} />
+
+      <section className="px-4 pb-16 pt-12 sm:pt-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="max-w-2xl">
+            <h1 className="text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl">Pricing</h1>
+            <p className="mt-4 text-lg leading-relaxed text-gray-600">
+              One flat monthly price, chosen by how much you manage. No percentage of your rent, no setup fee.
+              Every plan starts with 30 days free.
+            </p>
+          </div>
+          <div className="mt-12">
+            <PlanCards plans={plans} />
+          </div>
+          <p className="mt-6 text-sm text-gray-500">
+            Prices in Kenyan shillings per month. Managing more than the largest plan, or several agencies?{' '}
+            <Link href="/contact" className="font-medium text-primary hover:underline">Talk to us</Link>.
           </p>
         </div>
       </section>
 
-      {/* Highlights */}
-      <section className="py-16 px-4 bg-white border-b border-gray-100">
-        <div className="container mx-auto max-w-5xl">
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {PRICING_HIGHLIGHTS.map(({ icon: Icon, label }) => (
-              <div key={label} className="flex flex-col items-center text-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-                  <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
-                </div>
-                <p className="text-sm font-semibold text-gray-900">{label}</p>
-              </div>
-            ))}
+      <section className="border-t border-gray-100 bg-gray-50/60 px-4 py-16 sm:py-20">
+        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-3">
+          <h2 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">Pricing questions</h2>
+          <div className="lg:col-span-2">
+            <FaqList items={PRICING_FAQS} />
           </div>
         </div>
       </section>
-
-      {/* Trial Notice */}
-      <section className="py-12 px-4 bg-white">
-        <div className="container mx-auto max-w-4xl">
-          <div className="border border-gray-100 bg-gray-50 p-10 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-8">
-            <div>
-              <h3 className="font-bold text-primary text-3xl mb-2">30-day free trial</h3>
-              <p className="text-lg text-gray-600">
-                New landlords get a 30-day trial with full Enterprise-tier access. No credit card required.
-              </p>
-            </div>
-            <Link href={AUTH_ROUTES.REGISTER}>
-              <Button className="rounded-full px-10 h-14 text-lg font-medium">
-                Start Trial
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <PricingContent />
-      <p className="mx-auto max-w-3xl px-4 pb-16 text-center text-sm text-gray-500">
-        Plans renew monthly until cancelled, and you keep access until the end of the month you
-        have paid for. Cancelling and refunds are covered in our{' '}
-        <Link href="/terms" className="text-primary underline underline-offset-4">
-          Terms of Service
-        </Link>
-        .
-      </p>
-
-      {/* Billing Details */}
-      <section className="pb-24 px-4 bg-white">
-        <div className="container mx-auto max-w-6xl">
-          <div className="max-w-4xl mx-auto">
-            <div className="grid md:grid-cols-3 gap-8">
-              <div>
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Notifications</p>
-                <p className="text-sm text-gray-600">Rent-due reminders and payment confirmations included.</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Billing Model</p>
-                <p className="text-sm text-gray-600">Billed monthly per selected plan: flat pricing, no per-unit metering.</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Multiple properties</p>
-                <p className="text-sm text-gray-600">Manage as many properties as your plan allows on one account.</p>
-              </div>
-            </div>
-
-            <div className="mt-8 text-center">
-              <Link href="/contact" className="text-sm font-semibold text-gray-900 underline underline-offset-4">
-                Contact sales
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer Legal */}
-      <footer className="py-8 border-t border-gray-100 text-center px-4">
-        <p className="text-xs text-gray-500">
-          Prices exclude VAT where applicable. <Link href="/terms" className="underline">Terms and service apply</Link>.
-        </p>
-      </footer>
-    </div>
+    </>
   );
 }

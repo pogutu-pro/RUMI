@@ -17,16 +17,13 @@ export const SHARE_IMAGE = {
 /** Public pages that belong in the sitemap, with their relative importance. */
 export const PUBLIC_PAGES: ReadonlyArray<{ path: string; priority: number }> = [
   { path: '/', priority: 1 },
-  { path: '/features', priority: 0.9 },
   { path: '/pricing', priority: 0.9 },
-  { path: '/how-it-works', priority: 0.8 },
   { path: '/faq', priority: 0.8 },
-  { path: '/about', priority: 0.7 },
-  { path: '/contact', priority: 0.7 },
-  { path: '/blog', priority: 0.7 },
-  { path: '/guides', priority: 0.6 },
-  { path: '/help-center', priority: 0.6 },
-  { path: '/careers', priority: 0.5 },
+  { path: '/rentals', priority: 0.8 },
+  { path: '/about', priority: 0.6 },
+  { path: '/contact', priority: 0.6 },
+  { path: '/blog', priority: 0.6 },
+  { path: '/careers', priority: 0.4 },
   { path: '/privacy', priority: 0.4 },
   { path: '/terms', priority: 0.4 },
   { path: '/cookies', priority: 0.3 },
@@ -40,6 +37,7 @@ export interface PublicPlan {
   interval: string;
   max_properties: number;
   max_units: number;
+  max_caretaker_seats?: number;
 }
 
 async function fetchJson<T>(path: string): Promise<T | null> {

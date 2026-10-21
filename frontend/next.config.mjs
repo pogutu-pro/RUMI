@@ -50,6 +50,18 @@ const nextConfig = {
       },
     ],
   },
+  // Pages folded into the home page and Help in the Oct 2026 redesign.
+  // Permanent, so search engines move their ranking to the new address.
+  async redirects() {
+    return [
+      { source: '/features', destination: '/#features', permanent: true },
+      { source: '/how-it-works', destination: '/#how-it-works', permanent: true },
+      { source: '/how-it-works/:path*', destination: '/#how-it-works', permanent: true },
+      { source: '/more', destination: '/', permanent: true },
+      { source: '/guides', destination: '/faq', permanent: true },
+      { source: '/help-center', destination: '/faq', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

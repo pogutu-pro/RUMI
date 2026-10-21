@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { PageIntro } from '@/components/marketing/page-intro';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -37,12 +38,11 @@ export default function RentalsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <section className="border-b bg-muted/30 px-4 py-12">
-        <div className="container mx-auto max-w-5xl space-y-6">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-primary sm:text-4xl">Find a place to rent</h1>
-            <p className="mt-2 text-muted-foreground">Vacant units from landlords and agents on RumiaRent — updated the moment a unit is let.</p>
-          </div>
+      <section className="border-b px-4 pb-10 pt-12 sm:pt-20">
+        <div className="mx-auto max-w-6xl space-y-8">
+          <PageIntro title="Find a place to rent">
+            Vacant units from landlords and agents on RumiaRent. Listings come down as soon as a unit is let.
+          </PageIntro>
           <form onSubmit={search} className="grid gap-2 rounded-2xl border bg-background p-3 shadow-sm sm:grid-cols-[1fr_12rem_10rem_auto]">
             <Input aria-label="Town or area" placeholder="Town or county, e.g. Nairobi" value={city} onChange={(e) => setCity(e.target.value)} />
             <Select value={type || 'any'} onValueChange={(v) => setType(v === 'any' ? '' : v)}>
@@ -55,7 +55,7 @@ export default function RentalsPage() {
         </div>
       </section>
 
-      <section className="container mx-auto max-w-5xl px-4 py-8">
+      <section className="mx-auto max-w-6xl px-4 py-8">
         {isLoading ? <p className="text-muted-foreground">Loading…</p> : listings.length === 0 ? (
           <p className="py-12 text-center text-muted-foreground">No vacant units match. Try a wider area or a higher budget.</p>
         ) : (

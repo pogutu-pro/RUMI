@@ -1,343 +1,260 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
-  ArrowRight,
-  CheckCircle2,
-  Receipt,
-  ShieldCheck,
-  Zap,
-  LayoutGrid,
-  Landmark,
-  Headset,
-  MessageCircle,
-  Lock,
-  FileCheck2,
-  KeyRound,
+  ArrowRight, BellRing, Building2, FileText, Landmark, ReceiptText, Smartphone, Users,
 } from 'lucide-react';
 import { AUTH_ROUTES } from '@/lib/constants/routes';
-import { FadeIn, FadeInStagger, FadeInItem } from '@/components/animations/fade-in';
-import { PricingTeaser } from './_components/pricing-teaser';
-import { HeroSection } from './_components/hero-section';
-import { SHARE_IMAGE } from '@/lib/seo';
+import { SHARE_IMAGE, SITE_URL, fetchPublicPlans } from '@/lib/seo';
+import { FAQS, FEATURES, ONE_LINER, STEPS } from '@/lib/marketing';
+import { PlanCards, formatKes } from '@/components/marketing/plan-cards';
+import { FaqList, faqSchema } from '@/components/marketing/faq-list';
+
+export const revalidate = 3600;
+
+const TITLE = 'RumiaRent: M-Pesa rent collection and rental management for Kenyan landlords';
+const DESCRIPTION =
+  'Every M-Pesa rent payment matched to the right tenant and receipted automatically, with reminders, arrears and statements. ' +
+  'For landlords and agents in Kenya. 30-day free trial.';
 
 export const metadata: Metadata = {
-  title: 'RumiaRent - Rental Management for Kenyan Landlords',
-  description:
-    'RumiaRent helps Kenyan landlords and agents manage properties, track tenants, and collect rent. Simple enough to start using today.',
-  openGraph: {
-    title: 'RumiaRent - Rental Management for Kenyan Landlords',
-    description:
-      'Properties, units, tenants, rent, and payments in one simple place. Know who owes you, get paid straight to your M-Pesa paybill, and see what needs attention.',
-    url: '/',
-    siteName: 'RumiaRent',
-    locale: 'en_KE',
-    type: 'website',
-    images: [SHARE_IMAGE],
-  },
+  title: { absolute: TITLE },
+  description: DESCRIPTION,
   alternates: { canonical: '/' },
-  keywords: [
-    'rental management Kenya',
-    'landlord software Kenya',
-    'property management system Kenya',
-    'rent collection app',
-    'M-Pesa rent collection',
-    'tenant management software',
-  ],
-  robots: {
-    index: true,
-    follow: true,
-  },
+  openGraph: { title: TITLE, description: DESCRIPTION, url: '/', images: [SHARE_IMAGE] },
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION },
 };
 
-const PILLARS = [
-  {
-    icon: ShieldCheck,
-    title: 'Always know who owes you',
-    desc: 'Every tenant, every charge, current balance. Updated the moment a payment lands.',
-  },
-  {
-    icon: Zap,
-    title: 'Get paid without chasing',
-    desc: 'Tenants pay your M-Pesa paybill and get a receipt automatically. Cash and bank payments take a tap to record.',
-  },
-  {
-    icon: LayoutGrid,
-    title: 'One login, every property',
-    desc: 'As many properties and units as you manage, all in a single account.',
-  },
-];
+const FEATURE_ICONS = {
+  mpesa: Smartphone,
+  invoices: ReceiptText,
+  reminders: BellRing,
+  books: FileText,
+  team: Users,
+  vacancies: Building2,
+} as const;
 
-const STEPS = [
-  { title: 'Add a property', desc: 'Name, address, and its units. Done in minutes.' },
-  { title: 'Attach a tenant', desc: 'A tenant, a unit, a rent amount, a start date.' },
-  { title: 'Track and collect', desc: 'Rent charges appear on schedule. Payments update balances instantly.' },
-];
-
-const PLATFORM_FEATURES = [
-  {
-    icon: Landmark,
-    title: 'Your paybill, matched automatically',
-    desc: 'Rent lands straight in your own M-Pesa paybill or bank account. Each tenant has their own account number, so every payment is matched to the right unit and receipted.',
-  },
-  {
-    icon: Receipt,
-    title: 'Automated invoicing and billing',
-    desc: 'Rent charges are generated on schedule, every month, for every unit. No manual invoices, no spreadsheet, no forgetting a tenant.',
-  },
-  {
-    icon: MessageCircle,
-    title: 'Built-in communication module',
-    desc: 'Automated SMS rent reminders and payment confirmations go out the moment they matter, so you are not the one sending them.',
-  },
-  {
-    icon: Headset,
-    title: 'Dedicated customer support',
-    desc: 'Real people who understand rental management in Kenya, ready when a tenant or a payment needs a human.',
-  },
-];
-
-const TRUST_POINTS = [
-  {
-    icon: KeyRound,
-    title: 'Role-based access',
-    desc: 'Landlords, caretakers, and tenants each see only what their role allows. No one gets more access than their job needs.',
-  },
-  {
-    icon: Lock,
-    title: 'Your data, kept separate',
-    desc: 'Every account is isolated. Your properties, tenants, and payments are never visible to another landlord on the platform.',
-  },
-  {
-    icon: FileCheck2,
-    title: 'A full audit trail',
-    desc: 'Every payment, every change, every action is logged, so you always know what happened and when.',
-  },
-];
-
-export default function HomePage() {
+function Section({ id, children, className = '' }: { id?: string; children: React.ReactNode; className?: string }) {
   return (
-    <main className="flex flex-col bg-white text-gray-900 font-sans">
-      <HeroSection />
+    <section id={id} className={`scroll-mt-20 px-4 py-16 sm:py-24 ${className}`}>
+      <div className="mx-auto max-w-6xl">{children}</div>
+    </section>
+  );
+}
 
-      {/* Outcome pillars */}
-      <section className="bg-gray-50/60 py-12 lg:py-28">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeInStagger className="mx-auto grid max-w-5xl gap-3 sm:grid-cols-3 sm:gap-6">
-            {PILLARS.map(({ icon: Icon, title, desc }) => (
-              <FadeInItem
-                key={title}
-                className="flex items-start gap-4 rounded-3xl bg-white p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:block sm:p-8 sm:text-center"
-              >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 sm:mx-auto sm:mb-5 sm:h-12 sm:w-12">
-                  <Icon className="h-5 w-5 text-primary sm:h-6 sm:w-6" aria-hidden="true" />
-                </div>
-                <div>
-                  <h3 className="mb-1 text-base font-bold text-gray-900 sm:mb-2 sm:text-lg">{title}</h3>
-                  <p className="text-sm leading-relaxed text-gray-600">{desc}</p>
-                </div>
-              </FadeInItem>
-            ))}
-          </FadeInStagger>
-        </div>
-      </section>
+function SectionHeading({ eyebrow, title, intro }: { eyebrow: string; title: string; intro?: string }) {
+  return (
+    <div className="max-w-2xl">
+      <p className="text-sm font-semibold text-primary">{eyebrow}</p>
+      <h2 className="mt-2 text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">{title}</h2>
+      {intro && <p className="mt-4 text-lg leading-relaxed text-gray-600">{intro}</p>}
+    </div>
+  );
+}
 
-      {/* Everything connected */}
-      <section className="bg-white py-12 lg:py-28">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeIn className="mx-auto mb-8 block lg:mb-14 max-w-2xl text-center" fullWidth>
-            <Badge
-              variant="outline"
-              className="mb-6 inline-flex rounded-full border-primary/20 bg-primary/5 px-4 py-1.5 font-semibold tracking-wide text-primary"
-            >
-              ONE PLATFORM
-            </Badge>
-            <h2 className="mb-4 text-3xl font-bold text-gray-900 lg:text-4xl">
-              Everything connected, out of the box
-            </h2>
-            <p className="text-lg text-gray-600">
-              Payments, invoicing, communication, and support, all built in, not bolted on.
+export default async function HomePage() {
+  const plans = await fetchPublicPlans();
+  const cheapest = plans.length ? plans.reduce((a, b) => (Number(a.price) <= Number(b.price) ? a : b)) : null;
+
+  const softwareSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'RumiaRent',
+    url: SITE_URL,
+    applicationCategory: 'BusinessApplication',
+    applicationSubCategory: 'Property management software',
+    operatingSystem: 'Web browser (phone, tablet, computer)',
+    areaServed: { '@type': 'Country', name: 'Kenya' },
+    description: ONE_LINER,
+    featureList: FEATURES.map((f) => f.title),
+    offers: plans.map((plan) => ({
+      '@type': 'Offer',
+      name: plan.name,
+      price: Number(plan.price).toFixed(2),
+      priceCurrency: 'KES',
+      url: `${SITE_URL}/pricing`,
+    })),
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema(FAQS)) }} />
+
+      {/* Hero: what it does, for whom, one action, and the real product. */}
+      <section className="overflow-hidden px-4 pb-16 pt-12 sm:pt-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="max-w-3xl">
+            <h1 className="text-[2.5rem] font-semibold leading-[1.08] tracking-tight text-gray-900 sm:text-6xl">
+              Know who has paid rent, without checking M‑Pesa messages.
+            </h1>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-gray-600 sm:text-xl">
+              Rent collection for Kenyan landlords. Payments matched, receipted and chased for you.
             </p>
-          </FadeIn>
-          <FadeInStagger className="mx-auto grid max-w-5xl gap-3 sm:grid-cols-2 sm:gap-6">
-            {PLATFORM_FEATURES.map(({ icon: Icon, title, desc }) => (
-              <FadeInItem
-                key={title}
-                className="flex items-start gap-4 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:block sm:p-8"
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                href={AUTH_ROUTES.REGISTER}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-base font-semibold text-white transition-colors hover:bg-primary/90"
               >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 sm:mb-5 sm:h-12 sm:w-12">
-                  <Icon className="h-5 w-5 text-primary sm:h-6 sm:w-6" aria-hidden="true" />
-                </div>
-                <div>
-                  <h3 className="mb-1 text-base font-bold text-gray-900 sm:mb-2 sm:text-lg">{title}</h3>
-                  <p className="text-sm leading-relaxed text-gray-600">{desc}</p>
-                </div>
-              </FadeInItem>
-            ))}
-          </FadeInStagger>
-        </div>
-      </section>
-
-      {/* Landlords + Tenants, side by side */}
-      <section className="py-12 lg:py-28">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-2">
-            <FadeIn direction="left" className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-10" fullWidth>
-              <Badge variant="outline" className="mb-5 rounded-full border-primary/20 bg-primary/5 font-semibold tracking-wide text-primary">
-                LANDLORDS & AGENTS
-              </Badge>
-              <h2 className="mb-4 text-2xl font-bold text-gray-900">Everything, at a glance</h2>
-              <ul className="mb-8 space-y-4">
-                {[
-                  'See which units are occupied and which are vacant',
-                  'Know exactly who owes rent and how much',
-                  'Payments to your paybill matched to the right tenant',
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-                    <span className="text-gray-600">{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link href={`${AUTH_ROUTES.REGISTER}?role=landlord`} prefetch>
-                <Button className="rounded-full px-6 font-semibold">
-                  Start managing
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                Start free for 30 days <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-            </FadeIn>
-
-            <FadeIn direction="right" className="rounded-3xl border border-gray-100 bg-gray-50/60 p-6 shadow-sm sm:p-10" fullWidth>
-              <Badge variant="outline" className="mb-5 rounded-full border-primary/20 bg-primary/10 font-semibold tracking-wide text-primary">
-                TENANTS
-              </Badge>
-              <h2 className="mb-4 text-2xl font-bold text-gray-900">Your rent, in one place</h2>
-              <ul className="mb-8 space-y-4">
-                {[
-                  'See your unit, your rent, and your balance',
-                  'Pay with M-Pesa, the way you already do',
-                  'Every payment recorded and ready as a receipt',
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-                    <span className="text-gray-600">{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link href="/how-it-works" prefetch>
-                <Button variant="outline" className="rounded-full px-6 font-semibold">
-                  See how it works
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+              <Link
+                href="#how-it-works"
+                className="inline-flex h-12 items-center justify-center rounded-lg px-4 text-base font-semibold text-gray-900 hover:bg-gray-100"
+              >
+                See how it works
               </Link>
-            </FadeIn>
+            </div>
+            <p className="mt-5 text-sm text-gray-500">No card needed. Rent goes straight to you, never through us.</p>
+          </div>
+
+          {/* Phones: the dashboard as it looks on a phone; a desktop screenshot would be unreadable there. */}
+          <figure className="mx-auto mt-12 w-[260px] overflow-hidden rounded-[2rem] border-[7px] border-gray-900 bg-white shadow-2xl md:hidden">
+            <Image
+              src="/images/product/dashboard-mobile.webp"
+              alt="RumiaRent on a phone: M-Pesa payments to assign, tenants in arrears and rent collected this month"
+              width={585}
+              height={950}
+              priority
+              sizes="260px"
+              className="h-auto w-full"
+            />
+          </figure>
+
+          <div className="relative mt-14 hidden md:block">
+            <figure className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_24px_60px_-20px_rgba(15,23,42,0.25)]">
+              <div className="flex h-8 items-center gap-1.5 border-b border-gray-200 bg-gray-50 px-3" aria-hidden="true">
+                <span className="h-2.5 w-2.5 rounded-full bg-gray-300" />
+                <span className="h-2.5 w-2.5 rounded-full bg-gray-300" />
+                <span className="h-2.5 w-2.5 rounded-full bg-gray-300" />
+              </div>
+              <Image
+                src="/images/product/dashboard.webp"
+                alt="RumiaRent landlord dashboard showing rent collected this month, tenants who owe, occupancy and M-Pesa payments to assign"
+                width={1600}
+                height={1012}
+                loading="eager"
+                sizes="(min-width: 1200px) 1152px, 100vw"
+                className="h-auto w-full"
+              />
+            </figure>
+            <figure className="absolute -bottom-10 right-4 hidden w-[200px] overflow-hidden rounded-[1.75rem] border-[6px] border-gray-900 bg-white shadow-2xl md:block lg:right-10 lg:w-[230px]">
+              <Image
+                src="/images/product/tenant-pay.webp"
+                alt="A tenant's phone showing the landlord's paybill number and their own account number"
+                width={585}
+                height={950}
+                sizes="230px"
+                className="h-auto w-full"
+              />
+            </figure>
           </div>
         </div>
       </section>
 
-      {/* Trust & security */}
-      <section className="bg-gray-50/60 py-12 lg:py-28">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeIn className="mx-auto mb-8 block lg:mb-14 max-w-2xl text-center" fullWidth>
-            <h2 className="mb-4 text-3xl font-bold text-gray-900 lg:text-4xl">
-              Built to be trusted with your rent money
-            </h2>
-            <p className="text-lg text-gray-600">
-              Role-based access, data isolation, and a full audit trail, on every account.
-            </p>
-          </FadeIn>
-          <FadeInStagger className="mx-auto grid max-w-4xl gap-3 sm:grid-cols-3 sm:gap-6">
-            {TRUST_POINTS.map(({ icon: Icon, title, desc }) => (
-              <FadeInItem
-                key={title}
-                className="flex items-start gap-4 rounded-3xl bg-white p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:block sm:p-8 sm:text-center"
-              >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 sm:mx-auto sm:mb-5 sm:h-12 sm:w-12">
-                  <Icon className="h-5 w-5 text-primary sm:h-6 sm:w-6" aria-hidden="true" />
-                </div>
-                <div>
-                  <h3 className="mb-1 text-base font-bold text-gray-900 sm:mb-2 sm:text-lg">{title}</h3>
-                  <p className="text-sm leading-relaxed text-gray-600">{desc}</p>
-                </div>
-              </FadeInItem>
-            ))}
-          </FadeInStagger>
-        </div>
-      </section>
+      <Section id="how-it-works" className="border-t border-gray-100 bg-gray-50/60">
+        <SectionHeading eyebrow="How it works" title="Set up in minutes" />
+        <ol className="mt-12 grid gap-8 sm:grid-cols-3">
+          {STEPS.map((step, index) => (
+            <li key={step.title}>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
+                {index + 1}
+              </span>
+              <h3 className="mt-4 text-lg font-semibold text-gray-900">{step.title}</h3>
+              <p className="mt-2 leading-relaxed text-gray-600">{step.body}</p>
+            </li>
+          ))}
+        </ol>
+      </Section>
 
-      {/* Three steps */}
-      <section className="bg-gray-50/60 py-12 lg:py-28">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeIn className="mx-auto mb-8 block lg:mb-14 max-w-3xl text-center" fullWidth>
-            <h2 className="mb-4 text-3xl font-bold text-gray-900 lg:text-4xl">Live in minutes</h2>
-            <p className="text-lg text-gray-600">No onboarding call. No training needed.</p>
-          </FadeIn>
-          <FadeInStagger className="mx-auto grid max-w-4xl gap-5 sm:grid-cols-3 sm:gap-6" faster>
-            {STEPS.map((step, i) => (
-              <FadeInItem key={step.title} className="flex items-start gap-4 text-left sm:block sm:text-center">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-900 text-sm font-bold text-white sm:mx-auto sm:mb-4">
-                  {i + 1}
-                </div>
-                <div>
-                  <h3 className="mb-1 text-lg font-bold text-gray-900 sm:mb-2">{step.title}</h3>
-                  <p className="text-sm leading-relaxed text-gray-600">{step.desc}</p>
-                </div>
-              </FadeInItem>
-            ))}
-          </FadeInStagger>
+      <Section id="mpesa">
+        <div className="grid items-center gap-12 lg:grid-cols-5">
+          <div className="lg:col-span-2">
+            <SectionHeading
+              eyebrow="M-Pesa"
+              title="Payments that record themselves"
+              intro="Each payment lands on the right tenant with a receipt. Anything unclear waits for you."
+            />
+          </div>
+          <figure className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm lg:col-span-3">
+            <Image
+              src="/images/product/mpesa-matches.webp"
+              alt="List of M-Pesa payments, each matched to a tenant with a receipt number, and one waiting to be assigned"
+              width={1200}
+              height={504}
+              sizes="(min-width: 1024px) 690px, 100vw"
+              className="h-auto w-full"
+            />
+          </figure>
         </div>
-      </section>
+      </Section>
 
-      {/* Talk to us */}
-      <section className="bg-white py-12 lg:py-28">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeIn className="mx-auto block max-w-3xl" fullWidth>
-            <div className="rounded-[2rem] border border-gray-100 bg-white p-6 text-center shadow-sm sm:p-14">
-              <h2 className="mb-4 text-3xl font-bold text-gray-900 lg:text-4xl">Want to see it live first?</h2>
-              <p className="mb-8 text-lg text-gray-600">
-                Send us a message and we will walk you through it.
-              </p>
-              <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Link href="/contact" prefetch>
-                  <Button
-                    size="lg"
-                    className="h-14 rounded-full bg-gray-900 px-8 text-lg font-medium text-white transition-transform hover:scale-[1.02] hover:bg-gray-800 active:scale-95"
-                  >
-                    Talk to us
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </FadeIn>
-        </div>
-      </section>
+      <Section id="features" className="border-t border-gray-100">
+        <SectionHeading eyebrow="Features" title="Everything rent day needs" />
+        <ul className="mt-12 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map((feature) => {
+            const Icon = FEATURE_ICONS[feature.key];
+            return (
+              <li key={feature.key}>
+                <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
+                <h3 className="mt-3 text-base font-semibold text-gray-900">{feature.title}</h3>
+                <p className="mt-1.5 leading-relaxed text-gray-600">{feature.body}</p>
+              </li>
+            );
+          })}
+        </ul>
+      </Section>
 
-      {/* Pricing teaser */}
-      <section className="py-12 lg:py-28">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeIn fullWidth>
-            <PricingTeaser />
-          </FadeIn>
+      <Section className="bg-gray-900 text-white">
+        <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+          <div>
+            <Landmark className="h-8 w-8 text-emerald-400" aria-hidden="true" />
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">Your rent never passes through us</h2>
+          </div>
+          <p className="text-lg leading-relaxed text-gray-300">
+            Tenants pay your own paybill, as they do today. The money is yours the moment they pay. We only record it.
+          </p>
         </div>
-      </section>
+      </Section>
 
-      {/* Final CTA */}
-      <section className="bg-gray-900 py-20 text-white lg:py-28">
-        <div className="container mx-auto px-4 text-center sm:px-6 lg:px-8">
-          <FadeIn className="mx-auto block max-w-xl" fullWidth>
-            <h2 className="mb-4 text-3xl font-bold lg:text-4xl">Ready to stop guessing who paid?</h2>
-            <p className="mx-auto mb-10 max-w-xl text-lg text-gray-300">
-              Set up your first property today and see the difference by the end of the month.
-            </p>
-            <Link href={`${AUTH_ROUTES.REGISTER}?role=landlord`} prefetch>
-              <Button size="lg" className="h-14 rounded-full bg-white px-8 text-lg font-medium text-gray-900 transition-transform hover:scale-[1.02] hover:bg-gray-100 active:scale-95">
-                Start your free 30 days
-              </Button>
-            </Link>
-          </FadeIn>
+      <Section id="pricing">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <SectionHeading
+            eyebrow="Pricing"
+            title="One flat monthly price"
+            intro={`${cheapest ? `From ${formatKes(cheapest.price)} a month. ` : ''}30 days free.`}
+          />
+          <Link href="/pricing" className="text-sm font-semibold text-primary hover:underline">Compare plans</Link>
+        </div>
+        <div className="mt-10">
+          <PlanCards plans={plans} />
+        </div>
+      </Section>
+
+      <Section id="faq" className="border-t border-gray-100 bg-gray-50/60">
+        <div className="grid gap-10 lg:grid-cols-3">
+          <div>
+            <SectionHeading eyebrow="Questions" title="Common questions" />
+            <Link href="/faq" className="mt-4 inline-block text-sm font-semibold text-primary hover:underline">All questions</Link>
+          </div>
+          <div className="lg:col-span-2">
+            <FaqList items={FAQS.slice(1, 5)} />
+          </div>
+        </div>
+      </Section>
+
+      <section className="px-4 py-20">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">Try it with your own tenants</h2>
+          <p className="mt-4 text-lg text-gray-600">Free for 30 days.</p>
+          <Link
+            href={AUTH_ROUTES.REGISTER}
+            className="mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-base font-semibold text-white transition-colors hover:bg-primary/90"
+          >
+            Start free for 30 days <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
         </div>
       </section>
-    </main>
+    </>
   );
 }

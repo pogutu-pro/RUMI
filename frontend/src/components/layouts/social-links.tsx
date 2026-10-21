@@ -78,7 +78,7 @@ export function SocialLinks({ className, itemClassName }: { className?: string; 
             rel="noopener noreferrer"
             aria-label={`RumiaRent on ${LABELS[link.platform] ?? link.platform}`}
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-full border border-gray-700 text-gray-300 transition-colors hover:border-gray-500 hover:bg-gray-800 hover:text-white',
+              'flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900',
               itemClassName,
             )}
           >

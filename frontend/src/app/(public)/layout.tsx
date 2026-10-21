@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
 import { PublicHeader } from '@/components/layouts/public-header';
 import { Footer } from '@/components/layouts/public-footer';
-import { MobileBottomNav } from '@/components/layouts/mobile-bottom-nav';
 import { BackToTop } from '@/components/layouts/back-to-top';
 import { UnifiedThemeProvider } from '@/components/providers/unified-theme-provider';
 import type { Metadata } from 'next';
@@ -12,7 +11,7 @@ export const metadata: Metadata = {
     template: '%s | RumiaRent',
   },
   description:
-    'RumiaRent helps Kenyan landlords and agents manage properties, track tenants, and collect rent. Simple enough to start using today.',
+    'M-Pesa rent collection and rental management for Kenyan landlords and agents: payments matched and receipted automatically, reminders, arrears and statements.',
   keywords: [
     'rental management Kenya',
     'landlord software Kenya',
@@ -46,7 +45,6 @@ export default function PublicLayout({ children }: LayoutProps) {
         <PublicHeader />
         <main className="flex-1">{children}</main>
         <Footer />
-        <MobileBottomNav />
         <BackToTop />
       </div>
     </UnifiedThemeProvider>
