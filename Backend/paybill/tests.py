@@ -146,6 +146,16 @@ class CallbackTests(PaybillFixtures):
         self.assertEqual(ok.status_code, 200)
         self.assertEqual(IncomingTransaction.objects.get(trans_id='QK12AB34CD').status, 'matched')
 
+    @override_settings(MPESA_CALLBACK_ALLOWED_IPS=['196.201.214.200'], MPESA_TRUST_X_FORWARDED_FOR=True)
+    def test_spoofed_forwarded_for_is_not_trusted(self):
+        with patch(SMS):
+            self.api.post(f'/api/v1/paybill/c2b/{self.paybill.callback_token}/confirm/', confirmation(trans_id='QKSPOOF001'),
+                          format='json', HTTP_X_FORWARDED_FOR='196.201.214.200, 41.90.1.2')
+            self.api.post(f'/api/v1/paybill/c2b/{self.paybill.callback_token}/confirm/', confirmation(trans_id='QKREAL0001'),
+                          format='json', HTTP_X_FORWARDED_FOR='196.201.214.200')
+        self.assertTrue(IncomingTransaction.objects.get(trans_id='QKSPOOF001').unverified_source)
+        self.assertFalse(IncomingTransaction.objects.get(trans_id='QKREAL0001').unverified_source)
+
     def test_bad_amount_is_logged_not_crashing(self):
         response = self.callback(confirmation(amount='abc'))
         self.assertEqual(response.status_code, 200)
