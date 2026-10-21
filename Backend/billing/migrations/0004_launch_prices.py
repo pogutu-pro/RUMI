@@ -5,7 +5,7 @@ Enterprise KES 9,999 unlimited.
 
 A tier is only changed while it still holds the original seed price, so a
 price set by hand in the admin plan editor is left alone. Paystack's own plan
-amounts are brought in line by `manage.py sync_paystack_plans` (run on deploy).
+amounts are brought in line by `manage.py sync_paystack_plans` (run as the backend starts).
 """
 from decimal import Decimal
 

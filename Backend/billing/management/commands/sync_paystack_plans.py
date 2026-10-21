@@ -3,8 +3,8 @@ Make each Paystack plan bill what the plan table says.
 
 Paystack charges the amount stored on its own plan, not `SubscriptionPlan.price`,
 so a price changed outside the admin plan editor (a migration, the Django
-admin) would leave the website and the card charge disagreeing. Deploys run
-this after migrations. It only writes to Paystack when an amount or name
+admin) would leave the website and the card charge disagreeing. The backend
+runs this on start, after migrations. It only writes to Paystack when an amount or name
 differs, and never fails the deploy.
 """
 from django.conf import settings
